@@ -1,0 +1,108 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import useTranslation from '../hooks/useTranslation';
+import LanguageSelector from '../components/LanguageSelector';
+
+const TestI18nScreen = () => {
+  const { t, currentLanguage } = useTranslation();
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Test i18n</Text>
+        <LanguageSelector />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Idioma actual: {currentLanguage}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Textos de Bienvenida:</Text>
+        <Text style={styles.text}>{t('welcome.title')}</Text>
+        <Text style={styles.text}>{t('welcome.subtitle')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Autenticación:</Text>
+        <Text style={styles.text}>{t('auth.login')}</Text>
+        <Text style={styles.text}>{t('auth.register')}</Text>
+        <Text style={styles.text}>{t('auth.email')}</Text>
+        <Text style={styles.text}>{t('auth.password')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Inicio:</Text>
+        <Text style={styles.text}>{t('home.whereToGo')}</Text>
+        <Text style={styles.text}>{t('home.searchDestination')}</Text>
+        <Text style={styles.text}>{t('home.currentLocation')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Viaje:</Text>
+        <Text style={styles.text}>{t('ride.requestRide')}</Text>
+        <Text style={styles.text}>{t('ride.cancelRide')}</Text>
+        <Text style={styles.text}>{t('ride.driverOnWay')}</Text>
+        <Text style={styles.text}>{t('ride.estimatedTime')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Común:</Text>
+        <Text style={styles.text}>{t('common.cancel')}</Text>
+        <Text style={styles.text}>{t('common.confirm')}</Text>
+        <Text style={styles.text}>{t('common.loading')}</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Errores:</Text>
+        <Text style={styles.text}>{t('errors.networkError')}</Text>
+        <Text style={styles.text}>{t('errors.somethingWentWrong')}</Text>
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  section: {
+    backgroundColor: 'white',
+    margin: 10,
+    padding: 15,
+    borderRadius: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  text: {
+    fontSize: 14,
+    marginVertical: 3,
+    color: '#666',
+  },
+});
+
+export default TestI18nScreen;

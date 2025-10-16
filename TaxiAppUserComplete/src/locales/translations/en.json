@@ -1,0 +1,22 @@
+{
+  "login": {
+    "title": "Login",
+    "button": "Login",
+    "noAccount": "Don't have an account?",
+    "register": "Sign up"
+  },
+  "common": {
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Your password"
+  },
+  "welcome": "Welcome",
+  "user": "User",
+  "safeAndFastRide": "Safe and fast rides",
+  "whereToGo": "Where to?",
+  "requestRide": "Request ride",
+  "economy": "Economy",
+  "comfort": "Comfort",
+  "premium": "Premium"
+}

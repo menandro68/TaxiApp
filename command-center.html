@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Comando - TaxiApp</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .command-header {
+            background: linear-gradient(90deg, #1a1a2e, #0f3460);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00d4ff;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            color: #00d4ff;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            height: calc(100vh - 70px);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+        }
+
+        .control-panel {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .alert-section {
+            padding: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .alert-item {
+            background: #2a2a3e;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #ff4444;
+        }
+
+        .emergency-btn {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 15px;
+            margin: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            animation: emergencyPulse 2s infinite;
+        }
+
+        @keyframes emergencyPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255,0,0,0.5); }
+            50% { box-shadow: 0 0 40px rgba(255,0,0,0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="command-header">
+        <div class="header-title">
+            <i class="fas fa-satellite-dish"></i>
+            <h1>CENTRO DE COMANDO</h1>
+            <div class="status-indicator">
+                <div class="live-dot"></div>
+                <span>EN VIVO</span>
+            </div>
+        </div>
+        <div id="current-time"></div>
+    </div>
+
+    <div class="main-container">
+        <div id="map"></div>
+        
+        <div class="control-panel">
+            <div class="metrics-grid">
+                <div class="metric-card" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <div class="metric-label">VIAJES ACTIVOS</div>
+                    <div class="metric-value" id="active-trips">0</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <div class="metric-label">CONDUCTORES</div>
+                    <div class="metric-value" id="active-drivers">0</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <div class="metric-label">EN ESPERA</div>
+                    <div class="metric-value" id="waiting">0</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                    <div class="metric-label">COMPLETADOS</div>
+                    <div class="metric-value" id="completed">0</div>
+                </div>
+            </div>
+
+            <div class="alert-section">
+                <h3 style="margin-bottom: 10px;">⚠️ ALERTAS ACTIVAS</h3>
+                <div id="alerts-container">
+                    <div class="alert-item">
+                        Sistema operando normalmente
+                    </div>
+                </div>
+            </div>
+
+            <button class="emergency-btn" onclick="activateEmergency()">
+                🚨 ACTIVAR PROTOCOLO DE EMERGENCIA
+            </button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Configuración inicial
+        const SANTO_DOMINGO = [18.4861, -69.9312];
+        let drivers = {};
+        let trips = {};
+        let alerts = [];
+
+        // Inicializar el mapa
+        const map = L.map('map').setView(SANTO_DOMINGO, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap',
+            maxZoom: 18
+        }).addTo(map);
+
+        // Iconos personalizados
+        const driverIcon = L.divIcon({
+            html: '<div style="background: #00ff00; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">🚗</div>',
+            className: 'driver-marker',
+            iconSize: [30, 30]
+        });
+
+        const busyDriverIcon = L.divIcon({
+            html: '<div style="background: #ffaa00; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">🚗</div>',
+            className: 'driver-marker',
+            iconSize: [30, 30]
+        });
+
+        const userIcon = L.divIcon({
+            html: '<div style="background: #4facfe; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">👤</div>',
+            className: 'user-marker',
+            iconSize: [30, 30]
+        });
+
+        // Simular conductores
+        function initializeDrivers() {
+            for (let i = 1; i <= 10; i++) {
+                const lat = SANTO_DOMINGO[0] + (Math.random() - 0.5) * 0.1;
+                const lng = SANTO_DOMINGO[1] + (Math.random() - 0.5) * 0.1;
+                const status = Math.random() > 0.3 ? 'available' : 'busy';
+                
+                drivers[`driver_${i}`] = {
+                    id: `driver_${i}`,
+                    name: `Conductor ${i}`,
+                    lat: lat,
+                    lng: lng,
+                    status: status,
+                    marker: L.marker([lat, lng], {
+                        icon: status === 'available' ? driverIcon : busyDriverIcon
+                    }).addTo(map)
+                };
+                
+                drivers[`driver_${i}`].marker.bindPopup(`
+                    <strong>${drivers[`driver_${i}`].name}</strong><br>
+                    Estado: ${status === 'available' ? 'Disponible' : 'Ocupado'}<br>
+                    ID: ${drivers[`driver_${i}`].id}
+                `);
+            }
+        }
+
+        // Actualizar métricas
+        function updateMetrics() {
+            const activeDrivers = Object.values(drivers).filter(d => d.status === 'available').length;
+            const busyDrivers = Object.values(drivers).filter(d => d.status === 'busy').length;
+            const activeTrips = Object.keys(trips).length;
+            const completed = Math.floor(Math.random() * 100);
+            
+            document.getElementById('active-trips').textContent = activeTrips;
+            document.getElementById('active-drivers').textContent = activeDrivers;
+            document.getElementById('waiting').textContent = busyDrivers;
+            document.getElementById('completed').textContent = completed;
+        }
+
+        // Simular movimiento de conductores
+        function moveDrivers() {
+            Object.values(drivers).forEach(driver => {
+                if (Math.random() > 0.7) {
+                    driver.lat += (Math.random() - 0.5) * 0.002;
+                    driver.lng += (Math.random() - 0.5) * 0.002;
+                    
+                    const newLatLng = [driver.lat, driver.lng];
+                    driver.marker.setLatLng(newLatLng);
+                    
+                    // Cambiar estado aleatoriamente
+                    if (Math.random() > 0.9) {
+                        driver.status = driver.status === 'available' ? 'busy' : 'available';
+                        driver.marker.setIcon(driver.status === 'available' ? driverIcon : busyDriverIcon);
+                    }
+                }
+            });
+            updateMetrics();
+        }
+
+        // Simular nuevos viajes
+        function simulateNewTrip() {
+            const tripId = `trip_${Date.now()}`;
+            const userLat = SANTO_DOMINGO[0] + (Math.random() - 0.5) * 0.1;
+            const userLng = SANTO_DOMINGO[1] + (Math.random() - 0.5) * 0.1;
+            
+            const userMarker = L.marker([userLat, userLng], {icon: userIcon}).addTo(map);
+            userMarker.bindPopup(`<strong>Nuevo Viaje</strong><br>ID: ${tripId}`).openPopup();
+            
+            trips[tripId] = {
+                id: tripId,
+                marker: userMarker,
+                timestamp: new Date()
+            };
+            
+            // Agregar alerta
+            addAlert(`🚖 Nuevo viaje solicitado: ${tripId}`, 'info');
+            
+            // Remover después de 30 segundos
+            setTimeout(() => {
+                if (trips[tripId]) {
+                    map.removeLayer(trips[tripId].marker);
+                    delete trips[tripId];
+                    updateMetrics();
+                }
+            }, 30000);
+        }
+
+        // Sistema de alertas
+        function addAlert(message, type = 'warning') {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert-item';
+            
+            const colors = {
+                'info': '#4facfe',
+                'warning': '#ffaa00',
+                'danger': '#ff4444',
+                'success': '#00ff00'
+            };
+            
+            alertDiv.style.borderLeftColor = colors[type];
+            alertDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${message}</span>
+                    <small>${new Date().toLocaleTimeString('es-DO')}</small>
+                </div>
+            `;
+            
+            alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+            
+            // Mantener máximo 5 alertas
+            while (alertsContainer.children.length > 5) {
+                alertsContainer.removeChild(alertsContainer.lastChild);
+            }
+        }
+
+        // Protocolo de emergencia
+        function activateEmergency() {
+            if (confirm('⚠️ ¿Activar Protocolo de Emergencia?\n\nEsto detendrá todos los servicios y notificará a las autoridades.')) {
+                addAlert('🚨 PROTOCOLO DE EMERGENCIA ACTIVADO', 'danger');
+                document.body.style.animation = 'emergencyFlash 1s infinite';
+                
+                // Notificar a todos los conductores
+                Object.values(drivers).forEach(driver => {
+                    driver.marker.bindPopup('⚠️ EMERGENCIA ACTIVADA').openPopup();
+                });
+                
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 10000);
+            }
+        }
+
+        // Actualizar hora
+        setInterval(() => {
+            document.getElementById('current-time').textContent = 
+                new Date().toLocaleTimeString('es-DO');
+        }, 1000);
+
+        // Inicializar
+        initializeDrivers();
+        updateMetrics();
+
+        // Actualizaciones automáticas
+        setInterval(moveDrivers, 3000);
+        setInterval(() => {
+            if (Math.random() > 0.7) {
+                simulateNewTrip();
+            }
+        }, 10000);
+
+        // Alertas aleatorias
+        setInterval(() => {
+            const alertTypes = [
+                { msg: '✅ Sistema operando normalmente', type: 'success' },
+                { msg: '⚠️ Tráfico pesado en Av. 27 de Febrero', type: 'warning' },
+                { msg: '📊 Demanda alta en zona Naco', type: 'info' },
+                { msg: '🔋 Conductor #5 batería baja', type: 'warning' }
+            ];
+            
+            if (Math.random() > 0.8) {
+                const alert = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+                addAlert(alert.msg, alert.type);
+            }
+        }, 15000);
+
+        // Animación de emergencia
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes emergencyFlash {
+                0%, 100% { filter: brightness(1); }
+                50% { filter: brightness(1.2) hue-rotate(10deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('✅ Centro de Comando iniciado correctamente');
+    </script>
+</body>
+</html>

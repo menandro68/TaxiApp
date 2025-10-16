@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Geofencing - Sistema Uber</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header h1::before {
+            content: "📍";
+            font-size: 32px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .map-container h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .geofence-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .geofence-item {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .geofence-item:hover {
+            background: #e8e8e8;
+            transform: translateX(5px);
+        }
+
+        .geofence-item.active {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .geofence-item.inactive {
+            opacity: 0.6;
+        }
+
+        .geofence-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .geofence-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .geofence-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .type-surcharge { background: #ffeb3b; color: #333; }
+        .type-boundary { background: #2196f3; color: white; }
+        .type-dynamic_pricing { background: #ff5722; color: white; }
+        .type-restricted { background: #f44336; color: white; }
+        .type-event { background: #9c27b0; color: white; }
+
+        .geofence-details {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .toggle-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #4caf50;
+            color: white;
+        }
+
+        .toggle-btn.inactive {
+            background: #f44336;
+            color: white;
+        }
+
+        .events-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+            font-size: 13px;
+        }
+
+        .event-enter {
+            border-left-color: #4caf50;
+        }
+
+        .event-exit {
+            border-left-color: #ff9800;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .event-action {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .event-time {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .test-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .test-controls input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .legend {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #ff9800;
+        }
+
+        .notification.error {
+            border-left: 4px solid #f44336;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Monitor de Geofencing en Tiempo Real</h1>
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="value" id="activeGeofences">0</div>
+                    <div class="label">Geofences Activos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="totalEvents">0</div>
+                    <div class="label">Eventos Hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="activeUsers">0</div>
+                    <div class="label">Usuarios en Zonas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="restrictedZones">0</div>
+                    <div class="label">Zonas Restringidas</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="map-container">
+                <h2>🗺️ Mapa de Geofences</h2>
+                <div id="map"></div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffeb3b;"></div>
+                        <span>Zona con Recargo</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2196f3;"></div>
+                        <span>Límite de Servicio</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff5722;"></div>
+                        <span>Tarifa Dinámica</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f44336;"></div>
+                        <span>Zona Restringida</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9c27b0;"></div>
+                        <span>Evento Especial</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>⚡ Geofences Configurados</h3>
+                    <div class="geofence-list" id="geofenceList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>📊 Eventos Recientes</h3>
+                    <div class="events-list" id="eventsList">
+                        <div class="event-item">
+                            <div class="event-header">
+                                <span class="event-action">Esperando eventos...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>🧪 Simulador de Prueba</h3>
+                    <div class="test-section">
+                        <div class="test-controls">
+                            <input type="text" id="testUserId" placeholder="ID Usuario" value="test_driver_001">
+                            <select id="testUserType" style="padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                <option value="driver">Conductor</option>
+                                <option value="passenger">Pasajero</option>
+                            </select>
+                        </div>
+                        <div class="test-controls" style="margin-top: 10px;">
+                            <input type="number" id="testLat" placeholder="Latitud" step="0.0001" value="18.4297">
+                            <input type="number" id="testLng" placeholder="Longitud" step="0.0001" value="-69.6689">
+                        </div>
+                        <button class="btn btn-primary" onclick="testGeofence()" style="width: 100%; margin-top: 10px;">
+                            Simular Ubicación
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        <div id="notificationText"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Inicializar mapa
+        let map;
+        let geofenceCircles = new Map();
+        let testMarker = null;
+        let activeGeofencesData = [];
+
+        function initMap() {
+            // Centrar en Santo Domingo
+            map = L.map('map').setView([18.4861, -69.9312], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            loadGeofences();
+        }
+
+        // Cargar geofences activos
+        async function loadGeofences() {
+            try {
+                const response = await fetch('/api/geofencing/active');
+                const data = await response.json();
+                
+                activeGeofencesData = data.geofences;
+                
+                // Actualizar estadísticas
+                document.getElementById('activeGeofences').textContent = data.count;
+                
+                // Actualizar lista
+                updateGeofenceList(data.geofences);
+                
+                // Dibujar en el mapa
+                drawGeofences(data.geofences);
+                
+                // Actualizar zonas restringidas
+                const restricted = data.geofences.filter(gf => gf.type === 'restricted').length;
+                document.getElementById('restrictedZones').textContent = restricted;
+                
+            } catch (error) {
+                console.error('Error cargando geofences:', error);
+                showNotification('Error cargando geofences', 'error');
+            }
+        }
+
+        // Dibujar geofences en el mapa
+        function drawGeofences(geofences) {
+            // Limpiar círculos anteriores
+            geofenceCircles.forEach(circle => map.removeLayer(circle));
+            geofenceCircles.clear();
+
+            geofences.forEach(gf => {
+                const color = getGeofenceColor(gf.type);
+                
+                const circle = L.circle([gf.center.lat, gf.center.lng], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.3,
+                    radius: gf.radius * 1000 // Convertir km a metros
+                }).addTo(map);
+
+                // Popup con información
+                circle.bindPopup(`
+                    <strong>${gf.name}</strong><br>
+                    Tipo: ${gf.type}<br>
+                    Radio: ${gf.radius} km<br>
+                    ${gf.schedule ? `Horario: ${formatSchedule(gf.schedule)}` : ''}
+                `);
+
+                geofenceCircles.set(gf.id, circle);
+            });
+        }
+
+        // Obtener color según tipo de geofence
+        function getGeofenceColor(type) {
+            const colors = {
+                'surcharge': '#ffeb3b',
+                'boundary': '#2196f3',
+                'dynamic_pricing': '#ff5722',
+                'restricted': '#f44336',
+                'event': '#9c27b0',
+                'custom': '#4caf50'
+            };
+            return colors[type] || '#999';
+        }
+
+        // Formatear horario
+        function formatSchedule(schedule) {
+            if (!schedule) return '';
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            const dayNames = schedule.days.map(d => days[d]).join(', ');
+            return `${dayNames} ${schedule.hours.start}:00-${schedule.hours.end}:00`;
+        }
+
+        // Actualizar lista de geofences
+        function updateGeofenceList(geofences) {
+            const list = document.getElementById('geofenceList');
+            list.innerHTML = '';
+
+            geofences.forEach(gf => {
+                const item = document.createElement('div');
+                item.className = `geofence-item ${gf.active ? 'active' : 'inactive'}`;
+                item.innerHTML = `
+                    <div class="geofence-header">
+                        <span class="geofence-name">${gf.name}</span>
+                        <span class="geofence-type type-${gf.type}">${gf.type}</span>
+                    </div>
+                    <div class="geofence-details">
+                        Radio: ${gf.radius} km<br>
+                        ${gf.schedule ? `Horario: ${formatSchedule(gf.schedule)}` : 'Siempre activo'}
+                    </div>
+                    <button class="toggle-btn ${gf.active ? 'active' : 'inactive'}" 
+                            onclick="toggleGeofence('${gf.id}')">
+                        ${gf.active ? '✓ Activo' : '✗ Inactivo'}
+                    </button>
+                `;
+                
+                // Click para centrar en el mapa
+                item.onclick = () => {
+                    map.setView([gf.center.lat, gf.center.lng], 14);
+                    const circle = geofenceCircles.get(gf.id);
+                    if (circle) {
+                        circle.openPopup();
+                    }
+                };
+                
+                list.appendChild(item);
+            });
+        }
+
+        // Toggle geofence activo/inactivo
+        async function toggleGeofence(id) {
+            try {
+                const response = await fetch(`/api/geofencing/toggle/${id}`, {
+                    method: 'PUT'
+                });
+                const data = await response.json();
+                
+                showNotification(data.message, 'success');
+                loadGeofences(); // Recargar
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al cambiar estado', 'error');
+            }
+        }
+
+        // Probar geofence con ubicación simulada
+        async function testGeofence() {
+            const userId = document.getElementById('testUserId').value;
+            const userType = document.getElementById('testUserType').value;
+            const lat = parseFloat(document.getElementById('testLat').value);
+            const lng = parseFloat(document.getElementById('testLng').value);
+
+            if (!userId || isNaN(lat) || isNaN(lng)) {
+                showNotification('Por favor complete todos los campos', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/geofencing/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, userType, lat, lng })
+                });
+                
+                const data = await response.json();
+                
+                // Actualizar marcador en el mapa
+                if (testMarker) {
+                    map.removeLayer(testMarker);
+                }
+                
+                testMarker = L.marker([lat, lng], {
+                    icon: L.icon({
+                        iconUrl: userType === 'driver' ? 
+                            'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png' :
+                            'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(map);
+
+                // Centrar mapa
+                map.setView([lat, lng], 14);
+
+                // Mostrar resultados
+                if (data.events && data.events.length > 0) {
+                    data.events.forEach(event => {
+                        addEventToList(event);
+                        if (event.actions.notification) {
+                            showNotification(event.actions.notification, 
+                                event.action === 'ENTER' ? 'success' : 'warning');
+                        }
+                    });
+                }
+
+                // Mostrar zonas activas
+                if (data.activeZones && data.activeZones.length > 0) {
+                    const zones = data.activeZones.map(z => z.name).join(', ');
+                    testMarker.bindPopup(`
+                        <strong>${userId}</strong><br>
+                        Tipo: ${userType}<br>
+                        Zonas activas: ${zones}<br>
+                        Recargo total: $${data.totalSurcharge}<br>
+                        Multiplicador: ${data.priceMultiplier}x
+                    `).openPopup();
+                } else {
+                    testMarker.bindPopup(`
+                        <strong>${userId}</strong><br>
+                        Tipo: ${userType}<br>
+                        No está en ninguna zona especial
+                    `).openPopup();
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error al verificar ubicación', 'error');
+            }
+        }
+
+        // Agregar evento a la lista
+        function addEventToList(event) {
+            const list = document.getElementById('eventsList');
+            const item = document.createElement('div');
+            item.className = `event-item event-${event.action.toLowerCase()}`;
+            
+            const time = new Date(event.timestamp).toLocaleTimeString();
+            
+            item.innerHTML = `
+                <div class="event-header">
+                    <span class="event-action">
+                        ${event.action === 'ENTER' ? '→' : '←'} ${event.geofenceName}
+                    </span>
+                    <span class="event-time">${time}</span>
+                </div>
+                <div style="color: #666; font-size: 12px;">
+                    ${event.userId} (${event.userType})
+                    ${event.actions.notification ? `<br>📢 ${event.actions.notification}` : ''}
+                    ${event.actions.surcharge ? `<br>💰 Recargo: $${event.actions.surcharge}` : ''}
+                    ${event.actions.multiplier && event.actions.multiplier > 1 ? 
+                        `<br>📈 Multiplicador: ${event.actions.multiplier}x` : ''}
+                </div>
+            `;
+            
+            // Agregar al inicio
+            if (list.firstChild) {
+                list.insertBefore(item, list.firstChild);
+            } else {
+                list.appendChild(item);
+            }
+            
+            // Limitar a 20 eventos
+            while (list.children.length > 20) {
+                list.removeChild(list.lastChild);
+            }
+            
+            // Actualizar contador
+            const counter = document.getElementById('totalEvents');
+            counter.textContent = parseInt(counter.textContent) + 1;
+        }
+
+        // Cargar eventos históricos
+        async function loadEvents() {
+            try {
+                const response = await fetch('/api/geofencing/events?limit=10');
+                const data = await response.json();
+                
+                const list = document.getElementById('eventsList');
+                list.innerHTML = '';
+                
+                if (data.events.length === 0) {
+                    list.innerHTML = '<div class="event-item">No hay eventos recientes</div>';
+                } else {
+                    data.events.forEach(event => {
+                        addEventToList(event);
+                    });
+                }
+                
+                document.getElementById('totalEvents').textContent = data.count;
+                
+            } catch (error) {
+                console.error('Error cargando eventos:', error);
+            }
+        }
+
+        // Mostrar notificación
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const text = document.getElementById('notificationText');
+            
+            text.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Auto-actualización
+        function startAutoUpdate() {
+            setInterval(() => {
+                loadEvents();
+                updateActiveUsers();
+            }, 5000); // Cada 5 segundos
+        }
+
+        // Actualizar usuarios activos (simulado)
+        function updateActiveUsers() {
+            // En producción, esto vendría del servidor
+            const activeUsers = Math.floor(Math.random() * 50) + 10;
+            document.getElementById('activeUsers').textContent = activeUsers;
+        }
+
+        // Inicializar al cargar
+        window.onload = function() {
+            initMap();
+            loadEvents();
+            startAutoUpdate();
+            
+            // Simular algunos usuarios activos
+            updateActiveUsers();
+        };
+
+        // Atajos de teclado para pruebas rápidas
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 't') {
+                // Ctrl+T para test rápido en aeropuerto
+                document.getElementById('testLat').value = '18.4297';
+                document.getElementById('testLng').value = '-69.6689';
+                testGeofence();
+            } else if (e.ctrlKey && e.key === 'r') {
+                // Ctrl+R para recargar geofences
+                loadGeofences();
+                loadEvents();
+            }
+        });
+    </script>
+</body>
+</html>

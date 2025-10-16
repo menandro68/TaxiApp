@@ -1,0 +1,78 @@
+import React from 'react';
+import {
+  View,
+  StyleSheet,
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+
+const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
+  // Región por defecto de Santo Domingo Este
+  const defaultRegion = {
+    latitude: userLocation?.latitude || 18.4861,
+    longitude: userLocation?.longitude || -69.9312,
+    latitudeDelta: 0.015,
+    longitudeDelta: 0.015,
+  };
+
+  return (
+    <View style={styles.container}>
+      <MapView
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        initialRegion={defaultRegion}
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass={true}
+        showsScale={true}
+        showsBuildings={true}
+        mapType="standard"
+        minZoomLevel={10}
+        maxZoomLevel={18}
+      >
+        {/* Marcador del Usuario */}
+        {userLocation && (
+          <Marker
+            coordinate={{
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+            }}
+            title="📍 Tu ubicación"
+            description="Ubicación actual"
+            pinColor="#007AFF"
+          />
+        )}
+
+        {/* Marcador del Conductor */}
+        {showDriverLocation && driverInfo?.currentLocation && (
+          <Marker
+            coordinate={driverInfo.currentLocation}
+            title="🚗 Conductor"
+            description={`${driverInfo.name} - ${driverInfo.car}`}
+            pinColor="#34C759"
+          />
+        )}
+
+        {/* Marcador del Destino */}
+        {destination && (
+          <Marker
+            coordinate={destination}
+            title="🎯 Destino"
+            description="Tu destino"
+            pinColor="#FF3B30"
+          />
+        )}
+      </MapView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+});
+
+export default MapComponent;

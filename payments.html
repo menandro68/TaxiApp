@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pagos - TaxiApp</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            color: #2d3748;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .main-container {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 35px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .metric-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .metric-icon.success { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .metric-icon.warning { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+        .metric-icon.info { background: linear-gradient(135deg, #4299e1, #3182ce); }
+        .metric-icon.danger { background: linear-gradient(135deg, #f56565, #e53e3e); }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #718096;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .metric-change {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .metric-change.positive { color: #38a169; }
+        .metric-change.negative { color: #e53e3e; }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .payments-table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 25px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+
+        .payments-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .payments-table th {
+            background: #f7fafc;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .payments-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .payments-table tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-completed {
+            background: rgba(72, 187, 120, 0.1);
+            color: #38a169;
+        }
+
+        .status-pending {
+            background: rgba(237, 137, 54, 0.1);
+            color: #dd6b20;
+        }
+
+        .status-failed {
+            background: rgba(245, 101, 101, 0.1);
+            color: #e53e3e;
+        }
+
+        .status-processing {
+            background: rgba(66, 153, 225, 0.1);
+            color: #3182ce;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .action-btn.view {
+            background: rgba(66, 153, 225, 0.1);
+            color: #3182ce;
+        }
+
+        .action-btn.download {
+            background: rgba(72, 187, 120, 0.1);
+            color: #38a169;
+        }
+
+        .action-btn.refund {
+            background: rgba(245, 101, 101, 0.1);
+            color: #e53e3e;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .sidebar-widget {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .widget-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .payment-method-list {
+            list-style: none;
+        }
+
+        .payment-method-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .payment-method-item:last-child {
+            border-bottom: none;
+        }
+
+        .method-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .method-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+        }
+
+        .method-icon.card { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .method-icon.cash { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .method-icon.digital { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+
+        .method-details h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 2px;
+        }
+
+        .method-details p {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .method-amount {
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .pagination-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
+            .payments-table {
+                font-size: 12px;
+            }
+        }
+
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <i class="fas fa-credit-card" style="font-size: 28px; color: #667eea;"></i>
+            <h1>Sistema de Pagos</h1>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="exportPayments()">
+                <i class="fas fa-download"></i>
+                Exportar
+            </button>
+            <button class="btn btn-primary" onclick="processRefunds()">
+                <i class="fas fa-undo"></i>
+                Procesar Reembolsos
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Métricas Principales -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="metric-value" id="totalPayments">RD$ 45,280</div>
+                <div class="metric-label">Total Procesado Hoy</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +12% vs ayer
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon info">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                </div>
+                <div class="metric-value" id="cardPayments">156</div>
+                <div class="metric-label">Pagos con Tarjeta</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +8 transacciones
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon warning">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+                <div class="metric-value" id="pendingPayments">23</div>
+                <div class="metric-label">Pagos Pendientes</div>
+                <div class="metric-change negative">
+                    <i class="fas fa-arrow-down"></i>
+                    -5 desde ayer
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-icon danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="metric-value" id="failedPayments">7</div>
+                <div class="metric-label">Pagos Fallidos</div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i>
+                    +2 hoy
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <!-- Tabla de Transacciones -->
+            <div class="payments-table-container">
+                <div class="table-header">
+                    <h2 class="table-title">Transacciones Recientes</h2>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="Buscar transacciones..." id="searchInput">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+
+                <div id="paymentsTableContainer">
+                    <table class="payments-table">
+                        <thead>
+                            <tr>
+                                <th>ID Transacción</th>
+                                <th>Usuario</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <!-- Las filas se cargarán dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="paginationContainer">
+                    <!-- La paginación se cargará dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Sidebar con Métodos de Pago -->
+            <div>
+                <div class="sidebar-widget">
+                    <h3 class="widget-title">Métodos de Pago Populares</h3>
+                    <ul class="payment-method-list">
+                        <li class="payment-method-item">
+                            <div class="method-info">
+                                <div class="method-icon card">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="method-details">
+                                    <h4>Tarjetas</h4>
+                                    <p>Visa, MasterCard</p>
+                                </div>
+                            </div>
+                            <div class="method-amount">68%</div>
+                        </li>
+                        <li class="payment-method-item">
+                            <div class="method-info">
+                                <div class="method-icon cash">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <div class="method-details">
+                                    <h4>Efectivo</h4>
+                                    <p>Pago en destino</p>
+                                </div>
+                            </div>
+                            <div class="method-amount">24%</div>
+                        </li>
+                        <li class="payment-method-item">
+                            <div class="method-info">
+                                <div class="method-icon digital">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <div class="method-details">
+                                    <h4>Digital</h4>
+                                    <p>PayPal, Apple Pay</p>
+                                </div>
+                            </div>
+                            <div class="method-amount">8%</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Tendencia de Pagos</h3>
+                    </div>
+                    <canvas id="paymentsChart" width="300" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loadingContainer">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script>
+        // Datos simulados de transacciones
+        const mockPayments = [
+            {
+                id: 'TXN001',
+                user: 'María González',
+                amount: 450,
+                method: 'Tarjeta',
+                status: 'completed',
+                date: '2025-01-01 14:30',
+                description: 'Viaje desde Sambil'
+            },
+            {
+                id: 'TXN002', 
+                user: 'Carlos Rodríguez',
+                amount: 320,
+                method: 'Efectivo',
+                status: 'pending',
+                date: '2025-01-01 14:25',
+                description: 'Viaje al aeropuerto'
+            },
+            {
+                id: 'TXN003',
+                user: 'Ana Martínez',
+                amount: 280,
+                method: 'PayPal',
+                status: 'completed',
+                date: '2025-01-01 14:20',
+                description: 'Viaje a Zona Colonial'
+            },
+            {
+                id: 'TXN004',
+                user: 'Juan Pérez',
+                amount: 520,
+                method: 'Tarjeta',
+                status: 'failed',
+                date: '2025-01-01 14:15',
+                description: 'Viaje cancelado'
+            },
+            {
+                id: 'TXN005',
+                user: 'Carmen Silva',
+                amount: 380,
+                method: 'Apple Pay',
+                status: 'processing',
+                date: '2025-01-01 14:10',
+                description: 'Viaje en proceso'
+            },
+            {
+                id: 'TXN006',
+                user: 'Luis Torres',
+                amount: 295,
+                method: 'Tarjeta',
+                status: 'completed',
+                date: '2025-01-01 14:05',
+                description: 'Viaje completado'
+            }
+        ];
+
+        let currentPage = 1;
+        const itemsPerPage = 5;
+        let filteredPayments = [...mockPayments];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPaymentsTable();
+            setupSearch();
+            initializeChart();
+            startRealTimeUpdates();
+        });
+
+        // Cargar tabla de pagos
+        function loadPaymentsTable() {
+            const tbody = document.getElementById('paymentsTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pagePayments = filteredPayments.slice(startIndex, endIndex);
+
+            tbody.innerHTML = pagePayments.map(payment => `
+                <tr>
+                    <td><strong>${payment.id}</strong></td>
+                    <td>${payment.user}</td>
+                    <td><strong>RD$ ${payment.amount}</strong></td>
+                    <td>${payment.method}</td>
+                    <td><span class="status-badge status-${payment.status}">${getStatusText(payment.status)}</span></td>
+                    <td>${formatDate(payment.date)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewTransaction('${payment.id}')" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn download" onclick="downloadReceipt('${payment.id}')" title="Descargar recibo">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            ${payment.status === 'completed' ? `
+                                <button class="action-btn refund" onclick="processRefund('${payment.id}')" title="Reembolsar">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            updatePagination();
+        }
+
+        // Configurar búsqueda
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                filteredPayments = mockPayments.filter(payment => 
+                    payment.id.toLowerCase().includes(query) ||
+                    payment.user.toLowerCase().includes(query) ||
+                    payment.method.toLowerCase().includes(query)
+                );
+                currentPage = 1;
+                loadPaymentsTable();
+            });
+        }
+
+        // Actualizar paginación
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+            const paginationContainer = document.getElementById('paginationContainer');
+            
+            let paginationHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `
+                    <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                            onclick="changePage(${i})">${i}</button>
+                `;
+            }
+            
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        // Cambiar página
+        function changePage(page) {
+            currentPage = page;
+            loadPaymentsTable();
+        }
+
+        // Inicializar gráfico
+        function initializeChart() {
+            const ctx = document.getElementById('paymentsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Pagos Diarios (RD$)',
+                        data: [28000, 35000, 42000, 38000, 45000, 52000, 47000],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e2e8f0'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Funciones de utilidad
+        function getStatusText(status) {
+            const statusMap = {
+                completed: 'Completado',
+                pending: 'Pendiente',
+                failed: 'Fallido',
+                processing: 'Procesando'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('es-DO', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Funciones de acciones
+        function viewTransaction(id) {
+            const payment = mockPayments.find(p => p.id === id);
+            alert(`Detalles de la transacción ${id}:\n\nUsuario: ${payment.user}\nMonto: RD$ ${payment.amount}\nMétodo: ${payment.method}\nEstado: ${getStatusText(payment.status)}\nFecha: ${payment.date}\nDescripción: ${payment.description}`);
+        }
+
+        function downloadReceipt(id) {
+            // Simular descarga de recibo
+            const link = document.createElement('a');
+            link.href = 'data:text/plain;charset=utf-8,Recibo de pago - Transacción: ' + id;
+            link.download = `recibo_${id}.txt`;
+            link.click();
+            showNotification('Recibo descargado exitosamente', 'success');
+        }
+
+        function processRefund(id) {
+            if (confirm(`¿Estás seguro de que quieres procesar el reembolso para la transacción ${id}?`)) {
+                showNotification(`Reembolso procesado para ${id}`, 'success');
+                // Aquí iría la lógica real del reembolso
+            }
+        }
+
+        function exportPayments() {
+            showNotification('Exportando datos de pagos...', 'info');
+            setTimeout(() => {
+                showNotification('Datos exportados exitosamente', 'success');
+            }, 2000);
+        }
+
+        function processRefunds() {
+            const pendingRefunds = mockPayments.filter(p => p.status === 'pending').length;
+            showNotification(`Procesando ${pendingRefunds} reembolsos pendientes...`, 'info');
+        }
+
+        // Sistema de notificaciones
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#667eea'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 9999;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Actualizaciones en tiempo real
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                // Simular actualización de métricas
+                const totalElement = document.getElementById('totalPayments');
+                const currentAmount = parseInt(totalElement.textContent.replace(/[RD$,\s]/g, ''));
+                const newAmount = currentAmount + Math.floor(Math.random() * 500);
+                totalElement.textContent = `RD$ ${newAmount.toLocaleString()}`;
+                
+                console.log('💳 Métricas de pagos actualizadas');
+            }, 30000);
+        }
+
+        console.log('💳 Sistema de Pagos TaxiApp inicializado correctamente');
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+2025-09-15 21:54:10 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-15 22:19:17 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-15 22:19:20 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-16 12:29:20 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-16 13:01:23 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-16 13:02:08 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-16 13:04:22 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-16 18:27:42 [INFO]: RECORD_CREATED | {"event":"RECORD_CREATED","table":"admins","recordId":2,"userId":1}
+2025-09-16 18:28:24 [INFO]: RECORD_UPDATED | {"event":"RECORD_UPDATED","table":"admins","recordId":"2","userId":1,"changes":{"role":"supervisor"}}
+2025-09-16 20:53:40 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"ROLE_DENIED","details":{"user":"juan ","role":"supervisor","required":["super_admin"]},"ip":"::1"}
+2025-09-16 20:54:35 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"ROLE_DENIED","details":{"user":"juan ","role":"supervisor","required":["super_admin"]},"ip":"::1"}
+2025-09-16 21:01:56 [WARN]: RECORD_DELETED | {"event":"RECORD_DELETED","table":"admins","recordId":"2","userId":1}
+2025-09-16 21:04:58 [INFO]: RECORD_CREATED | {"event":"RECORD_CREATED","table":"admins","recordId":3,"userId":1}
+2025-09-16 21:05:05 [WARN]: RECORD_DELETED | {"event":"RECORD_DELETED","table":"admins","recordId":"3","userId":1}
+2025-09-19 20:39:58 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:40:40 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:40:41 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:40:42 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:40:44 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:40:51 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:33 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:35 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:40 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:40 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:41 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:41 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:42 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:43 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:44 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:53 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:56 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:56 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:56 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:57 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:57 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:57 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:59 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:43:59 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:44:15 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 20:44:25 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-19 21:18:42 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 06:57:55 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:09:55 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:13:44 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:22:46 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:23:15 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:23:36 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:23:36 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:23:47 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:23:47 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:34:02 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}
+2025-09-20 07:36:18 [ERROR]: SECURITY_ERROR | {"event":"SECURITY_ERROR","type":"NO_TOKEN","details":"Intento de acceso sin token","ip":"::1"}

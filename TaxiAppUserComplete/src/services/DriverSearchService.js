@@ -1,0 +1,240 @@
+// DriverSearchService.js
+import Geolocation from '@react-native-community/geolocation';
+
+class DriverSearchService {
+  constructor() {
+    this.searchRadii = [3, 5, 8, 12, 20]; // Radios en km: 3km, 5km, 8km, 12km, 20km
+    this.maxAttempts = 5;
+    this.searchDelay = 2000; // 2 segundos entre búsquedas
+  }
+
+  // Calcular distancia entre dos puntos (Haversine formula)
+  calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return distance; // Distancia en km
+  }
+
+  toRad(deg) {
+    return deg * (Math.PI / 180);
+  }
+
+  // Buscar conductores con radio incremental
+  async searchDriversIncremental(userLocation, onProgress) {
+    console.log('🔍 Iniciando búsqueda incremental de conductores...');
+    
+    for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
+      const radius = this.searchRadii[attempt];
+      
+      // Callback de progreso
+      if (onProgress) {
+        onProgress({
+          attempt: attempt + 1,
+          totalAttempts: this.maxAttempts,
+          radius,
+          message: `Buscando en ${radius}km...`
+        });
+      }
+
+      console.log(`📡 Intento ${attempt + 1}/${this.maxAttempts} - Radio: ${radius}km`);
+      
+      // Buscar conductores en este radio
+      const drivers = await this.searchDriversInRadius(userLocation, radius);
+      
+      if (drivers && drivers.length > 0) {
+        // Ordenar por distancia
+        const sortedDrivers = this.sortDriversByDistance(drivers, userLocation);
+        
+        console.log(`✅ ${drivers.length} conductor(es) encontrado(s) en ${radius}km`);
+        return {
+          success: true,
+          driver: sortedDrivers[0], // El más cercano
+          allDrivers: sortedDrivers,
+          searchRadius: radius,
+          attempts: attempt + 1
+        };
+      }
+      
+      // Esperar antes del siguiente intento
+      if (attempt < this.maxAttempts - 1) {
+        await this.delay(this.searchDelay);
+      }
+    }
+    
+    console.log('❌ No se encontraron conductores después de todos los intentos');
+    return {
+      success: false,
+      message: 'No hay conductores disponibles en tu área',
+      maxRadiusSearched: this.searchRadii[this.maxAttempts - 1]
+    };
+  }
+
+  // Buscar conductores en un radio específico
+  async searchDriversInRadius(userLocation, radiusKm) {
+    // Simular conductores para pruebas
+    // En producción, esto debería ser una llamada a tu API
+    const mockDrivers = this.generateMockDrivers(userLocation, radiusKm);
+    
+    // Filtrar solo los que están dentro del radio
+    const driversInRadius = mockDrivers.filter(driver => {
+      const distance = this.calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        driver.location.latitude,
+        driver.location.longitude
+      );
+      return distance <= radiusKm;
+    });
+    
+    return driversInRadius;
+  }
+
+  // Ordenar conductores por distancia
+  sortDriversByDistance(drivers, userLocation) {
+    return drivers.sort((a, b) => {
+      const distA = this.calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        a.location.latitude,
+        a.location.longitude
+      );
+      const distB = this.calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        b.location.latitude,
+        b.location.longitude
+      );
+      return distA - distB;
+    });
+  }
+
+  // Generar conductores de prueba
+  generateMockDrivers(userLocation, maxRadius) {
+    const drivers = [
+      {
+        id: 'driver_001',
+        name: 'Carlos Mendoza',
+        vehicle: {
+          make: 'Honda',
+          model: 'Civic',
+          plate: 'A123456',
+          color: 'Gris'
+        },
+        rating: 4.8,
+        trips: 1250,
+        location: {
+          latitude: userLocation.latitude + 0.008, // ~0.9km
+          longitude: userLocation.longitude + 0.005
+        },
+        status: 'available',
+        eta: 3
+      },
+      {
+        id: 'driver_002',
+        name: 'María Rodríguez',
+        vehicle: {
+          make: 'Toyota',
+          model: 'Corolla',
+          plate: 'B789012',
+          color: 'Blanco'
+        },
+        rating: 4.9,
+        trips: 2100,
+        location: {
+          latitude: userLocation.latitude + 0.025, // ~2.8km
+          longitude: userLocation.longitude - 0.015
+        },
+        status: 'available',
+        eta: 5
+      },
+      {
+        id: 'driver_003',
+        name: 'Juan Pérez',
+        vehicle: {
+          make: 'Hyundai',
+          model: 'Elantra',
+          plate: 'C345678',
+          color: 'Negro'
+        },
+        rating: 4.7,
+        trips: 890,
+        location: {
+          latitude: userLocation.latitude - 0.035, // ~3.9km
+          longitude: userLocation.longitude + 0.020
+        },
+        status: 'available',
+        eta: 7
+      },
+      {
+        id: 'driver_004',
+        name: 'Ana García',
+        vehicle: {
+          make: 'Nissan',
+          model: 'Sentra',
+          plate: 'D901234',
+          color: 'Azul'
+        },
+        rating: 4.6,
+        trips: 650,
+        location: {
+          latitude: userLocation.latitude + 0.055, // ~6.2km
+          longitude: userLocation.longitude - 0.030
+        },
+        status: 'available',
+        eta: 10
+      },
+      {
+        id: 'driver_005',
+        name: 'Roberto Díaz',
+        vehicle: {
+          make: 'Kia',
+          model: 'Forte',
+          plate: 'E567890',
+          color: 'Rojo'
+        },
+        rating: 4.5,
+        trips: 430,
+        location: {
+          latitude: userLocation.latitude - 0.080, // ~9km
+          longitude: userLocation.longitude + 0.045
+        },
+        status: 'available',
+        eta: 12
+      }
+    ];
+
+    // Agregar distancia calculada a cada conductor
+    return drivers.map(driver => ({
+      ...driver,
+      distance: this.calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        driver.location.latitude,
+        driver.location.longitude
+      )
+    }));
+  }
+
+  // Función de delay
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Estimar tiempo de llegada basado en distancia
+  estimateETA(distanceKm) {
+    // Estimación: 30 km/h velocidad promedio en ciudad
+    const avgSpeed = 30;
+    const timeHours = distanceKm / avgSpeed;
+    const timeMinutes = Math.ceil(timeHours * 60);
+    return Math.max(2, timeMinutes); // Mínimo 2 minutos
+  }
+}
+
+export default new DriverSearchService();

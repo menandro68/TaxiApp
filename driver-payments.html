@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagos a Conductores - TaxiApp</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .summary-section {
+            background: #f8f9fa;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .summary-label {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .summary-subtitle {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .filters-section {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .drivers-table {
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .driver-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .driver-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .driver-details h4 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .driver-details p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .amount {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .amount.positive {
+            color: #28a745;
+        }
+
+        .amount.negative {
+            color: #dc3545;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-processing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .payment-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .summary-row:last-child {
+            margin-bottom: 0;
+            padding-top: 10px;
+            border-top: 2px solid #dee2e6;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-money-check-alt"></i>
+                Pagos a Conductores
+            </h1>
+            <div class="header-actions">
+                <button class="btn btn-warning" onclick="exportReport()">
+                    <i class="fas fa-file-excel"></i>
+                    Exportar
+                </button>
+                <button class="btn btn-success" onclick="processSelectedPayments()">
+                    <i class="fas fa-paper-plane"></i>
+                    Pagar Seleccionados
+                </button>
+            </div>
+        </div>
+
+        <div class="summary-section">
+            <div class="summary-card">
+                <div class="summary-label">Total a Pagar</div>
+                <div class="summary-value" id="total-to-pay">RD$0</div>
+                <div class="summary-subtitle">Todos los conductores</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Conductores</div>
+                <div class="summary-value" id="total-drivers">0</div>
+                <div class="summary-subtitle">Con saldo disponible</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Seleccionados</div>
+                <div class="summary-value" id="selected-amount">RD$0</div>
+                <div class="summary-subtitle"><span id="selected-count">0</span> conductores</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Último Pago</div>
+                <div class="summary-value" id="last-payment-date">Hoy</div>
+                <div class="summary-subtitle">Procesado exitosamente</div>
+            </div>
+        </div>
+
+        <div class="filters-section">
+            <div class="filter-group">
+                <label>Estado:</label>
+                <select id="status-filter" onchange="filterDrivers()">
+                    <option value="all">Todos</option>
+                    <option value="pending">Pendientes</option>
+                    <option value="processing">Procesando</option>
+                    <option value="completed">Completados</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Mínimo:</label>
+                <input type="number" id="min-amount" placeholder="RD$" onchange="filterDrivers()">
+            </div>
+            <div class="filter-group">
+                <label>Buscar:</label>
+                <input type="text" id="search-driver" placeholder="Nombre o teléfono..." onkeyup="filterDrivers()">
+            </div>
+            <button class="btn btn-primary" onclick="selectAll()">
+                <i class="fas fa-check-square"></i>
+                Seleccionar Todo
+            </button>
+        </div>
+
+        <div class="drivers-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll()">
+                            </div>
+                        </th>
+                        <th>Conductor</th>
+                        <th>Viajes</th>
+                        <th>Ganancias</th>
+                        <th>Comisión</th>
+                        <th>A Pagar</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="drivers-list">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Pago -->
+    <div id="payment-modal" class="payment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Pago</h2>
+            </div>
+            <div id="payment-details">
+                <!-- Se llenará dinámicamente -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="confirmPayment()">Confirmar y Pagar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado global
+        let driversData = [];
+        let selectedDrivers = new Set();
+        let paymentQueue = [];
+
+        // Inicializar al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDriversData();
+            updateSummary();
+        });
+
+        // Cargar datos de conductores
+        function loadDriversData() {
+            // Simular datos de conductores con pagos pendientes
+            driversData = [
+                {
+                    id: 1,
+                    name: 'Juan Pérez',
+                    phone: '809-555-0001',
+                    email: 'juan@email.com',
+                    trips: 45,
+                    earnings: 12500,
+                    commission: 1250,
+                    toPay: 11250,
+                    status: 'pending',
+                    lastPayment: '2025-09-20'
+                },
+                {
+                    id: 2,
+                    name: 'María García',
+                    phone: '809-555-0002',
+                    email: 'maria@email.com',
+                    trips: 38,
+                    earnings: 9800,
+                    commission: 980,
+                    toPay: 8820,
+                    status: 'pending',
+                    lastPayment: '2025-09-20'
+                },
+                {
+                    id: 3,
+                    name: 'Carlos López',
+                    phone: '809-555-0003',
+                    email: 'carlos@email.com',
+                    trips: 52,
+                    earnings: 15600,
+                    commission: 1560,
+                    toPay: 14040,
+                    status: 'pending',
+                    lastPayment: '2025-09-19'
+                },
+                {
+                    id: 4,
+                    name: 'Ana Martínez',
+                    phone: '809-555-0004',
+                    email: 'ana@email.com',
+                    trips: 29,
+                    earnings: 7250,
+                    commission: 725,
+                    toPay: 6525,
+                    status: 'pending',
+                    lastPayment: '2025-09-21'
+                },
+                {
+                    id: 5,
+                    name: 'Pedro Sánchez',
+                    phone: '809-555-0005',
+                    email: 'pedro@email.com',
+                    trips: 41,
+                    earnings: 10300,
+                    commission: 1030,
+                    toPay: 9270,
+                    status: 'processing',
+                    lastPayment: '2025-09-20'
+                },
+                {
+                    id: 6,
+                    name: 'Laura Torres',
+                    phone: '809-555-0006',
+                    email: 'laura@email.com',
+                    trips: 33,
+                    earnings: 8900,
+                    commission: 890,
+                    toPay: 8010,
+                    status: 'pending',
+                    lastPayment: '2025-09-18'
+                },
+                {
+                    id: 7,
+                    name: 'Roberto Silva',
+                    phone: '809-555-0007',
+                    email: 'roberto@email.com',
+                    trips: 48,
+                    earnings: 13200,
+                    commission: 1320,
+                    toPay: 11880,
+                    status: 'completed',
+                    lastPayment: '2025-09-22'
+                },
+                {
+                    id: 8,
+                    name: 'Carmen Ruiz',
+                    phone: '809-555-0008',
+                    email: 'carmen@email.com',
+                    trips: 36,
+                    earnings: 9450,
+                    commission: 945,
+                    toPay: 8505,
+                    status: 'pending',
+                    lastPayment: '2025-09-19'
+                }
+            ];
+            
+            displayDrivers(driversData);
+        }
+
+        // Mostrar conductores en la tabla
+        function displayDrivers(drivers) {
+            const tbody = document.getElementById('drivers-list');
+            
+            if (drivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="fas fa-users-slash"></i>
+                            <h3>No hay conductores con pagos pendientes</h3>
+                            <p>Todos los pagos están al día</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = drivers.map(driver => {
+                const isSelected = selectedDrivers.has(driver.id);
+                const statusClass = `status-${driver.status}`;
+                const statusText = {
+                    'pending': 'Pendiente',
+                    'processing': 'Procesando',
+                    'completed': 'Completado',
+                    'failed': 'Fallido'
+                }[driver.status];
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" 
+                                       id="check-${driver.id}" 
+                                       ${isSelected ? 'checked' : ''}
+                                       ${driver.status !== 'pending' ? 'disabled' : ''}
+                                       onchange="toggleDriver(${driver.id})">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="driver-info">
+                                <div class="driver-avatar">
+                                    ${driver.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+                                </div>
+                                <div class="driver-details">
+                                    <h4>${driver.name}</h4>
+                                    <p>${driver.phone}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>${driver.trips}</strong></td>
+                        <td class="amount">RD$${driver.earnings.toLocaleString()}</td>
+                        <td class="amount negative">-RD$${driver.commission.toLocaleString()}</td>
+                        <td class="amount positive">RD$${driver.toPay.toLocaleString()}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                ${driver.status === 'pending' ? `
+                                    <button class="action-btn btn-success" onclick="payDriver(${driver.id})">
+                                        <i class="fas fa-money-bill"></i> Pagar
+                                    </button>
+                                ` : ''}
+                                <button class="action-btn btn-primary" onclick="viewDetails(${driver.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            updateSummary();
+        }
+
+        // Actualizar resumen
+        function updateSummary() {
+            const pendingDrivers = driversData.filter(d => d.status === 'pending');
+            const totalToPay = pendingDrivers.reduce((sum, d) => sum + d.toPay, 0);
+            const selectedAmount = Array.from(selectedDrivers).reduce((sum, id) => {
+                const driver = driversData.find(d => d.id === id);
+                return sum + (driver ? driver.toPay : 0);
+            }, 0);
+            
+            document.getElementById('total-to-pay').textContent = `RD$${totalToPay.toLocaleString()}`;
+            document.getElementById('total-drivers').textContent = pendingDrivers.length;
+            document.getElementById('selected-amount').textContent = `RD$${selectedAmount.toLocaleString()}`;
+            document.getElementById('selected-count').textContent = selectedDrivers.size;
+        }
+
+        // Toggle selección de conductor
+        function toggleDriver(driverId) {
+            if (selectedDrivers.has(driverId)) {
+                selectedDrivers.delete(driverId);
+            } else {
+                const driver = driversData.find(d => d.id === driverId);
+                if (driver && driver.status === 'pending') {
+                    selectedDrivers.add(driverId);
+                }
+            }
+            updateSummary();
+        }
+
+        // Seleccionar todos
+        function selectAll() {
+            const pendingDrivers = driversData.filter(d => d.status === 'pending');
+            pendingDrivers.forEach(driver => {
+                selectedDrivers.add(driver.id);
+                const checkbox = document.getElementById(`check-${driver.id}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            updateSummary();
+        }
+
+        // Toggle seleccionar todos
+        function toggleSelectAll() {
+            const checkbox = document.getElementById('select-all-checkbox');
+            if (checkbox.checked) {
+                selectAll();
+            } else {
+                selectedDrivers.clear();
+                driversData.forEach(driver => {
+                    const cb = document.getElementById(`check-${driver.id}`);
+                    if (cb) cb.checked = false;
+                });
+                updateSummary();
+            }
+        }
+
+        // Pagar conductor individual
+        function payDriver(driverId) {
+            const driver = driversData.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            showPaymentModal([driver]);
+        }
+
+        // Procesar pagos seleccionados
+        function processSelectedPayments() {
+            if (selectedDrivers.size === 0) {
+                alert('Por favor selecciona al menos un conductor para pagar');
+                return;
+            }
+            
+            const drivers = Array.from(selectedDrivers).map(id => 
+                driversData.find(d => d.id === id)
+            ).filter(d => d && d.status === 'pending');
+            
+            if (drivers.length === 0) {
+                alert('No hay conductores pendientes seleccionados');
+                return;
+            }
+            
+            showPaymentModal(drivers);
+        }
+
+        // Mostrar modal de pago
+        function showPaymentModal(drivers) {
+            const modal = document.getElementById('payment-modal');
+            const details = document.getElementById('payment-details');
+            
+            const totalAmount = drivers.reduce((sum, d) => sum + d.toPay, 0);
+            const totalCommission = drivers.reduce((sum, d) => sum + d.commission, 0);
+            const totalEarnings = drivers.reduce((sum, d) => sum + d.earnings, 0);
+            
+            details.innerHTML = `
+                <div class="payment-summary">
+                    <h3>Resumen de Pago</h3>
+                    <div class="summary-row">
+                        <span>Conductores:</span>
+                        <span><strong>${drivers.length}</strong></span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Total Ganancias:</span>
+                        <span>RD$${totalEarnings.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Comisiones (10%):</span>
+                        <span style="color: #dc3545;">-RD$${totalCommission.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Total a Pagar:</span>
+                        <span style="color: #28a745;">RD$${totalAmount.toLocaleString()}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Método de Pago:</label>
+                    <select id="payment-method" style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px;">
+                        <option value="transfer">Transferencia Bancaria</option>
+                        <option value="cash">Efectivo</option>
+                        <option value="wallet">Billetera Digital</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Notas (opcional):</label>
+                    <textarea id="payment-notes" 
+                              style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 6px; resize: vertical;"
+                              rows="3"
+                              placeholder="Agregar notas sobre este pago..."></textarea>
+                </div>
+            `;
+            
+            // Guardar drivers para procesar
+            paymentQueue = drivers;
+            
+            modal.style.display = 'flex';
+        }
+
+        // Cerrar modal
+        function closeModal() {
+            document.getElementById('payment-modal').style.display = 'none';
+            paymentQueue = [];
+        }
+
+        // Confirmar pago
+        function confirmPayment() {
+            if (paymentQueue.length === 0) return;
+            
+            const method = document.getElementById('payment-method').value;
+            const notes = document.getElementById('payment-notes').value;
+            
+            // Simular procesamiento
+            paymentQueue.forEach(driver => {
+                const driverData = driversData.find(d => d.id === driver.id);
+                if (driverData) {
+                    driverData.status = 'processing';
+                    selectedDrivers.delete(driver.id);
+                }
+            });
+            
+            // Actualizar vista
+            displayDrivers(driversData);
+            closeModal();
+            
+            // Simular confirmación después de 2 segundos
+            setTimeout(() => {
+                paymentQueue.forEach(driver => {
+                    const driverData = driversData.find(d => d.id === driver.id);
+                    if (driverData) {
+                        driverData.status = 'completed';
+                        driverData.lastPayment = new Date().toISOString().split('T')[0];
+                    }
+                });
+                
+                displayDrivers(driversData);
+                
+                alert(`✅ Pago exitoso!\n\n${paymentQueue.length} conductor(es) pagado(s)\nMétodo: ${method}\n\nSe han enviado los comprobantes por email.`);
+                
+                paymentQueue = [];
+            }, 2000);
+        }
+
+        // Filtrar conductores
+        function filterDrivers() {
+            const statusFilter = document.getElementById('status-filter').value;
+            const minAmount = parseFloat(document.getElementById('min-amount').value) || 0;
+            const searchTerm = document.getElementById('search-driver').value.toLowerCase();
+            
+            let filtered = driversData;
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(d => d.status === statusFilter);
+            }
+            
+            if (minAmount > 0) {
+                filtered = filtered.filter(d => d.toPay >= minAmount);
+            }
+            
+            if (searchTerm) {
+                filtered = filtered.filter(d => 
+                    d.name.toLowerCase().includes(searchTerm) ||
+                    d.phone.includes(searchTerm)
+                );
+            }
+            
+            displayDrivers(filtered);
+        }
+
+        // Ver detalles
+        function viewDetails(driverId) {
+            const driver = driversData.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            alert(`📊 Detalles del Conductor\n\n` +
+                  `Nombre: ${driver.name}\n` +
+                  `Teléfono: ${driver.phone}\n` +
+                  `Email: ${driver.email}\n` +
+                  `Viajes: ${driver.trips}\n` +
+                  `Ganancias: RD$${driver.earnings.toLocaleString()}\n` +
+                  `Comisión: RD$${driver.commission.toLocaleString()}\n` +
+                  `A Pagar: RD$${driver.toPay.toLocaleString()}\n` +
+                  `Último Pago: ${driver.lastPayment}`);
+        }
+
+        // Exportar reporte
+        function exportReport() {
+            alert('📊 Generando reporte Excel...\n\nEl archivo se descargará en breve.');
+        }
+
+        // Cerrar modal con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+﻿{
+  "login": {
+    "title": "Iniciar sesión",
+    "button": "Iniciar sesión",
+    "noAccount": "¿No tienes cuenta?",
+    "register": "Regístrate"
+  },
+  "common": {
+    "email": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Tu contraseña"
+  },
+  "welcome": "Bienvenido",
+  "user": "Usuario",
+  "safeAndFastRide": "Viajes seguros y rápidos",
+  "whereToGo": "¿A dónde vamos?",
+  "requestRide": "Solicitar viaje",
+  "economy": "Económico",
+  "comfort": "Confort",
+  "premium": "Premium"
+}

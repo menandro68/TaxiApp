@@ -1,0 +1,2797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - TaxiApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1e293b, #334155);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #475569;
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+
+        .sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            padding: 0 20px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #94a3b8;
+            letter-spacing: 0.05em;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #e2e8f0;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-left-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            font-size: 1.125rem;
+        }
+
+        .nav-text {
+            font-weight: 500;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .menu-toggle:hover {
+            background: #f3f4f6;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 300px;
+            padding: 8px 16px 8px 40px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+        }
+
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .notification-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 24px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon.blue {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .stat-icon.green {
+            background: #dcfce7;
+            color: #22c55e;
+        }
+
+        .stat-icon.yellow {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .stat-icon.red {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-change.positive {
+            color: #22c55e;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 32px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .chart-filters {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .filter-btn:hover:not(.active) {
+            background: #f9fafb;
+        }
+
+        /* Data Table */
+        .data-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f9fafb;
+            padding: 12px 24px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .data-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+
+        .data-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn.edit {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .action-btn.delete {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-btn.view {
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 24px 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+        }
+
+        .modal-footer {
+            padding: 0 24px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 3000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: #22c55e;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.info {
+            background: #3b82f6;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-280px);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .search-input {
+                width: 200px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-bar-right {
+                display: none;
+            }
+        }
+    </style>
+     
+     <!-- Socket.IO para notificaciones en tiempo real -->
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.5.4/dist/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+    <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">TaxiApp Rondon</div>
+                <div class="sidebar-subtitle">Panel de Control</div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Principal</div>
+                    <a class="nav-item active" data-screen="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a class="nav-item" data-screen="analytics">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Analíticas</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Gestión</div>
+                    <a class="nav-item" data-screen="drivers">
+                        <span class="nav-icon">🚗</span>
+                        <span class="nav-text">Conductores</span>
+                        <span class="nav-badge" id="driversBadge">12</span>
+                    </a>
+                    <a class="nav-item" data-screen="users">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Usuarios</span>
+                    </a>
+                    <a class="nav-item" data-screen="trips">
+                        <span class="nav-icon">🗺️</span>
+                        <span class="nav-text">Viajes</span>
+                    </a>
+                    <a class="nav-item" data-screen="vehicles">
+                        <span class="nav-icon">🚙</span>
+                        <span class="nav-text">Vehículos</span>
+                    </a>
+                     
+                    <a class="nav-item" onclick="window.location.href='admins.html'" id="adminMenu">
+                      <span class="nav-icon">👥</span>
+                        <span class="nav-text">Administradores</span>
+                     </a>
+
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Finanzas</div>
+                    <a class="nav-item" data-screen="earnings">
+                        <span class="nav-icon">💰</span>
+                        <span class="nav-text">Ganancias</span>
+                    </a>
+                    <a class="nav-item" data-screen="payments">
+                        <span class="nav-icon">💳</span>
+                        <span class="nav-text">Pagos</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Sistema</div>
+                    <a class="nav-item" data-screen="settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Configuración</span>
+                    </a>
+                    <a class="nav-item" data-screen="support">
+                        <span class="nav-icon">🎧</span>
+                        <span class="nav-text">Soporte</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                </div>
+                
+                <div class="top-bar-right">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" placeholder="Buscar..." id="searchInput">
+                    </div>
+                    
+                    <button class="notification-btn" onclick="showNotifications()">
+                        <span>🔔</span>
+                        <span class="notification-badge" id="notificationBadge"></span>
+                    </button>
+                    
+                  <div class="admin-avatar" onclick="logout()" style="cursor: pointer;" title="Cerrar Sesión">AD</div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Dashboard Screen -->
+                <div id="dashboard" class="screen active">
+                    <!-- Panel de Estados de Conductores en Tiempo Real -->
+                    <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <h3 style="margin: 0 0 16px 0; color: #1f2937;">🚦 Estados de Conductores en Tiempo Real</h3>
+                        <div id="driverStatusPanel" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                            <!-- Los conductores se cargarán aquí dinámicamente -->
+                        </div>
+                        <div style="margin-top: 12px; font-size: 0.875rem; color: #6b7280;">
+                            Actualización automática cada 10 segundos
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Grid -->
+                    <div class="stats-grid" id="statsGrid">
+                        <!-- Stats will be loaded dynamically -->
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h2 class="chart-title">Viajes por Día</h2>
+                            <div class="chart-filters">
+                                <button class="filter-btn active" onclick="changeChartPeriod('7days')">7 días</button>
+                                <button class="filter-btn" onclick="changeChartPeriod('30days')">30 días</button>
+                                <button class="filter-btn" onclick="changeChartPeriod('90days')">90 días</button>
+                            </div>
+                        </div>
+                        <canvas id="tripsChart" width="400" height="200"></canvas>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h2 class="table-title">Actividad Reciente</h2>
+                            <button class="btn btn-secondary" onclick="refreshActivity()">🔄 Actualizar</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Actividad</th>
+                                    <th>Usuario</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTableBody">
+                                <!-- Activity rows will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Drivers Screen -->
+                <div id="drivers" class="screen">
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h2 class="table-title">Gestión de Conductores</h2>
+                            <div class="table-actions">
+                                <button class="btn btn-secondary" onclick="exportDrivers()">📊 Exportar</button>
+                                <button class="btn btn-primary" onclick="openModal('driverModal')">+ Agregar Conductor</button>
+                            </div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Conductor</th>
+                                    <th>Vehículo</th>
+                                    <th>Calificación</th>
+                                    <th>Viajes</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driversTableBody">
+                                <!-- Driver rows will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Users Screen -->
+                <div id="users" class="screen">
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h2 class="table-title">Gestión de Usuarios</h2>
+                            <div class="table-actions">
+                                <button class="btn btn-secondary" onclick="exportUsers()">📊 Exportar</button>
+                                <button class="btn btn-primary" onclick="openModal('userModal')">+ Agregar Usuario</button>
+                            </div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Teléfono</th>
+                                    <th>Calificación</th>
+                                    <th>Viajes</th>
+                                    <th>Registrado</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- User rows will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Trips Screen -->
+                <div id="trips" class="screen">
+                    <div class="data-table-container">
+                        <div class="table-header">
+                            <h2 class="table-title">Gestión de Viajes</h2>
+                            <div class="table-actions">
+                                <button class="btn btn-secondary" onclick="exportTrips()">📊 Exportar</button>
+                                <select class="form-select" style="width: auto;" onchange="filterTrips(this.value)">
+                                    <option value="all">Todos los viajes</option>
+                                    <option value="active">Activos</option>
+                                    <option value="completed">Completados</option>
+                                    <option value="cancelled">Cancelados</option>
+                                </select>
+                            </div>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Pasajero</th>
+                                    <th>Conductor</th>
+                                    <th>Origen</th>
+                                    <th>Destino</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tripsTableBody">
+                                <!-- Trip rows will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Other screens would follow similar patterns -->
+                <div id="analytics" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando analíticas...
+                    </div>
+                </div>
+
+                <div id="vehicles" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando vehículos...
+                    </div>
+                </div>
+
+                <div id="earnings" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando ganancias...
+                    </div>
+                </div>
+
+                <div id="payments" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando pagos...
+                    </div>
+                </div>
+
+                <div id="settings" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando configuración...
+                    </div>
+                </div>
+
+                <div id="support" class="screen">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando soporte...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <!-- Driver Modal -->
+        <div class="modal-overlay" id="driverModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Agregar Conductor</h2>
+                    <button class="modal-close" onclick="closeModal('driverModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form id="driverForm">
+                        <div class="form-group">
+                            <label class="form-label">Nombre completo</label>
+                            <input type="text" class="form-input" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-input" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Licencia de conducir</label>
+                            <input type="text" class="form-input" name="license" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Marca del vehículo</label>
+                            <input type="text" class="form-input" name="vehicleMake" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo del vehículo</label>
+                            <input type="text" class="form-input" name="vehicleModel" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Año</label>
+                            <input type="number" class="form-input" name="vehicleYear" min="2010" max="2024" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Placa</label>
+                            <input type="text" class="form-input" name="vehiclePlate" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Color</label>
+                            <input type="text" class="form-input" name="vehicleColor" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="status">
+                                <option value="pending">Pendiente</option>
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('driverModal')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveDriver()">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Modal -->
+        <div class="modal-overlay" id="userModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Agregar Usuario</h2>
+                    <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="form-group">
+                            <label class="form-label">Nombre completo</label>
+                            <input type="text" class="form-input" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-input" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="status">
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                                <option value="suspended">Suspendido</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('userModal')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveUser()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // VERIFICACIÓN DE AUTENTICACIÓN
+(function checkAuth() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        // No hay token, redirigir al login
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // Mostrar info del admin en el avatar
+    const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+    if (adminData.username) {
+        const avatar = document.querySelector('.admin-avatar');
+        if (avatar) {
+            avatar.textContent = adminData.username.substring(0, 2).toUpperCase();
+            avatar.title = `Admin: ${adminData.username}`;
+        }
+    }
+})();
+
+// Función para cerrar sesión
+function logout() {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminData');
+    window.location.href = 'login.html';
+}
+
+        // CONFIGURACIÓN DE API REAL - AGREGADO PARA CONECTAR CON BACKEND
+const API_URL = 'http://localhost:3000/api';
+const USE_REAL_API = true;
+
+async function fetchAPI(endpoint, options = {}) {
+    if (!USE_REAL_API) return null;
+    try {
+        const response = await fetch(API_URL + endpoint, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+        if (!response.ok) throw new Error(`Error: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error('Error de API:', error);
+        return null;
+    }
+}
+
+// El resto del código original continúa aquí...
+        // ========================================
+        // ESTADO GLOBAL DE LA APLICACIÓN
+        // ========================================
+        
+        class AdminAppState {
+            constructor() {
+                this.currentScreen = 'dashboard';
+                this.stats = {};
+                this.drivers = [];
+                this.users = [];
+                this.trips = [];
+                this.activities = [];
+                this.notifications = [];
+                this.charts = {};
+                this.filters = {
+                    trips: 'all',
+                    dateRange: '7days'
+                };
+            }
+        }
+
+        const appState = new AdminAppState();
+
+        // ========================================
+        // SERVICIOS DE API (SIMULADOS)
+        // ========================================
+        
+        class AdminAPI {
+static async getStats() {
+    // Primero intentar con API real
+    const apiData = await fetchAPI('/admin/stats');
+    if (apiData) {
+        return {
+            activeDrivers: {
+                value: apiData.activeDrivers || apiData.totalDrivers || 0,
+                change: 12,
+                type: 'positive'
+            },
+            registeredUsers: {
+                value: apiData.totalUsers || 0,
+                change: 8,
+                type: 'positive'
+            },
+            completedTrips: {
+                value: apiData.totalTrips || 0,
+                change: 15,
+                type: 'positive'
+            },
+            monthlyRevenue: {
+                value: apiData.totalRevenue || 0,
+                change: 22,
+                type: 'positive'
+            }
+        };
+    }
+    
+    // Si falla, usar datos simulados
+    await this.delay(500);
+    return {
+        activeDrivers: { value: 247, change: 12, type: 'positive' },
+        registeredUsers: { value: 1842, change: 8, type: 'positive' },
+        completedTrips: { value: 3456, change: 15, type: 'positive' },
+        monthlyRevenue: { value: 125430, change: 22, type: 'positive' }
+    };
+}
+
+           static async getDrivers() {
+    // Primero intentar con API real
+    const apiData = await fetchAPI('/drivers');
+    if (apiData && apiData.drivers) {
+        return apiData.drivers.map(driver => ({
+            id: driver.id,
+            name: driver.name,
+            email: driver.email,
+            phone: driver.phone,
+            license: driver.licenseNumber || 'N/A',
+            vehicle: {
+                make: driver.vehicleMake || 'Sin vehículo',
+                model: driver.vehicleModel || '',
+                year: driver.vehicleYear || 2020,
+                plate: driver.vehiclePlate || 'N/A',
+                color: driver.vehicleColor || 'N/A'
+            },
+            rating: driver.rating || 5.0,
+            totalTrips: driver.totalTrips || 0,
+            status: driver.status || 'pending',
+            joinDate: driver.createdAt || new Date().toISOString()
+        }));
+    }
+    
+    // Si falla, usar datos simulados
+    await this.delay(300);
+    return [/* datos simulados anteriores */];
+}
+
+            static async getUsers() {
+    // Primero intentar con API real
+    const apiData = await fetchAPI('/users');
+    if (apiData && apiData.users) {
+        return apiData.users.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            rating: user.rating || 5.0,
+            totalTrips: user.totalTrips || 0,
+            joinDate: user.createdAt || new Date().toISOString(),
+            status: user.status || 'active'
+        }));
+    }
+    
+    // Si falla, usar datos simulados
+    await this.delay(300);
+    return [/* datos simulados anteriores */];
+}
+
+            static async getTrips() {
+    // Primero intentar con API real
+    const apiData = await fetchAPI('/trips');
+    if (apiData && apiData.trips) {
+        return apiData.trips.map(trip => ({
+            id: trip.id,
+            passenger: trip.userName || 'Usuario',
+            driver: trip.driverName || 'Conductor',
+            origin: trip.pickupLocation || 'Origen',
+            destination: trip.dropoffLocation || 'Destino',
+            price: trip.fare || 0,
+            status: trip.status || 'pending',
+            date: trip.createdAt || new Date().toISOString(),
+            duration: trip.duration || 'N/A',
+            distance: trip.distance || 'N/A'
+        }));
+    }
+    
+    // Si falla, usar datos simulados
+    await this.delay(400);
+    return [/* datos simulados anteriores */];
+}
+
+            static async getActivities() {
+                await this.delay(200);
+                return [
+                    {
+                        id: 1,
+                        time: '15:32',
+                        activity: 'Viaje completado',
+                        user: 'María González',
+                        status: 'completed',
+                        details: 'Viaje de Sambil a Zona Colonial'
+                    },
+                    {
+                        id: 2,
+                        time: '15:28',
+                        activity: 'Nuevo conductor registrado',
+                        user: 'Carlos Rodríguez',
+                        status: 'pending',
+                        details: 'Documentos en revisión'
+                    },
+                    {
+                        id: 3,
+                        time: '15:25',
+                        activity: 'Viaje iniciado',
+                        user: 'Juan Pérez',
+                        status: 'active',
+                        details: 'Rumbo al aeropuerto'
+                    },
+                    {
+                        id: 4,
+                        time: '15:20',
+                        activity: 'Usuario registrado',
+                        user: 'Carmen Silva',
+                        status: 'completed',
+                        details: 'Nuevo usuario en la plataforma'
+                    }
+                ];
+            }
+
+            static async getChartData(period = '7days') {
+                await this.delay(300);
+                const data = {
+                    '7days': {
+                        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                        values: [45, 52, 48, 61, 55, 67, 58]
+                    },
+                    '30days': {
+                        labels: Array.from({length: 30}, (_, i) => i + 1),
+                        values: Array.from({length: 30}, () => Math.floor(Math.random() * 100) + 20)
+                    },
+                    '90days': {
+                        labels: Array.from({length: 90}, (_, i) => i + 1),
+                        values: Array.from({length: 90}, () => Math.floor(Math.random() * 120) + 30)
+                    }
+                };
+                return data[period];
+            }
+
+            static delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            static async saveDriver(driverData) {
+                await this.delay(500);
+                const newDriver = {
+                    id: Date.now(),
+                    ...driverData,
+                    rating: 5.0,
+                    totalTrips: 0,
+                    joinDate: new Date().toISOString().split('T')[0]
+                };
+                return newDriver;
+            }
+
+            static async saveUser(userData) {
+                await this.delay(500);
+                const newUser = {
+                    id: Date.now(),
+                    ...userData,
+                    rating: 5.0,
+                    totalTrips: 0,
+                    joinDate: new Date().toISOString().split('T')[0]
+                };
+                return newUser;
+            }
+        }
+
+        // ========================================
+        // SISTEMA DE NOTIFICACIONES
+        // ========================================
+        
+        class NotificationService {
+            static show(message, type = 'info', duration = 3000) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Mostrar notificación
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 100);
+                
+                // Ocultar y remover notificación
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, duration);
+            }
+
+            static success(message) {
+                this.show(message, 'success');
+            }
+
+            static error(message) {
+                this.show(message, 'error');
+            }
+
+            static info(message) {
+                this.show(message, 'info');
+            }
+        }
+
+        // ========================================
+        // GESTIÓN DE PANTALLAS Y NAVEGACIÓN
+        // ========================================
+        
+        function switchScreen(screenName) {
+            // Actualizar estado
+            appState.currentScreen = screenName;
+            
+            // Ocultar todas las pantallas
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            // Mostrar pantalla seleccionada
+            document.getElementById(screenName).classList.add('active');
+            
+            // Actualizar navegación
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-screen="${screenName}"]`).classList.add('active');
+            
+            // Actualizar título
+            const titles = {
+                dashboard: 'Dashboard',
+                analytics: 'Analíticas',
+                drivers: 'Conductores',
+                users: 'Usuarios',
+                trips: 'Viajes',
+                vehicles: 'Vehículos',
+                earnings: 'Ganancias',
+                payments: 'Pagos',
+                settings: 'Configuración',
+                support: 'Soporte'
+            };
+            document.getElementById('pageTitle').textContent = titles[screenName] || 'Panel de Control';
+            
+            // Cargar datos específicos de la pantalla
+            loadScreenData(screenName);
+        }
+
+        async function loadScreenData(screenName) {
+            try {
+                switch (screenName) {
+                    case 'dashboard':
+                        await loadDashboard();
+                        break;
+                    case 'drivers':
+                        await loadDrivers();
+                        break;
+                    case 'users':
+                        await loadUsers();
+                        break;
+                    case 'trips':
+                        await loadTrips();
+                        break;
+                    default:
+                        console.log(`Loading data for ${screenName}...`);
+                }
+            } catch (error) {
+                console.error(`Error loading ${screenName}:`, error);
+                NotificationService.error(`Error cargando ${screenName}`);
+            }
+        }
+
+        // ========================================
+        // CARGA DE DATOS DEL DASHBOARD
+        // ========================================
+        
+           // NUEVO: Función para actualizar métricas en tiempo real
+async function updateDashboardMetrics() {
+    try {
+        const response = await fetch('http://localhost:3000/api/admin/stats');
+        const data = await response.json();
+        
+        // Buscar y actualizar cada métrica
+        const driverCard = document.querySelector('[data-metric="drivers"]');
+        const userCard = document.querySelector('[data-metric="users"]');
+        const tripCard = document.querySelector('[data-metric="trips"]');
+        const revenueCard = document.querySelector('[data-metric="revenue"]');
+        
+        if (driverCard) {
+            driverCard.querySelector('.metric-value').textContent = data.totalDrivers || 0;
+        }
+        if (userCard) {
+            userCard.querySelector('.metric-value').textContent = data.totalUsers || 0;
+        }
+        if (tripCard) {
+            tripCard.querySelector('.metric-value').textContent = data.totalTrips || 0;
+        }
+        if (revenueCard) {
+            revenueCard.querySelector('.metric-value').textContent = 
+                `RD$${(data.totalRevenue || 0).toLocaleString()}`;
+        }
+        
+        console.log('📊 Dashboard actualizado:', new Date().toLocaleTimeString());
+    } catch (error) {
+        console.error('Error actualizando dashboard:', error);
+    }
+}
+// Actualizar cada 5 segundos
+setInterval(updateDashboardMetrics, 5000);
+
+// Actualizar cada 5 segundos
+setInterval(updateDashboardMetrics, 5000);
+
+// Función para actualizar posiciones y estados de conductores
+async function updateDriverPositions() {
+    try {
+        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar contador de conductores activos
+            const activeCount = data.drivers.length;
+            console.log(`🚗 Conductores activos: ${activeCount}`);
+            
+            // Actualizar panel visual de estados
+            const panel = document.getElementById('driverStatusPanel');
+            if (panel) {
+                panel.innerHTML = data.drivers.map(driver => `
+                    <div style="
+                        padding: 12px;
+                        border-radius: 8px;
+                        border: 1px solid #e5e7eb;
+                        background: ${getStatusColor(driver.status)};
+                        transition: all 0.3s;
+                    ">
+                        <div style="font-weight: 600; color: #1f2937;">
+                            ${driver.name}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
+                            ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
+                        </div>
+                        <div style="
+                            display: inline-block;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 0.75rem;
+                            font-weight: 600;
+                            background: white;
+                            color: ${getStatusTextColor(driver.status)};
+                            margin-top: 8px;
+                        ">
+                            ${getStatusLabel(driver.status)}
+                        </div>
+                        ${driver.status === 'pending' ? `
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                <button onclick="approveDriver(${driver.id})" style="
+                                    flex: 1;
+                                    background: #22c55e;
+                                    color: white;
+                                    border: none;
+                                    padding: 6px 12px;
+                                    border-radius: 6px;
+                                    cursor: pointer;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                ">✓ Aprobar</button>
+                                <button onclick="rejectDriver(${driver.id})" style="
+                                    flex: 1;
+                                    background: #ef4444;
+                                    color: white;
+                                    border: none;
+                                    padding: 6px 12px;
+                                    border-radius: 6px;
+                                    cursor: pointer;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                ">✗ Rechazar</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            // Mostrar info en consola
+            data.drivers.forEach(driver => {
+                console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
+            });
+        }
+    } catch (error) {
+        console.error('Error obteniendo posiciones:', error);
+    }
+}
+
+// Funciones auxiliares para colores y etiquetas
+function getStatusColor(status) {
+    const colors = {
+        'online': '#dcfce7',  // Verde claro
+        'busy': '#fef3c7',    // Amarillo claro
+        'offline': '#f3f4f6', // Gris claro
+        'inactive': '#fee2e2' // Rojo claro
+    };
+    return colors[status] || '#f3f4f6';
+}
+
+function getStatusTextColor(status) {
+    const colors = {
+        'online': '#166534',   // Verde oscuro
+        'busy': '#92400e',     // Amarillo oscuro
+        'offline': '#6b7280',  // Gris
+        'inactive': '#991b1b'  // Rojo oscuro
+    };
+    return colors[status] || '#6b7280';
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'online': '🟢 En línea',
+        'busy': '🟡 Ocupado',
+        'offline': '⚫ Desconectado',
+        'inactive': '🔴 Inactivo',
+        'active': '🟢 Activo',
+        'pending': '🟠 Pendiente'
+    };
+    return labels[status] || status;
+}
+
+// Actualizar posiciones cada 10 segundos
+updateDriverPositions();
+setInterval(updateDriverPositions, 10000);
+
+// ==========================================
+// // ==========================================
+// FUNCIONES DE APROBACIÓN/RECHAZO DE CONDUCTORES
+// ==========================================
+
+async function approveDriver(driverId) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'active' })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            NotificationService.success(`Conductor ${driverId} aprobado exitosamente`);
+            updateDriverPositions(); // Actualizar panel
+        } else {
+            NotificationService.error('Error al aprobar conductor');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        NotificationService.error('Error al aprobar conductor');
+    }
+}
+
+async function rejectDriver(driverId) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'suspended' })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            NotificationService.error(`Conductor ${driverId} rechazado`);
+            updateDriverPositions(); // Actualizar panel
+        } else {
+            NotificationService.error('Error al rechazar conductor');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        NotificationService.error('Error al rechazar conductor');
+    }
+}
+
+// Nueva función para cambiar estado desde el selector
+async function changeDriverStatus(driverId, newStatus) {
+    if (!newStatus) return; // Si no se seleccionó un estado válido
+    
+    try {
+        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const statusMessages = {
+                'active': 'activado',
+                'inactive': 'inactivado',
+                'suspended': 'suspendido',
+                'pending': 'marcado como pendiente'
+            };
+            NotificationService.success(`Conductor ${driverId} ${statusMessages[newStatus]}`);
+            updateDriverPositions(); // Actualizar panel
+        } else {
+            NotificationService.error('Error al cambiar estado del conductor');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        NotificationService.error('Error al cambiar estado del conductor');
+    }
+}
+
+async function loadDashboard() {
+    try {
+        // Cargar estadísticas
+        const stats = await AdminAPI.getStats();
+        appState.stats = stats;
+        renderStats(stats);
+        
+        // NUEVO: Iniciar actualización automática
+        updateDashboardMetrics();
+        
+        // Cargar gráfico
+        const chartData = await AdminAPI.getChartData(appState.filters.dateRange);
+        renderChart(chartData);
+        
+        // Cargar actividad reciente
+        const activities = await AdminAPI.getActivities();
+        appState.activities = activities;
+        renderActivities(activities);
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        NotificationService.error('Error cargando el dashboard');
+    }
+}
+
+// Función actualizada con selector de estados
+async function updateDriverPositions() {
+    try {
+        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Actualizar contador de conductores activos
+            const activeCount = data.drivers.length;
+            console.log(`🚗 Conductores activos: ${activeCount}`);
+            
+            // Actualizar panel visual de estados
+            const panel = document.getElementById('driverStatusPanel');
+            if (panel) {
+                panel.innerHTML = data.drivers.map(driver => `
+                    <div style="
+                        padding: 12px;
+                        border-radius: 8px;
+                        border: 1px solid #e5e7eb;
+                        background: ${getStatusColor(driver.status)};
+                        transition: all 0.3s;
+                    ">
+                        <div style="font-weight: 600; color: #1f2937;">
+                            ${driver.name}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
+                            ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
+                        </div>
+                        <div style="
+                            display: inline-block;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 0.75rem;
+                            font-weight: 600;
+                            background: white;
+                            color: ${getStatusTextColor(driver.status)};
+                            margin-top: 8px;
+                        ">
+                            ${getStatusLabel(driver.status)}
+                        </div>
+                        
+                        <!-- Selector de estados para TODOS los conductores -->
+                        <div style="margin-top: 12px;">
+                            <select onchange="changeDriverStatus(${driver.id}, this.value)" style="
+                                width: 100%;
+                                padding: 6px;
+                                border: 1px solid #d1d5db;
+                                border-radius: 6px;
+                                font-size: 12px;
+                                cursor: pointer;
+                            ">
+                                <option value="">-- Cambiar Estado --</option>
+                                <option value="active" ${driver.status === 'active' ? 'disabled' : ''}>✅ Activar</option>
+                                <option value="inactive" ${driver.status === 'inactive' ? 'disabled' : ''}>⏸️ Inactivar</option>
+                                <option value="suspended" ${driver.status === 'suspended' ? 'disabled' : ''}>🚫 Suspender</option>
+                                <option value="pending" ${driver.status === 'pending' ? 'disabled' : ''}>⏳ Pendiente</option>
+                            </select>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Mostrar info en consola
+            data.drivers.forEach(driver => {
+                console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
+            });
+        }
+    } catch (error) {
+        console.error('Error obteniendo posiciones:', error);
+    }
+}
+function renderStats(stats) {
+    const statsGrid = document.getElementById('statsGrid');
+    statsGrid.innerHTML = `
+        <div class="stat-card" data-metric="drivers" onclick="switchScreen('drivers')">
+            <div class="stat-icon blue">🚗</div>
+            <div class="stat-value metric-value">${stats.activeDrivers.value.toLocaleString()}</div>
+            <div class="stat-label">Conductores Activos</div>
+            <div class="stat-change ${stats.activeDrivers.type}">
+                <span>${stats.activeDrivers.type === 'positive' ? '↗' : '↘'}</span>
+                <span>+${stats.activeDrivers.change}% vs mes anterior</span>
+            </div>
+        </div>
+        
+        <div class="stat-card" data-metric="users" onclick="switchScreen('users')">
+            <div class="stat-icon green">👥</div>
+            <div class="stat-value metric-value">${stats.registeredUsers.value.toLocaleString()}</div>
+            <div class="stat-label">Usuarios Registrados</div>
+            <div class="stat-change ${stats.registeredUsers.type}">
+                <span>${stats.registeredUsers.type === 'positive' ? '↗' : '↘'}</span>
+                <span>+${stats.registeredUsers.change}% vs mes anterior</span>
+            </div>
+        </div>
+        
+        <div class="stat-card" data-metric="trips" onclick="switchScreen('trips')">
+            <div class="stat-icon yellow">🗺️</div>
+            <div class="stat-value metric-value">${stats.completedTrips.value.toLocaleString()}</div>
+            <div class="stat-label">Viajes Completados</div>
+            <div class="stat-change ${stats.completedTrips.type}">
+                <span>${stats.completedTrips.type === 'positive' ? '↗' : '↘'}</span>
+                <span>+${stats.completedTrips.change}% vs mes anterior</span>
+            </div>
+        </div>
+        
+        <div class="stat-card" data-metric="revenue" onclick="switchScreen('earnings')">
+            <div class="stat-icon red">💰</div>
+            <div class="stat-value metric-value">RD${stats.monthlyRevenue.value.toLocaleString()}</div>
+            <div class="stat-label">Ingresos del Mes</div>
+            <div class="stat-change ${stats.monthlyRevenue.type}">
+                <span>${stats.monthlyRevenue.type === 'positive' ? '↗' : '↘'}</span>
+                <span>+${stats.monthlyRevenue.change}% vs mes anterior</span>
+            </div>
+        </div>
+    `;
+}
+function renderChart(data) {
+    const ctx = document.getElementById('tripsChart').getContext('2d');
+    
+    if (appState.charts.tripsChart) {
+        appState.charts.tripsChart.destroy();
+    }
+    
+    appState.charts.tripsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Viajes',
+                data: data.values,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#f3f4f6'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#f3f4f6'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function renderActivities(activities) {
+    const tbody = document.getElementById('activityTableBody');
+    tbody.innerHTML = activities.map(activity => `
+        <tr>
+            <td>${activity.time}</td>
+            <td>${activity.activity}</td>
+            <td>${activity.user}</td>
+            <td><span class="status-badge status-${activity.status}">${getStatusText(activity.status)}</span></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn view" onclick="viewActivity(${activity.id})" title="Ver detalles">👁️</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+        // ========================================
+        // GESTIÓN DE CONDUCTORES
+        // ========================================
+        
+        async function loadDrivers() {
+            try {
+                const drivers = await AdminAPI.getDrivers();
+                appState.drivers = drivers;
+                renderDrivers(drivers);
+                updateDriversBadge(drivers.length);
+            } catch (error) {
+                console.error('Error loading drivers:', error);
+                NotificationService.error('Error cargando conductores');
+            }
+        }
+
+        function renderDrivers(drivers) {
+            const tbody = document.getElementById('driversTableBody');
+            tbody.innerHTML = drivers.map(driver => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${driver.name.split(' ').map(n => n[0]).join('')}</div>
+                            <div class="user-info">
+                                <div class="user-name">${driver.name}</div>
+                                <div class="user-email">${driver.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        ${driver.vehicle.make} ${driver.vehicle.model} ${driver.vehicle.year}<br>
+                        <small>${driver.vehicle.plate}</small>
+                    </td>
+                    <td>⭐ ${driver.rating} (${driver.totalTrips})</td>
+                    <td>${driver.totalTrips.toLocaleString()}</td>
+                    <td><span class="status-badge status-${driver.status}">${getStatusText(driver.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewDriver(${driver.id})" title="Ver">👁️</button>
+                            <button class="action-btn edit" onclick="editDriver(${driver.id})" title="Editar">✏️</button>
+                            <button class="action-btn delete" onclick="deleteDriver(${driver.id})" title="Eliminar">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateDriversBadge(count) {
+            document.getElementById('driversBadge').textContent = count;
+        }
+
+        // ========================================
+        // GESTIÓN DE USUARIOS
+        // ========================================
+        
+        async function loadUsers() {
+            try {
+                const users = await AdminAPI.getUsers();
+                appState.users = users;
+                renderUsers(users);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                NotificationService.error('Error cargando usuarios');
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${user.name.split(' ').map(n => n[0]).join('')}</div>
+                            <div class="user-info">
+                                <div class="user-name">${user.name}</div>
+                                <div class="user-email">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.phone}</td>
+                    <td>⭐ ${user.rating} (${user.totalTrips})</td>
+                    <td>${user.totalTrips}</td>
+                    <td>${formatDate(user.joinDate)}</td>
+                    <td><span class="status-badge status-${user.status}">${getStatusText(user.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewUser(${user.id})" title="Ver">👁️</button>
+                            <button class="action-btn edit" onclick="editUser(${user.id})" title="Editar">✏️</button>
+                            <button class="action-btn delete" onclick="deleteUser(${user.id})" title="Eliminar">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ========================================
+        // GESTIÓN DE VIAJES
+        // ========================================
+        
+        async function loadTrips() {
+            try {
+                const trips = await AdminAPI.getTrips();
+                appState.trips = trips;
+                renderTrips(trips);
+            } catch (error) {
+                console.error('Error loading trips:', error);
+                NotificationService.error('Error cargando viajes');
+            }
+        }
+
+        function renderTrips(trips) {
+            const tbody = document.getElementById('tripsTableBody');
+            tbody.innerHTML = trips.map(trip => `
+                <tr>
+                    <td>${trip.id}</td>
+                    <td>${trip.passenger}</td>
+                    <td>${trip.driver}</td>
+                    <td>${trip.origin}</td>
+                    <td>${trip.destination}</td>
+                    <td>RD${trip.price}</td>
+                    <td><span class="status-badge status-${trip.status}">${getStatusText(trip.status)}</span></td>
+                    <td>${formatDateTime(trip.date)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewTrip('${trip.id}')" title="Ver">👁️</button>
+                            <button class="action-btn edit" onclick="editTrip('${trip.id}')" title="Editar">✏️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ========================================
+        // SISTEMA DE MODALES
+        // ========================================
+        
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Limpiar formulario
+            const form = modal.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE GUARDADO
+        // ========================================
+        
+       async function saveDriver() {
+    try {
+        const form = document.getElementById('driverForm');
+        const formData = new FormData(form);
+        const driverData = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            license: formData.get('license'),
+            vehicle_plate: formData.get('vehiclePlate'),
+            vehicle_model: formData.get('vehicleModel'),
+            vehicle_color: formData.get('vehicleColor'),
+            password: 'password123' // Contraseña por defecto
+        };
+
+        // Llamar a la API real
+        const response = await fetch(`${API_URL}/admin/drivers`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('adminToken')
+            },
+            body: JSON.stringify(driverData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            closeModal('driverModal');
+            NotificationService.success('Conductor agregado exitosamente');
+            await loadDrivers(); // Recargar lista
+        } else {
+            NotificationService.error(result.error || 'Error al guardar conductor');
+        }
+        
+    } catch (error) {
+        console.error('Error saving driver:', error);
+        NotificationService.error('Error al guardar conductor');
+    }
+}
+        async function saveUser() {
+    try {
+        const form = document.getElementById('userForm');
+        const formData = new FormData(form);
+        const userData = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            password: 'password123' // Contraseña por defecto
+        };
+
+        // Llamar a la API real
+        const response = await fetch(`${API_URL}/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': localStorage.getItem('adminToken')
+            },
+            body: JSON.stringify(userData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            closeModal('userModal');
+            NotificationService.success('Usuario agregado exitosamente');
+            await loadUsers(); // Recargar lista
+        } else {
+            NotificationService.error(result.error || 'Error al guardar usuario');
+        }
+        
+    } catch (error) {
+        console.error('Error saving user:', error);
+        NotificationService.error('Error al guardar usuario');
+    }
+}
+        // ========================================
+        // FUNCIONES DE ACCIÓNA
+        // ========================================
+        
+        function viewDriver(driverId) {
+            const driver = appState.drivers.find(d => d.id === driverId);
+            if (driver) {
+                alert(`Detalles del conductor:\n\nNombre: ${driver.name}\nEmail: ${driver.email}\nTeléfono: ${driver.phone}\nVehículo: ${driver.vehicle.make} ${driver.vehicle.model}\nPlaca: ${driver.vehicle.plate}\nCalificación: ${driver.rating}\nViajes: ${driver.totalTrips}`);
+            }
+        }
+
+        function editDriver(driverId) {
+            NotificationService.info('Función de edición próximamente disponible');
+        }
+
+        function deleteDriver(driverId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este conductor?')) {
+                appState.drivers = appState.drivers.filter(d => d.id !== driverId);
+                renderDrivers(appState.drivers);
+                updateDriversBadge(appState.drivers.length);
+                NotificationService.success('Conductor eliminado exitosamente');
+            }
+        }
+
+        function viewUser(userId) {
+            const user = appState.users.find(u => u.id === userId);
+            if (user) {
+                alert(`Detalles del usuario:\n\nNombre: ${user.name}\nEmail: ${user.email}\nTeléfono: ${user.phone}\nCalificación: ${user.rating}\nViajes: ${user.totalTrips}\nMiembro desde: ${formatDate(user.joinDate)}`);
+            }
+        }
+
+        function editUser(userId) {
+            NotificationService.info('Función de edición próximamente disponible');
+        }
+
+        function deleteUser(userId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                appState.users = appState.users.filter(u => u.id !== userId);
+                renderUsers(appState.users);
+                NotificationService.success('Usuario eliminado exitosamente');
+            }
+        }
+
+        function viewTrip(tripId) {
+            const trip = appState.trips.find(t => t.id === tripId);
+            if (trip) {
+                alert(`Detalles del viaje:\n\nID: ${trip.id}\nPasajero: ${trip.passenger}\nConductor: ${trip.driver}\nOrigen: ${trip.origin}\nDestino: ${trip.destination}\nPrecio: RD${trip.price}\nEstado: ${getStatusText(trip.status)}\nFecha: ${formatDateTime(trip.date)}\nDuración: ${trip.duration}\nDistancia: ${trip.distance}`);
+            }
+        }
+
+        function editTrip(tripId) {
+            NotificationService.info('Función de edición próximamente disponible');
+        }
+
+        function viewActivity(activityId) {
+            const activity = appState.activities.find(a => a.id === activityId);
+            if (activity) {
+                alert(`Detalles de la actividad:\n\nHora: ${activity.time}\nActividad: ${activity.activity}\nUsuario: ${activity.user}\nDetalles: ${activity.details}\nEstado: ${getStatusText(activity.status)}`);
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE FILTRADO Y BÚSQUEDA
+        // ========================================
+        
+        function filterTrips(status) {
+            appState.filters.trips = status;
+            let filteredTrips = appState.trips;
+            
+            if (status !== 'all') {
+                filteredTrips = appState.trips.filter(trip => trip.status === status);
+            }
+            
+            renderTrips(filteredTrips);
+            NotificationService.info(`Mostrando viajes: ${status === 'all' ? 'todos' : getStatusText(status)}`);
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const query = e.target.value.toLowerCase().trim();
+                    performSearch(query);
+                }, 300);
+            });
+        }
+
+        function performSearch(query) {
+            if (!query) {
+                // Restaurar vista original
+                loadScreenData(appState.currentScreen);
+                return;
+            }
+
+            switch (appState.currentScreen) {
+                case 'drivers':
+                    const filteredDrivers = appState.drivers.filter(driver => 
+                        driver.name.toLowerCase().includes(query) ||
+                        driver.email.toLowerCase().includes(query) ||
+                        driver.vehicle.plate.toLowerCase().includes(query)
+                    );
+                    renderDrivers(filteredDrivers);
+                    break;
+                
+                case 'users':
+                    const filteredUsers = appState.users.filter(user => 
+                        user.name.toLowerCase().includes(query) ||
+                        user.email.toLowerCase().includes(query) ||
+                        user.phone.includes(query)
+                    );
+                    renderUsers(filteredUsers);
+                    break;
+                
+                case 'trips':
+                    const filteredTrips = appState.trips.filter(trip => 
+                        trip.passenger.toLowerCase().includes(query) ||
+                        trip.driver.toLowerCase().includes(query) ||
+                        trip.origin.toLowerCase().includes(query) ||
+                        trip.destination.toLowerCase().includes(query) ||
+                        trip.id.toLowerCase().includes(query)
+                    );
+                    renderTrips(filteredTrips);
+                    break;
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE GRÁFICOS Y FILTROS
+        // ========================================
+        
+        async function changeChartPeriod(period) {
+            try {
+                appState.filters.dateRange = period;
+                
+                // Actualizar botones activos
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Cargar nuevos datos
+                const chartData = await AdminAPI.getChartData(period);
+                renderChart(chartData);
+                
+                NotificationService.info(`Gráfico actualizado: ${period === '7days' ? '7 días' : period === '30days' ? '30 días' : '90 días'}`);
+                
+            } catch (error) {
+                console.error('Error changing chart period:', error);
+                NotificationService.error('Error actualizando el gráfico');
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE EXPORTACIÓN
+        // ========================================
+        
+        function exportDrivers() {
+            try {
+                const csvContent = generateCSV(appState.drivers, [
+                    'name', 'email', 'phone', 'license', 'vehicle.make', 'vehicle.model', 
+                    'vehicle.year', 'vehicle.plate', 'rating', 'totalTrips', 'status'
+                ]);
+                downloadCSV(csvContent, 'conductores.csv');
+                NotificationService.success('Datos de conductores exportados');
+            } catch (error) {
+                console.error('Error exporting drivers:', error);
+                NotificationService.error('Error exportando datos');
+            }
+        }
+
+        function exportUsers() {
+            try {
+                const csvContent = generateCSV(appState.users, [
+                    'name', 'email', 'phone', 'rating', 'totalTrips', 'joinDate', 'status'
+                ]);
+                downloadCSV(csvContent, 'usuarios.csv');
+                NotificationService.success('Datos de usuarios exportados');
+            } catch (error) {
+                console.error('Error exporting users:', error);
+                NotificationService.error('Error exportando datos');
+            }
+        }
+
+        function exportTrips() {
+            try {
+                const csvContent = generateCSV(appState.trips, [
+                    'id', 'passenger', 'driver', 'origin', 'destination', 'price', 'status', 'date', 'duration', 'distance'
+                ]);
+                downloadCSV(csvContent, 'viajes.csv');
+                NotificationService.success('Datos de viajes exportados');
+            } catch (error) {
+                console.error('Error exporting trips:', error);
+                NotificationService.error('Error exportando datos');
+            }
+        }
+
+        function generateCSV(data, columns) {
+            const headers = columns.join(',');
+            const rows = data.map(item => {
+                return columns.map(column => {
+                    const value = getNestedValue(item, column);
+                    return `"${value || ''}"`;
+                }).join(',');
+            });
+            return [headers, ...rows].join('\n');
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((current, key) => current?.[key], obj);
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ========================================
+        // FUNCIONES DE ACTUALIZACIÓN
+        // ========================================
+        
+        async function refreshActivity() {
+            try {
+                const activities = await AdminAPI.getActivities();
+                appState.activities = activities;
+                renderActivities(activities);
+                NotificationService.success('Actividad actualizada');
+            } catch (error) {
+                console.error('Error refreshing activity:', error);
+                NotificationService.error('Error actualizando actividad');
+            }
+        }
+
+        // ========================================
+        // FUNCIONES DE UTILIDAD
+        // ========================================
+        
+        function getStatusText(status) {
+            const statusMap = {
+                active: 'Activo',
+                inactive: 'Inactivo',
+                pending: 'Pendiente',
+                completed: 'Completado',
+                cancelled: 'Cancelado',
+                suspended: 'Suspendido'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-DO', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('es-DO', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // ========================================
+        // FUNCIONES DE INTERFAZ
+        // ========================================
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+
+        function showNotifications() {
+            NotificationService.info('Panel de notificaciones próximamente disponible');
+        }
+
+        function showUserMenu() {
+            NotificationService.info('Menú de usuario próximamente disponible');
+        }
+
+        // ========================================
+        // CONFIGURACIÓN DE EVENTOS
+        // ========================================
+        
+        function setupEventListeners() {
+            // Navegación del sidebar
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const screen = item.getAttribute('data-screen');
+                    if (screen) {
+                        switchScreen(screen);
+                    }
+                });
+            });
+
+            // Cerrar modales al hacer clic fuera
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        const modalId = overlay.id;
+                        closeModal(modalId);
+                    }
+                });
+            });
+
+            // Cerrar modales con ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    if (activeModal) {
+                        closeModal(activeModal.id);
+                    }
+                }
+            });
+
+            // Configurar búsqueda
+            setupSearch();
+
+            // Responsive sidebar
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('mainContent').classList.add('expanded');
+            }
+
+            // Detectar cambios de tamaño de ventana
+            window.addEventListener('resize', () => {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                    document.getElementById('mainContent').classList.add('expanded');
+                } else {
+                    document.getElementById('sidebar').classList.remove('collapsed');
+                    document.getElementById('mainContent').classList.remove('expanded');
+                }
+            });
+        }
+
+        // ========================================
+        // SIMULACIÓN DE ACTUALIZACIONES EN TIEMPO REAL
+        // ========================================
+        
+        function startRealTimeUpdates() {
+            // Simular actualizaciones cada 30 segundos
+            setInterval(async () => {
+                if (appState.currentScreen === 'dashboard') {
+                    try {
+                        const newStats = await AdminAPI.getStats();
+                        // Pequeñas variaciones aleatorias
+                        newStats.activeDrivers.value += Math.floor(Math.random() * 5) - 2;
+                        newStats.registeredUsers.value += Math.floor(Math.random() * 3);
+                        newStats.completedTrips.value += Math.floor(Math.random() * 10);
+                        
+                        appState.stats = newStats;
+                        renderStats(newStats);
+                    } catch (error) {
+                        console.error('Error updating real-time data:', error);
+                    }
+                }
+            }, 30000);
+
+            // Simular nuevas actividades cada 45 segundos
+            setInterval(async () => {
+                if (appState.currentScreen === 'dashboard') {
+                    try {
+                        const activities = await AdminAPI.getActivities();
+                        // Añadir nueva actividad simulada
+                        const newActivity = {
+                            id: Date.now(),
+                            time: new Date().toLocaleTimeString('es-DO', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            }),
+                            activity: 'Nuevo viaje solicitado',
+                            user: 'Usuario ' + Math.floor(Math.random() * 1000),
+                            status: 'active',
+                            details: 'Viaje en tiempo real'
+                        };
+                        
+                        activities.unshift(newActivity);
+                        appState.activities = activities.slice(0, 10); // Mantener solo los últimos 10
+                        renderActivities(appState.activities);
+                    } catch (error) {
+                        console.error('Error updating activities:', error);
+                    }
+                }
+            }, 45000);
+        }
+
+        // ========================================
+        // INICIALIZACIÓN DE LA APLICACIÓN
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+             
+             try {
+
+                // ==========================================
+        // SISTEMA DE NOTIFICACIONES EN TIEMPO REAL
+        // ==========================================
+        
+        // Conectar con Socket.IO
+        const socket = io('http://localhost:3000');
+        
+        socket.on('connect', () => {
+            console.log('🔌 Conectado al servidor de notificaciones');
+            socket.emit('join-admin');
+        });
+        
+        // Escuchar nuevos viajes
+        socket.on('new-trip', (tripData) => {
+            console.log('🚖 NUEVO VIAJE RECIBIDO:', tripData);
+            
+            // Mostrar notificación visual
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                z-index: 9999;
+                animation: slideIn 0.5s ease;
+                min-width: 350px;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 24px; margin-right: 10px;">🚨</span>
+                    <strong style="font-size: 18px;">¡Nuevo Viaje!</strong>
+                </div>
+                <div style="margin-left: 34px;">
+                    <div>👤 ${tripData.user}</div>
+                    <div>📍 ${tripData.origin}</div>
+                    <div>📌 ${tripData.destination}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">
+                        🕐 ${new Date(tripData.timestamp).toLocaleTimeString()}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-ocultar después de 8 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 8000);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('❌ Desconectado del servidor');
+        });
+                console.log('🚀 Inicializando Panel de Administración TaxiApp...');
+                
+                // Configurar eventos
+                setupEventListeners();
+                
+                // Cargar datos iniciales
+                await loadDashboard();
+                
+                // Iniciar actualizaciones en tiempo real
+                startRealTimeUpdates();
+                
+                // Mostrar notificación de bienvenida
+                setTimeout(() => {
+                    NotificationService.success('Panel de administración cargado exitosamente');
+                }, 1000);
+                
+                console.log('✅ Panel de administración inicializado correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error inicializando la aplicación:', error);
+                NotificationService.error('Error inicializando la aplicación');
+            }
+        });
+
+        // ========================================
+        // FUNCIONES ADICIONALES PARA DESARROLLO
+        // ========================================
+        
+        // Función para generar datos de prueba adicionales
+        function generateMockData() {
+            console.log('Generando datos de prueba...');
+            
+            // Generar conductores adicionales
+            for (let i = 4; i <= 20; i++) {
+                const mockDriver = {
+                    id: i,
+                    name: `Conductor ${i}`,
+                    email: `conductor${i}@email.com`,
+                    phone: `+1 (809) 555-${String(i).padStart(4, '0')}`,
+                    license: `DL${String(i).padStart(9, '0')}`,
+                    vehicle: {
+                        make: ['Toyota', 'Honda', 'Nissan', 'Hyundai'][Math.floor(Math.random() * 4)],
+                        model: ['Corolla', 'Civic', 'Sentra', 'Elantra'][Math.floor(Math.random() * 4)],
+                        year: 2018 + Math.floor(Math.random() * 6),
+                        plate: `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 900) + 100)}`,
+                        color: ['Blanco', 'Gris', 'Negro', 'Azul', 'Rojo'][Math.floor(Math.random() * 5)]
+                    },
+                    rating: 4.0 + Math.random(),
+                    totalTrips: Math.floor(Math.random() * 1000) + 100,
+                    status: ['active', 'inactive', 'pending'][Math.floor(Math.random() * 3)],
+                    joinDate: `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`
+                };
+                appState.drivers.push(mockDriver);
+            }
+            
+            console.log(`✅ Generados ${appState.drivers.length} conductores de prueba`);
+            renderDrivers(appState.drivers);
+            updateDriversBadge(appState.drivers.length);
+        }
+
+        // Función para limpiar datos (útil para desarrollo)
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los datos? Esta acción no se puede deshacer.')) {
+                appState.drivers = [];
+                appState.users = [];
+                appState.trips = [];
+                appState.activities = [];
+                
+                // Recargar vistas
+                if (appState.currentScreen === 'drivers') renderDrivers([]);
+                if (appState.currentScreen === 'users') renderUsers([]);
+                if (appState.currentScreen === 'trips') renderTrips([]);
+                
+                updateDriversBadge(0);
+                NotificationService.success('Todos los datos han sido limpiados');
+            }
+        }
+
+        // Hacer funciones disponibles globalmente para debugging
+        window.AdminApp = {
+            state: appState,
+            generateMockData,
+            clearAllData,
+            NotificationService,
+            AdminAPI
+        };
+
+        console.log('🔧 Panel de Administración TaxiApp v1.0.0');
+        console.log('💡 Usa AdminApp.generateMockData() para generar datos de prueba');
+        console.log('🗑️ Usa AdminApp.clearAllData() para limpiar todos los datos');
+
+     // Función para cerrar sesión
+function logout() {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminData');
+    localStorage.removeItem('adminId');
+    window.location.href = 'index.html';
+}
+
+// Mostrar opción de administradores solo para super_admin
+const userData = JSON.parse(localStorage.getItem('adminData') || '{}');
+if (userData.role !== 'super_admin') {
+    const adminMenu = document.getElementById('adminMenu');
+    if (adminMenu) adminMenu.style.display = 'none';
+}
+
+
+    </script>
+</body>
+</html>
+
