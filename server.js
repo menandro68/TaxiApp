@@ -1221,7 +1221,7 @@ startSurgeEngine();
 iniciarReportesAutomaticos();
 
 // Iniciar servidor
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
   startInactivityChecker(); // Iniciar monitor de sesiones inactivas
   console.log(`🔒 Rate Limiting activado:`);
