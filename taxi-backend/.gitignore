@@ -1,0 +1,10 @@
+﻿node_modules/
+.env
+.env.local
+firebase-admin-key.json
+*.log
+.DS_Store
+.vscode
+.idea
+dist/
+build/
