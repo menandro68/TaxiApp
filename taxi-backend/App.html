@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - TaxiApp</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.socket.io; style-src 'self' 'unsafe-inline';">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -13,11 +14,10 @@
         }
         
 
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
+      .admin-container {
+             display: flex;
+            min-height: auto;
+         }
         /* Sidebar */
         .sidebar {
             width: 280px;
@@ -124,7 +124,7 @@
         /* Top Bar */
         .top-bar {
             background: white;
-            padding: 16px 24px;
+            padding: 8px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -229,10 +229,9 @@
             cursor: pointer;
         }
 
-        /* Content Area */
-        .content-area {
-            padding: 24px;
-        }
+    .content-area {
+   padding: 20px 24px 24px 24px;
+         }
 
         /* Stats Grid */
         .stats-grid {
@@ -244,7 +243,7 @@
 
         .stat-card {
             background: white;
-            padding: 24px;
+            padding: 16px;
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
@@ -315,33 +314,32 @@
             color: #ef4444;
         }
 
-        /* Chart Container */
-        .chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 32px;
-        }
+      /* Chart Container */
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+}
 
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
 
-        .chart-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
+.chart-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
 
-        .chart-filters {
-            display: flex;
-            gap: 8px;
-        }
-
+.chart-filters {
+    display: flex;
+    gap: 8px;
+}
         .filter-btn {
             padding: 6px 12px;
             border: 1px solid #d1d5db;
@@ -820,7 +818,7 @@
                 <div class="sidebar-subtitle">Panel de Control</div>
             </div>
             
-  <nav class="sidebar-nav">
+<nav class="sidebar-nav">
     <div class="nav-section">
         <div class="nav-section-title">Principal</div>
         <a class="nav-item active" data-screen="dashboard" onclick="switchScreen('dashboard')">
@@ -828,11 +826,12 @@
             <span class="nav-text">Dashboard</span>
         </a>
 
-        <a href="command-center.html" class="nav-item">
-    <span class="nav-icon">🛰️</span>
-    <span>Centro de Comando</span>
-    <span style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">LIVE</span>
-</a>
+         <a href="#" class="nav-item" onclick="window.open('command-center.html', '_blank'); return false;">
+            <span class="nav-icon">🛰️</span>
+            <span>Centro de Comando</span>
+            <span style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">LIVE</span>
+        </a>
+
         <a class="nav-item" data-screen="analytics" onclick="switchScreen('analytics')">
             <span class="nav-icon">📈</span>
             <span class="nav-text">Analíticas</span>
@@ -841,61 +840,71 @@
     
     <div class="nav-section">
         <div class="nav-section-title">Gestión</div>
-    <a class="nav-item" data-screen="drivers" onclick="switchScreen('drivers')">
-    <span class="nav-icon">🚗</span>
-    <span class="nav-text">Conductores</span>
-    <span class="nav-badge" id="driversBadge">12</span>
-</a>
-<a class="nav-item" data-screen="communications" onclick="switchScreen('communications')">
-    <span class="nav-icon">📢</span>
-    <span class="nav-text">Comunicados Masivos</span>
-</a>
-<a class="nav-item" data-screen="suspensions" onclick="switchScreen('suspensions')">
-    <span class="nav-icon">🚨</span>
-    <span class="nav-text">Suspensiones</span>
-    <span class="nav-badge" id="suspensionsBadge" style="background: #dc3545;">0</span>
-</a>
-<a class="nav-item" data-screen="users" onclick="switchScreen('users')">
-    <span class="nav-icon">👥</span>
-    <span class="nav-text">Usuarios</span>
-</a>
+        <a class="nav-item" data-screen="drivers" onclick="loadDrivers()">
+            <span class="nav-icon">🚗</span>
+            <span class="nav-text">Conductores</span>
+            <span class="nav-badge" id="driversBadge">12</span>
+        </a>
+
+        <a class="nav-item" data-screen="communications" onclick="switchScreen('communications')">
+            <span class="nav-icon">📢</span>
+            <span class="nav-text">Comunicados Masivos</span>
+        </a>
+
+        <a class="nav-item" data-screen="suspensions" onclick="switchScreen('suspensions')">
+            <span class="nav-icon">🚨</span>
+            <span class="nav-text">Suspensiones</span>
+            <span class="nav-badge" id="suspensionsBadge" style="background: #dc3545;">0</span>
+        </a>
+
+        <a class="nav-item" data-screen="users" onclick="switchScreen('users')">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">Usuarios</span>
+        </a>
+
         <a class="nav-item" data-screen="trips" onclick="switchScreen('trips')">
             <span class="nav-icon">🗺️</span>
             <span class="nav-text">Viajes</span>
         </a>
+
         <a class="nav-item" data-screen="vehicles" onclick="switchScreen('vehicles')">
             <span class="nav-icon">🚙</span>
             <span class="nav-text">Vehículos</span>
         </a>
+
         <a class="nav-item" data-screen="documents" onclick="switchScreen('documents')">
             <span class="nav-icon">📋</span>
             <span class="nav-text">Documentos</span>
             <span class="nav-badge" id="documentsBadge" style="background: #ffc107;">0</span>
         </a>
+
         <a class="nav-item" data-screen="trips-monitor" onclick="switchScreen('trips-monitor')">
             <span class="nav-icon">🚕</span>
             <span class="nav-text">Viajes Activos</span>
             <span class="nav-badge" id="activeTripsCount" style="background: #28a745;">0</span>
         </a>
+
         <a class="nav-item" data-screen="support" onclick="switchScreen('support')">
             <span class="nav-icon">💬</span>
             <span class="nav-text">Soporte</span>
             <span class="nav-badge" id="supportBadge" style="background: #dc3545;">0</span>
         </a>
+
         <a class="nav-item" data-screen="geofencing" onclick="switchScreen('geofencing')">
             <span class="nav-icon">📍</span>
             <span class="nav-text">Geofencing</span>
             <span class="nav-badge" id="geofencingBadge" style="background: #9c27b0;">5</span>
         </a>
+
         <a class="nav-item" onclick="window.location.href='admins.html'" id="adminMenu">
             <span class="nav-icon">👥</span>
             <span class="nav-text">Administradores</span>
         </a>
        
         <a class="nav-item" onclick="window.location.href='http://localhost:3000/surge-monitor.html'" id="surgeMenu">
-               <span class="nav-icon">📈</span>
-                <span class="nav-text">Surge Pricing</span>
-          </a>
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Surge Pricing</span>
+        </a>
 
         <a class="nav-item" onclick="window.location.href='zones.html'">
             <span class="nav-icon">📍</span>
@@ -903,10 +912,9 @@
         </a>
 
         <a class="nav-item" onclick="window.location.href='dynamic-pricing.html'">
-    <span class="nav-icon">💰</span>
-    <span class="nav-text">Tarifas Dinámicas</span>
+            <span class="nav-icon">💰</span>
+            <span class="nav-text">Tarifas Dinámicas</span>
         </a>
-
     </div>
     
     <div class="nav-section">
@@ -915,48 +923,51 @@
             <span class="nav-icon">💰</span>
             <span class="nav-text">Pagos y Comisiones</span>
         </a>
-     <a href="reportes-contables.html" class="nav-item">
-        <span class="nav-icon">📊</span>
-        <span>Reportes Contables</span>
-        <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">DGII</span>
-    </a>
-            <a href="reconciliation.html" class="nav-item">
-        <span class="nav-icon">⚖️</span>
-        <span>Conciliación de Pagos</span>
-        <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">NUEVO</span>
-    </a>
 
-    <a href="invoice-system.html" class="nav-item">
-    <span class="nav-icon">📄</span>
-    <span>Facturación</span>
-    <span style="background: #17a2b8; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">NCF</span>
-</a>
-   
-    <a href="driver-payments.html" class="nav-item">
+     <a class="nav-item" data-screen="reports" onclick="switchScreen('reports')">
+    <span class="nav-icon">📊</span>
+    <span>Reportes Contables</span>
+    <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">DGII</span>
+     </a>
+
+        <a class="nav-item" data-screen="reportes-automaticos" onclick="switchScreen('reportes-automaticos')">
+            <span class="nav-icon">🤖</span>
+            <span class="nav-text">Reportes Automatizados</span>
+        </a>
+
+       <a href="#" class="nav-item" onclick="window.open('reconciliation.html', '_blank'); return false;">
+            <span class="nav-icon">⚖️</span>
+            <span>Conciliación de Pagos</span>
+            <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">NUEVO</span>
+        </a>
+
+      <a href="#" class="nav-item" onclick="window.open('invoice-system.html', '_blank'); return false;">
+            <span class="nav-icon">📄</span>
+            <span>Facturación</span>
+            <span style="background: #17a2b8; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">NCF</span>
+        </a>
+
+
+     <a href="#" class="nav-item" onclick="window.open('driver-payments.html', '_blank'); return false;">
     <span class="nav-icon">💸</span>
     <span>Pagos a Conductores</span>
     <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">5 PENDIENTES</span>
-     </a>
+       </a>
 
-</div>
-       
-       <a href="#" class="nav-item" onclick="window.open('payments.html', '_blank'); return false;">
-            <span class="nav-icon">💳</span>
-            <span class="nav-text">Pagos</span>
-        </a>
+       <a href="payments.html" class="nav-item" target="_blank">
+    <span class="nav-icon">💳</span>
+    <span class="nav-text">Pagos</span>
+      </a>
         
         <a class="nav-item" data-screen="reports" onclick="switchScreen('reports')">
             <span class="nav-icon">📊</span>
             <span class="nav-text">Reportes Avanzados</span>
         </a>
 
-        
-
         <a class="nav-item" data-screen="pricing" onclick="switchScreen('pricing')">
             <span class="nav-icon">💰</span>
             <span class="nav-text">Gestión de Tarifas</span>
         </a>
-
     </div>
     
     <div class="nav-section">
@@ -992,12 +1003,12 @@
                 </div>
             </div>
 
-          <!-- Content Area -->
+<!-- Content Area -->
 <div class="content-area">
     <!-- Dashboard Screen -->
     <div id="dashboard" class="screen active">
         <!-- Panel de Estados de Conductores en Tiempo Real -->
-        <div style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="background: white; border-radius: 12px; padding: 10px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <h3 style="margin: 0 0 16px 0; color: #1f2937;">🚦 Estados de Conductores en Tiempo Real</h3>
             <div id="driverStatusPanel" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
                 <!-- Los conductores se cargarán aquí dinámicamente -->
@@ -1005,11 +1016,9 @@
             <div style="margin-top: 12px; font-size: 0.875rem; color: #6b7280;">
                 Actualización automática cada 10 segundos
             </div>
-            
         </div>
-         
 <!-- Botón FUERA del panel (BIEN) -->
-<div style="margin: 20px 0; padding: 20px; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b;">
+<div style="margin: 5px 0; padding: 10px; background: #fef3c7; border-radius: 8px; border: 1px solid #f59e0b;">
     <h4 style="margin: 0 0 10px 0;">🧪 Prueba de Reasignación Automática</h4>
     <p style="margin: 0 0 15px 0; color: #92400e;">Simula cuando un conductor cancela un viaje</p>
     <button onclick="testDriverCancellation()" style="
@@ -1024,7 +1033,6 @@
         Simular Cancelación de Conductor
     </button>
 </div>
-
         <!-- Stats Grid -->
         <div class="stats-grid" id="statsGrid">
             <!-- Stats will be loaded dynamically -->
@@ -1040,13 +1048,13 @@
                     <button class="filter-btn" onclick="changeChartPeriod('90days')">90 días</button>
                 </div>
             </div>
-            <canvas id="tripsChart" width="400" height="200"></canvas>
+            <canvas id="tripsChart" width="400" height="120"></canvas>
         </div>
 
 <!-- Sistema de Alertas -->
-<div style="margin-top: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: block;">
+<div style="margin-top: 15px; background: white; padding: 12px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: block;">
     <h3 style="color: #1f2937; margin-bottom: 16px;">🚨 Alertas del Sistema</h3>
-    <div id="alertsContainer" style="max-height: 300px; overflow-y: auto;">
+    <div id="alertsContainer" style="max-height: 150px; overflow-y: auto;">
         <div style="padding: 20px; text-align: center; color: #666;">
             <p>No hay alertas activas</p>
         </div>
@@ -1166,9 +1174,6 @@
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
-
-                   
-
                     <!-- User rows will be loaded dynamically -->
                 </tbody>
             </table>
@@ -1189,7 +1194,7 @@
             <h2 class="table-title">Gestión de Viajes</h2>
             <div class="table-actions">
                 <button class="btn btn-secondary" onclick="exportTrips()">📊 Exportar</button>
-                <button class="btn btn-primary" onclick="TripsFiltersModule.exportToPDF()">📄 PDF</button>
+                <button class="btn btn-primary" onclick="alert('Función no disponible')">📄 PDF</button>
                 <button class="btn btn-info" onclick="showTripsStats()">📈 Estadísticas</button>
             </div>
         </div>
@@ -1214,12 +1219,6 @@
         <div id="tripsPaginationControls"></div>
     </div>
 </div>
-                    <!-- Trip rows will be loaded dynamically -->
-                </tbody>
-            </table>
-            <div id="tripsPaginationControls"></div>
-        </div>
-    </div>
 
     <!-- Modal de Desglose de Viaje -->
     <div id="tripDetailsModal" class="modal" style="display: none;">
@@ -1272,6 +1271,15 @@
     <div id="finances" class="screen">
         <!-- El contenido se cargará dinámicamente -->
     </div>
+
+    <!-- Conciliación de Pagos Screen -->
+<div id="conciliacion-pagos" class="screen">
+    <!-- El contenido se cargará dinámicamente -->
+    <div class="loading">
+        <div class="spinner"></div>
+        Cargando conciliación de pagos...
+    </div>
+</div>
 
     <!-- Pantalla de Reportes -->
 <div id="reports" class="screen">
@@ -1326,17 +1334,80 @@
         </div>
     </div>
 
-   
+   <!-- Reportes Automatizados Screen -->
+    <div id="reportes-automaticos" class="screen">
+        <div class="data-table-container">
+            <div class="table-header">
+                <h2 class="table-title">🤖 Reportes Automatizados</h2>
+                <div class="table-actions">
+                    <button class="btn btn-primary" onclick="generarReporteManual()">📊 Generar Reporte Ahora</button>
+                    <button class="btn btn-secondary" onclick="verConfiguracionReportes()">⚙️ Configuración</button>
+                </div>
+            </div>
+            
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="ultimoReporte">--</div>
+                        <div class="stat-label">Último Reporte</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-content">
+                        <div class="stat-value">8:00 PM</div>
+                        <div class="stat-label">Reporte Diario</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="estadoSistema">Activo</div>
+                        <div class="stat-label">Estado Sistema</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reporte-container" style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3>📊 Último Reporte Generado</h3>
+                <div id="reporteContent" style="background: #f8f9fa; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-line;">
+                    Haz clic en "Generar Reporte Ahora" para ver el reporte más reciente...
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px;">
+                <h3>⚙️ Configuración de Reportes</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Hora del Reporte Diario</label>
+                        <select class="form-control">
+                            <option value="20:00">8:00 PM</option>
+                            <option value="19:00">7:00 PM</option>
+                            <option value="21:00">9:00 PM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Email para Reportes</label>
+                        <input type="email" class="form-control" placeholder="admin@taxiapp.com">
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp para Alertas</label>
+                        <input type="tel" class="form-control" placeholder="+1809555xxxx">
+                    </div>
+                </div>
+                <button class="btn btn-primary">💾 Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
     
-    <!-- Geofencing Screen -->
+<!-- Geofencing Screen -->
 <div id="geofencing" class="screen">
-    <div style="width: 90%; height: 100vh; position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
-        <object data="geofencing.html" type="text/html" style="width: 125%; height: 100%; border: none;">
-            <iframe src="geofencing.html" style="width: 100%; height: 10%; border: none;"></iframe>
-        </object>
+    <div class="loading">
+        <div class="spinner"></div>
+        Cargando geofencing...
     </div>
 </div>
-
 </div> <!-- End content-area -->
 </div> <!-- Este cierra otro contenedor -->
 
@@ -1475,11 +1546,11 @@ function logout() {
 }
 
 // Mostrar opción de administradores solo para super_admin
-const userData = JSON.parse(localStorage.getItem('adminData') || '{}');
-if (userData.role !== 'super_admin') {
-    const adminMenu = document.getElementById('adminMenu');
-    if (adminMenu) adminMenu.style.display = 'none';
-}
+//const userData = JSON.parse(localStorage.getItem('adminData') || '{}');
+//if (userData.role !== 'super_admin') {
+    //const adminMenu = document.getElementById('adminMenu');
+  //  if (adminMenu) adminMenu.style.display = 'none';
+//}
 
 // CONFIGURACIÓN DE API REAL - AGREGADO PARA CONECTAR CON BACKEND
 const API_URL = 'http://localhost:3000/api';
@@ -1662,7 +1733,7 @@ static async getStats() {
                         status: 'pending',
                         details: 'Documentos en revisión'
                     },
-                    {
+                 {
                         id: 3,
                         time: '15:25',
                         activity: 'Viaje iniciado',
@@ -1779,73 +1850,72 @@ static async getStats() {
             // Ocultar todas las pantallas
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
-  
-
             });
 
-
             // Cargar módulo de documentos cuando se seleccione
-if (screenName === 'documents') {
-    const documentsContainer = document.getElementById('documents');
-    documentsContainer.innerHTML = DocumentsModule.getDocumentsHTML();
-    DocumentsModule.init();
-    DocumentsModule.loadDocuments();
-}
-    
+            if (screenName === 'documents') {
+                const documentsContainer = document.getElementById('documents');
+                documentsContainer.innerHTML = DocumentsModule.getDocumentsHTML();
+                DocumentsModule.init();
+                DocumentsModule.loadDocuments();
+            }
+            
+            // Cargar módulo de monitoreo de viajes
+            if (screenName === 'trips-monitor') {
+                const container = document.getElementById('trips-monitor');
+                container.innerHTML = TripsMonitorModule.getHTML();
+                TripsMonitorModule.init();
+            }
 
-   // Cargar módulo de monitoreo de viajes
-if (screenName === 'trips-monitor') {
-    const container = document.getElementById('trips-monitor');
-    container.innerHTML = TripsMonitorModule.getHTML();
-    TripsMonitorModule.init();
-}
+            // Cargar módulo de suspensiones
+            if (screenName === 'suspensions') {
+                if (typeof SuspensionsModule !== 'undefined') {
+                    SuspensionsModule.render();
+                }
+            }
 
-// Cargar módulo de suspensiones
-if (screenName === 'suspensions') {
-    if (typeof SuspensionsModule !== 'undefined') {
-        SuspensionsModule.render();
-    }
-}
+            // Cargar módulo de soporte
+            if (screenName === 'support') {
+                const container = document.getElementById('support');
+                container.innerHTML = SupportModule.getHTML();
+                SupportModule.init();
+            }
 
+            // Cargar módulo de comunicados
+            if (screenName === 'communications') {
+                const container = document.getElementById('communications');
+                container.innerHTML = CommunicationsModule.showCommunicationsPanel();
+                CommunicationsModule.injectStyles();
+                CommunicationsModule.init();
+            }
 
-// Cargar módulo de soporte
-if (screenName === 'support') {
-    const container = document.getElementById('support');
-    container.innerHTML = SupportModule.getHTML();
-    SupportModule.init();
-}
+            // Cargar módulo de finanzas
+            if (screenName === 'finances') {
+                const container = document.getElementById('finances');
+                container.innerHTML = FinancesModule.getHTML();
+                FinancesModule.init();
+            }
 
-// Cargar módulo de comunicados
-if (screenName === 'communications') {
-    const container = document.getElementById('communications');
-    container.innerHTML = CommunicationsModule.showCommunicationsPanel();
-    CommunicationsModule.injectStyles();
-    CommunicationsModule.init();
-}
+            // Cargar módulo de reportes automatizados
+            if (screenName === 'reportes-automaticos') {
+                document.getElementById('estadoSistema').textContent = 'Activo';
+            }
 
-// Cargar módulo de finanzas
-if (screenName === 'finances') {
-    const container = document.getElementById('finances');
-    container.innerHTML = FinancesModule.getHTML();
-    FinancesModule.init();
-}
+            // Cargar módulo de reportes
+            if (screenName === 'reports') {
+                const container = document.getElementById('reports');
+                container.innerHTML = ReportsModule.getHTML();
+                ReportsModule.init();
+            }
 
+            // Cargar módulo de tarifas
+            if (screenName === 'pricing') {
+                const container = document.getElementById('pricing');
+                container.innerHTML = PricingModule.getHTML();
+                PricingModule.init();
+            }
 
-// Cargar módulo de reportes
-if (screenName === 'reports') {
-    const container = document.getElementById('reports');
-    container.innerHTML = ReportsModule.getHTML();
-    ReportsModule.init();
-}
-
-// Cargar módulo de tarifas
-if (screenName === 'pricing') {
-    const container = document.getElementById('pricing');
-    container.innerHTML = PricingModule.getHTML();
-    PricingModule.init();
-}
-
-// Mostrar pantalla seleccionada
+            // Mostrar pantalla seleccionada
             document.getElementById(screenName).classList.add('active');
             
             // Actualizar navegación
@@ -1875,621 +1945,657 @@ if (screenName === 'pricing') {
             loadScreenData(screenName);
         }
 
-async function loadScreenData(screenName) {
-    try {
-        // Pequeño retraso para asegurar que el DOM esté listo
-        await new Promise(resolve => setTimeout(resolve, 10));
-        
-        switch (screenName) {
-            case 'dashboard':
-                await loadDashboard();
-                break;
-          case 'drivers':
-    if (typeof loadDriversWithPagination !== 'undefined') {
-        await loadDriversWithPagination();
-    } else {
-        await loadDrivers();
-    }
-    break;
-            case 'users':
-                await loadUsersWithPagination();
-                break;
-          case 'trips':
-    await loadTripsWithPagination();
-    // Cargar panel de filtros
-    const filtersPanel = document.getElementById('tripsFiltersPanel');
-    if (filtersPanel) {
-        filtersPanel.innerHTML = TripsFiltersModule.getFiltersPanel();
-        TripsFiltersModule.init();
-        TripsFiltersModule.loadSelectOptions();
-    }
-    break;
-
-                  case 'reports':
-                // No necesita carga adicional, el módulo se encarga
-                break;
-            // resto de casos...
+        async function loadScreenData(screenName) {
+            try {
+                // Pequeño retraso para asegurar que el DOM esté listo
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+                switch (screenName) {
+                    case 'dashboard':
+                        await loadDashboard();
+                        break;
+                    case 'drivers':
+                        if (typeof loadDriversWithPagination !== 'undefined') {
+                            await loadDriversWithPagination();
+                        } else {
+                            await loadDrivers();
+                        }
+                        break;
+                    case 'users':
+                        await loadUsersWithPagination();
+                        break;
+                    case 'trips':
+                        await loadTripsWithPagination();
+                        // Cargar panel de filtros
+                        const filtersPanel = document.getElementById('tripsFiltersPanel');
+                        if (filtersPanel) {
+                            // filtersPanel.innerHTML = TripsFiltersModule.getFiltersPanel();
+                            // TripsFiltersModule.init();
+                            // TripsFiltersModule.loadSelectOptions();
+                        }
+                        break;
+                    case 'reports':
+                        // No necesita carga adicional, el módulo se encarga
+                        break;
+                    // resto de casos...
+                }
+            } catch (error) {
+                console.error(`Error loading ${screenName}:`, error);
+            }
         }
-    } catch (error) {
-        console.error(`Error loading ${screenName}:`, error);
-    }
-}
 
         // ========================================
         // CARGA DE DATOS DEL DASHBOARD
         // ========================================
         
-           // NUEVO: Función para actualizar métricas en tiempo real
-async function updateDashboardMetrics() {
-    try {
-        const response = await fetch('http://localhost:3000/api/admin/stats');
-        const data = await response.json();
-        
-        // Buscar y actualizar cada métrica
-        const driverCard = document.querySelector('[data-metric="drivers"]');
-        const userCard = document.querySelector('[data-metric="users"]');
-        const tripCard = document.querySelector('[data-metric="trips"]');
-        const revenueCard = document.querySelector('[data-metric="revenue"]');
-        
-        if (driverCard) {
-            driverCard.querySelector('.metric-value').textContent = data.totalDrivers || 0;
-        }
-        if (userCard) {
-            userCard.querySelector('.metric-value').textContent = data.totalUsers || 0;
-        }
-        if (tripCard) {
-            tripCard.querySelector('.metric-value').textContent = data.totalTrips || 0;
-        }
-        if (revenueCard) {
-            revenueCard.querySelector('.metric-value').textContent = 
-                `RD$${(data.totalRevenue || 0).toLocaleString()}`;
-        }
-        
-        console.log('📊 Dashboard actualizado:', new Date().toLocaleTimeString());
-    } catch (error) {
-        console.error('Error actualizando dashboard:', error);
-    }
-}
-// Actualizar cada 5 segundos
-//setInterval(updateDashboardMetrics, 5000);
-
-// Función para actualizar posiciones y estados de conductores
-
-// ==========================================
-// SISTEMA DE ALERTAS DEL DASHBOARD
-// ==========================================
-function loadSystemAlerts() {
-    fetch('/api/alerts/active')
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('alertsContainer');
-            
-            if (data.alerts && data.alerts.length > 0) {
-                container.innerHTML = data.alerts.map(alert => `
-                    <div style="padding: 12px; margin-bottom: 8px; border-left: 4px solid ${
-                        alert.type === 'critical' ? '#ef4444' : 
-                        alert.type === 'high' ? '#f59e0b' : 
-                        alert.type === 'warning' ? '#eab308' : '#3b82f6'
-                    }; background: #f9fafb; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 4px;">
-                            ${alert.type === 'critical' ? '🔴' : 
-                              alert.type === 'high' ? '🟠' : 
-                              alert.type === 'warning' ? '🟡' : '🔵'} 
-                            ${alert.title}
-                        </div>
-                        <div style="color: #4b5563; font-size: 0.875rem;">
-                            ${alert.message}
-                        </div>
-                        <div style="color: #9ca3af; font-size: 0.75rem; margin-top: 4px;">
-                            ${new Date(alert.timestamp).toLocaleTimeString()}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = `
-                    <div style="padding: 20px; text-align: center; color: #666;">
-                        <p>✅ No hay alertas activas</p>
-                        <p style="font-size: 0.875rem; color: #9ca3af;">
-                            El sistema está funcionando correctamente
-                        </p>
-                    </div>
-                `;
+        // NUEVO: Función para actualizar métricas en tiempo real
+        async function updateDashboardMetrics() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/stats');
+                const data = await response.json();
+                
+                // Buscar y actualizar cada métrica
+                const driverCard = document.querySelector('[data-metric="drivers"]');
+                const userCard = document.querySelector('[data-metric="users"]');
+                const tripCard = document.querySelector('[data-metric="trips"]');
+                const revenueCard = document.querySelector('[data-metric="revenue"]');
+                
+                if (driverCard) {
+                    driverCard.querySelector('.metric-value').textContent = data.totalDrivers || 0;
+                }
+                if (userCard) {
+                    userCard.querySelector('.metric-value').textContent = data.totalUsers || 0;
+                }
+                if (tripCard) {
+                    tripCard.querySelector('.metric-value').textContent = data.totalTrips || 0;
+                }
+                if (revenueCard) {
+                    revenueCard.querySelector('.metric-value').textContent = 
+                        `RD$${(data.totalRevenue || 0).toLocaleString()}`;
+                }
+                
+                console.log('📊 Dashboard actualizado:', new Date().toLocaleTimeString());
+            } catch (error) {
+                console.error('Error actualizando dashboard:', error);
             }
-        })
-        .catch(error => {
-            console.error('Error cargando alertas:', error);
-        });
-}
+        }
+        // Actualizar cada 5 segundos
+        //setInterval(updateDashboardMetrics, 5000);
 
-// Cargar alertas al inicio
-loadSystemAlerts();
+        // Función para actualizar posiciones y estados de conductores
+
+        // ==========================================
+        // SISTEMA DE ALERTAS DEL DASHBOARD
+        // ==========================================
+        function loadSystemAlerts() {
+            fetch('/api/alerts/active')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('alertsContainer');
+                    
+                    if (data.alerts && data.alerts.length > 0) {
+                        container.innerHTML = data.alerts.map(alert => `
+                            <div style="padding: 12px; margin-bottom: 8px; border-left: 4px solid ${
+                                alert.type === 'critical' ? '#ef4444' : 
+                                alert.type === 'high' ? '#f59e0b' : 
+                                alert.type === 'warning' ? '#eab308' : '#3b82f6'
+                            }; background: #f9fafb; border-radius: 4px;">
+                                <div style="font-weight: bold; margin-bottom: 4px;">
+                                    ${alert.type === 'critical' ? '🔴' : 
+                                      alert.type === 'high' ? '🟠' : 
+                                      alert.type === 'warning' ? '🟡' : '🔵'} 
+                                    ${alert.title}
+                                </div>
+                                <div style="color: #4b5563; font-size: 0.875rem;">
+                                    ${alert.message}
+                                </div>
+                                <div style="color: #9ca3af; font-size: 0.75rem; margin-top: 4px;">
+                                    ${new Date(alert.timestamp).toLocaleTimeString()}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = `
+                            <div style="padding: 20px; text-align: center; color: #666;">
+                                <p>✅ No hay alertas activas</p>
+                                <p style="font-size: 0.875rem; color: #9ca3af;">
+                                    El sistema está funcionando correctamente
+                                </p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando alertas:', error);
+                });
+        }
+
+        // Cargar alertas al inicio
+      //loadSystemAlerts();
 
 // Actualizar alertas cada 30 segundos
-setInterval(loadSystemAlerts, 30000);
+//setInterval(loadSystemAlerts, 30000);
 
-async function updateDriverPositions() {
-    try {
-        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
-        const data = await response.json();
-        
-        if (data.success) {
-            // Actualizar contador de conductores activos
-            const activeCount = data.drivers.length;
-            console.log(`🚗 Conductores activos: ${activeCount}`);
-            
-            // Actualizar panel visual de estados
-            const panel = document.getElementById('driverStatusPanel');
-            if (panel) {
-                panel.innerHTML = data.drivers.map(driver => `
-                    <div style="
-                        padding: 12px;
-                        border-radius: 8px;
-                        border: 1px solid #e5e7eb;
-                        background: ${getStatusColor(driver.status)};
-                        transition: all 0.3s;
-                    ">
-                        <div style="font-weight: 600; color: #1f2937;">
-                            ${driver.name}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
-                            ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
-                        </div>
-                        <div style="
-                            display: inline-block;
-                            padding: 2px 8px;
-                            border-radius: 12px;
-                            font-size: 0.75rem;
-                            font-weight: 600;
-                            background: white;
-                            color: ${getStatusTextColor(driver.status)};
-                            margin-top: 8px;
-                        ">
-                            ${getStatusLabel(driver.status)}
-                        </div>
-                        ${driver.status === 'pending' ? `
-                            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                               <button onclick="ApprovalWizard.openWizard(${driver.id})" style="
-                                    flex: 1;
-                                    background: #22c55e;
-                                    color: white;
-                                    border: none;
-                                    padding: 6px 12px;
-                                    border-radius: 6px;
-                                    cursor: pointer;
-                                    font-size: 12px;
-                                    font-weight: 600;
-                               ">🧙 Proceso de Aprobación</button>
-                                <button onclick="rejectDriver(${driver.id})" style="
-                                    flex: 1;
-                                    background: #ef4444;
-                                    color: white;
-                                    border: none;
-                                    padding: 6px 12px;
-                                    border-radius: 6px;
-                                    cursor: pointer;
-                                    font-size: 12px;
-                                    font-weight: 600;
-                                ">✗ Rechazar</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-            }
-            
-            // Mostrar info en consola
-            data.drivers.forEach(driver => {
-                console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
-            });
-        }
-    } catch (error) {
-        console.error('Error obteniendo posiciones:', error);
-    }
-}
-
-// Funciones auxiliares para colores y etiquetas
-function getStatusColor(status) {
-    const colors = {
-        'online': '#dcfce7',  // Verde claro
-        'busy': '#fef3c7',    // Amarillo claro
-        'offline': '#f3f4f6', // Gris claro
-        'inactive': '#fee2e2' // Rojo claro
-    };
-    return colors[status] || '#f3f4f6';
-}
-
-function getStatusTextColor(status) {
-    const colors = {
-        'online': '#166534',   // Verde oscuro
-        'busy': '#92400e',     // Amarillo oscuro
-        'offline': '#6b7280',  // Gris
-        'inactive': '#991b1b'  // Rojo oscuro
-    };
-    return colors[status] || '#6b7280';
-}
-
-function getStatusLabel(status) {
-    const labels = {
-        'online': '🟢 En línea',
-        'busy': '🟡 Ocupado',
-        'offline': '⚫ Desconectado',
-        'inactive': '🔴 Inactivo',
-        'active': '🟢 Activo',
-        'pending': '🟠 Pendiente'
-    };
-    return labels[status] || status;
-}
-
-// Actualizar posiciones cada 10 segundos
-//updateDriverPositions();
-//setInterval(updateDriverPositions, 10000);
-
-// ==========================================
-// // ==========================================
-// FUNCIONES DE APROBACIÓN/RECHAZO DE CONDUCTORES
-// ==========================================
-
-async function approveDriver(driverId) {
-    try {
-        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'active' })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            NotificationService.success(`Conductor ${driverId} aprobado exitosamente`);
-            updateDriverPositions(); // Actualizar panel
-        } else {
-            NotificationService.error('Error al aprobar conductor');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        NotificationService.error('Error al aprobar conductor');
-    }
-}
-
-async function rejectDriver(driverId) {
-    try {
-        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'suspended' })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            NotificationService.error(`Conductor ${driverId} rechazado`);
-            updateDriverPositions(); // Actualizar panel
-        } else {
-            NotificationService.error('Error al rechazar conductor');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        NotificationService.error('Error al rechazar conductor');
-    }
-}
-
-// Nueva función para cambiar estado desde el selector
-async function changeDriverStatus(driverId, newStatus) {
-    if (!newStatus) return; // Si no se seleccionó un estado válido
-    
-    try {
-        const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: newStatus })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            const statusMessages = {
-                'active': 'activado',
-                'inactive': 'inactivado',
-                'suspended': 'suspendido',
-                'pending': 'marcado como pendiente'
-            };
-            NotificationService.success(`Conductor ${driverId} ${statusMessages[newStatus]}`);
-            updateDriverPositions(); // Actualizar panel
-        } else {
-            NotificationService.error('Error al cambiar estado del conductor');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        NotificationService.error('Error al cambiar estado del conductor');
-    }
-}
-
-async function loadDashboard() {
-    try {
-        // Cargar estadísticas
-        const stats = await AdminAPI.getStats();
-        appState.stats = stats;
-        renderStats(stats);
-        
-        // NUEVO: Iniciar actualización automática
-        updateDashboardMetrics();
-        
-        // Cargar gráfico
-        const chartData = await AdminAPI.getChartData(appState.filters.dateRange);
-        renderChart(chartData);
-        
-        // Cargar actividad reciente
-        const activities = await AdminAPI.getActivities();
-        appState.activities = activities;
-        renderActivities(activities);
-        
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
-        NotificationService.error('Error cargando el dashboard');
-    }
-}
-
-// Función actualizada con selector de estados
-async function updateDriverPositions() {
-    try {
-        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
-        const data = await response.json();
-        
-        if (data.success) {
-            // Actualizar contador de conductores activos
-            const activeCount = data.drivers.length;
-            console.log(`🚗 Conductores activos: ${activeCount}`);
-            
-            // Actualizar panel visual de estados
-            const panel = document.getElementById('driverStatusPanel');
-            if (panel) {
-                panel.innerHTML = data.drivers.map(driver => `
-                    <div style="
-                        padding: 12px;
-                        border-radius: 8px;
-                        border: 1px solid #e5e7eb;
-                        background: ${getStatusColor(driver.status)};
-                        transition: all 0.3s;
-                    ">
-                        <div style="font-weight: 600; color: #1f2937;">
-                            ${driver.name}
-                        </div>
-                        <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
-                            ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
-                        </div>
-                        <div style="
-                            display: inline-block;
-                            padding: 2px 8px;
-                            border-radius: 12px;
-                            font-size: 0.75rem;
-                            font-weight: 600;
-                            background: white;
-                            color: ${getStatusTextColor(driver.status)};
-                            margin-top: 8px;
-                        ">
-                            ${getStatusLabel(driver.status)}
-                        </div>
-                        
-                        <!-- Selector de estados para TODOS los conductores -->
-                        <div style="margin-top: 12px;">
-                            <select onchange="changeDriverStatus(${driver.id}, this.value)" style="
-                                width: 100%;
-                                padding: 6px;
-                                border: 1px solid #d1d5db;
-                                border-radius: 6px;
-                                font-size: 12px;
-                                cursor: pointer;
+        async function updateDriverPositions() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Actualizar contador de conductores activos
+                    const activeCount = data.drivers.length;
+                    console.log(`🚗 Conductores activos: ${activeCount}`);
+                    
+                    // Actualizar panel visual de estados
+                    const panel = document.getElementById('driverStatusPanel');
+                    if (panel) {
+                        panel.innerHTML = data.drivers.map(driver => `
+                            <div style="
+                                padding: 12px;
+                                border-radius: 8px;
+                                border: 1px solid #e5e7eb;
+                                background: ${getStatusColor(driver.status)};
+                                transition: all 0.3s;
                             ">
-                                <option value="">-- Cambiar Estado --</option>
-                                <option value="active" ${driver.status === 'active' ? 'disabled' : ''}>✅ Activar</option>
-                                <option value="inactive" ${driver.status === 'inactive' ? 'disabled' : ''}>⏸️ Inactivar</option>
-                                <option value="suspended" ${driver.status === 'suspended' ? 'disabled' : ''}>🚫 Suspender</option>
-                                <option value="pending" ${driver.status === 'pending' ? 'disabled' : ''}>⏳ Pendiente</option>
-                            </select>
-                        </div>
+                                <div style="font-weight: 600; color: #1f2937;">
+                                    ${driver.name}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
+                                    ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
+                                </div>
+                                <div style="
+                                    display: inline-block;
+                                    padding: 2px 8px;
+                                    border-radius: 12px;
+                                    font-size: 0.75rem;
+                                    font-weight: 600;
+                                    background: white;
+                                    color: ${getStatusTextColor(driver.status)};
+                                    margin-top: 8px;
+                                ">
+                                    ${getStatusLabel(driver.status)}
+                                </div>
+                                ${driver.status === 'pending' ? `
+                                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                       <button onclick="ApprovalWizard.openWizard(${driver.id})" style="
+                                            flex: 1;
+                                            background: #22c55e;
+                                            color: white;
+                                            border: none;
+                                            padding: 6px 12px;
+                                            border-radius: 6px;
+                                            cursor: pointer;
+                                            font-size: 12px;
+                                            font-weight: 600;
+                                       ">🧙 Proceso de Aprobación</button>
+                                        <button onclick="rejectDriver(${driver.id})" style="
+                                            flex: 1;
+                                            background: #ef4444;
+                                            color: white;
+                                            border: none;
+                                            padding: 6px 12px;
+                                            border-radius: 6px;
+                                            cursor: pointer;
+                                            font-size: 12px;
+                                            font-weight: 600;
+                                        ">✗ Rechazar</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Mostrar info en consola
+                    data.drivers.forEach(driver => {
+                        console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
+                    });
+                }
+            } catch (error) {
+                console.error('Error obteniendo posiciones:', error);
+            }
+        }
+
+        // Funciones auxiliares para colores y etiquetas
+        function getStatusColor(status) {
+            const colors = {
+                'online': '#dcfce7',  // Verde claro
+                'busy': '#fef3c7',    // Amarillo claro
+                'offline': '#f3f4f6', // Gris claro
+                'inactive': '#fee2e2' // Rojo claro
+            };
+            return colors[status] || '#f3f4f6';
+        }
+
+        function getStatusTextColor(status) {
+            const colors = {
+                'online': '#166534',   // Verde oscuro
+                'busy': '#92400e',     // Amarillo oscuro
+                'offline': '#6b7280',  // Gris
+                'inactive': '#991b1b'  // Rojo oscuro
+            };
+            return colors[status] || '#6b7280';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'online': '🟢 En línea',
+                'busy': '🟡 Ocupado',
+                'offline': '⚫ Desconectado',
+                'inactive': '🔴 Inactivo',
+                'active': '🟢 Activo',
+                'pending': '🟠 Pendiente'
+            };
+            return labels[status] || status;
+        }
+
+        // Actualizar posiciones cada 10 segundos
+        //updateDriverPositions();
+        //setInterval(updateDriverPositions, 10000);
+
+        // ==========================================
+        // FUNCIONES DE APROBACIÓN/RECHAZO DE CONDUCTORES
+        // ==========================================
+
+        async function approveDriver(driverId) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'active' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    NotificationService.success(`Conductor ${driverId} aprobado exitosamente`);
+                    updateDriverPositions(); // Actualizar panel
+                } else {
+                    NotificationService.error('Error al aprobar conductor');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                NotificationService.error('Error al aprobar conductor');
+            }
+        }
+
+        async function rejectDriver(driverId) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'suspended' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    NotificationService.error(`Conductor ${driverId} rechazado`);
+                    updateDriverPositions(); // Actualizar panel
+                } else {
+                    NotificationService.error('Error al rechazar conductor');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                NotificationService.error('Error al rechazar conductor');
+            }
+        }
+
+        // Nueva función para cambiar estado desde el selector
+        async function changeDriverStatus(driverId, newStatus) {
+            if (!newStatus) return; // Si no se seleccionó un estado válido
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const statusMessages = {
+                        'active': 'activado',
+                        'inactive': 'inactivado',
+                        'suspended': 'suspendido',
+                        'pending': 'marcado como pendiente'
+                    };
+                    NotificationService.success(`Conductor ${driverId} ${statusMessages[newStatus]}`);
+                    updateDriverPositions(); // Actualizar panel
+                } else {
+                    NotificationService.error('Error al cambiar estado del conductor');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                NotificationService.error('Error al cambiar estado del conductor');
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                // Cargar estadísticas
+                const stats = await AdminAPI.getStats();
+                appState.stats = stats;
+                renderStats(stats);
+                
+                // NUEVO: Iniciar actualización automática
+                updateDashboardMetrics();
+                
+                // Cargar gráfico
+                const chartData = await AdminAPI.getChartData(appState.filters.dateRange);
+                renderChart(chartData);
+                
+                // Cargar actividad reciente
+                const activities = await AdminAPI.getActivities();
+                appState.activities = activities;
+                renderActivities(activities);
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                NotificationService.error('Error cargando el dashboard');
+            }
+        }
+
+        // Función para generar reporte manual
+        async function generarReporteManual() {
+            try {
+                document.getElementById('reporteContent').innerHTML = '⏳ Generando reporte...';
+                
+                const response = await fetch('/api/admin/reporte-diario');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('reporteContent').innerHTML = data.reporte;
+                    const now = new Date().toLocaleString('es-DO');
+                    document.getElementById('ultimoReporte').textContent = now;
+                    NotificationService.success('✅ Reporte generado exitosamente');
+                } else {
+                    document.getElementById('reporteContent').innerHTML = '❌ Error generando reporte: ' + data.error;
+                    NotificationService.error('❌ Error generando reporte');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('reporteContent').innerHTML = '❌ Error de conexión';
+                NotificationService.error('❌ Error de conexión');
+            }
+        }
+
+        // Función para mostrar configuración de reportes
+        function verConfiguracionReportes() {
+            NotificationService.info('⚙️ Configuración de reportes disponible en esta pantalla');
+        }
+
+        // Función actualizada con selector de estados
+        async function updateDriverPositionsWithSelector() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Actualizar contador de conductores activos
+                    const activeCount = data.drivers.length;
+                    console.log(`🚗 Conductores activos: ${activeCount}`);
+                    
+                    // Actualizar panel visual de estados
+                    const panel = document.getElementById('driverStatusPanel');
+                    if (panel) {
+                        panel.innerHTML = data.drivers.map(driver => `
+                            <div style="
+                                padding: 12px;
+                                border-radius: 8px;
+                                border: 1px solid #e5e7eb;
+                                background: ${getStatusColor(driver.status)};
+                                transition: all 0.3s;
+                            ">
+                                <div style="font-weight: 600; color: #1f2937;">
+                                    ${driver.name}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #6b7280; margin: 4px 0;">
+                                    ${driver.vehicle_plate} • ${driver.vehicle_model || 'Sin modelo'}
+                                </div>
+                                <div style="
+                                    display: inline-block;
+                                    padding: 2px 8px;
+                                    border-radius: 12px;
+                                    font-size: 0.75rem;
+                                    font-weight: 600;
+                                    background: white;
+                                    color: ${getStatusTextColor(driver.status)};
+                                    margin-top: 8px;
+                                ">
+                                    ${getStatusLabel(driver.status)}
+                                </div>
+                                
+                                <!-- Selector de estados para TODOS los conductores -->
+                                <div style="margin-top: 12px;">
+                                    <select onchange="changeDriverStatus(${driver.id}, this.value)" style="
+                                        width: 100%;
+                                        padding: 6px;
+                                        border: 1px solid #d1d5db;
+                                        border-radius: 6px;
+                                        font-size: 12px;
+                                        cursor: pointer;
+                                    ">
+                                        <option value="">-- Cambiar Estado --</option>
+                                        <option value="active" ${driver.status === 'active' ? 'disabled' : ''}>✅ Activar</option>
+                                        <option value="inactive" ${driver.status === 'inactive' ? 'disabled' : ''}>⏸️ Inactivar</option>
+                                        <option value="suspended" ${driver.status === 'suspended' ? 'disabled' : ''}>🚫 Suspender</option>
+                                        <option value="pending" ${driver.status === 'pending' ? 'disabled' : ''}>⏳ Pendiente</option>
+                                    </select>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    // Mostrar info en consola
+                    data.drivers.forEach(driver => {
+                        console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
+                    });
+                }
+            } catch (error) {
+                console.error('Error obteniendo posiciones:', error);
+            }
+        }
+
+        function renderStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card" data-metric="drivers" onclick="switchScreen('drivers')">
+                    <div class="stat-icon blue">🚗</div>
+                    <div class="stat-value metric-value">${stats.activeDrivers.value.toLocaleString()}</div>
+                    <div class="stat-label">Conductores Activos</div>
+                    <div class="stat-change ${stats.activeDrivers.type}">
+                        <span>${stats.activeDrivers.type === 'positive' ? '↗' : '↘'}</span>
+                        <span>+${stats.activeDrivers.change}% vs mes anterior</span>
                     </div>
-                `).join('');
+                </div>
+                
+                <div class="stat-card" data-metric="users" onclick="switchScreen('users')">
+                    <div class="stat-icon green">👥</div>
+                    <div class="stat-value metric-value">${stats.registeredUsers.value.toLocaleString()}</div>
+                    <div class="stat-label">Usuarios Registrados</div>
+                    <div class="stat-change ${stats.registeredUsers.type}">
+                        <span>${stats.registeredUsers.type === 'positive' ? '↗' : '↘'}</span>
+                        <span>+${stats.registeredUsers.change}% vs mes anterior</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card" data-metric="trips" onclick="switchScreen('trips')">
+                    <div class="stat-icon yellow">🗺️</div>
+                    <div class="stat-value metric-value">${stats.completedTrips.value.toLocaleString()}</div>
+                    <div class="stat-label">Viajes Completados</div>
+                    <div class="stat-change ${stats.completedTrips.type}">
+                        <span>${stats.completedTrips.type === 'positive' ? '↗' : '↘'}</span>
+                        <span>+${stats.completedTrips.change}% vs mes anterior</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card" data-metric="revenue" onclick="switchScreen('earnings')">
+                    <div class="stat-icon red">💰</div>
+                    <div class="stat-value metric-value">RD${stats.monthlyRevenue.value.toLocaleString()}</div>
+                    <div class="stat-label">Ingresos del Mes</div>
+                    <div class="stat-change ${stats.monthlyRevenue.type}">
+                        <span>${stats.monthlyRevenue.type === 'positive' ? '↗' : '↘'}</span>
+                        <span>+${stats.monthlyRevenue.change}% vs mes anterior</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('tripsChart').getContext('2d');
+            
+            if (appState.charts.tripsChart) {
+                appState.charts.tripsChart.destroy();
             }
             
-            // Mostrar info en consola
-            data.drivers.forEach(driver => {
-                console.log(`  - ${driver.name} (${driver.status}) - ${driver.vehicle_plate}`);
+            appState.charts.tripsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Viajes',
+                        data: data.values,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f3f4f6'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#f3f4f6'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
             });
         }
-    } catch (error) {
-        console.error('Error obteniendo posiciones:', error);
-    }
-}
-function renderStats(stats) {
-    const statsGrid = document.getElementById('statsGrid');
-    statsGrid.innerHTML = `
-        <div class="stat-card" data-metric="drivers" onclick="switchScreen('drivers')">
-            <div class="stat-icon blue">🚗</div>
-            <div class="stat-value metric-value">${stats.activeDrivers.value.toLocaleString()}</div>
-            <div class="stat-label">Conductores Activos</div>
-            <div class="stat-change ${stats.activeDrivers.type}">
-                <span>${stats.activeDrivers.type === 'positive' ? '↗' : '↘'}</span>
-                <span>+${stats.activeDrivers.change}% vs mes anterior</span>
-            </div>
-        </div>
-        
-        <div class="stat-card" data-metric="users" onclick="switchScreen('users')">
-            <div class="stat-icon green">👥</div>
-            <div class="stat-value metric-value">${stats.registeredUsers.value.toLocaleString()}</div>
-            <div class="stat-label">Usuarios Registrados</div>
-            <div class="stat-change ${stats.registeredUsers.type}">
-                <span>${stats.registeredUsers.type === 'positive' ? '↗' : '↘'}</span>
-                <span>+${stats.registeredUsers.change}% vs mes anterior</span>
-            </div>
-        </div>
-        
-        <div class="stat-card" data-metric="trips" onclick="switchScreen('trips')">
-            <div class="stat-icon yellow">🗺️</div>
-            <div class="stat-value metric-value">${stats.completedTrips.value.toLocaleString()}</div>
-            <div class="stat-label">Viajes Completados</div>
-            <div class="stat-change ${stats.completedTrips.type}">
-                <span>${stats.completedTrips.type === 'positive' ? '↗' : '↘'}</span>
-                <span>+${stats.completedTrips.change}% vs mes anterior</span>
-            </div>
-        </div>
-        
-        <div class="stat-card" data-metric="revenue" onclick="switchScreen('earnings')">
-            <div class="stat-icon red">💰</div>
-            <div class="stat-value metric-value">RD${stats.monthlyRevenue.value.toLocaleString()}</div>
-            <div class="stat-label">Ingresos del Mes</div>
-            <div class="stat-change ${stats.monthlyRevenue.type}">
-                <span>${stats.monthlyRevenue.type === 'positive' ? '↗' : '↘'}</span>
-                <span>+${stats.monthlyRevenue.change}% vs mes anterior</span>
-            </div>
-        </div>
-    `;
-}
-function renderChart(data) {
-    const ctx = document.getElementById('tripsChart').getContext('2d');
-    
-    if (appState.charts.tripsChart) {
-        appState.charts.tripsChart.destroy();
-    }
-    
-    appState.charts.tripsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: 'Viajes',
-                data: data.values,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f3f4f6'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: '#f3f4f6'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
-        }
-    });
-}
 
-function renderActivities(activities) {
-    const tbody = document.getElementById('activityTableBody');
-    tbody.innerHTML = activities.map(activity => `
-        <tr>
-            <td>${activity.time}</td>
-            <td>${activity.activity}</td>
-            <td>${activity.user}</td>
-            <td><span class="status-badge status-${activity.status}">${getStatusText(activity.status)}</span></td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="viewActivity(${activity.id})" title="Ver detalles">👁️</button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-}
+        function renderActivities(activities) {
+            const tbody = document.getElementById('activityTableBody');
+            tbody.innerHTML = activities.map(activity => `
+                <tr>
+                    <td>${activity.time}</td>
+                    <td>${activity.activity}</td>
+                    <td>${activity.user}</td>
+                    <td><span class="status-badge status-${activity.status}">${getStatusText(activity.status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewActivity(${activity.id})" title="Ver detalles">👁️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
         // ========================================
         // GESTIÓN DE CONDUCTORES
         // ========================================
         
-        async function loadDrivers() {
-            try {
-                const drivers = await AdminAPI.getDrivers();
-                appState.drivers = drivers;
-                renderDrivers(drivers);
-                updateDriversBadge(drivers.length);
-            } catch (error) {
-                console.error('Error loading drivers:', error);
-                NotificationService.error('Error cargando conductores');
-            }
-        }
-function renderDrivers(drivers) {
-    const tbody = document.getElementById('driversTableBody');
-    tbody.innerHTML = drivers.map(driver => {
-        // Manejar nombres en español o inglés
-        const name = driver.name || driver.nombre || 'Sin nombre';
-        const email = driver.email || driver['correo electrónico'] || driver.correo_electronico || '';
-        const vehicleMake = driver.vehicle_make || driver.vehicle_model || driver.modelo_vehiculo || driver['modelo del vehículo'] || driver.modelo_del_vehiculo || 'Sin vehículo';
-        const vehiclePlate = driver.vehicle_plate || driver['placa del vehículo'] || driver.placa_del_vehiculo || driver.vehicle_plate || 'Sin placa';
-        const rating = driver.rating || driver.calificacion || driver.calificación || 5.0;
-        const totalTrips = driver.total_trips || driver.viajes_totales || driver['viajes totales'] || 0;
-        const status = driver.status || driver.estado || 'pending';
-        const id = driver.id;
+    async function loadDrivers() {
+    try {
+        console.log('🔄 Cargando conductores...');
+        const drivers = await AdminAPI.getDrivers();
+        console.log(`✅ ${drivers.length} conductores cargados`);
         
-        return `
-            <tr>
-                <td>
-                    <div class="user-cell">
-                        <div class="user-avatar">${name.split(' ').map(n => n[0]).join('').substring(0,2)}</div>
-                        <div class="user-info">
-                            <div class="user-name">${name}</div>
-                            <div class="user-email">${email}</div>
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    ${vehicleMake}<br>
-                    <small>${vehiclePlate}</small>
-                </td>
-                <td>⭐ ${rating} (${totalTrips})</td>
-                <td>${totalTrips}</td>
-                <td>
-                    <span class="status-badge status-${status}">${getStatusText(status)}</span>
-                    ${status === 'pending' ? `
-                        <div style="margin-top: 8px;">
-                            <button onclick="ApprovalWizard.openWizard(${id})" style="
-                                background: linear-gradient(135deg, #22c55e, #16a34a);
-                                color: white;
-                                border: none;
-                                padding: 8px 16px;
-                                border-radius: 6px;
-                                cursor: pointer;
-                                font-size: 12px;
-                                font-weight: 600;
-                                width: 100%;
-                                transition: all 0.3s;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                            " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                🧙 Proceso de Aprobación
-                            </button>
-                        </div>
-                    ` : ''}
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn view" onclick="viewDriver(${id})" title="Ver">👁️</button>
-                        <button class="action-btn edit" onclick="editDriver(${id})" title="Editar">✏️</button>
-                        <button class="action-btn delete" onclick="deleteDriver(${id})" title="Eliminar">🗑️</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+        appState.drivers = drivers;
+        renderDrivers(drivers);
+        updateDriversBadge(drivers.length);
+        
+        NotificationService.success(`${drivers.length} conductores cargados`);
+    } catch (error) {
+        console.error('❌ Error loading drivers:', error);
+        NotificationService.error('Error cargando conductores: ' + error.message);
+    }
 }
+
+        function renderDrivers(drivers) {
+            const tbody = document.getElementById('driversTableBody');
+            tbody.innerHTML = drivers.map(driver => {
+                // Manejar nombres en español o inglés
+                const name = driver.name || driver.nombre || 'Sin nombre';
+                const email = driver.email || driver['correo electrónico'] || driver.correo_electronico || '';
+                const vehicleMake = driver.vehicle_make || driver.vehicle_model || driver.modelo_vehiculo || driver['modelo del vehículo'] || driver.modelo_del_vehiculo || 'Sin vehículo';
+                const vehiclePlate = driver.vehicle_plate || driver['placa del vehículo'] || driver.placa_del_vehiculo || driver.vehicle_plate || 'Sin placa';
+                const rating = driver.rating || driver.calificacion || driver.calificación || 5.0;
+                const totalTrips = driver.total_trips || driver.viajes_totales || driver['viajes totales'] || 0;
+                const status = driver.status || driver.estado || 'pending';
+                const id = driver.id;
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar">${name.split(' ').map(n => n[0]).join('').substring(0,2)}</div>
+                                <div class="user-info">
+                                    <div class="user-name">${name}</div>
+                                    <div class="user-email">${email}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            ${vehicleMake}<br>
+                            <small>${vehiclePlate}</small>
+                        </td>
+                        <td>⭐ ${rating} (${totalTrips})</td>
+                        <td>${totalTrips}</td>
+                        <td>
+                            <span class="status-badge status-${status}">${getStatusText(status)}</span>
+                            ${status === 'pending' ? `
+                                <div style="margin-top: 8px;">
+                                    <button onclick="ApprovalWizard.openWizard(${id})" style="
+                                        background: linear-gradient(135deg, #22c55e, #16a34a);
+                                        color: white;
+                                        border: none;
+                                        padding: 8px 16px;
+                                        border-radius: 6px;
+                                        cursor: pointer;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                        width: 100%;
+                                        transition: all 0.3s;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                        🧙 Proceso de Aprobación
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view" onclick="viewDriver(${id})" title="Ver">👁️</button>
+                                <button class="action-btn edit" onclick="editDriver(${id})" title="Editar">✏️</button>
+                                <button class="action-btn delete" onclick="deleteDriver(${id})" title="Eliminar">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         function updateDriversBadge(count) {
             document.getElementById('driversBadge').textContent = count;
         }
@@ -2539,73 +2645,73 @@ function renderDrivers(drivers) {
         }
 
         // ========================================
-// FILTROS AVANZADOS DE USUARIOS
-// ========================================
+        // FILTROS AVANZADOS DE USUARIOS
+        // ========================================
 
-function applyUserFilters() {
-    const statusFilter = document.getElementById('userStatusFilter').value;
-    const dateFilter = document.getElementById('userDateFilter').value;
-    const tripsFilter = document.getElementById('userTripsFilter').value;
-    
-    let filteredUsers = [...appState.users];
-    
-    // Filtrar por estado
-    if (statusFilter) {
-        filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
-    }
-    
-    // Filtrar por fecha
-    if (dateFilter) {
-        const now = new Date();
-        filteredUsers = filteredUsers.filter(user => {
-            const userDate = new Date(user.joinDate);
-            switch(dateFilter) {
-                case 'today':
-                    return userDate.toDateString() === now.toDateString();
-                case 'week':
-                    const weekAgo = new Date(now.setDate(now.getDate() - 7));
-                    return userDate >= weekAgo;
-                case 'month':
-                    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
-                    return userDate >= monthAgo;
-                case 'year':
-                    const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
-                    return userDate >= yearAgo;
-                default:
-                    return true;
+        function applyUserFilters() {
+            const statusFilter = document.getElementById('userStatusFilter').value;
+            const dateFilter = document.getElementById('userDateFilter').value;
+            const tripsFilter = document.getElementById('userTripsFilter').value;
+            
+            let filteredUsers = [...appState.users];
+            
+            // Filtrar por estado
+            if (statusFilter) {
+                filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
             }
-        });
-    }
-    
-    // Filtrar por cantidad de viajes
-    if (tripsFilter) {
-        filteredUsers = filteredUsers.filter(user => {
-            switch(tripsFilter) {
-                case '0':
-                    return user.totalTrips === 0;
-                case '1-10':
-                    return user.totalTrips >= 1 && user.totalTrips <= 10;
-                case '11-50':
-                    return user.totalTrips >= 11 && user.totalTrips <= 50;
-                case '50+':
-                    return user.totalTrips > 50;
-                default:
-                    return true;
+            
+            // Filtrar por fecha
+            if (dateFilter) {
+                const now = new Date();
+                filteredUsers = filteredUsers.filter(user => {
+                    const userDate = new Date(user.joinDate);
+                    switch(dateFilter) {
+                        case 'today':
+                            return userDate.toDateString() === now.toDateString();
+                        case 'week':
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            return userDate >= weekAgo;
+                        case 'month':
+                            const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                            return userDate >= monthAgo;
+                        case 'year':
+                            const yearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                            return userDate >= yearAgo;
+                        default:
+                            return true;
+                    }
+                });
             }
-        });
-    }
-    
-    renderUsers(filteredUsers);
-    NotificationService.info(`Mostrando ${filteredUsers.length} usuarios filtrados`);
-}
+            
+            // Filtrar por cantidad de viajes
+            if (tripsFilter) {
+                filteredUsers = filteredUsers.filter(user => {
+                    switch(tripsFilter) {
+                        case '0':
+                            return user.totalTrips === 0;
+                        case '1-10':
+                            return user.totalTrips >= 1 && user.totalTrips <= 10;
+                        case '11-50':
+                            return user.totalTrips >= 11 && user.totalTrips <= 50;
+                        case '50+':
+                            return user.totalTrips > 50;
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            renderUsers(filteredUsers);
+            NotificationService.info(`Mostrando ${filteredUsers.length} usuarios filtrados`);
+        }
 
-function resetUserFilters() {
-    document.getElementById('userStatusFilter').value = '';
-    document.getElementById('userDateFilter').value = '';
-    document.getElementById('userTripsFilter').value = '';
-    renderUsers(appState.users);
-    NotificationService.info('Filtros limpiados');
-}
+        function resetUserFilters() {
+            document.getElementById('userStatusFilter').value = '';
+            document.getElementById('userDateFilter').value = '';
+            document.getElementById('userTripsFilter').value = '';
+            renderUsers(appState.users);
+            NotificationService.info('Filtros limpiados');
+        }
 
         // ========================================
         // GESTIÓN DE VIAJES
@@ -2635,11 +2741,11 @@ function resetUserFilters() {
                     <td><span class="status-badge status-${trip.status}">${getStatusText(trip.status)}</span></td>
                     <td>${formatDateTime(trip.date)}</td>
                     <td>
-             <div class="action-buttons">
-                 <button class="action-btn view" onclick="viewTrip('${trip.id}')" title="Ver">👁️</button>
-                 <button class="action-btn edit" onclick="editTrip('${trip.id}')" title="Editar">✏️</button>
-                 <button class="action-btn info" onclick="showTripDetails('${trip.id}')" title="Desglose">📊</button>
-              </div>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewTrip('${trip.id}')" title="Ver">👁️</button>
+                            <button class="action-btn edit" onclick="editTrip('${trip.id}')" title="Editar">✏️</button>
+                            <button class="action-btn info" onclick="showTripDetails('${trip.id}')" title="Desglose">📊</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -2672,83 +2778,85 @@ function resetUserFilters() {
         // ========================================
         
        async function saveDriver() {
-    try {
-        const form = document.getElementById('driverForm');
-        const formData = new FormData(form);
-        const driverData = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            license: formData.get('license'),
-            vehicle_plate: formData.get('vehiclePlate'),
-            vehicle_model: formData.get('vehicleModel'),
-            vehicle_color: formData.get('vehicleColor'),
-            password: 'password123' // Contraseña por defecto
-        };
+            try {
+                const form = document.getElementById('driverForm');
+                const formData = new FormData(form);
+                const driverData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    license: formData.get('license'),
+                    vehicle_plate: formData.get('vehiclePlate'),
+                    vehicle_model: formData.get('vehicleModel'),
+                    vehicle_color: formData.get('vehicleColor'),
+                    password: 'password123' // Contraseña por defecto
+                };
 
-        // Llamar a la API real
-        const response = await fetch(`${API_URL}/admin/drivers`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('adminToken')
-            },
-            body: JSON.stringify(driverData)
-        });
+                // Llamar a la API real
+                const response = await fetch(`${API_URL}/admin/drivers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify(driverData)
+                });
 
-        const result = await response.json();
-        
-        if (result.success) {
-            closeModal('driverModal');
-            NotificationService.success('Conductor agregado exitosamente');
-            await loadDrivers(); // Recargar lista
-        } else {
-            NotificationService.error(result.error || 'Error al guardar conductor');
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal('driverModal');
+                    NotificationService.success('Conductor agregado exitosamente');
+                    await loadDrivers(); // Recargar lista
+                } else {
+                    NotificationService.error(result.error || 'Error al guardar conductor');
+                }
+                
+            } catch (error) {
+                console.error('Error saving driver:', error);
+                NotificationService.error('Error al guardar conductor');
+            }
         }
-        
-    } catch (error) {
-        console.error('Error saving driver:', error);
-        NotificationService.error('Error al guardar conductor');
-    }
-}
+
         async function saveUser() {
-    try {
-        const form = document.getElementById('userForm');
-        const formData = new FormData(form);
-        const userData = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            password: 'password123' // Contraseña por defecto
-        };
+            try {
+                const form = document.getElementById('userForm');
+                const formData = new FormData(form);
+                const userData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    password: 'password123' // Contraseña por defecto
+                };
 
-        // Llamar a la API real
-        const response = await fetch(`${API_URL}/admin/users`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': localStorage.getItem('adminToken')
-            },
-            body: JSON.stringify(userData)
-        });
+                // Llamar a la API real
+                const response = await fetch(`${API_URL}/admin/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify(userData)
+                });
 
-        const result = await response.json();
-        
-        if (result.success) {
-            closeModal('userModal');
-            NotificationService.success('Usuario agregado exitosamente');
-            await loadUsers(); // Recargar lista
-        } else {
-            NotificationService.error(result.error || 'Error al guardar usuario');
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal('userModal');
+                    NotificationService.success('Usuario agregado exitosamente');
+                    await loadUsers(); // Recargar lista
+                } else {
+                    NotificationService.error(result.error || 'Error al guardar usuario');
+                }
+                
+            } catch (error) {
+                console.error('Error saving user:', error);
+                NotificationService.error('Error al guardar usuario');
+            }
         }
-        
-    } catch (error) {
-        console.error('Error saving user:', error);
-        NotificationService.error('Error al guardar usuario');
-    }
-}
+
         // ========================================
-        // FUNCIONES DE ACCIÓNA
+        // FUNCIONES DE ACCIÓN
         // ========================================
         
         function viewDriver(driverId) {
@@ -2825,99 +2933,99 @@ function resetUserFilters() {
         }
 
         // Función para mostrar el desglose detallado del viaje
-function showTripDetails(tripId) {
-    const trip = appState.trips.find(t => t.id === tripId);
-    if (!trip) {
-        NotificationService.error('Viaje no encontrado');
-        return;
-    }
-    
-    // Calcular desglose financiero
-    const tarifaBase = 50;
-    const costoPorKm = 15;
-    const costoPorMinuto = 3;
-    const distanciaKm = parseFloat(trip.distance) || 5.2;
-    const tiempoMin = parseInt(trip.duration) || 18;
-    
-    const costoDistancia = distanciaKm * costoPorKm;
-    const costoTiempo = tiempoMin * costoPorMinuto;
-    const subtotal = tarifaBase + costoDistancia + costoTiempo;
-    const comisionPlataforma = subtotal * 0.20;
-    const gananciaConductor = subtotal - comisionPlataforma;
-    
-    // Generar HTML del desglose
-    const detailsHTML = `
-        <div class="trip-details-container">
-            <!-- Información General -->
-            <div class="detail-section">
-                <h6 class="section-title">📍 Información del Viaje</h6>
-                <table class="detail-table">
-                    <tr><td><strong>ID Viaje:</strong></td><td>#${trip.id}</td></tr>
-                    <tr><td><strong>Fecha:</strong></td><td>${formatDateTime(trip.date)}</td></tr>
-                    <tr><td><strong>Pasajero:</strong></td><td>${trip.passenger}</td></tr>
-                    <tr><td><strong>Conductor:</strong></td><td>${trip.driver}</td></tr>
-                    <tr><td><strong>Origen:</strong></td><td>${trip.origin}</td></tr>
-                    <tr><td><strong>Destino:</strong></td><td>${trip.destination}</td></tr>
-                    <tr><td><strong>Estado:</strong></td><td><span class="status-badge status-${trip.status}">${getStatusText(trip.status)}</span></td></tr>
-                </table>
-            </div>
+        function showTripDetails(tripId) {
+            const trip = appState.trips.find(t => t.id === tripId);
+            if (!trip) {
+                NotificationService.error('Viaje no encontrado');
+                return;
+            }
             
-            <!-- Métricas del Viaje -->
-            <div class="detail-section">
-                <h6 class="section-title">📊 Métricas del Viaje</h6>
-                <table class="detail-table">
-                    <tr><td><strong>Distancia:</strong></td><td>${distanciaKm.toFixed(1)} km</td></tr>
-                    <tr><td><strong>Duración:</strong></td><td>${tiempoMin} minutos</td></tr>
-                    <tr><td><strong>Tiempo de espera:</strong></td><td>3 minutos</td></tr>
-                    <tr><td><strong>Velocidad promedio:</strong></td><td>${(distanciaKm / (tiempoMin/60)).toFixed(1)} km/h</td></tr>
-                </table>
-            </div>
+            // Calcular desglose financiero
+            const tarifaBase = 50;
+            const costoPorKm = 15;
+            const costoPorMinuto = 3;
+            const distanciaKm = parseFloat(trip.distance) || 5.2;
+            const tiempoMin = parseInt(trip.duration) || 18;
             
-            <!-- Desglose Financiero -->
-            <div class="detail-section">
-                <h6 class="section-title">💰 Desglose Financiero</h6>
-                <table class="detail-table">
-                    <tr><td><strong>Tarifa base:</strong></td><td>RD$ ${tarifaBase.toFixed(2)}</td></tr>
-                    <tr><td><strong>Distancia (${distanciaKm.toFixed(1)} km × RD$${costoPorKm}):</strong></td><td>RD$ ${costoDistancia.toFixed(2)}</td></tr>
-                    <tr><td><strong>Tiempo (${tiempoMin} min × RD$${costoPorMinuto}):</strong></td><td>RD$ ${costoTiempo.toFixed(2)}</td></tr>
-                    <tr class="total-row"><td><strong>SUBTOTAL:</strong></td><td><strong>RD$ ${subtotal.toFixed(2)}</strong></td></tr>
-                    <tr><td><strong>Comisión plataforma (20%):</strong></td><td style="color: red;">-RD$ ${comisionPlataforma.toFixed(2)}</td></tr>
-                    <tr class="total-row success"><td><strong>Ganancia del conductor:</strong></td><td><strong>RD$ ${gananciaConductor.toFixed(2)}</strong></td></tr>
-                </table>
-            </div>
+            const costoDistancia = distanciaKm * costoPorKm;
+            const costoTiempo = tiempoMin * costoPorMinuto;
+            const subtotal = tarifaBase + costoDistancia + costoTiempo;
+            const comisionPlataforma = subtotal * 0.20;
+            const gananciaConductor = subtotal - comisionPlataforma;
             
-            <!-- Método de Pago -->
-            <div class="detail-section">
-                <h6 class="section-title">💳 Método de Pago</h6>
-                <table class="detail-table">
-                    <tr><td><strong>Método:</strong></td><td>${trip.paymentMethod || 'Efectivo'}</td></tr>
-                    <tr><td><strong>Propina:</strong></td><td>RD$ ${trip.tip || '0.00'}</td></tr>
-                    <tr><td><strong>Total cobrado:</strong></td><td><strong>RD$ ${trip.price}</strong></td></tr>
-                </table>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('tripDetailsContent').innerHTML = detailsHTML;
-    document.getElementById('tripDetailsModal').style.display = 'block';
-}
+            // Generar HTML del desglose
+            const detailsHTML = `
+                <div class="trip-details-container">
+                    <!-- Información General -->
+                    <div class="detail-section">
+                        <h6 class="section-title">📍 Información del Viaje</h6>
+                        <table class="detail-table">
+                            <tr><td><strong>ID Viaje:</strong></td><td>#${trip.id}</td></tr>
+                            <tr><td><strong>Fecha:</strong></td><td>${formatDateTime(trip.date)}</td></tr>
+                            <tr><td><strong>Pasajero:</strong></td><td>${trip.passenger}</td></tr>
+                            <tr><td><strong>Conductor:</strong></td><td>${trip.driver}</td></tr>
+                            <tr><td><strong>Origen:</strong></td><td>${trip.origin}</td></tr>
+                            <tr><td><strong>Destino:</strong></td><td>${trip.destination}</td></tr>
+                            <tr><td><strong>Estado:</strong></td><td><span class="status-badge status-${trip.status}">${getStatusText(trip.status)}</span></td></tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Métricas del Viaje -->
+                    <div class="detail-section">
+                        <h6 class="section-title">📊 Métricas del Viaje</h6>
+                        <table class="detail-table">
+                            <tr><td><strong>Distancia:</strong></td><td>${distanciaKm.toFixed(1)} km</td></tr>
+                            <tr><td><strong>Duración:</strong></td><td>${tiempoMin} minutos</td></tr>
+                            <tr><td><strong>Tiempo de espera:</strong></td><td>3 minutos</td></tr>
+                            <tr><td><strong>Velocidad promedio:</strong></td><td>${(distanciaKm / (tiempoMin/60)).toFixed(1)} km/h</td></tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Desglose Financiero -->
+                    <div class="detail-section">
+                        <h6 class="section-title">💰 Desglose Financiero</h6>
+                        <table class="detail-table">
+                            <tr><td><strong>Tarifa base:</strong></td><td>RD$ ${tarifaBase.toFixed(2)}</td></tr>
+                            <tr><td><strong>Distancia (${distanciaKm.toFixed(1)} km × RD$${costoPorKm}):</strong></td><td>RD$ ${costoDistancia.toFixed(2)}</td></tr>
+                            <tr><td><strong>Tiempo (${tiempoMin} min × RD$${costoPorMinuto}):</strong></td><td>RD$ ${costoTiempo.toFixed(2)}</td></tr>
+                            <tr class="total-row"><td><strong>SUBTOTAL:</strong></td><td><strong>RD$ ${subtotal.toFixed(2)}</strong></td></tr>
+                            <tr><td><strong>Comisión plataforma (20%):</strong></td><td style="color: red;">-RD$ ${comisionPlataforma.toFixed(2)}</td></tr>
+                            <tr class="total-row success"><td><strong>Ganancia del conductor:</strong></td><td><strong>RD$ ${gananciaConductor.toFixed(2)}</strong></td></tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Método de Pago -->
+                    <div class="detail-section">
+                        <h6 class="section-title">💳 Método de Pago</h6>
+                        <table class="detail-table">
+                            <tr><td><strong>Método:</strong></td><td>${trip.paymentMethod || 'Efectivo'}</td></tr>
+                            <tr><td><strong>Propina:</strong></td><td>RD$ ${trip.tip || '0.00'}</td></tr>
+                            <tr><td><strong>Total cobrado:</strong></td><td><strong>RD$ ${trip.price}</strong></td></tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('tripDetailsContent').innerHTML = detailsHTML;
+            document.getElementById('tripDetailsModal').style.display = 'block';
+        }
 
-function closeTripDetailsModal() {
-    document.getElementById('tripDetailsModal').style.display = 'none';
-}
+        function closeTripDetailsModal() {
+            document.getElementById('tripDetailsModal').style.display = 'none';
+        }
 
-function exportTripDetails() {
-    NotificationService.success('Exportando desglose a PDF...');
-    // Aquí se implementaría la exportación real a PDF
-    setTimeout(() => {
-        NotificationService.info('PDF generado exitosamente');
-    }, 2000);
-}
+        function exportTripDetails() {
+            NotificationService.success('Exportando desglose a PDF...');
+            // Aquí se implementaría la exportación real a PDF
+            setTimeout(() => {
+                NotificationService.info('PDF generado exitosamente');
+            }, 2000);
+        }
 
-    function loadSurgeMonitor() {
-    // Abre en una ventana modal o iframe
-    window.open('http://localhost:3000/surge-monitor.html', 'SurgeMonitor', 'width=1400,height=800');
-}
+        function loadSurgeMonitor() {
+            // Abre en una ventana modal o iframe
+            window.open('http://localhost:3000/surge-monitor.html', 'SurgeMonitor', 'width=1400,height=800');
+        }
 
         function setupSearch() {
             const searchInput = document.getElementById('searchInput');
@@ -3042,164 +3150,164 @@ function exportTripDetails() {
         }
 
         // Función para mostrar estadísticas de viajes
-function showTripsStats() {
-    const trips = appState.trips || [];
-    
-    // Calcular estadísticas
-    const totalTrips = trips.length;
-    const completedTrips = trips.filter(t => t.status === 'completed').length;
-    const cancelledTrips = trips.filter(t => t.status === 'cancelled').length;
-    const totalRevenue = trips.reduce((sum, t) => sum + (t.price || 0), 0);
-    const avgPrice = totalTrips > 0 ? (totalRevenue / totalTrips).toFixed(2) : 0;
-    
-    // Crear modal con estadísticas
-    const statsHTML = `
-        <div style="padding: 20px;">
-            <h2 style="color: #1f2937; margin-bottom: 20px;">📊 Estadísticas de Viajes</h2>
+        function showTripsStats() {
+            const trips = appState.trips || [];
             
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                    <div style="color: #6b7280; font-size: 14px;">Total de Viajes</div>
-                    <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${totalTrips}</div>
-                </div>
-                
-                <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
-                    <div style="color: #6b7280; font-size: 14px;">Completados</div>
-                    <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${completedTrips}</div>
-                </div>
-                
-                <div style="background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
-                    <div style="color: #6b7280; font-size: 14px;">Cancelados</div>
-                    <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${cancelledTrips}</div>
-                </div>
-                
-                <div style="background: #fefce8; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                    <div style="color: #6b7280; font-size: 14px;">Ingresos Totales</div>
-                    <div style="color: #1f2937; font-size: 24px; font-weight: bold;">RD$ ${totalRevenue.toLocaleString()}</div>
-                </div>
-            </div>
+            // Calcular estadísticas
+            const totalTrips = trips.length;
+            const completedTrips = trips.filter(t => t.status === 'completed').length;
+            const cancelledTrips = trips.filter(t => t.status === 'cancelled').length;
+            const totalRevenue = trips.reduce((sum, t) => sum + (t.price || 0), 0);
+            const avgPrice = totalTrips > 0 ? (totalRevenue / totalTrips).toFixed(2) : 0;
             
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                <p style="color: #6b7280;">Precio promedio por viaje: <strong>RD$ ${avgPrice}</strong></p>
-                <p style="color: #6b7280;">Tasa de completación: <strong>${totalTrips > 0 ? ((completedTrips/totalTrips)*100).toFixed(1) : 0}%</strong></p>
-            </div>
+            // Crear modal con estadísticas
+            const statsHTML = `
+                <div style="padding: 20px;">
+                    <h2 style="color: #1f2937; margin-bottom: 20px;">📊 Estadísticas de Viajes</h2>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <div style="color: #6b7280; font-size: 14px;">Total de Viajes</div>
+                            <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${totalTrips}</div>
+                        </div>
+                        
+                        <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
+                            <div style="color: #6b7280; font-size: 14px;">Completados</div>
+                            <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${completedTrips}</div>
+                        </div>
+                        
+                        <div style="background: #fef2f2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+                            <div style="color: #6b7280; font-size: 14px;">Cancelados</div>
+                            <div style="color: #1f2937; font-size: 24px; font-weight: bold;">${cancelledTrips}</div>
+                        </div>
+                        
+                        <div style="background: #fefce8; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                            <div style="color: #6b7280; font-size: 14px;">Ingresos Totales</div>
+                            <div style="color: #1f2937; font-size: 24px; font-weight: bold;">RD$ ${totalRevenue.toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280;">Precio promedio por viaje: <strong>RD$ ${avgPrice}</strong></p>
+                        <p style="color: #6b7280;">Tasa de completación: <strong>${totalTrips > 0 ? ((completedTrips/totalTrips)*100).toFixed(1) : 0}%</strong></p>
+                    </div>
+                    
+                    <button onclick="closeStatsModal()" style="margin-top: 20px; width: 100%; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        Cerrar
+                    </button>
+                </div>
+            `;
             
-            <button onclick="closeStatsModal()" style="margin-top: 20px; width: 100%; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                Cerrar
-            </button>
-        </div>
-    `;
-    
-    // Crear y mostrar modal
-    const modal = document.createElement('div');
-    modal.id = 'statsModal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        z-index: 9999;
-        max-width: 500px;
-        width: 90%;
-    `;
-    modal.innerHTML = statsHTML;
-    
-    // Overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'statsOverlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 9998;
-    `;
-    overlay.onclick = closeStatsModal;
-    
-    document.body.appendChild(overlay);
-    document.body.appendChild(modal);
-}
+            // Crear y mostrar modal
+            const modal = document.createElement('div');
+            modal.id = 'statsModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                z-index: 9999;
+                max-width: 500px;
+                width: 90%;
+            `;
+            modal.innerHTML = statsHTML;
+            
+            // Overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'statsOverlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 9998;
+            `;
+            overlay.onclick = closeStatsModal;
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+        }
 
-function closeStatsModal() {
-    const modal = document.getElementById('statsModal');
-    const overlay = document.getElementById('statsOverlay');
-    if (modal) modal.remove();
-    if (overlay) overlay.remove();
-}
+        function closeStatsModal() {
+            const modal = document.getElementById('statsModal');
+            const overlay = document.getElementById('statsOverlay');
+            if (modal) modal.remove();
+            if (overlay) overlay.remove();
+        }
 
-      // Agregar al módulo de filtros la función de PDF
-TripsFiltersModule.exportToPDF = function() {
-    const filteredTrips = this.filterTrips(appState.trips);
-    
-    // Crear contenido HTML para PDF
-    const pdfContent = `
-        <h2>Reporte de Viajes - ${new Date().toLocaleDateString('es-DO')}</h2>
-        <table border="1" style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f0f0f0;">
-                    <th>ID</th>
-                    <th>Fecha</th>
-                    <th>Pasajero</th>
-                    <th>Conductor</th>
-                    <th>Precio</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filteredTrips.map(trip => `
-                    <tr>
-                        <td>${trip.id}</td>
-                        <td>${new Date(trip.date).toLocaleDateString('es-DO')}</td>
-                        <td>${trip.passenger}</td>
-                        <td>${trip.driver}</td>
-                        <td>RD$ ${trip.price}</td>
-                        <td>${trip.status}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        <p>Total de viajes: ${filteredTrips.length}</p>
-        <p>Ingresos totales: RD$ ${filteredTrips.reduce((sum, t) => sum + t.price, 0).toLocaleString()}</p>
-    `;
-    
-    // Abrir ventana para imprimir/guardar como PDF
-    const printWindow = window.open('', '', 'height=600,width=800');
-    printWindow.document.write('<html><head><title>Reporte de Viajes</title>');
-    printWindow.document.write('<style>body{font-family:Arial;} table{width:100%;} th,td{padding:8px;text-align:left;}</style>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(pdfContent);
-    printWindow.document.write('</body></html>');
-    printWindow.document.close();
-    printWindow.print();
-    
-    NotificationService.success('Generando PDF del reporte');
-};
+        // Agregar al módulo de filtros la función de PDF
+        function exportToPDF() {
+            const filteredTrips = this.filterTrips ? this.filterTrips(appState.trips) : appState.trips;
+            
+            // Crear contenido HTML para PDF
+            const pdfContent = `
+                <h2>Reporte de Viajes - ${new Date().toLocaleDateString('es-DO')}</h2>
+                <table border="1" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f0f0f0;">
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Pasajero</th>
+                            <th>Conductor</th>
+                            <th>Precio</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredTrips.map(trip => `
+                            <tr>
+                                <td>${trip.id}</td>
+                                <td>${new Date(trip.date).toLocaleDateString('es-DO')}</td>
+                                <td>${trip.passenger}</td>
+                                <td>${trip.driver}</td>
+                                <td>RD$ ${trip.price}</td>
+                                <td>${trip.status}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p>Total de viajes: ${filteredTrips.length}</p>
+                <p>Ingresos totales: RD$ ${filteredTrips.reduce((sum, t) => sum + t.price, 0).toLocaleString()}</p>
+            `;
+            
+            // Abrir ventana para imprimir/guardar como PDF
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>Reporte de Viajes</title>');
+            printWindow.document.write('<style>body{font-family:Arial;} table{width:100%;} th,td{padding:8px;text-align:left;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(pdfContent);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+            
+            NotificationService.success('Generando PDF del reporte');
+        }
 
-// Función de prueba para simular cancelación de conductor
-function testDriverCancellation() {
-    const testData = {
-        tripId: 'TEST-' + Date.now(),
-        driverId: 1,
-        driverName: 'Juan Pérez',
-        userId: 101,
-        userName: 'María García',
-        pickupLocation: 'Plaza Central',
-        destination: 'Aeropuerto'
-    };
-    
-    // Disparar evento de cancelación
-    window.dispatchEvent(new CustomEvent('trip-cancelled-by-driver', {
-        detail: testData
-    }));
-}
+        // Función de prueba para simular cancelación de conductor
+        function testDriverCancellation() {
+            const testData = {
+                tripId: 'TEST-' + Date.now(),
+                driverId: 1,
+                driverName: 'Juan Pérez',
+                userId: 101,
+                userName: 'María García',
+                pickupLocation: 'Plaza Central',
+                destination: 'Aeropuerto'
+            };
+            
+            // Disparar evento de cancelación
+            window.dispatchEvent(new CustomEvent('trip-cancelled-by-driver', {
+                detail: testData
+            }));
+        }
 
-// Hacer la función disponible globalmente para pruebas
-window.testDriverCancellation = testDriverCancellation;
+        // Hacer la función disponible globalmente para pruebas
+        window.testDriverCancellation = testDriverCancellation;
 
         function generateCSV(data, columns) {
             const headers = columns.join(',');
@@ -3304,18 +3412,17 @@ window.testDriverCancellation = testDriverCancellation;
         // CONFIGURACIÓN DE EVENTOS
         // ========================================
         
-        function setupEventListeners() {
-            // Navegación del sidebar
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const screen = item.getAttribute('data-screen');
-                    if (screen) {
-                        switchScreen(screen);
-                    }
-                });
-            });
-
+       function setupEventListeners() {
+    // Navegación del sidebar
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            const screen = item.getAttribute('data-screen');
+            if (screen) {
+                e.preventDefault();
+                switchScreen(screen);
+            }
+        });
+    });
             // Cerrar modales al hacer clic fuera
             document.querySelectorAll('.modal-overlay').forEach(overlay => {
                 overlay.addEventListener('click', (e) => {
@@ -3414,69 +3521,70 @@ window.testDriverCancellation = testDriverCancellation;
         
         document.addEventListener('DOMContentLoaded', async () => {
              
-             try {
+            try {
 
                 // ==========================================
-        // SISTEMA DE NOTIFICACIONES EN TIEMPO REAL
-        // ==========================================
-        
-        // Conectar con Socket.IO
-        const socket = io('http://localhost:3000');
-        
-        socket.on('connect', () => {
-            console.log('🔌 Conectado al servidor de notificaciones');
-            socket.emit('join-admin');
-        });
-        
-        // Escuchar nuevos viajes
-        socket.on('new-trip', (tripData) => {
-            console.log('🚖 NUEVO VIAJE RECIBIDO:', tripData);
-            
-            // Mostrar notificación visual
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 80px;
-                right: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                z-index: 9999;
-                animation: slideIn 0.5s ease;
-                min-width: 350px;
-            `;
-            
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <span style="font-size: 24px; margin-right: 10px;">🚨</span>
-                    <strong style="font-size: 18px;">¡Nuevo Viaje!</strong>
-                </div>
-                <div style="margin-left: 34px;">
-                    <div>👤 ${tripData.user}</div>
-                    <div>📍 ${tripData.origin}</div>
-                    <div>📌 ${tripData.destination}</div>
-                    <div style="font-size: 12px; opacity: 0.9;">
-                        🕐 ${new Date(tripData.timestamp).toLocaleTimeString()}
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-ocultar después de 8 segundos
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 500);
-            }, 8000);
-        });
-        
-        socket.on('disconnect', () => {
-            console.log('❌ Desconectado del servidor');
-        });
+                // SISTEMA DE NOTIFICACIONES EN TIEMPO REAL
+                // ==========================================
+                
+                // Conectar con Socket.IO
+                const socket = io('http://localhost:3000');
+                
+                socket.on('connect', () => {
+                    console.log('🔌 Conectado al servidor de notificaciones');
+                    socket.emit('join-admin');
+                });
+                
+                // Escuchar nuevos viajes
+                socket.on('new-trip', (tripData) => {
+                    console.log('🚖 NUEVO VIAJE RECIBIDO:', tripData);
+                    
+                    // Mostrar notificación visual
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 80px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 20px;
+                        border-radius: 12px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                        z-index: 9999;
+                        animation: slideIn 0.5s ease;
+                        min-width: 350px;
+                    `;
+                    
+                    notification.innerHTML = `
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 24px; margin-right: 10px;">🚨</span>
+                            <strong style="font-size: 18px;">¡Nuevo Viaje!</strong>
+                        </div>
+                        <div style="margin-left: 34px;">
+                            <div>👤 ${tripData.user}</div>
+                            <div>📍 ${tripData.origin}</div>
+                            <div>📌 ${tripData.destination}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">
+                                🕐 ${new Date(tripData.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(notification);
+                    
+                    // Auto-ocultar después de 8 segundos
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 500);
+                    }, 8000);
+                });
+                
+                socket.on('disconnect', () => {
+                    console.log('❌ Desconectado del servidor');
+                });
+
                 console.log('🚀 Inicializando Panel de Administración TaxiApp...');
                 
                 // Configurar eventos
@@ -3495,7 +3603,9 @@ window.testDriverCancellation = testDriverCancellation;
                 
                 console.log('✅ Panel de administración inicializado correctamente');
                 // Inicializar módulo de reasignación automática
-                      TripReassignmentModule.init();
+                if (typeof TripReassignmentModule !== 'undefined') {
+                    TripReassignmentModule.init();
+                }
                 
             } catch (error) {
                 console.error('❌ Error inicializando la aplicación:', error);
@@ -3571,29 +3681,26 @@ window.testDriverCancellation = testDriverCancellation;
         console.log('💡 Usa AdminApp.generateMockData() para generar datos de prueba');
         console.log('🗑️ Usa AdminApp.clearAllData() para limpiar todos los datos');
 
-     // Función para cerrar sesión
-   
-function logout() {
-  
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminData');
-    localStorage.removeItem('adminId');
-    window.location.href = 'index.html';
-}
+        // Función para cerrar sesión
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminData');
+            localStorage.removeItem('adminId');
+            window.location.href = 'index.html';
+        }
 
-// Mostrar opción de administradores solo para super_admin
-const userData2 = JSON.parse(localStorage.getItem('adminData') || '{}');
-if (userData2.role !== 'super_admin') {
-    const adminMenu = document.getElementById('adminMenu');
-    if (adminMenu) adminMenu.style.display = 'none';
-}
+        // Mostrar opción de administradores solo para super_admin
+        //const userData2 = JSON.parse(localStorage.getItem('adminData') || '{}');
+        //if (userData2.role !== 'super_admin') {
+        //    const adminMenu = document.getElementById('adminMenu');
+        //    if (adminMenu) adminMenu.style.display = 'none';
+        //}
 
     </script>
 
-
-    <script src="documents-module.js"></script>
+    <script src="documents-module.js"></script> 
     <script src="trips-monitor-module.js"></script>
-    <!-- <script src="support-module.js"></script> -->
+    <script src="support-module.js"></script> 
     <script src="finances-module.js"></script>
     <script src="pagination-module.js"></script>
     <!-- Módulo de Reportes -->
@@ -3606,7 +3713,5 @@ if (userData2.role !== 'super_admin') {
     <script src="trips-filters-module.js"></script>
     <script src="trip-reassignment-module.js"></script>
 
-
 </body>
 </html>
-
