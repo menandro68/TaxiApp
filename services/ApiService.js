@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 
 class ApiService {
   constructor() {
-    this.BASE_URL = 'http://localhost:3000/api'; // Cambiar en producción
+    this.BASE_URL = ${window.location.origin}/api'; // Cambiar en producción
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;

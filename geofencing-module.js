@@ -8,7 +8,7 @@ const GeofencingModule = (function() {
     let testMarker = null;
     let activeGeofences = [];
     let eventCount = 0;
-    const API_URL = 'http://localhost:3000'; // Ajusta según tu configuración
+    const API_URL = ${window.location.origin}'; // Ajusta según tu configuración
 
     // Colores para diferentes tipos de geofences
     const GEOFENCE_COLORS = {

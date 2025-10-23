@@ -402,7 +402,7 @@ function startSurgeEngine() {
     // Actualizar métricas automáticamente
     setInterval(async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/surge/update-metrics', {
+            const response = await fetch(${window.location.origin}/api/surge/update-metrics', {
                 method: 'POST'
             });
             const data = await response.json();

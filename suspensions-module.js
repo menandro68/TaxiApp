@@ -15,7 +15,7 @@ const SuspensionsModule = {
     // Cargar estadísticas
     async loadStatistics() {
         try {
-            const response = await fetch('http://localhost:3000/api/suspensions/stats');
+            const response = await fetch(${window.location.origin}/api/suspensions/stats');
             const result = await response.json();
             if (result.success) {
                 this.statistics = result.data;
@@ -213,7 +213,7 @@ const SuspensionsModule = {
     // Mostrar modal para nueva suspensión
     showSuspendModal() {
         // Primero, obtener lista de conductores activos
-        fetch('http://localhost:3000/api/drivers?status=active')
+        fetch(${window.location.origin}/api/drivers?status=active')
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
@@ -306,7 +306,7 @@ const SuspensionsModule = {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/suspensions/create', {
+            const response = await fetch(${window.location.origin}/api/suspensions/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -380,7 +380,7 @@ const SuspensionsModule = {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/suspensions/lift', {
+            const response = await fetch(${window.location.origin}/api/suspensions/lift', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -478,7 +478,7 @@ const SuspensionsModule = {
     setupEventListeners() {
         // Verificar suspensiones expiradas cada 5 minutos
         setInterval(() => {
-            fetch('http://localhost:3000/api/suspensions/check-expired', {
+            fetch(${window.location.origin}/api/suspensions/check-expired', {
                 method: 'POST'
             }).then(response => response.json())
               .then(result => {

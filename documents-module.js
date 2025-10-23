@@ -3,7 +3,7 @@
 
 const DocumentsModule = {
     // URL del backend
-    API_URL: 'http://localhost:3000/api',
+    API_URL: ${window.location.origin}/api',
     
     // Estado del módulo
     currentFilter: 'all',

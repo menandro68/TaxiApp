@@ -1,6 +1,6 @@
 // MÓDULO DE GESTIÓN FINANCIERA Y COMISIONES
 const FinancesModule = {
-    API_URL: 'http://localhost:3000/api',
+    API_URL: ${window.location.origin}/api',
     currentCommission: 10,
     
     // Inicializar

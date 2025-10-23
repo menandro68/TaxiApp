@@ -1390,7 +1390,7 @@ if (userData.role !== 'super_admin') {
 }
 
 // CONFIGURACIÓN DE API REAL - AGREGADO PARA CONECTAR CON BACKEND
-const API_URL = 'http://localhost:3000/api';
+const API_URL = ${window.location.origin}/api';
 const USE_REAL_API = true;
 
 async function fetchAPI(endpoint, options = {}) {
@@ -1823,7 +1823,7 @@ async function loadScreenData(screenName) {
            // NUEVO: Función para actualizar métricas en tiempo real
 async function updateDashboardMetrics() {
     try {
-        const response = await fetch('http://localhost:3000/api/admin/stats');
+        const response = await fetch(${window.location.origin}/api/admin/stats');
         const data = await response.json();
         
         // Buscar y actualizar cada métrica
@@ -1910,7 +1910,7 @@ setInterval(loadSystemAlerts, 30000);
 
 async function updateDriverPositions() {
     try {
-        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+        const response = await fetch(${window.location.origin}/api/admin/drivers/positions');
         const data = await response.json();
         
         if (data.success) {
@@ -2138,7 +2138,7 @@ async function loadDashboard() {
 // Función actualizada con selector de estados
 async function updateDriverPositions() {
     try {
-        const response = await fetch('http://localhost:3000/api/admin/drivers/positions');
+        const response = await fetch(${window.location.origin}/api/admin/drivers/positions');
         const data = await response.json();
         
         if (data.success) {
@@ -3157,7 +3157,7 @@ function exportTripDetails() {
         // ==========================================
         
         // Conectar con Socket.IO
-        const socket = io('http://localhost:3000');
+        const socket = io(${window.location.origin}');
         
         socket.on('connect', () => {
             console.log('🔌 Conectado al servidor de notificaciones');

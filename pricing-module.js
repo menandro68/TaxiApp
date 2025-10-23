@@ -136,7 +136,7 @@ const PricingModule = {
 
     loadPricingConfig: async function() {
         try {
-            const response = await fetch('http://localhost:3000/api/pricing/config');
+            const response = await fetch(${window.location.origin}/api/pricing/config');
             const data = await response.json();
             
             const container = document.getElementById('vehicleCards');
@@ -180,7 +180,7 @@ const PricingModule = {
 
     loadSurgeMultipliers: async function() {
         try {
-            const response = await fetch('http://localhost:3000/api/pricing/surge');
+            const response = await fetch(${window.location.origin}/api/pricing/surge');
             const data = await response.json();
             
             const timeMultipliers = data.filter(m => m.type === 'time');
@@ -220,7 +220,7 @@ const PricingModule = {
 
     loadSpecialZones: async function() {
         try {
-            const response = await fetch('http://localhost:3000/api/pricing/zones');
+            const response = await fetch(${window.location.origin}/api/pricing/zones');
             const data = await response.json();
             
             const tbody = document.getElementById('zonesTable');
@@ -252,7 +252,7 @@ const PricingModule = {
 
     loadHistory: async function() {
         try {
-            const response = await fetch('http://localhost:3000/api/pricing/history');
+            const response = await fetch(${window.location.origin}/api/pricing/history');
             const data = await response.json();
             
             const tbody = document.getElementById('historyTable');

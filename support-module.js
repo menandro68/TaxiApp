@@ -1,6 +1,6 @@
 // MÓDULO DE SOPORTE - SISTEMA DE TICKETS
 const SupportModule = {
-    API_URL: 'http://localhost:3000/api',
+    API_URL: ${window.location.origin}/api',
     currentTickets: [],
     selectedTicket: null,
     refreshInterval: null,

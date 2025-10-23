@@ -250,7 +250,7 @@ const ReportsModule = {
     loadTrendsReport: async function() {
         try {
             // Cargar comparación mensual
-            const response = await fetch('http://localhost:3000/api/reports/trends/monthly-comparison');
+            const response = await fetch(${window.location.origin}/api/reports/trends/monthly-comparison');
             const result = await response.json();
             
             if (result.success) {
@@ -258,7 +258,7 @@ const ReportsModule = {
             }
             
             // Cargar proyecciones
-            const projResponse = await fetch('http://localhost:3000/api/reports/trends/projections');
+            const projResponse = await fetch(${window.location.origin}/api/reports/trends/projections');
             const projResult = await projResponse.json();
             
             if (projResult.success) {
@@ -295,7 +295,7 @@ const ReportsModule = {
     loadZonesReport: async function() {
         try {
             // Cargar análisis de horas pico
-            const peakResponse = await fetch('http://localhost:3000/api/reports/kpi/peak-hours');
+            const peakResponse = await fetch(${window.location.origin}/api/reports/kpi/peak-hours');
             const peakResult = await peakResponse.json();
             
             if (peakResult.success) {
@@ -303,7 +303,7 @@ const ReportsModule = {
             }
             
             // Cargar análisis de zonas
-            const zonesResponse = await fetch('http://localhost:3000/api/reports/kpi/zones');
+            const zonesResponse = await fetch(${window.location.origin}/api/reports/kpi/zones');
             const zonesResult = await zonesResponse.json();
             
             if (zonesResult.success) {

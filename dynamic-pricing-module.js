@@ -27,7 +27,7 @@
         
         loadConfig: async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/dynamic-pricing/config');
+                const response = await fetch(${window.location.origin}/api/dynamic-pricing/config');
                 this.config = await response.json();
                 
                 this.renderTimeSlots();
@@ -69,7 +69,7 @@
         
         updateCurrentMultiplier: async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/dynamic-pricing/current-multiplier');
+                const response = await fetch(${window.location.origin}/api/dynamic-pricing/current-multiplier');
                 const data = await response.json();
                 
                 document.getElementById('currentMultiplier').textContent = data.total.toFixed(1) + 'x';
@@ -360,7 +360,7 @@
             }
             
             try {
-                const response = await fetch('http://localhost:3000/api/dynamic-pricing/event', {
+                const response = await fetch(${window.location.origin}/api/dynamic-pricing/event', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(eventData)
@@ -397,7 +397,7 @@
         
         loadStats: async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/dynamic-pricing/stats');
+                const response = await fetch(${window.location.origin}/api/dynamic-pricing/stats');
                 const stats = await response.json();
                 
                 // Actualizar estadísticas en la UI

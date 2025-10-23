@@ -141,7 +141,7 @@
         
         loadZones: async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/zones');
+                const response = await fetch(${window.location.origin}/api/zones');
                 const zones = await response.json();
                 this.currentZones = zones;
                 this.renderZonesList(zones);
@@ -386,7 +386,7 @@
             try {
                 const url = this.selectedZone 
                     ? `http://localhost:3000/api/zones/${this.selectedZone.id}`
-                    : 'http://localhost:3000/api/zones';
+                    : ${window.location.origin}/api/zones';
                     
                 const method = this.selectedZone ? 'PUT' : 'POST';
                 
@@ -502,7 +502,7 @@
         
         loadStats: async function() {
             try {
-                const response = await fetch('http://localhost:3000/api/zones/stats/summary');
+                const response = await fetch(${window.location.origin}/api/zones/stats/summary');
                 const stats = await response.json();
                 this.updateStats(stats);
             } catch (error) {

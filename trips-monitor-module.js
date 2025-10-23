@@ -1,6 +1,6 @@
 // MÓDULO DE MONITOREO DE VIAJES EN TIEMPO REAL
 const TripsMonitorModule = {
-    API_URL: 'http://localhost:3000/api',
+    API_URL: ${window.location.origin}/api',
     refreshInterval: null,
     currentTrips: [],
     

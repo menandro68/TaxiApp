@@ -16,7 +16,7 @@ class Environment {
    * Obtiene la URL base de la API
    */
   getApiUrl() {
-    return Config.API_BASE_URL || 'http://localhost:3000/api';
+    return Config.API_BASE_URL || ${window.location.origin}/api';
   }
 
   /**
