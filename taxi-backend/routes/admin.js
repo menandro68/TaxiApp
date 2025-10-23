@@ -1,156 +1,168 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 // OBTENER ESTADÍSTICAS DEL DASHBOARD
-router.get('/stats', (req, res) => {
-  const stats = {};
-  
-  // Total de usuarios
-  db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
-    stats.totalUsers = row ? row.count : 0;
-    
-    // Total de conductores
-    db.get('SELECT COUNT(*) as count FROM drivers', (err, row) => {
-      stats.totalDrivers = row ? row.count : 0;
-      
-      // Conductores activos
-      db.get('SELECT COUNT(*) as count FROM drivers WHERE status = "active"', (err, row) => {
-        stats.activeDrivers = row ? row.count : 0;
+router.get('/stats', async (req, res) => {
+    try {
+        const stats = {};
+        
+        // Total de usuarios
+        const usersResult = await db.query('SELECT COUNT(*) as count FROM users');
+        stats.totalUsers = parseInt(usersResult.rows[0]?.count || 0);
+        
+        // Total de conductores
+        const driversResult = await db.query('SELECT COUNT(*) as count FROM drivers');
+        stats.totalDrivers = parseInt(driversResult.rows[0]?.count || 0);
+        
+        // Conductores activos
+        const activeDriversResult = await db.query('SELECT COUNT(*) as count FROM drivers WHERE status = $1', ['active']);
+        stats.activeDrivers = parseInt(activeDriversResult.rows[0]?.count || 0);
         
         // Total de viajes
-        db.get('SELECT COUNT(*) as count FROM trips', (err, row) => {
-          stats.totalTrips = row ? row.count : 0;
-          
-          // Viajes completados hoy
-          db.get(`SELECT COUNT(*) as count FROM trips 
-                  WHERE status = 'completed' 
-                  AND date(created_at) = date('now')`, (err, row) => {
-            stats.tripsToday = row ? row.count : 0;
-            
-            // Ingresos totales
-            db.get('SELECT SUM(price) as total FROM trips WHERE status = "completed"', (err, row) => {
-              stats.totalRevenue = row && row.total ? row.total : 0;
-              
-              res.json(stats);
-            });
-          });
-        });
-      });
-    });
-  });
+        const tripsResult = await db.query('SELECT COUNT(*) as count FROM trips');
+        stats.totalTrips = parseInt(tripsResult.rows[0]?.count || 0);
+        
+        // Viajes completados hoy
+        const tripsTodayResult = await db.query(
+            'SELECT COUNT(*) as count FROM trips WHERE status = $1 AND DATE(created_at) = CURRENT_DATE',
+            ['completed']
+        );
+        stats.tripsToday = parseInt(tripsTodayResult.rows[0]?.count || 0);
+        
+        // Ingresos totales
+        const revenueResult = await db.query('SELECT SUM(price) as total FROM trips WHERE status = $1', ['completed']);
+        stats.totalRevenue = parseFloat(revenueResult.rows[0]?.total || 0);
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Error obteniendo estadísticas:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // OBTENER TODOS LOS CONDUCTORES
-router.get('/drivers', (req, res) => {
-  const query = `SELECT id, name, email, phone, license, vehicle_plate, 
-                 vehicle_model, vehicle_color, status, rating, total_trips, created_at 
-                 FROM drivers ORDER BY created_at DESC`;
-  
-  db.all(query, [], (err, drivers) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al obtener conductores' });
+router.get('/drivers', async (req, res) => {
+    try {
+        const query = `SELECT id, name, email, phone, license, vehicle_plate, 
+                       vehicle_model, vehicle_color, status, rating, total_trips, created_at 
+                       FROM drivers ORDER BY created_at DESC`;
+        
+        const result = await db.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error obteniendo conductores:', error);
+        res.status(500).json({ error: 'Error al obtener conductores' });
     }
-    res.json(drivers);
-  });
 });
 
 // APROBAR/RECHAZAR CONDUCTOR
-router.put('/drivers/:id/status', (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  
-  const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
-  
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: 'Estado inválido' });
-  }
-  
-  db.run('UPDATE drivers SET status = ? WHERE id = ?', [status, id], function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Error al actualizar estado' });
+router.put('/drivers/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
+        
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Estado inválido' });
+        }
+        
+        const result = await db.query(
+            'UPDATE drivers SET status = $1 WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        res.json({ success: true, message: `Estado actualizado a: ${status}`, driver: result.rows[0] });
+    } catch (error) {
+        console.error('Error actualizando conductor:', error);
+        res.status(500).json({ error: 'Error al actualizar estado' });
     }
-    res.json({ success: true, message: `Estado actualizado a: ${status}` });
-  });
 });
 
 // OBTENER TODOS LOS VIAJES
-router.get('/trips', (req, res) => {
-  const query = `SELECT t.*, 
-                 u.name as user_name, u.email as user_email,
-                 d.name as driver_name, d.vehicle_model
-                 FROM trips t
-                 LEFT JOIN users u ON t.user_id = u.id
-                 LEFT JOIN drivers d ON t.driver_id = d.id
-                 ORDER BY t.created_at DESC`;
-  
-  db.all(query, [], (err, trips) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al obtener viajes' });
+router.get('/trips', async (req, res) => {
+    try {
+        const query = `SELECT t.*, 
+                       u.name as user_name, u.email as user_email,
+                       d.name as driver_name, d.vehicle_model
+                       FROM trips t
+                       LEFT JOIN users u ON t.user_id = u.id
+                       LEFT JOIN drivers d ON t.driver_id = d.id
+                       ORDER BY t.created_at DESC`;
+        
+        const result = await db.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error obteniendo viajes:', error);
+        res.status(500).json({ error: 'Error al obtener viajes' });
     }
-    res.json(trips);
-  });
 });
 
 // OBTENER VIAJES EN TIEMPO REAL
-router.get('/trips/live', (req, res) => {
-  const query = `SELECT t.*, 
-                 u.name as user_name, u.phone as user_phone,
-                 d.name as driver_name, d.phone as driver_phone, d.vehicle_model
-                 FROM trips t
-                 LEFT JOIN users u ON t.user_id = u.id
-                 LEFT JOIN drivers d ON t.driver_id = d.id
-                 WHERE t.status IN ('pending', 'assigned', 'accepted', 'arrived', 'started')
-                 ORDER BY t.created_at DESC`;
-  
-  db.all(query, [], (err, trips) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al obtener viajes activos' });
+router.get('/trips/live', async (req, res) => {
+    try {
+        const query = `SELECT t.*, 
+                       u.name as user_name, u.phone as user_phone,
+                       d.name as driver_name, d.phone as driver_phone, d.vehicle_model
+                       FROM trips t
+                       LEFT JOIN users u ON t.user_id = u.id
+                       LEFT JOIN drivers d ON t.driver_id = d.id
+                       WHERE t.status IN ('pending', 'assigned', 'accepted', 'arrived', 'started')
+                       ORDER BY t.created_at DESC`;
+        
+        const result = await db.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error obteniendo viajes activos:', error);
+        res.status(500).json({ error: 'Error al obtener viajes activos' });
     }
-    res.json(trips);
-  });
 });
 
 // Login de administrador
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
-    }
-    
-    db.get('SELECT * FROM admins WHERE username = ? OR email = ?', 
-        [username, username], 
-        async (err, admin) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error del servidor' });
-            }
-            
-            if (!admin) {
-                return res.status(401).json({ error: 'Credenciales inválidas' });
-            }
-            
-            // Verificar contraseña
-            const bcrypt = require('bcrypt');
-            const validPassword = await bcrypt.compare(password, admin.password);
-            
-            if (!validPassword) {
-                return res.status(401).json({ error: 'Credenciales inválidas' });
-            }
-            
-            // Login exitoso
-            res.json({
-                success: true,
-                admin: {
-                    id: admin.id,
-                    username: admin.username,
-                    email: admin.email,
-                    role: admin.role
-                },
-                token: 'admin-token-' + Date.now()
-            });
+    try {
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
         }
-    );
+        
+        const result = await db.query(
+            'SELECT * FROM admins WHERE username = $1 OR email = $1',
+            [username]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Credenciales inválidas' });
+        }
+        
+        const admin = result.rows[0];
+        const validPassword = await bcrypt.compare(password, admin.password);
+        
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Credenciales inválidas' });
+        }
+        
+        res.json({
+            success: true,
+            admin: {
+                id: admin.id,
+                username: admin.username,
+                email: admin.email,
+                role: admin.role
+            },
+            token: 'admin-token-' + Date.now()
+        });
+    } catch (error) {
+        console.error('Error en login:', error);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
 });
 
 // ==========================================
@@ -158,50 +170,81 @@ router.post('/login', async (req, res) => {
 // ==========================================
 
 // AGREGAR CONDUCTOR
-router.post('/drivers', (req, res) => {
-    const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color } = req.body;
-    
-    const bcrypt = require('bcrypt');
-    const hashedPassword = bcrypt.hashSync(password || 'password123', 10);
-    
-    const query = `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', 5.0)`;
-    
-    db.run(query, [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color], function(err) {
-        if (err) {
-            return res.status(400).json({ error: err.message });
-        }
-        res.json({ success: true, id: this.lastID });
-    });
+router.post('/drivers', async (req, res) => {
+    try {
+        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color } = req.body;
+        
+        const hashedPassword = await bcrypt.hash(password || 'password123', 10);
+        
+        const result = await db.query(
+            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+             RETURNING id`,
+            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, 'pending', 5.0]
+        );
+        
+        res.json({ success: true, id: result.rows[0].id });
+    } catch (error) {
+        console.error('Error creando conductor:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // EDITAR CONDUCTOR
-router.put('/drivers/:id', (req, res) => {
-    const { id } = req.params;
-    const updates = req.body;
-    
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = Object.values(updates);
-    values.push(id);
-    
-    db.run(`UPDATE drivers SET ${fields} WHERE id = ?`, values, function(err) {
-        if (err) {
-            return res.status(400).json({ error: err.message });
+router.put('/drivers/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        const fields = [];
+        const values = [];
+        let paramCount = 1;
+        
+        Object.keys(updates).forEach(key => {
+            fields.push(`${key} = $${paramCount}`);
+            values.push(updates[key]);
+            paramCount++;
+        });
+        
+        if (fields.length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar' });
         }
-        res.json({ success: true, changes: this.changes });
-    });
+        
+        values.push(id);
+        const query = `UPDATE drivers SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+        
+        const result = await db.query(query, values);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        res.json({ success: true, changes: result.rows.length, driver: result.rows[0] });
+    } catch (error) {
+        console.error('Error actualizando conductor:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // ELIMINAR CONDUCTOR
-router.delete('/drivers/:id', (req, res) => {
-    const { id } = req.params;
-    
-    db.run('DELETE FROM drivers WHERE id = ?', [id], function(err) {
-        if (err) {
-            return res.status(400).json({ error: err.message });
+router.delete('/drivers/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await db.query(
+            'DELETE FROM drivers WHERE id = $1 RETURNING id',
+            [id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
         }
-        res.json({ success: true, deleted: this.changes });
-    });
+        
+        res.json({ success: true, deleted: result.rows.length });
+    } catch (error) {
+        console.error('Error eliminando conductor:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // ==========================================
@@ -209,31 +252,45 @@ router.delete('/drivers/:id', (req, res) => {
 // ==========================================
 
 // AGREGAR USUARIO
-router.post('/users', (req, res) => {
-    const { name, email, phone, password } = req.body;
-    
-    const bcrypt = require('bcrypt');
-    const hashedPassword = bcrypt.hashSync(password || 'password123', 10);
-    
-    db.run(`INSERT INTO users (name, email, phone, password) VALUES (?, ?, ?, ?)`,
-        [name, email, phone, hashedPassword], function(err) {
-        if (err) {
-            return res.status(400).json({ error: err.message });
-        }
-        res.json({ success: true, id: this.lastID });
-    });
+router.post('/users', async (req, res) => {
+    try {
+        const { name, email, phone, password } = req.body;
+        
+        const hashedPassword = await bcrypt.hash(password || 'password123', 10);
+        
+        const result = await db.query(
+            `INSERT INTO users (name, email, phone, password, created_at)
+             VALUES ($1, $2, $3, $4, NOW())
+             RETURNING id`,
+            [name, email, phone, hashedPassword]
+        );
+        
+        res.json({ success: true, id: result.rows[0].id });
+    } catch (error) {
+        console.error('Error creando usuario:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 // ELIMINAR USUARIO
-router.delete('/users/:id', (req, res) => {
-    const { id } = req.params;
-    
-    db.run('DELETE FROM users WHERE id = ?', [id], function(err) {
-        if (err) {
-            return res.status(400).json({ error: err.message });
+router.delete('/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await db.query(
+            'DELETE FROM users WHERE id = $1 RETURNING id',
+            [id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
         }
-        res.json({ success: true, deleted: this.changes });
-    });
+        
+        res.json({ success: true, deleted: result.rows.length });
+    } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        res.status(400).json({ error: error.message });
+    }
 });
 
 module.exports = router;
