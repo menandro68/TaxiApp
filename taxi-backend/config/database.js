@@ -60,6 +60,16 @@ class DatabaseService {
     }
   }
 
+  async query(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
   async transaction(callback) {
     const client = await pool.connect();
     try {
