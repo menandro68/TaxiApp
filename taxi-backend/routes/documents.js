@@ -131,7 +131,7 @@ router.put('/:id/approve', async (req, res) => {
       reviewed_by || 1
     );
     
-    if (result.changes === 0) {
+    if (!result || result.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
         error: 'Documento no encontrado' 
@@ -169,7 +169,7 @@ router.put('/:id/reject', async (req, res) => {
       rejection_reason
     );
     
-    if (result.changes === 0) {
+    if (!result || result.rows.length === 0) {
       return res.status(404).json({ 
         success: false, 
         error: 'Documento no encontrado' 
