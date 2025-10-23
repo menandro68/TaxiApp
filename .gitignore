@@ -1,0 +1,22 @@
+# Scripts de desarrollo local con SQLite
+add-admin.js
+add-test-documents.js
+addTestData.js
+addTestDataFixed.js
+addTrips.js
+backup.js
+backup-encrypted.js
+restore-backup.js
+check-*.js
+update-*.js
+checkAdmin.js
+checkTables.js
+insertData.js
+migrate-encryption.js
+create-*.js
+
+# Carpetas que no necesitas en la nube
+backups/
+backups-encrypted/
+logs/
+uploads/
