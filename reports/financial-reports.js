@@ -3,7 +3,7 @@ const db = require('../config/database');
 class FinancialReports {
     // Reporte de ingresos por período
     static async getRevenueByPeriod(startDate, endDate) {
-        return new Promise((resolve, reject) => {
+        try {
             const query = `
                 SELECT 
                     DATE(created_at) as date,
@@ -13,21 +13,21 @@ class FinancialReports {
                     SUM(CASE WHEN status = 'completed' THEN fare ELSE 0 END) as completed_revenue,
                     SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_trips
                 FROM trips 
-                WHERE created_at BETWEEN ? AND ?
+                WHERE created_at BETWEEN $1 AND $2
                 GROUP BY DATE(created_at)
                 ORDER BY date DESC
             `;
             
-            db.all(query, [startDate, endDate], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+            const result = await db.query(query, [startDate, endDate]);
+            return result.rows || [];
+        } catch (error) {
+            throw error;
+        }
     }
 
     // Análisis de rentabilidad por conductor
     static async getDriverProfitability(period = 30) {
-        return new Promise((resolve, reject) => {
+        try {
             const query = `
                 SELECT 
                     d.id,
@@ -42,21 +42,21 @@ class FinancialReports {
                     ROUND(CAST(SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS FLOAT) * 100 / COUNT(t.id), 2) as completion_rate
                 FROM drivers d
                 LEFT JOIN trips t ON d.id = t.driver_id
-                WHERE t.created_at >= datetime('now', '-${period} days')
+                WHERE t.created_at >= CURRENT_DATE - INTERVAL '${period} days'
                 GROUP BY d.id
                 ORDER BY total_revenue DESC
             `;
             
-            db.all(query, [], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+            const result = await db.query(query);
+            return result.rows || [];
+        } catch (error) {
+            throw error;
+        }
     }
 
     // Reporte de comisiones
     static async getCommissionsReport(startDate, endDate) {
-        return new Promise((resolve, reject) => {
+        try {
             const query = `
                 SELECT 
                     DATE(t.created_at) as date,
@@ -66,21 +66,21 @@ class FinancialReports {
                     SUM(t.fare) * 0.80 as driver_payouts
                 FROM trips t
                 WHERE t.status = 'completed' 
-                    AND t.created_at BETWEEN ? AND ?
+                    AND t.created_at BETWEEN $1 AND $2
                 GROUP BY DATE(t.created_at)
                 ORDER BY date DESC
             `;
             
-            db.all(query, [startDate, endDate], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+            const result = await db.query(query, [startDate, endDate]);
+            return result.rows || [];
+        } catch (error) {
+            throw error;
+        }
     }
 
     // Flujo de caja
     static async getCashFlow(period = 30) {
-        return new Promise((resolve, reject) => {
+        try {
             const query = `
                 SELECT 
                     DATE(created_at) as date,
@@ -92,16 +92,16 @@ class FinancialReports {
                     SUM(fare) * 0.80 as driver_payable
                 FROM trips
                 WHERE status = 'completed' 
-                    AND created_at >= datetime('now', '-${period} days')
+                    AND created_at >= CURRENT_DATE - INTERVAL '${period} days'
                 GROUP BY DATE(created_at)
                 ORDER BY date DESC
             `;
             
-            db.all(query, [], (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
-            });
-        });
+            const result = await db.query(query);
+            return result.rows || [];
+        } catch (error) {
+            throw error;
+        }
     }
 }
 

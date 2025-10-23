@@ -8,30 +8,33 @@ let systemAlerts = [];
 function checkSystemAlerts(io, db) {
     console.log('🔄 Sistema de alertas configurado - verificación cada 30 segundos');
     
-    setInterval(() => {
+    setInterval(async () => {
         const alerts = [];
         
         try {
-            // Solo verificar cancelaciones recientes (esto sí funciona)
-            const recentCancellations = db.prepare(`
+            // Solo verificar cancelaciones recientes
+            const recentCancellations = await db.query(`
                 SELECT COUNT(*) as count 
                 FROM trips 
                 WHERE status = 'cancelled' 
-                AND datetime(created_at) > datetime('now', '-30 minutes')
-            `).get();
+                AND created_at > NOW() - INTERVAL '30 minutes'
+            `);
             
-            if (recentCancellations && recentCancellations.count > 3) {
+            const count = parseInt(recentCancellations.rows[0]?.count || 0, 10);
+            
+            if (count > 3) {
                 alerts.push({
                     id: Date.now() + Math.random(),
                     type: 'warning',
                     title: 'Múltiples cancelaciones',
-                    message: `${recentCancellations.count} viajes cancelados en los últimos 30 minutos`,
+                    message: `${count} viajes cancelados en los últimos 30 minutos`,
                     timestamp: new Date(),
                     resolved: false
                 });
             }
         } catch (error) {
             // Silenciar errores para no romper el servidor
+            console.error('Error en checkSystemAlerts:', error);
         }
         
         // Enviar alertas nuevas al admin si hay alguna
@@ -45,49 +48,65 @@ function checkSystemAlerts(io, db) {
 
 // Obtener alertas activas
 router.get('/active', (req, res) => {
-    const activeAlerts = systemAlerts.filter(a => !a.resolved);
-    res.json({
-        success: true,
-        alerts: activeAlerts,
-        count: activeAlerts.length
-    });
+    try {
+        const activeAlerts = systemAlerts.filter(a => !a.resolved);
+        res.json({
+            success: true,
+            alerts: activeAlerts,
+            count: activeAlerts.length
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Obtener todas las alertas
 router.get('/all', (req, res) => {
-    res.json({
-        success: true,
-        alerts: systemAlerts,
-        total: systemAlerts.length
-    });
+    try {
+        res.json({
+            success: true,
+            alerts: systemAlerts,
+            total: systemAlerts.length
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Crear alerta de prueba
 router.post('/test', (req, res) => {
-    const testAlert = {
-        id: Date.now(),
-        type: 'warning',
-        title: 'Alerta de Prueba',
-        message: 'Esta es una alerta de prueba del sistema',
-        timestamp: new Date(),
-        resolved: false
-    };
-    systemAlerts.unshift(testAlert);
-    res.json({ 
-        success: true, 
-        alert: testAlert 
-    });
+    try {
+        const testAlert = {
+            id: Date.now(),
+            type: 'warning',
+            title: 'Alerta de Prueba',
+            message: 'Esta es una alerta de prueba del sistema',
+            timestamp: new Date(),
+            resolved: false
+        };
+        systemAlerts.unshift(testAlert);
+        res.json({ 
+            success: true, 
+            alert: testAlert 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
 // Resolver alerta
 router.post('/resolve/:id', (req, res) => {
-    const alert = systemAlerts.find(a => a.id == req.params.id);
-    if (alert) {
-        alert.resolved = true;
-        alert.resolvedAt = new Date();
-        res.json({ success: true, message: 'Alerta resuelta' });
-    } else {
-        res.status(404).json({ error: 'Alerta no encontrada' });
+    try {
+        const alert = systemAlerts.find(a => a.id == req.params.id);
+        if (alert) {
+            alert.resolved = true;
+            alert.resolvedAt = new Date();
+            res.json({ success: true, message: 'Alerta resuelta' });
+        } else {
+            res.status(404).json({ error: 'Alerta no encontrada' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
