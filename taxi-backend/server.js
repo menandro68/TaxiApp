@@ -1,7 +1,7 @@
 // Importar dependencias
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+// Eliminado: sqlite3 no se necesita - usamos PostgreSQL via config/database.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const http = require('http');
@@ -97,7 +97,7 @@ app.use('/api/geofencing', require('./routes/geofencing-engine'));
 // Servir el panel de administración
 app.get('/admin', (req, res) => {
     const fs = require('fs');
-    fs.readFile('C:/Users/menandro68/Documents/DesarolloApp/App.html', 'utf8', (err, data) => {
+    fs.readFile(path.join(__dirname, '../App.html'), 'utf8', (err, data) => {
         if (err) {
             return res.status(500).send('Error cargando el panel');
         }
@@ -108,7 +108,7 @@ app.get('/admin', (req, res) => {
 
 app.get('/App.html', (req, res) => {
     const fs = require('fs');
-    fs.readFile('C:/Users/menandro68/Documents/DesarolloApp/App.html', 'utf8', (err, data) => {
+    fs.readFile(path.join(__dirname, '../App.html'), 'utf8', (err, data) => {
         if (err) {
             return res.status(500).send('Error cargando el panel');
         }
@@ -127,7 +127,7 @@ const PORT = process.env.PORT || 3000;
 // Ruta principal - Servir App.html
 app.get('/', (req, res) => {
   const fs = require('fs');
-  fs.readFile('C:/Users/menandro68/Documents/DesarolloApp/App.html', 'utf8', (err, data) => {
+  fs.readFile(path.join(__dirname, '../App.html'), 'utf8', (err, data) => {
     if (err) {
       console.error('Error cargando App.html:', err);
       return res.status(500).send('Error cargando el panel');
@@ -152,29 +152,22 @@ app.get('/api/admin/stats', async (req, res) => {
         };
 
         // Contar conductores
-        db.get('SELECT COUNT(*) as count FROM drivers', (err, row) => {
-            if (!err && row) stats.totalDrivers = row.count;
-        });
+        const driverCount = await db.query('SELECT COUNT(*) as count FROM drivers');
+        stats.totalDrivers = driverCount.rows[0]?.count || 0;
 
         // Contar usuarios
-        db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
-            if (!err && row) stats.totalUsers = row.count;
-        });
+        const userCount = await db.query('SELECT COUNT(*) as count FROM users');
+        stats.totalUsers = userCount.rows[0]?.count || 0;
 
         // Contar viajes
-        db.get('SELECT COUNT(*) as count FROM trips', (err, row) => {
-            if (!err && row) stats.totalTrips = row.count;
-        });
+        const tripCount = await db.query('SELECT COUNT(*) as count FROM trips');
+        stats.totalTrips = tripCount.rows[0]?.count || 0;
 
         // Calcular ingresos totales
-        db.get('SELECT SUM(fare) as total FROM trips WHERE status = "completed"', (err, row) => {
-            if (!err && row) stats.totalRevenue = row.total || 0;
-        });
+        const revenue = await db.query('SELECT SUM(fare) as total FROM trips WHERE status = $1', ['completed']);
+        stats.totalRevenue = revenue.rows[0]?.total || 0;
 
-        // Esperar un momento para que las consultas terminen
-        setTimeout(() => {
-            res.json(stats);
-        }, 100);
+        res.json(stats);
 
     } catch (error) {
         console.error('Error en /api/admin/stats:', error);

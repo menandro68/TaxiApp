@@ -1,38 +1,26 @@
 // routes/surge-engine.js - Motor de Surge Pricing Automático
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-
-const dbPath = path.join(__dirname, '..', 'taxiapp.db');
+const db = require('../config/database');
 
 // ==================== CONFIGURACIÓN DEL ALGORITMO ====================
 const SURGE_CONFIG = {
-    // Umbrales de activación
     thresholds: {
-        minRequestsPerMinute: 3,      // Mínimo de solicitudes por minuto para considerar surge
-        driverUtilization: 0.8,       // 80% de conductores ocupados = surge
-        avgWaitTime: 5,               // Más de 5 min de espera promedio = surge
-        requestToDriverRatio: 2        // 2 solicitudes por cada conductor libre = surge
+        minRequestsPerMinute: 3,
+        driverUtilization: 0.8,
+        avgWaitTime: 5,
+        requestToDriverRatio: 2
     },
-    
-    // Factores de multiplicador
     multiplierFactors: {
-        low: { min: 1.0, max: 1.2 },      // Demanda baja
-        medium: { min: 1.2, max: 1.5 },   // Demanda media
-        high: { min: 1.5, max: 2.0 },     // Demanda alta
-        extreme: { min: 2.0, max: 3.0 }   // Demanda extrema
+        low: { min: 1.0, max: 1.2 },
+        medium: { min: 1.2, max: 1.5 },
+        high: { min: 1.5, max: 2.0 },
+        extreme: { min: 2.0, max: 3.0 }
     },
-    
-    // Configuración de zonas
-    zoneRadius: 2, // Radio en km para calcular demanda por zona
-    
-    // Intervalos de actualización
-    updateInterval: 30000, // Actualizar cada 30 segundos
-    dataWindow: 300000,    // Ventana de datos de 5 minutos
-    
-    // Suavizado
-    smoothingFactor: 0.3   // Factor de suavizado para evitar cambios bruscos
+    zoneRadius: 2,
+    updateInterval: 30000,
+    dataWindow: 300000,
+    smoothingFactor: 0.3
 };
 
 // Variables globales para el estado del sistema
@@ -50,72 +38,12 @@ let surgeState = {
     }
 };
 
-// Inicializar tablas necesarias
-function initializeTables() {
-    const db = new sqlite3.Database(dbPath);
-    
-    // Tabla para métricas en tiempo real
-    db.run(`
-        CREATE TABLE IF NOT EXISTS surge_metrics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            zone_id INTEGER,
-            zone_name VARCHAR(100),
-            lat REAL,
-            lng REAL,
-            active_trips INTEGER DEFAULT 0,
-            available_drivers INTEGER DEFAULT 0,
-            pending_requests INTEGER DEFAULT 0,
-            avg_wait_time REAL DEFAULT 0,
-            requests_per_minute REAL DEFAULT 0,
-            current_multiplier REAL DEFAULT 1.0,
-            recommended_multiplier REAL DEFAULT 1.0,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-    
-    // Tabla para historial de surge
-    db.run(`
-        CREATE TABLE IF NOT EXISTS surge_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            zone_id INTEGER,
-            multiplier_before REAL,
-            multiplier_after REAL,
-            trigger_reason VARCHAR(100),
-            metrics TEXT,
-            activated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deactivated_at DATETIME
-        )
-    `);
-    
-    // Tabla para solicitudes (tracking)
-    db.run(`
-        CREATE TABLE IF NOT EXISTS trip_requests (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            origin_lat REAL,
-            origin_lng REAL,
-            destination_lat REAL,
-            destination_lng REAL,
-            status VARCHAR(50),
-            wait_time INTEGER,
-            surge_multiplier REAL DEFAULT 1.0,
-            requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            assigned_at DATETIME,
-            completed_at DATETIME
-        )
-    `);
-    
-    db.close();
-}
-
 // ==================== ALGORITMO DE CÁLCULO ====================
 
-// Calcular multiplicador basado en métricas
 function calculateMultiplier(metrics) {
     let score = 0;
     let factors = [];
     
-    // Factor 1: Ratio de utilización de conductores
     const utilizationRate = metrics.activeTrips / (metrics.availableDrivers + metrics.activeTrips || 1);
     if (utilizationRate > 0.9) {
         score += 3;
@@ -128,7 +56,6 @@ function calculateMultiplier(metrics) {
         factors.push('Utilización moderada: ' + (utilizationRate * 100).toFixed(0) + '%');
     }
     
-    // Factor 2: Solicitudes pendientes vs conductores disponibles
     const requestRatio = metrics.pendingRequests / (metrics.availableDrivers || 1);
     if (requestRatio > 3) {
         score += 3;
@@ -141,7 +68,6 @@ function calculateMultiplier(metrics) {
         factors.push('Algunas solicitudes pendientes');
     }
     
-    // Factor 3: Tiempo de espera promedio
     if (metrics.avgWaitTime > 10) {
         score += 3;
         factors.push('Tiempo de espera muy alto: ' + metrics.avgWaitTime + ' min');
@@ -153,7 +79,6 @@ function calculateMultiplier(metrics) {
         factors.push('Tiempo de espera moderado: ' + metrics.avgWaitTime + ' min');
     }
     
-    // Factor 4: Velocidad de solicitudes
     if (metrics.requestsPerMinute > 10) {
         score += 3;
         factors.push('Demanda muy alta: ' + metrics.requestsPerMinute + ' req/min');
@@ -165,7 +90,6 @@ function calculateMultiplier(metrics) {
         factors.push('Demanda moderada: ' + metrics.requestsPerMinute + ' req/min');
     }
     
-    // Determinar nivel de surge
     let multiplier = 1.0;
     let level = 'normal';
     
@@ -195,7 +119,6 @@ function calculateMultiplier(metrics) {
     };
 }
 
-// Aplicar suavizado al multiplicador
 function smoothMultiplier(newMultiplier, currentMultiplier) {
     const smooth = SURGE_CONFIG.smoothingFactor;
     return currentMultiplier + (newMultiplier - currentMultiplier) * smooth;
@@ -203,7 +126,6 @@ function smoothMultiplier(newMultiplier, currentMultiplier) {
 
 // ==================== ENDPOINTS ====================
 
-// Obtener estado actual del surge pricing
 router.get('/status', (req, res) => {
     res.json({
         active: surgeState.isActive,
@@ -214,64 +136,47 @@ router.get('/status', (req, res) => {
     });
 });
 
-// Actualizar métricas (llamado por el sistema cada X segundos)
 router.post('/update-metrics', async (req, res) => {
-    const db = new sqlite3.Database(dbPath);
-    
     try {
-        // Obtener métricas actuales del sistema
-        const metrics = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT 
-                    (SELECT COUNT(*) FROM trips WHERE status = 'in_progress') as activeTrips,
-                    (SELECT COUNT(*) FROM drivers WHERE status = 'available' AND is_online = 1) as availableDrivers,
-                    (SELECT COUNT(*) FROM trips WHERE status = 'pending') as pendingRequests,
-                    (SELECT AVG(julianday(assigned_at) - julianday(created_at)) * 24 * 60 
-                     FROM trips 
-                     WHERE assigned_at IS NOT NULL 
-                     AND created_at >= datetime('now', '-5 minutes')) as avgWaitTime,
-                    (SELECT COUNT(*) * 1.0 / 5 
-                     FROM trips 
-                     WHERE created_at >= datetime('now', '-5 minutes')) as requestsPerMinute
-            `, (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+        const metricsResult = await db.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM trips WHERE status = 'in_progress')::int as activeTrips,
+                (SELECT COUNT(*) FROM drivers WHERE status = 'available' AND is_online = true)::int as availableDrivers,
+                (SELECT COUNT(*) FROM trips WHERE status = 'pending')::int as pendingRequests,
+                COALESCE((SELECT AVG(EXTRACT(EPOCH FROM (assigned_at - created_at))/60) 
+                 FROM trips 
+                 WHERE assigned_at IS NOT NULL 
+                 AND created_at >= NOW() - INTERVAL '5 minutes'), 0)::float as avgWaitTime,
+                COALESCE((SELECT COUNT(*) * 1.0 / 5 
+                 FROM trips 
+                 WHERE created_at >= NOW() - INTERVAL '5 minutes'), 0)::float as requestsPerMinute
+        `);
         
-        // Actualizar métricas globales
+        const metrics = metricsResult.rows[0];
+        
         surgeState.metrics = {
-            activeTrips: metrics.activeTrips || 0,
-            availableDrivers: metrics.availableDrivers || 0,
-            pendingRequests: metrics.pendingRequests || 0,
-            avgWaitTime: parseFloat((metrics.avgWaitTime || 0).toFixed(1)),
-            requestsPerMinute: parseFloat((metrics.requestsPerMinute || 0).toFixed(1))
+            activeTrips: metrics.activetrips || 0,
+            availableDrivers: metrics.availabledrivers || 0,
+            pendingRequests: metrics.pendingrequests || 0,
+            avgWaitTime: parseFloat((metrics.avgwaittime || 0).toFixed(1)),
+            requestsPerMinute: parseFloat((metrics.requestsperminute || 0).toFixed(1))
         };
         
-        // Calcular nuevo multiplicador
         const calculation = calculateMultiplier(surgeState.metrics);
-        
-        // Aplicar suavizado
-        const smoothedMultiplier = smoothMultiplier(
-            calculation.multiplier, 
-            surgeState.currentMultiplier
-        );
-        
-        // Determinar si activar surge
+        const smoothedMultiplier = smoothMultiplier(calculation.multiplier, surgeState.currentMultiplier);
         const shouldActivate = calculation.score > 0;
-        
-        // Actualizar estado
         const previousMultiplier = surgeState.currentMultiplier;
+        
         surgeState.currentMultiplier = parseFloat(smoothedMultiplier.toFixed(1));
         surgeState.isActive = shouldActivate;
         surgeState.lastUpdate = new Date();
         
-        // Guardar en base de datos
-        db.run(`
+        // Guardar métricas
+        await db.query(`
             INSERT INTO surge_metrics 
             (zone_name, active_trips, available_drivers, pending_requests, 
-             avg_wait_time, requests_per_minute, current_multiplier, recommended_multiplier)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             avg_wait_time, requests_per_minute, current_multiplier, recommended_multiplier, timestamp)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         `, [
             'Global',
             surgeState.metrics.activeTrips,
@@ -283,22 +188,20 @@ router.post('/update-metrics', async (req, res) => {
             calculation.multiplier
         ]);
         
-        // Si hubo cambio significativo, registrar en historial
+        // Registrar cambios significativos
         if (Math.abs(previousMultiplier - surgeState.currentMultiplier) > 0.1) {
-            db.run(`
+            await db.query(`
                 INSERT INTO surge_history 
-                (zone_id, multiplier_before, multiplier_after, trigger_reason, metrics)
-                VALUES (?, ?, ?, ?, ?)
+                (zone_id, multiplier_before, multiplier_after, trigger_reason, metrics, activated_at)
+                VALUES ($1, $2, $3, $4, $5, NOW())
             `, [
-                0, // Global zone
+                0,
                 previousMultiplier,
                 surgeState.currentMultiplier,
                 calculation.factors.join(', '),
                 JSON.stringify(surgeState.metrics)
             ]);
         }
-        
-        db.close();
         
         res.json({
             success: true,
@@ -313,113 +216,118 @@ router.post('/update-metrics', async (req, res) => {
         });
         
     } catch (error) {
-        db.close();
         console.error('Error actualizando métricas:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Obtener métricas por zona
 router.get('/zone-metrics/:lat/:lng', async (req, res) => {
-    const { lat, lng } = req.params;
-    const db = new sqlite3.Database(dbPath);
-    
     try {
-        // Calcular métricas para una zona específica (radio de 2km)
-        const metrics = await new Promise((resolve, reject) => {
-            db.get(`
-                SELECT 
-                    COUNT(CASE WHEN status = 'in_progress' 
-                         AND (pickup_lat - ?) * (pickup_lat - ?) + (pickup_lng - ?) * (pickup_lng - ?) < 0.0003 
-                         THEN 1 END) as activeTrips,
-                    COUNT(CASE WHEN status = 'pending' 
-                         AND (pickup_lat - ?) * (pickup_lat - ?) + (pickup_lng - ?) * (pickup_lng - ?) < 0.0003 
-                         THEN 1 END) as pendingRequests
-                FROM trips
-            `, [lat, lat, lng, lng, lat, lat, lng, lng], (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
-            });
-        });
+        const { lat, lng } = req.params;
         
-        db.close();
-        res.json(metrics);
+        const result = await db.query(`
+            SELECT 
+                COUNT(CASE WHEN status = 'in_progress' THEN 1 END)::int as activeTrips,
+                COUNT(CASE WHEN status = 'pending' THEN 1 END)::int as pendingRequests
+            FROM trips
+            WHERE earth_distance(ll_to_earth($1, $2), ll_to_earth(pickup_lat, pickup_lng)) < 2000
+        `, [parseFloat(lat), parseFloat(lng)]);
+        
+        res.json(result.rows[0] || { activeTrips: 0, pendingRequests: 0 });
         
     } catch (error) {
-        db.close();
+        console.error('Error obteniendo métricas de zona:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Simular solicitud de viaje (para testing)
-router.post('/simulate-request', (req, res) => {
-    const { origin_lat, origin_lng, destination_lat, destination_lng } = req.body;
-    const db = new sqlite3.Database(dbPath);
-    
-    db.run(`
-        INSERT INTO trip_requests 
-        (origin_lat, origin_lng, destination_lat, destination_lng, status, surge_multiplier)
-        VALUES (?, ?, ?, ?, 'pending', ?)
-    `, [origin_lat, origin_lng, destination_lat, destination_lng, surgeState.currentMultiplier], function(err) {
-        db.close();
-        if (err) {
-            res.status(500).json({ error: err.message });
-        } else {
-            res.json({ 
-                success: true, 
-                requestId: this.lastID,
-                surgeMultiplier: surgeState.currentMultiplier 
-            });
-        }
-    });
+router.post('/simulate-request', async (req, res) => {
+    try {
+        const { origin_lat, origin_lng, destination_lat, destination_lng } = req.body;
+        
+        const result = await db.query(`
+            INSERT INTO trip_requests 
+            (origin_lat, origin_lng, destination_lat, destination_lng, status, surge_multiplier, requested_at)
+            VALUES ($1, $2, $3, $4, 'pending', $5, NOW())
+            RETURNING id
+        `, [origin_lat, origin_lng, destination_lat, destination_lng, surgeState.currentMultiplier]);
+        
+        res.json({
+            success: true,
+            requestId: result.rows[0].id,
+            surgeMultiplier: surgeState.currentMultiplier
+        });
+        
+    } catch (error) {
+        console.error('Error simulando solicitud:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Obtener historial de surge
-router.get('/history', (req, res) => {
-    const db = new sqlite3.Database(dbPath);
-    
-    db.all(`
-        SELECT * FROM surge_history 
-        ORDER BY activated_at DESC 
-        LIMIT 50
-    `, (err, rows) => {
-        db.close();
-        if (err) {
-            res.status(500).json({ error: err.message });
-        } else {
-            res.json(rows.map(row => ({
-                ...row,
-                metrics: JSON.parse(row.metrics || '{}')
-            })));
-        }
-    });
+router.get('/history', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT * FROM surge_history 
+            ORDER BY activated_at DESC 
+            LIMIT 50
+        `);
+        
+        res.json(result.rows.map(row => ({
+            ...row,
+            metrics: typeof row.metrics === 'string' ? JSON.parse(row.metrics) : row.metrics
+        })));
+        
+    } catch (error) {
+        console.error('Error obteniendo historial:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Inicializar motor de surge automático
 function startSurgeEngine() {
     console.log('🚀 Motor de Surge Pricing Automático iniciado');
     
-    // Actualizar métricas automáticamente
     setInterval(async () => {
         try {
-            const response = await fetch(${window.location.origin}/api/surge/update-metrics', {
-                method: 'POST'
-            });
-            const data = await response.json();
+            // Actualizar métricas internamente sin hacer fetch HTTP
+            const metricsResult = await db.query(`
+                SELECT 
+                    (SELECT COUNT(*) FROM trips WHERE status = 'in_progress')::int as activeTrips,
+                    (SELECT COUNT(*) FROM drivers WHERE status = 'available' AND is_online = true)::int as availableDrivers,
+                    (SELECT COUNT(*) FROM trips WHERE status = 'pending')::int as pendingRequests,
+                    COALESCE((SELECT AVG(EXTRACT(EPOCH FROM (assigned_at - created_at))/60) 
+                     FROM trips 
+                     WHERE assigned_at IS NOT NULL 
+                     AND created_at >= NOW() - INTERVAL '5 minutes'), 0)::float as avgWaitTime,
+                    COALESCE((SELECT COUNT(*) * 1.0 / 5 
+                     FROM trips 
+                     WHERE created_at >= NOW() - INTERVAL '5 minutes'), 0)::float as requestsPerMinute
+            `);
             
-            if (data.surge && data.surge.active) {
-                console.log(`⚡ Surge activo: ${data.surge.multiplier}x - ${data.surge.factors.join(', ')}`);
+            const metrics = metricsResult.rows[0];
+            surgeState.metrics = {
+                activeTrips: metrics.activetrips || 0,
+                availableDrivers: metrics.availabledrivers || 0,
+                pendingRequests: metrics.pendingrequests || 0,
+                avgWaitTime: parseFloat((metrics.avgwaittime || 0).toFixed(1)),
+                requestsPerMinute: parseFloat((metrics.requestsperminute || 0).toFixed(1))
+            };
+            
+            const calculation = calculateMultiplier(surgeState.metrics);
+            const smoothedMultiplier = smoothMultiplier(calculation.multiplier, surgeState.currentMultiplier);
+            
+            surgeState.currentMultiplier = parseFloat(smoothedMultiplier.toFixed(1));
+            surgeState.isActive = calculation.score > 0;
+            surgeState.lastUpdate = new Date();
+            
+            if (surgeState.isActive) {
+                console.log(`⚡ Surge activo: ${surgeState.currentMultiplier}x - ${calculation.factors.join(', ')}`);
             }
         } catch (error) {
-            // Silenciar errores de actualización automática
+            console.error('Error en actualización automática de surge:', error);
         }
     }, SURGE_CONFIG.updateInterval);
 }
 
-// Inicializar tablas al cargar
-initializeTables();
-
-// Exportar para uso en otras partes del sistema
 module.exports = router;
 module.exports.surgeState = surgeState;
 module.exports.startSurgeEngine = startSurgeEngine;
