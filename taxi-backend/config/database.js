@@ -15,12 +15,13 @@ console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variabl
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 60000,
-  connectionTimeoutMillis: 10000,
-  statement_timeout: 30000,
-  idle_in_transaction_session_timeout: 60000,
+  ssl: true,  // SIEMPRE SSL en Railway
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 30000,
+  statement_timeout: 60000,
+  application_name: 'taxiapp_backend',
 });
 
 // Manejo de errores del pool
