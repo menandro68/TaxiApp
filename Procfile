@@ -1,1 +1,1 @@
-﻿web: node taxi-backend/server.js
+﻿web: cd taxi-backend && npm start
