@@ -7,12 +7,15 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 // ========================================
 // POOL DE CONEXIONES POSTGRESQL
 // ========================================
+// Usar DATABASE_URL de Railway o variables locales
+const connectionString = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || 
+  `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME}`;
+
+console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variables locales');
+
 const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME,
+  connectionString: connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
@@ -203,12 +206,34 @@ async function initDatabase() {
       )
     `);
 
+    // Tabla de suspensiones de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_suspensions (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        driver_name VARCHAR(255),
+        type VARCHAR(50) CHECK(type IN ('temporal', 'permanent')),
+        reason TEXT,
+        duration_hours INTEGER,
+        expires_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'active',
+        created_by VARCHAR(100),
+        lifted_by VARCHAR(100),
+        lifted_reason TEXT,
+        suspended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        lifted_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Crear índices para mejor rendimiento
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_suspensions_driver_id ON driver_suspensions(driver_id)`);
 
     console.log('✅ Tablas de base de datos inicializadas');
   } catch (error) {
