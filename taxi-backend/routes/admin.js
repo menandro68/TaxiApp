@@ -3,6 +3,27 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 
+// REGISTRAR NUEVO ADMIN
+router.post('/register', async (req, res) => {
+    try {
+        const { username, email, password, role } = req.body;
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const result = await db.query(
+            `INSERT INTO admins (username, email, password, role, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, NOW(), NOW())
+             RETURNING id, username, email, role`,
+            [username, email, hashedPassword, role || 'admin']
+        );
+        
+        res.json({ success: true, admin: result.rows[0] });
+    } catch (error) {
+        console.error('Error registrando admin:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
 // OBTENER ESTADÍSTICAS DEL DASHBOARD
 router.get('/stats', async (req, res) => {
     try {
