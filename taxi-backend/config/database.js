@@ -17,8 +17,10 @@ const pool = new Pool({
   connectionString: connectionString,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 10000,
+  statement_timeout: 30000,
+  idle_in_transaction_session_timeout: 60000,
 });
 
 // Manejo de errores del pool
