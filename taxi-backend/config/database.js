@@ -244,9 +244,37 @@ async function initDatabase() {
   }
 }
 
-// Inicializar base de datos al cargar el módulo
-// DESHABILITADO - Las tablas ya existen en Railway
- initDatabase();
+// ========================================
+// INICIALIZACIÓN CON ADMIN POR DEFECTO
+// ========================================
+(async () => {
+  try {
+    console.log('🔄 Inicializando base de datos y creando admin...');
+    
+    // Esperar a que se creen las tablas
+    await initDatabase();
+    
+    // Insertar admin por defecto si no existe
+    const bcrypt = require('bcryptjs');
+    const adminCount = await pool.query('SELECT COUNT(*) as count FROM admins');
+    const count = parseInt(adminCount.rows[0].count || 0);
+    
+    if (count === 0) {
+      console.log('📝 Creando admin por defecto...');
+      const hashedPassword = await bcrypt.hash('132312', 10);
+      await pool.query(
+        `INSERT INTO admins (username, email, password, role, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
+      );
+      console.log('✅ Admin por defecto creado: menandro68 / 132312');
+    } else {
+      console.log('✅ Admin ya existe en la base de datos');
+    }
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+  }
+})();
 
 // Verificar conexión al pool
 pool.query('SELECT NOW()', (err, result) => {

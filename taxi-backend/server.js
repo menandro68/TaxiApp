@@ -9,7 +9,7 @@ const path = require('path');
 require('dotenv').config();
 
 // Importar base de datos
-const db = require('./config/database');
+const { db, pool, DatabaseService } = require('./config/database');
 
 // Crear aplicación Express
 const app = express();
