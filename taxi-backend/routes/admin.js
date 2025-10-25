@@ -3,6 +3,30 @@ const router = express.Router();
 const { db } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
+// RUTA DE INICIALIZACIÓN - SOLO FUNCIONA UNA VEZ
+router.post('/init-admin', async (req, res) => {
+  try {
+    const result = await db.query('SELECT COUNT(*) as count FROM admins');
+    const adminCount = parseInt(result.rows[0]?.count || 0);
+    
+    if (adminCount > 0) {
+      return res.status(400).json({ error: 'Admin ya existe' });
+    }
+    
+    const hashedPassword = await bcrypt.hash('132312ml', 10);
+    await db.query(
+      `INSERT INTO admins (username, email, password, role, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
+    );
+    
+    res.json({ success: true, message: 'Admin creado: menandro68 / 132312ml' });
+  } catch (error) {
+    console.error('Error creando admin:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // REGISTRAR NUEVO ADMIN
 router.post('/register', async (req, res) => {
     try {
