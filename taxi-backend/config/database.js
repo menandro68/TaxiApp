@@ -246,7 +246,7 @@ async function initDatabase() {
 
 // Inicializar base de datos al cargar el módulo
 // DESHABILITADO - Las tablas ya existen en Railway
-// initDatabase();
+ initDatabase();
 
 // Verificar conexión al pool
 pool.query('SELECT NOW()', (err, result) => {
