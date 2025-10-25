@@ -1,341 +1,291 @@
-const express = require('express');
-const router = express.Router();
-const { db } = require('../config/database');
-const bcrypt = require('bcryptjs');
+// ========================================
+// CONFIGURACIÓN DE BASE DE DATOS - PostgreSQL
+// ========================================
+const { Pool } = require('pg');
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
-// RUTA DE INICIALIZACIÓN - SOLO FUNCIONA UNA VEZ
-router.post('/init-admin', async (req, res) => {
-  try {
-    const result = await db.query('SELECT COUNT(*) as count FROM admins');
-    const adminCount = parseInt(result.rows[0]?.count || 0);
-    
-    if (adminCount > 0) {
-      return res.status(400).json({ error: 'Admin ya existe' });
+// ========================================
+// POOL DE CONEXIONES POSTGRESQL
+// ========================================
+// Usar DATABASE_URL de Railway o variables locales
+const connectionString = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || 
+  `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME}`;
+
+console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variables locales');
+
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: true,  // SIEMPRE SSL en Railway
+  max: 5,
+  min: 1,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 60000,
+  statement_timeout: 120000,
+  application_name: 'taxiapp_backend',
+});
+
+// Manejo de errores del pool
+pool.on('error', (err) => {
+  console.error('Error en el pool de PostgreSQL:', err);
+});
+
+// ========================================
+// SERVICIO DE BASE DE DATOS
+// ========================================
+class DatabaseService {
+  async getOne(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
     }
-    
-    const hashedPassword = await bcrypt.hash('132312ml', 10);
-    await db.query(
-      `INSERT INTO admins (username, email, password, role, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-      ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
-    );
-    
-    res.json({ success: true, message: 'Admin creado: menandro68 / 132312ml' });
+  }
+
+  async getAll(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
+  async run(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return {
+        changes: result.rowCount,
+        lastID: result.rows[0]?.id
+      };
+    } catch (error) {
+      console.error('Database execution error:', error);
+      throw error;
+    }
+  }
+
+  async query(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
+  async transaction(callback) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+}
+
+const db = new DatabaseService();
+
+// ========================================
+// INICIALIZACIÓN DE TABLAS
+// ========================================
+async function initDatabase() {
+  try {
+    console.log('🔄 Inicializando base de datos PostgreSQL...');
+
+    // Tabla de usuarios (pasajeros)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS drivers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        license VARCHAR(100) NOT NULL,
+        vehicle_plate VARCHAR(50),
+        vehicle_model VARCHAR(100),
+        vehicle_color VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'inactive',
+        rating NUMERIC(3,2) DEFAULT 5.0,
+        total_trips INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de viajes
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS trips (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+        pickup_location VARCHAR(255),
+        destination VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        price NUMERIC(10,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de sesiones activas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_type VARCHAR(50) CHECK(user_type IN ('user', 'driver', 'admin')),
+        token VARCHAR(500) UNIQUE NOT NULL,
+        refresh_token VARCHAR(500) UNIQUE,
+        device_info TEXT,
+        ip_address VARCHAR(50),
+        user_agent TEXT,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de ubicaciones de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        latitude NUMERIC(10,8),
+        longitude NUMERIC(11,8),
+        heading NUMERIC(5,2),
+        speed NUMERIC(5,2),
+        accuracy NUMERIC(5,2),
+        status VARCHAR(50) DEFAULT 'online',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de administradores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'admin',
+        permissions JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de roles
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS roles (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        permissions JSONB DEFAULT '[]',
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de suspensiones de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_suspensions (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        driver_name VARCHAR(255),
+        type VARCHAR(50) CHECK(type IN ('temporal', 'permanent')),
+        reason TEXT,
+        duration_hours INTEGER,
+        expires_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'active',
+        created_by VARCHAR(100),
+        lifted_by VARCHAR(100),
+        lifted_reason TEXT,
+        suspended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        lifted_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Crear índices para mejor rendimiento
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_suspensions_driver_id ON driver_suspensions(driver_id)`);
+
+    console.log('✅ Tablas de base de datos inicializadas');
   } catch (error) {
-    console.error('Error creando admin:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error inicializando base de datos:', error);
+  }
+}
+
+// ========================================
+// INICIALIZACIÓN CON ADMIN POR DEFECTO
+// ========================================
+(async () => {
+  try {
+    console.log('🔄 Inicializando base de datos y creando admin...');
+    
+    // Esperar a que se creen las tablas
+    await initDatabase();
+    
+    // Insertar admin por defecto si no existe
+    const bcrypt = require('bcryptjs');
+    const adminCount = await pool.query('SELECT COUNT(*) as count FROM admins');
+    const count = parseInt(adminCount.rows[0].count || 0);
+    
+    if (count === 0) {
+      console.log('📝 Creando admin por defecto...');
+      const hashedPassword = await bcrypt.hash('132312', 10);
+      await pool.query(
+        `INSERT INTO admins (username, email, password, role, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
+      );
+      console.log('✅ Admin por defecto creado: menandro68 / 132312');
+    } else {
+      console.log('✅ Admin ya existe en la base de datos');
+    }
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+  }
+})();
+
+// Verificar conexión al pool
+pool.query('SELECT NOW()', (err, result) => {
+  if (err) {
+    console.error('❌ Error conectando a PostgreSQL:', err);
+  } else {
+    console.log('🛡️ PostgreSQL conectado correctamente');
   }
 });
 
-// REGISTRAR NUEVO ADMIN
-router.post('/register', async (req, res) => {
-    try {
-        const { username, email, password, role } = req.body;
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const result = await db.query(
-            `INSERT INTO admins (username, email, password, role, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, NOW(), NOW())
-             RETURNING id, username, email, role`,
-            [username, email, hashedPassword, role || 'admin']
-        );
-        
-        res.json({ success: true, admin: result.rows[0] });
-    } catch (error) {
-        console.error('Error registrando admin:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// OBTENER ESTADÍSTICAS DEL DASHBOARD
-router.get('/stats', async (req, res) => {
-    try {
-        const stats = {};
-        
-        // Total de usuarios
-        const usersResult = await db.query('SELECT COUNT(*) as count FROM users');
-        stats.totalUsers = parseInt(usersResult.rows[0]?.count || 0);
-        
-        // Total de conductores
-        const driversResult = await db.query('SELECT COUNT(*) as count FROM drivers');
-        stats.totalDrivers = parseInt(driversResult.rows[0]?.count || 0);
-        
-        // Conductores activos
-        const activeDriversResult = await db.query('SELECT COUNT(*) as count FROM drivers WHERE status = $1', ['active']);
-        stats.activeDrivers = parseInt(activeDriversResult.rows[0]?.count || 0);
-        
-        // Total de viajes
-        const tripsResult = await db.query('SELECT COUNT(*) as count FROM trips');
-        stats.totalTrips = parseInt(tripsResult.rows[0]?.count || 0);
-        
-        // Viajes completados hoy
-        const tripsTodayResult = await db.query(
-            'SELECT COUNT(*) as count FROM trips WHERE status = $1 AND DATE(created_at) = CURRENT_DATE',
-            ['completed']
-        );
-        stats.tripsToday = parseInt(tripsTodayResult.rows[0]?.count || 0);
-        
-        // Ingresos totales
-        const revenueResult = await db.query('SELECT SUM(price) as total FROM trips WHERE status = $1', ['completed']);
-        stats.totalRevenue = parseFloat(revenueResult.rows[0]?.total || 0);
-        
-        res.json(stats);
-    } catch (error) {
-        console.error('Error obteniendo estadísticas:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// OBTENER TODOS LOS CONDUCTORES
-router.get('/drivers', async (req, res) => {
-    try {
-        const query = `SELECT id, name, email, phone, license, vehicle_plate, 
-                       vehicle_model, vehicle_color, status, rating, total_trips, created_at 
-                       FROM drivers ORDER BY created_at DESC`;
-        
-        const result = await db.query(query);
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Error obteniendo conductores:', error);
-        res.status(500).json({ error: 'Error al obtener conductores' });
-    }
-});
-
-// APROBAR/RECHAZAR CONDUCTOR
-router.put('/drivers/:id/status', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        
-        const validStatuses = ['active', 'inactive', 'suspended', 'pending'];
-        
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: 'Estado inválido' });
-        }
-        
-        const result = await db.query(
-            'UPDATE drivers SET status = $1 WHERE id = $2 RETURNING *',
-            [status, id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Conductor no encontrado' });
-        }
-        
-        res.json({ success: true, message: `Estado actualizado a: ${status}`, driver: result.rows[0] });
-    } catch (error) {
-        console.error('Error actualizando conductor:', error);
-        res.status(500).json({ error: 'Error al actualizar estado' });
-    }
-});
-
-// OBTENER TODOS LOS VIAJES
-router.get('/trips', async (req, res) => {
-    try {
-        const query = `SELECT t.*, 
-                       u.name as user_name, u.email as user_email,
-                       d.name as driver_name, d.vehicle_model
-                       FROM trips t
-                       LEFT JOIN users u ON t.user_id = u.id
-                       LEFT JOIN drivers d ON t.driver_id = d.id
-                       ORDER BY t.created_at DESC`;
-        
-        const result = await db.query(query);
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Error obteniendo viajes:', error);
-        res.status(500).json({ error: 'Error al obtener viajes' });
-    }
-});
-
-// OBTENER VIAJES EN TIEMPO REAL
-router.get('/trips/live', async (req, res) => {
-    try {
-        const query = `SELECT t.*, 
-                       u.name as user_name, u.phone as user_phone,
-                       d.name as driver_name, d.phone as driver_phone, d.vehicle_model
-                       FROM trips t
-                       LEFT JOIN users u ON t.user_id = u.id
-                       LEFT JOIN drivers d ON t.driver_id = d.id
-                       WHERE t.status IN ('pending', 'assigned', 'accepted', 'arrived', 'started')
-                       ORDER BY t.created_at DESC`;
-        
-        const result = await db.query(query);
-        res.json(result.rows);
-    } catch (error) {
-        console.error('Error obteniendo viajes activos:', error);
-        res.status(500).json({ error: 'Error al obtener viajes activos' });
-    }
-});
-
-// Login de administrador
-router.post('/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
-        }
-        
-        const result = await db.query(
-            'SELECT * FROM admins WHERE username = $1 OR email = $1',
-            [username]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Credenciales inválidas' });
-        }
-        
-        const admin = result.rows[0];
-        const validPassword = await bcrypt.compare(password, admin.password);
-        
-        if (!validPassword) {
-            return res.status(401).json({ error: 'Credenciales inválidas' });
-        }
-        
-        res.json({
-            success: true,
-            admin: {
-                id: admin.id,
-                username: admin.username,
-                email: admin.email,
-                role: admin.role
-            },
-            token: 'admin-token-' + Date.now()
-        });
-    } catch (error) {
-        console.error('Error en login:', error);
-        res.status(500).json({ error: 'Error del servidor' });
-    }
-});
-
-// ==========================================
-// CRUD DE CONDUCTORES
-// ==========================================
-
-// AGREGAR CONDUCTOR
-router.post('/drivers', async (req, res) => {
-    try {
-        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color } = req.body;
-        
-        const hashedPassword = await bcrypt.hash(password || 'password123', 10);
-        
-        const result = await db.query(
-            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-             RETURNING id`,
-            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, 'pending', 5.0]
-        );
-        
-        res.json({ success: true, id: result.rows[0].id });
-    } catch (error) {
-        console.error('Error creando conductor:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// EDITAR CONDUCTOR
-router.put('/drivers/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body;
-        
-        const fields = [];
-        const values = [];
-        let paramCount = 1;
-        
-        Object.keys(updates).forEach(key => {
-            fields.push(`${key} = $${paramCount}`);
-            values.push(updates[key]);
-            paramCount++;
-        });
-        
-        if (fields.length === 0) {
-            return res.status(400).json({ error: 'No hay campos para actualizar' });
-        }
-        
-        values.push(id);
-        const query = `UPDATE drivers SET ${fields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-        
-        const result = await db.query(query, values);
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Conductor no encontrado' });
-        }
-        
-        res.json({ success: true, changes: result.rows.length, driver: result.rows[0] });
-    } catch (error) {
-        console.error('Error actualizando conductor:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// ELIMINAR CONDUCTOR
-router.delete('/drivers/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        
-        const result = await db.query(
-            'DELETE FROM drivers WHERE id = $1 RETURNING id',
-            [id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Conductor no encontrado' });
-        }
-        
-        res.json({ success: true, deleted: result.rows.length });
-    } catch (error) {
-        console.error('Error eliminando conductor:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// ==========================================
-// CRUD DE USUARIOS
-// ==========================================
-
-// AGREGAR USUARIO
-router.post('/users', async (req, res) => {
-    try {
-        const { name, email, phone, password } = req.body;
-        
-        const hashedPassword = await bcrypt.hash(password || 'password123', 10);
-        
-        const result = await db.query(
-            `INSERT INTO users (name, email, phone, password, created_at)
-             VALUES ($1, $2, $3, $4, NOW())
-             RETURNING id`,
-            [name, email, phone, hashedPassword]
-        );
-        
-        res.json({ success: true, id: result.rows[0].id });
-    } catch (error) {
-        console.error('Error creando usuario:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-// ELIMINAR USUARIO
-router.delete('/users/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        
-        const result = await db.query(
-            'DELETE FROM users WHERE id = $1 RETURNING id',
-            [id]
-        );
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        
-        res.json({ success: true, deleted: result.rows.length });
-    } catch (error) {
-        console.error('Error eliminando usuario:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
-
-module.exports = router;
+// ========================================
+// EXPORTAR
+// ========================================
+module.exports = { db, pool, DatabaseService, initDatabase };
