@@ -114,40 +114,14 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// CREAR ADMIN INICIAL SI NO EXISTE
-// ==========================================
-async function createInitialAdmin() {
-  try {
-    const bcrypt = require('bcryptjs');
-    const result = await db.query('SELECT COUNT(*) as count FROM admins');
-    const adminCount = parseInt(result.rows[0]?.count || 0);
-    
-    if (adminCount === 0) {
-      const hashedPassword = await bcrypt.hash('132312', 10);
-      await db.query(
-        `INSERT INTO admins (username, email, password, role, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
-        ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
-      );
-      console.log('✅ Admin inicial creado: menandro68 / 132312');
-    }
-  } catch (error) {
-    console.error('⚠️ Error creando admin inicial:', error.message);
-  }
-}
-
-// ==========================================
 // INICIAR SERVIDOR
 // ==========================================
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, '0.0.0.0', async () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Servidor corriendo en puerto ${PORT}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
   console.log(`📦 Entorno: ${process.env.NODE_ENV || 'development'}`);
-  
-  // Crear admin inicial si no existe
-  await createInitialAdmin();
 });
 
 module.exports = { app, server, io };
