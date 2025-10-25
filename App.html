@@ -901,7 +901,7 @@
             <span class="nav-text">Administradores</span>
         </a>
        
-        <a class="nav-item" onclick="window.location.href=${window.location.origin}/surge-monitor.html'" id="surgeMenu">
+<a class="nav-item" onclick="window.location.href='${window.location.origin}/surge-monitor.html'" id="surgeMenu"></a>
             <span class="nav-icon">📈</span>
             <span class="nav-text">Surge Pricing</span>
         </a>
@@ -1991,7 +1991,7 @@ static async getStats() {
         // NUEVO: Función para actualizar métricas en tiempo real
         async function updateDashboardMetrics() {
             try {
-                const response = await fetch(${window.location.origin}/api/admin/stats');
+                const response = await fetch('${window.location.origin}/api/admin/stats');
                 const data = await response.json();
                 
                 // Buscar y actualizar cada métrica
@@ -2078,7 +2078,7 @@ static async getStats() {
 
         async function updateDriverPositions() {
             try {
-                const response = await fetch(${window.location.origin}/api/admin/drivers/positions');
+                const response = await fetch('${window.location.origin}/api/admin/drivers/positions');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -2198,7 +2198,7 @@ static async getStats() {
 
         async function approveDriver(driverId) {
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                const response = await fetch(`${window.location.origin}/api/admin/drivers/${driverId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2222,7 +2222,7 @@ static async getStats() {
 
         async function rejectDriver(driverId) {
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                const response = await fetch(`${window.location.origin}/api/admin/drivers/${driverId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2249,7 +2249,7 @@ static async getStats() {
             if (!newStatus) return; // Si no se seleccionó un estado válido
             
             try {
-                const response = await fetch(`http://localhost:3000/api/admin/drivers/${driverId}/status`, {
+                const response = await fetch(`${window.location.origin}/api/admin/drivers/${driverId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2334,7 +2334,7 @@ static async getStats() {
         // Función actualizada con selector de estados
         async function updateDriverPositionsWithSelector() {
             try {
-                const response = await fetch(${window.location.origin}/api/admin/drivers/positions');
+                const response = await fetch('${window.location.origin}/api/admin/drivers/positions');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -3022,10 +3022,10 @@ static async getStats() {
             }, 2000);
         }
 
-        function loadSurgeMonitor() {
-            // Abre en una ventana modal o iframe
-            window.open(${window.location.origin}/surge-monitor.html', 'SurgeMonitor', 'width=1400,height=800');
-        }
+      function loadSurgeMonitor() {
+    // Abre en una ventana modal o iframe
+    window.open('${window.location.origin}/surge-monitor.html', 'SurgeMonitor', 'width=1400,height=800');
+}
 
         function setupSearch() {
             const searchInput = document.getElementById('searchInput');
@@ -3528,7 +3528,7 @@ static async getStats() {
                 // ==========================================
                 
                 // Conectar con Socket.IO
-                const socket = io(${window.location.origin}');
+                const socket = io('${window.location.origin}');
                 
                 socket.on('connect', () => {
                     console.log('🔌 Conectado al servidor de notificaciones');
