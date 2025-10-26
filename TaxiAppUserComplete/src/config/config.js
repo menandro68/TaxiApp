@@ -25,13 +25,13 @@ export const GOOGLE_MAPS_CONFIG = {
 
 export const API_CONFIG = {
   // Entorno actual (cambiar según necesidad)
-  ENVIRONMENT: 'development', // 'development', 'staging', 'production'
+  ENVIRONMENT: 'production',
   
   // URLs del backend por entorno
   BACKEND_URLS: {
-   development: 'http://192.168.1.26:3000',
+    development: 'http://192.168.1.26:3000',
     staging: 'https://staging-taxiapp.herokuapp.com/api',
-    production: 'https://api-taxiapp.com/api'
+    production: 'https://web-production-99844.up.railway.app/api'
   },
   
   // Configuración de timeouts
