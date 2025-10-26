@@ -81,6 +81,22 @@ app.get('/', (req, res) => {
 });
 
 // ==========================================
+// CONFIG REMOTA PARA APPS
+// ==========================================
+app.get('/api/config', (req, res) => {
+  res.json({
+    api_url: 'https://web-production-99844.up.railway.app/api',
+    socket_url: 'wss://web-production-99844.up.railway.app',
+    version: '1.0.0',
+    features: {
+      push_notifications: true,
+      real_time_tracking: true,
+      surge_pricing: true
+    }
+  });
+});
+
+// ==========================================
 // HEALTH CHECK
 // ==========================================
 app.get('/health', (req, res) => {
