@@ -10,7 +10,9 @@ import { Platform } from 'react-native';
 
 class ApiService {
   constructor() {
- this.BASE_URL = 'https://web-production-99844.up.railway.app/api';
+    this.BASE_URL = 'https://web-production-99844.up.railway.app/api';
+    this.remoteConfig = null;
+    this.loadRemoteConfig();
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;
@@ -533,6 +535,22 @@ class ApiService {
     } catch (error) {
       console.error('Error en batch request:', error);
       throw error;
+    }
+  }
+
+  // ========================================
+  // CONFIGURACIÓN REMOTA
+  // ========================================
+
+  async loadRemoteConfig() {
+    try {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/config');
+      if (response.ok) {
+        this.remoteConfig = await response.json();
+        console.log('✅ Configuración remota cargada:', this.remoteConfig);
+      }
+    } catch (error) {
+      console.log('⚠️ Error cargando configuración remota:', error);
     }
   }
 }
