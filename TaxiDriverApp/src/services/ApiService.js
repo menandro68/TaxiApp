@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 
 class ApiService {
   constructor() {
-  this.BASE_URL = ${window.location.origin}/api';
+ this.BASE_URL = 'https://web-production-99844.up.railway.app/api';
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;
