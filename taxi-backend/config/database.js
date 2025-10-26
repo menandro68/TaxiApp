@@ -16,11 +16,11 @@ console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variabl
 const pool = new Pool({
   connectionString: connectionString,
   ssl: { rejectUnauthorized: false },  // SIEMPRE SSL en Railway
-  max: 3,
+  max: 2,
   min: 0,
-  idleTimeoutMillis: 120000,
-  connectionTimeoutMillis: 120000,
-  statement_timeout: 180000,
+  idleTimeoutMillis: 300000,
+  connectionTimeoutMillis: 300000,
+  statement_timeout: 300000,
   application_name: 'taxiapp_backend',
 });
 
