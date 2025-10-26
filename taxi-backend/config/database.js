@@ -15,7 +15,7 @@ console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variabl
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: true,  // SIEMPRE SSL en Railway
+  ssl: { rejectUnauthorized: false },  // SIEMPRE SSL en Railway
   max: 5,
   min: 1,
   idleTimeoutMillis: 60000,
