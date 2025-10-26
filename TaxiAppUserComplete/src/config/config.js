@@ -94,6 +94,19 @@ export const APP_CONFIG = {
 // FUNCIONES DE UTILIDAD
 // ========================================
 
+// Obtener configuración remota del servidor
+export const getRemoteConfig = async () => {
+  try {
+    const response = await fetch('https://web-production-99844.up.railway.app/api/config');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.log('Error obteniendo config remota:', error);
+  }
+  return null;
+};
+
 export const getBackendUrl = () => {
   return API_CONFIG.BACKEND_URLS[API_CONFIG.ENVIRONMENT];
 };
