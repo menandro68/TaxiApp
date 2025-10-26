@@ -260,7 +260,7 @@ async function initDatabase() {
     
     if (count === 0) {
       console.log('📝 Creando admin por defecto...');
-      const hashedPassword = await bcrypt.hash('132312', 10);
+      const hashedPassword = await bcrypt.hash('132312ml', 10);
       await pool.query(
         `INSERT INTO admins (username, email, password, role, created_at, updated_at) 
          VALUES ($1, $2, $3, $4, NOW(), NOW())`,
