@@ -8,7 +8,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 // POOL DE CONEXIONES POSTGRESQL
 // ========================================
 // Usar DATABASE_URL de Railway o variables locales
-const connectionString = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL || 
+const connectionString = process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL || 
   `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME}`;
 
 console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variables locales');
