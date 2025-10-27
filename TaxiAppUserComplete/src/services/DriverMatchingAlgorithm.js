@@ -26,49 +26,81 @@ class DriverMatchingAlgorithm {
     return R * c;
   }
 
-  // Obtener conductores disponibles (DATOS SIMULADOS)
+  // Obtener conductores disponibles desde el BACKEND
   async getAvailableDrivers(centerLat, centerLon, radiusKm) {
     try {
-      // DATOS SIMULADOS PARA PRUEBAS
-      if (radiusKm <= 3) {
-        return [
-          {
-            id: 'driver1',
-            name: 'Juan Pérez',
-            rating: 4.8,
-            distance: 0.8,
-            acceptanceRate: 0.9,
-            completedTrips: 250,
-            currentLocation: { latitude: centerLat + 0.005, longitude: centerLon + 0.005 }
-          },
-          {
-            id: 'driver2',
-            name: 'María García',
-            rating: 4.5,
-            distance: 1.5,
-            acceptanceRate: 0.85,
-            completedTrips: 180,
-            currentLocation: { latitude: centerLat - 0.008, longitude: centerLon + 0.008 }
-          }
-        ];
-      } else if (radiusKm <= 8) {
-        return [
-          {
-            id: 'driver3',
-            name: 'Carlos López',
-            rating: 4.9,
-            distance: 5.2,
-            acceptanceRate: 0.95,
-            completedTrips: 500,
-            currentLocation: { latitude: centerLat + 0.02, longitude: centerLon - 0.02 }
-          }
-        ];
+      // Primero intentar conectar al backend en la nube
+      const apiUrl = 'https://web-production-99844.up.railway.app/api/drivers/available';
+      
+      console.log('🌐 Intentando conectar al backend:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Conductores del backend:', data.drivers?.length || 0);
+        
+        // Devolver conductores del backend
+        return data.drivers || [];
+      } else {
+        console.warn('⚠️ Backend respondió con error, usando modo simulado');
+        return this.getSimulatedDrivers(centerLat, centerLon, radiusKm);
       }
-      return [];
     } catch (error) {
-      console.error('Error obteniendo conductores:', error);
-      return [];
+      console.error('❌ Error conectando al backend:', error);
+      console.log('📦 Usando datos simulados como fallback');
+      return this.getSimulatedDrivers(centerLat, centerLon, radiusKm);
     }
+  }
+
+  // Datos simulados como FALLBACK
+  getSimulatedDrivers(centerLat, centerLon, radiusKm) {
+    if (radiusKm <= 3) {
+      return [
+        {
+          id: 'driver1',
+          name: 'Juan Pérez',
+          rating: 4.8,
+          distance: 0.8,
+          acceptanceRate: 0.9,
+          completedTrips: 250,
+          vehicle_model: 'Toyota Corolla',
+          vehicle_plate: 'AA-123456',
+          currentLocation: { latitude: centerLat + 0.005, longitude: centerLon + 0.005 } 
+        },
+        {
+          id: 'driver2',
+          name: 'María García',
+          rating: 4.5,
+          distance: 1.5,
+          acceptanceRate: 0.85,
+          completedTrips: 180,
+          vehicle_model: 'Honda Civic',
+          vehicle_plate: 'BB-789012',
+          currentLocation: { latitude: centerLat - 0.008, longitude: centerLon + 0.008 } 
+        }
+      ];
+    } else if (radiusKm <= 8) {
+      return [
+        {
+          id: 'driver3',
+          name: 'Carlos López',
+          rating: 4.9,
+          distance: 5.2,
+          acceptanceRate: 0.95,
+          completedTrips: 500,
+          vehicle_model: 'Hyundai Elantra',
+          vehicle_plate: 'CC-345678',
+          currentLocation: { latitude: centerLat + 0.02, longitude: centerLon - 0.02 }   
+        }
+      ];
+    }
+    return [];
   }
 
   // NUEVO: Método para buscar conductores en un radio específico
