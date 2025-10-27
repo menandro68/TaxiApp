@@ -129,16 +129,25 @@ router.put('/status', async (req, res) => {
 });
 
 // ==========================================
-// OBTENER CONDUCTORES DISPONIBLES (NUEVO)
+// OBTENER CONDUCTORES DISPONIBLES (CORREGIDO)
 // ==========================================
 router.get('/available', async (req, res) => {
     try {
         const result = await db.query(
-            `SELECT id, name, rating, vehicle_model, vehicle_plate, 
-                    latitude, longitude, status, is_online, completed_trips 
-             FROM drivers 
-             WHERE status = 'active' AND is_online = true 
-             ORDER BY rating DESC 
+            `SELECT 
+                d.id, 
+                d.name, 
+                d.rating, 
+                d.vehicle_model, 
+                d.vehicle_plate, 
+                d.status, 
+                d.total_trips as completed_trips,
+                dl.latitude,
+                dl.longitude
+             FROM drivers d
+             LEFT JOIN driver_locations dl ON d.id = dl.driver_id
+             WHERE d.status = 'active'
+             ORDER BY d.rating DESC 
              LIMIT 10`
         );
 
