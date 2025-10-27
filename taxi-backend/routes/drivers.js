@@ -128,4 +128,29 @@ router.put('/status', async (req, res) => {
     }
 });
 
+// ==========================================
+// OBTENER CONDUCTORES DISPONIBLES (NUEVO)
+// ==========================================
+router.get('/available', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT id, name, rating, vehicle_model, vehicle_plate, 
+                    latitude, longitude, status, is_online, completed_trips 
+             FROM drivers 
+             WHERE status = 'active' AND is_online = true 
+             ORDER BY rating DESC 
+             LIMIT 10`
+        );
+
+        res.json({
+            success: true,
+            count: result.rows.length,
+            drivers: result.rows || []
+        });
+    } catch (error) {
+        console.error('Error obteniendo conductores disponibles:', error);
+        res.status(500).json({ error: 'Error obteniendo conductores disponibles' });
+    }
+});
+
 module.exports = router;
