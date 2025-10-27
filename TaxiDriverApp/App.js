@@ -197,7 +197,7 @@ export default function DriverApp({ navigation }) {
     setLoginLoading(true);
     
     try {
-      const response = await fetch(https://web-production-99844.up.railway.app/api/auth/login/driver', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ export default function DriverApp({ navigation }) {
     if (!location || driverStatus === 'offline') return;
     
     try {
-    const response = await fetch(https://web-production-99844.up.railway.app/api/drivers/location', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/location', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ const toggleDriverStatus = async () => {
       }
       
       // NUEVO: Notificar al backend que el conductor está online
-      const response = await fetch(https://web-production-99844.up.railway.app/api/drivers/status', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/status', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ const toggleDriverStatus = async () => {
   } else {
     try {
       // NUEVO: Notificar al backend que el conductor está offline
-      const response = await fetch(https://web-production-99844.up.railway.app/api/drivers/status', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/status', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
