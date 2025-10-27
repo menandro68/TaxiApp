@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 // REGISTRO DE CONDUCTOR
 router.post('/register', async (req, res) => {
