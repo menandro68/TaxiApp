@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
 });
 
 // CREAR CONDUCTOR (desde Admin Panel)
-router.post('/', async (req, res) => {
+    router.post('/create', async (req, res) => {
     try {
         const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status } = req.body;
         
