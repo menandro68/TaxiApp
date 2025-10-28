@@ -84,6 +84,34 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// CREAR CONDUCTOR (desde Admin Panel)
+router.post('/', async (req, res) => {
+    try {
+        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status } = req.body;
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const result = await db.query(
+            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating, total_trips, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+             RETURNING *`,
+            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, status || 'active', 4.8, 0]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Conductor agregado exitosamente',
+            driver: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Error agregando conductor:', error);
+        if (error.code === '23505') {
+            return res.status(400).json({ error: 'Email ya registrado' });
+        }
+        res.status(500).json({ error: 'Error agregando conductor' });
+    }
+});
+
 // OBTENER TODOS LOS CONDUCTORES
 router.get('/', async (req, res) => {
     try {
