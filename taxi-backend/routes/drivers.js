@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
 });
 
 // CREAR CONDUCTOR (desde Admin Panel)
-    router.post('/create', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status } = req.body;
         
@@ -135,19 +135,19 @@ router.put('/status', async (req, res) => {
         console.log('📡 Recibida petición de cambio de estado:', { driverId, status, isOnline });
         
         const result = await db.query(
-            'UPDATE drivers SET status = $1, is_online = $2 WHERE id = $3 RETURNING *',
-            [status, isOnline === true || isOnline === 1, driverId]
+            'UPDATE drivers SET status = $1 WHERE id = $2 RETURNING *',
+            [status, driverId]
         );
         
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Conductor no encontrado' });
         }
         
-        console.log(`✅ Estado actualizado: Conductor ${driverId} ahora está ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
+        console.log(`✅ Estado actualizado: Conductor ${driverId} ahora está ${status}`);
         
         res.json({
             success: true,
-            message: `Conductor ${isOnline ? 'conectado' : 'desconectado'} exitosamente`,
+            message: `Conductor ${status === 'online' ? 'conectado' : 'desconectado'} exitosamente`,
             driver: result.rows[0]
         });
     } catch (error) {
