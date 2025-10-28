@@ -37,7 +37,7 @@ import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
 import MultipleDestinationsModal from './src/components/MultipleDestinationsModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ValidationUtils } from './src/utils/ValidationUtils';
-import { getBackendUrl } from './src/config';
+import { getBackendUrl } from './src/config.js';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -1182,7 +1182,7 @@ const sendTripRequestToBackend = async (tripData) => {
   try {
     console.log('Enviando solicitud al backend:', tripData);
     
-  const response = await fetch(`${getBackendUrl()}/api/trips/create`, {
+     const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
