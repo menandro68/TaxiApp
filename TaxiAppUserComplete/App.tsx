@@ -678,70 +678,113 @@ const App = ({ navigation }) =>  {
     // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');
   };
-
-  // NUEVA FUNCIÓN: Inicializar servicio de ubicación con fallback
-  const initializeLocationService = async () => {
-    try {
-      setIsLoadingLocation(true);
-      console.log('Inicializando servicio de ubicacion...');
+// NUEVA FUNCIÓN: Inicializar servicio de ubicación con fallback mejorado
+const initializeLocationService = async () => {
+  try {
+    setIsLoadingLocation(true);
+    console.log('Inicializando servicio de ubicacion...');
+    
+    // 1. Primero solicitar permisos
+    const permissionGranted = await requestLocationPermissions();
+    
+    if (permissionGranted) {
+      // 2. Intentar obtener ubicación con fallback automático
+      const locationResult = await LocationFallbackService.getLocationForUser({
+        showUserPrompt: false,
+        timeout: 8000
+      });
       
-      // 1. Primero solicitar permisos
-      const permissionGranted = await requestLocationPermissions();
-      
-      if (permissionGranted) {
-        // 2. Intentar obtener ubicación con fallback automático
-        const locationResult = await LocationFallbackService.getLocationForUser({
-          showUserPrompt: false, // No mostrar prompt inicialmente
-          timeout: 8000
+      if (locationResult.success && locationResult.location) {
+        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
+        setUserLocation(locationResult.location);
+        setLocationSource(locationResult.location.source);
+        
+        console.log('✅ Ubicación obtenida:', locationResult.location.source);
+        console.log('📍 Coordenadas:', {
+          lat: locationResult.location.latitude,
+          lng: locationResult.location.longitude
         });
         
-        if (locationResult.success && locationResult.location) {
-          setUserLocation(locationResult.location);
-          setLocationSource(locationResult.location.source);
-          
-          console.log('Ubicacion obtenida:', locationResult.location.source);
-          
-          if (locationResult.warning) {
-            // Mostrar warning pero no bloquear la app
-            setTimeout(() => {
-              Alert.alert(
-                'Ubicación aproximada',
-                locationResult.warning + '\n\n¿Quieres seleccionar una ubicación más precisa?',
-                [
-                  { text: 'No, continuar', style: 'cancel' },
-                  { text: 'Sí, seleccionar', onPress: () => setShowLocationModal(true) }
-                ]
-              );
-            }, 2000);
-          }
-        } else {
-          // Si todo falla, mostrar opciones al usuario
-          setShowLocationModal(true);
+        if (locationResult.warning) {
+          // Mostrar warning pero no bloquear la app
+          setTimeout(() => {
+            Alert.alert(
+              'Ubicación aproximada',
+              locationResult.warning + '\n\n¿Quieres seleccionar una ubicación más precisa?',
+              [
+                { text: 'No, continuar', style: 'cancel' },
+                { text: 'Sí, seleccionar', onPress: () => setShowLocationModal(true) }
+              ]
+            );
+          }, 2000);
         }
       } else {
-        // Sin permisos, usar fallback inmediatamente
-        console.log('Sin permisos, usando ubicacion por defecto');
-        const defaultLocation = await LocationFallbackService.getCurrentLocationWithFallback();
-        setUserLocation(defaultLocation.location);
+        // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK
+        console.log('⚠️ Fallo obteniendo ubicación GPS, usando fallback...');
+        
+        const fallbackLocation = {
+          latitude: 18.4861,
+          longitude: -69.9312,
+          address: 'Santo Domingo Este, República Dominicana',
+          source: 'fallback'
+        };
+        
+        setUserLocation(fallbackLocation);
         setLocationSource('fallback');
-        setShowLocationModal(true);
+        
+        // Mostrar modal para que el usuario pueda seleccionar ubicación manual
+        setTimeout(() => {
+          Alert.alert(
+            'Ubicación no disponible',
+            'No se pudo obtener tu ubicación GPS. Estamos usando ubicación por defecto.',
+            [
+              { text: 'Usar esta', style: 'cancel' },
+              { text: 'Seleccionar otra', onPress: () => setShowLocationModal(true) }
+            ]
+          );
+        }, 500);
       }
+    } else {
+      // SIN PERMISOS - USAR FALLBACK DIRECTAMENTE
+      console.log('⚠️ Sin permisos de ubicación, usando ubicación por defecto');
       
-    } catch (error) {
-      console.error('Error inicializando ubicacion:', error);
-      // Usar ubicación por defecto como último recurso
       const defaultLocation = {
         latitude: 18.4861,
         longitude: -69.9312,
         address: 'Santo Domingo Este, República Dominicana',
-        source: 'emergency_fallback'
+        source: 'default'
       };
+      
       setUserLocation(defaultLocation);
-      setLocationSource('emergency_fallback');
-    } finally {
-      setIsLoadingLocation(false);
+      setLocationSource('default');
+      setLocationPermissionStatus('denied');
+      
+      // Mostrar modal para que seleccione ubicación
+      setTimeout(() => {
+        setShowLocationModal(true);
+      }, 500);
     }
-  };
+    
+  } catch (error) {
+    console.error('❌ Error inicializando ubicación:', error);
+    
+    // ÚLTIMO RECURSO: Emergency fallback
+    const emergencyLocation = {
+      latitude: 18.4861,
+      longitude: -69.9312,
+      address: 'Santo Domingo Este, República Dominicana',
+      source: 'emergency_fallback'
+    };
+    
+    setUserLocation(emergencyLocation);
+    setLocationSource('emergency_fallback');
+    
+    console.log('🆘 Usando ubicación de emergencia:', emergencyLocation);
+    
+  } finally {
+    setIsLoadingLocation(false);
+  }
+};
 
   const loadUserState = async () => {
     try {
