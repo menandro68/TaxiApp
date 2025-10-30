@@ -18,15 +18,20 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
 
   // ✅ NUEVO: Hacer zoom automático a la ubicación del usuario
   useEffect(() => {
-    if (userLocation && mapRef.current) {
+    if (mapRef.current) {
+      const targetLocation = userLocation || {
+        latitude: 18.4861,
+        longitude: -69.9312,
+      };
+      
       mapRef.current.animateToRegion(
         {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
+          latitude: targetLocation.latitude,
+          longitude: targetLocation.longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         },
-        500 // animación en 500ms
+        500
       );
     }
   }, [userLocation]);
