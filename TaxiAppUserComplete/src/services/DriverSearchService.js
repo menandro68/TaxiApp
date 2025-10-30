@@ -56,7 +56,7 @@ class DriverSearchService {
         console.log(`✅ ${drivers.length} conductor(es) encontrado(s) en ${radius}km`);
         
         // AGREGAR DELAY MÍNIMO PARA MOSTRAR BÚSQUEDA (3-5 segundos)
-        const minSearchTime = 3000 + Math.random() * 2000; // 3-5 segundos aleatorios
+        const minSearchTime = 30000 + Math.random() * 20000; // 3-5 segundos aleatorios
         await this.delay(minSearchTime);
         
         return {
