@@ -1161,60 +1161,65 @@ const initializeLocationService = async () => {
     return; // Detener aquí y continuar cuando el usuario seleccione método de pago
   };
 
-  // Nueva función para procesar el viaje después de seleccionar método de pago
-  const processRideRequest = async () => {
-    setShowPaymentModal(false); // Cerrar el modal de pago
+const processRideRequest = async () => {
+  setShowPaymentModal(false);
+  
+  // ✅ GUARDAR UBICACIÓN INMEDIATAMENTE ANTES DE CUALQUIER CAMBIO DE ESTADO
+  if (userLocation) {
+    await SharedStorage.saveUserLocation(userLocation);
+    console.log('✅ Ubicación guardada en SharedStorage:', userLocation);
+  }
+
+  if (!estimatedPrice && !routeInfo) {
+    console.log('Continuando con precio base');
+    setEstimatedPrice(150);
+  }
+
+  try {
+    const destinationData = selectedDestination
+      ? {
+          latitude: selectedDestination.location.latitude,
+          longitude: selectedDestination.location.longitude,
+          address: selectedDestination.name,
+        }
+      : {
+          latitude: 18.4765,
+          longitude: -69.8933,
+          address: destination,
+        };
+
+    const finalPrice = routeInfo ? 
+      parseFloat(routeInfo.price) : 
+      (estimatedPrice || 150);
+
+    const request = {
+      userId: 'user_123',
+      origin: {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        address: userLocation?.address || pickupLocation?.address || 'Mi ubicación',
+      },
+      destination: destinationData,
+      price: finalPrice,
+      paymentMethod: selectedPaymentMethod,
+      vehicleType: selectedVehicleType,
+      status: 'searching',
+      requestTime: new Date().toISOString(),
+    };
+
+    console.log('Enviando solicitud de viaje con metodo de pago:', selectedPaymentMethod);
     
-    if (!estimatedPrice && !routeInfo) {
-      console.log('Continuando con precio base');
-      setEstimatedPrice(150);
-    }
+    setTripRequest(request);
+    setRideStatus('searching');
 
-    try {
-      const destinationData = selectedDestination
-        ? {
-            latitude: selectedDestination.location.latitude,
-            longitude: selectedDestination.location.longitude,
-            address: selectedDestination.name,
-          }
-        : {
-            latitude: 18.4765,
-            longitude: -69.8933,
-            address: destination,
-          };
-
-      const finalPrice = routeInfo ? 
-        parseFloat(routeInfo.price) : 
-        (estimatedPrice || 150);
-
-      const request = {
-        userId: 'user_123',
-        origin: {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          address: userLocation?.address || pickupLocation?.address || 'Mi ubicación',
-        },
-        destination: destinationData,
-        price: finalPrice,
-        paymentMethod: selectedPaymentMethod, // Agregar método de pago
-        vehicleType: selectedVehicleType,
-        status: 'searching',
-        requestTime: new Date().toISOString(),
-      };
-
-      console.log('Enviando solicitud de viaje con metodo de pago:', selectedPaymentMethod);
-      
-      setTripRequest(request);
-      setRideStatus('searching');
-
-     await sendTripRequestToBackend(request);
-      
-    } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'No se pudo procesar la solicitud');
-      fallbackRequestRide(); // Llamar a fallback si falla
-    }
-  };
+    await sendTripRequestToBackend(request);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    Alert.alert('Error', 'No se pudo procesar la solicitud');
+    fallbackRequestRide();
+  }
+};
 
 // NUEVA FUNCIÓN: Enviar solicitud de viaje al backend
 const sendTripRequestToBackend = async (tripData) => {
