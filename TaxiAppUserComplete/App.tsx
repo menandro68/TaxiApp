@@ -317,70 +317,66 @@ const App = ({ navigation }) =>  {
     }
   };
 
-  const initializeApp = async () => {
-    try {
-      console.log('Inicializando TaxiApp Usuario...');
-      setIsLoading(false);
-      // PRUEBA TEMPORAL - ELIMINAR DESPUÉS DE VERIFICAR
-      if (__DEV__) {
-        TestEncryption.runAllTests().then(result => {
-          console.log('Pruebas de encriptacion completadas:', result);
-        });
-      }
-      
-      // 1. Verificar si el usuario está autenticado
-      const authToken = await SharedStorage.getAuthToken();
-      if (authToken) {
-        try {
-          // Verificar token con el servidor
-          const user = await ApiService.verifyToken(authToken);
-          if (user) {
-            setIsAuthenticated(true);
-            console.log('Usuario autenticado:', user.name);
-            
-            // Continuar con la inicialización normal
-            await loadUserState();
-            await initializeUserProfile();
-            await initializeLocationService();
-          } else {
-            // Token inválido, mostrar login
-            await SharedStorage.clearAuth();
-            setIsAuthenticated(false);
-            setShowAuthModal(true);
-          }
-        } catch (error) {
-          console.error('Error verificando token:', error);
-          // Si falla la verificación, usar datos locales si existen
-          const localUser = await SharedStorage.getUserProfile();
-          if (localUser && localUser.email) {
-            setIsAuthenticated(true);
-            console.log('Usando autenticacion local:', localUser.name);
-            await loadUserState();
-            await initializeUserProfile();
-            await initializeLocationService();
-          } else {
-            setIsAuthenticated(false);
-            setShowAuthModal(true);
-          }
+const initializeApp = async () => {
+  try {
+    console.log('Inicializando TaxiApp Usuario...');
+    setIsLoading(true);  // ← CAMBIO 1: Cambiar a TRUE (mantener cargando)
+    
+    // 1. SIEMPRE inicializar ubicación primero
+    await initializeLocationService();
+    
+    // 2. Verificar si el usuario está autenticado
+    const authToken = await SharedStorage.getAuthToken();
+    if (authToken) {
+      try {
+        // Verificar token con el servidor
+        const user = await ApiService.verifyToken(authToken);
+        if (user) {
+          setIsAuthenticated(true);
+          console.log('Usuario autenticado:', user.name);
+          
+          // Continuar con la inicialización normal
+          await loadUserState();
+          await initializeUserProfile();
+        } else {
+          // Token inválido, mostrar login
+          await SharedStorage.clearAuth();
+          setIsAuthenticated(false);
+          setShowAuthModal(true);
         }
-      } else {
-        // No hay token, mostrar login
-        setIsAuthenticated(false);
-        setShowAuthModal(true);
-        console.log('Usuario no autenticado, mostrando login');
+      } catch (error) {
+        console.error('Error verificando token:', error);
+        // Si falla la verificación, usar datos locales si existen
+        const localUser = await SharedStorage.getUserProfile();
+        if (localUser && localUser.email) {
+          setIsAuthenticated(true);
+          console.log('Usando autenticacion local:', localUser.name);
+          await loadUserState();
+          await initializeUserProfile();
+        } else {
+          setIsAuthenticated(false);
+          setShowAuthModal(true);
+        }
       }
-      
-      setupNotificationHandlers();
-      console.log('TaxiApp Usuario inicializada correctamente');
-      
-    } catch (error) {
-      console.error('Error inicializando la app:', error);
-      Alert.alert('Error', 'Error al inicializar la aplicación');
+    } else {
+      // No hay token, mostrar login
       setIsAuthenticated(false);
       setShowAuthModal(true);
+      console.log('Usuario no autenticado, mostrando login');
     }
-    setIsLoading(false);
-  };
+    
+    setupNotificationHandlers();
+    console.log('TaxiApp Usuario inicializada correctamente');
+    
+  } catch (error) {
+    console.error('Error inicializando la app:', error);
+    Alert.alert('Error', 'Error al inicializar la aplicación');
+    setIsAuthenticated(false);
+    setShowAuthModal(true);
+  } finally {
+    setIsLoading(false);  // ← CAMBIO 2: Mover aquí al FINAL (en finally)
+  }
+};
 
   // FUNCIONES DE AUTENTICACION
 
