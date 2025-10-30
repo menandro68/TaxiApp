@@ -2363,15 +2363,18 @@ const renderLoadingScreen = () => {
   };
 
   const renderContent = () => {
-    // BOTÓN DE PRUEBA DE ERRORES - ELIMINAR EN PRODUCCIÓN
-    if (__DEV__) {
-      const testError = () => {
-        throw new Error('Error de prueba para verificar ErrorBoundary');
-      };
-    }
+  // ✅ VALIDACIÓN CORRECTA: Si NO hay ubicación, espera
+  if (!userLocation) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Obteniendo tu ubicación...</Text>
+      </View>
+    );
+  }
     
-    if (rideStatus === TRIP_STATES.REQUESTING_RIDE) {
-      return (
+  if (rideStatus === TRIP_STATES.REQUESTING_RIDE) {
+    return (
         <View style={styles.statusContainer}>
           <Text style={styles.statusTitle}>🔍 Buscando conductor...</Text>
           <Text style={styles.statusText}>Por favor espera un momento</Text>
