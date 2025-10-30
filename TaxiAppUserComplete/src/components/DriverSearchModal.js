@@ -196,9 +196,9 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
     <View style={styles.failedContainer}>
       <Icon name="alert-circle" size={80} color="#FF3B30" />
       
-      <Text style={styles.failedTitle}>No hay conductores disponibles</Text>
+      <Text style={styles.failedTitle}>Sin conductores disponibles</Text>
       <Text style={styles.failedMessage}>
-        No pudimos encontrar conductores en tu área en este momento.
+        En este momento no tenemos conductores disponibles. Inténtelo más tarde por favor.
       </Text>
 
       <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
