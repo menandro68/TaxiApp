@@ -1,5 +1,6 @@
 // DriverSearchService.js
 import Geolocation from '@react-native-community/geolocation';
+import { getBackendUrl } from '../config/config';
 
 class DriverSearchService {
   constructor() {
@@ -78,11 +79,72 @@ class DriverSearchService {
 
   // Buscar conductores en un radio específico
   async searchDriversInRadius(userLocation, radiusKm) {
-    // Simular conductores para pruebas
-    // En producción, esto debería ser una llamada a tu API
+    try {
+      const backendUrl = getBackendUrl();
+      const apiUrl = `${backendUrl}/drivers/available`;
+      
+      console.log(`📍 Llamando a API: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.drivers && data.drivers.length > 0) {
+          console.log(`✅ ${data.drivers.length} conductores reales encontrados`);
+          
+          const drivers = data.drivers.map(driver => ({
+            id: driver.id,
+            name: driver.full_name,
+            vehicle: {
+              make: driver.vehicle_make || 'N/A',
+              model: driver.vehicle_model || 'N/A',
+              plate: driver.vehicle_plate || 'N/A',
+              color: driver.vehicle_color || 'N/A'
+            },
+            rating: driver.rating || 4.5,
+            trips: driver.total_trips || 0,
+            location: {
+              latitude: parseFloat(driver.latitude),
+              longitude: parseFloat(driver.longitude)
+            },
+            status: driver.status || 'available',
+            eta: this.estimateETA(
+              this.calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                parseFloat(driver.latitude),
+                parseFloat(driver.longitude)
+              )
+            ),
+            phone: driver.phone || '+1-809-555-0123'
+          }));
+
+          const driversInRadius = drivers.filter(driver => {
+            const distance = this.calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              driver.location.latitude,
+              driver.location.longitude
+            );
+            return distance <= radiusKm;
+          });
+
+          if (driversInRadius.length > 0) {
+            return driversInRadius;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️ Error conectando a API: ${error.message}`);
+    }
+
+    console.log('⚠️ Usando datos simulados como fallback');
     const mockDrivers = this.generateMockDrivers(userLocation, radiusKm);
     
-    // Filtrar solo los que están dentro del radio
     const driversInRadius = mockDrivers.filter(driver => {
       const distance = this.calculateDistance(
         userLocation.latitude,
