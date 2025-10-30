@@ -54,6 +54,11 @@ class DriverSearchService {
         const sortedDrivers = this.sortDriversByDistance(drivers, userLocation);
         
         console.log(`✅ ${drivers.length} conductor(es) encontrado(s) en ${radius}km`);
+        
+        // AGREGAR DELAY MÍNIMO PARA MOSTRAR BÚSQUEDA (3-5 segundos)
+        const minSearchTime = 3000 + Math.random() * 2000; // 3-5 segundos aleatorios
+        await this.delay(minSearchTime);
+        
         return {
           success: true,
           driver: sortedDrivers[0], // El más cercano
