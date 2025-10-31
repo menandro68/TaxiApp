@@ -2853,13 +2853,14 @@ const renderLoadingScreen = () => {
         />
         
         {/* Modal de búsqueda de conductores */}
-        <DriverSearchModal
-          visible={searchModalVisible}
-       onClose={() => setSearchModalVisible(false)}
-          onDriverFound={handleDriverFound}
-          userLocation={userLocation}
-        />
-   
+      {searchModalVisible && (
+  <DriverSearchModal
+    visible={true}
+    onClose={() => setSearchModalVisible(false)}
+    onDriverFound={handleDriverFound}
+    userLocation={userLocation}
+  />
+      )}
         {/* Modal de búsqueda de conductores */}
         {rideStatus === 'searching' && (
           <Modal
