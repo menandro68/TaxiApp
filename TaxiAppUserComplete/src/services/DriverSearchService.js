@@ -55,8 +55,8 @@ class DriverSearchService {
         
         console.log(`✅ ${drivers.length} conductor(es) encontrado(s) en ${radius}km`);
         
-        // AGREGAR DELAY MÍNIMO PARA MOSTRAR BÚSQUEDA (3-5 segundos)
-        const minSearchTime = 3000 + Math.random() * 2000; // 3-5 segundos aleatorios
+        // AGREGAR DELAY MÍNIMO PARA MOSTRAR BÚSQUEDA (30-40 segundos)
+        const minSearchTime = 30000 + Math.random() * 10000; // 30-40 segundos aleatorios
         await this.delay(minSearchTime);
         
         return {
@@ -75,6 +75,11 @@ class DriverSearchService {
     }
     
     console.log('❌ No se encontraron conductores después de todos los intentos');
+    
+    // AGREGAR DELAY DE 30-40 SEGUNDOS
+    const minSearchTime2 = 30000 + Math.random() * 10000; // 30-40 segundos
+    await this.delay(minSearchTime2);
+    
     return {
       success: false,
       message: 'No hay conductores disponibles en tu área',
