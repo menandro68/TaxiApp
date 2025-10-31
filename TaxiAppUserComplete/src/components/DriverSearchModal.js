@@ -220,7 +220,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalContainer}>
+     <View style={styles.modalContainer} pointerEvents={visible ? 'auto' : 'none'}>
         <View style={styles.modalContent}>
           {(isSearching || (!driverFound && !searchFailed)) && renderSearching()}
           {!isSearching && driverFound && renderDriverFound()}
