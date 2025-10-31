@@ -29,10 +29,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   const [pulseAnim] = useState(new Animated.Value(1));
 
   useEffect(() => {
-    // Alert.alert('Debug', 'MODAL VISIBLE: ' + visible);
     if (visible && userLocation) {
-      // Alert.alert('Debug', 'INICIANDO BÚSQUEDA');
-      // Pequeño delay para que el modal se muestre antes de iniciar
       setTimeout(() => {
         startSearch();
       }, 100);
@@ -63,7 +60,6 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const startSearch = async () => {
-    // Alert.alert('Debug', 'START SEARCH LLAMADO');
     setIsSearching(true);
     setSearchFailed(false);
     setDriverFound(null);
@@ -94,7 +90,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const handleClose = () => {
-    // Alert.alert('Debug', 'HANDLE CLOSE LLAMADO');
+    // Resetear todos los estados
     setIsSearching(false);
     setSearchProgress({
       attempt: 0,
@@ -104,7 +100,11 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
     });
     setDriverFound(null);
     setSearchFailed(false);
-    onClose();
+    
+    // Pequeño delay para asegurar que el estado se actualiza antes de cerrar
+    setTimeout(() => {
+      onClose();
+    }, 100);
   };
 
   const handleRetry = () => {
