@@ -90,7 +90,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const handleClose = () => {
-    // Resetear todos los estados
+    // Resetear todos los estados ANTES de cerrar
     setIsSearching(false);
     setSearchProgress({
       attempt: 0,
@@ -101,10 +101,13 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
     setDriverFound(null);
     setSearchFailed(false);
     
-    // Pequeño delay para asegurar que el estado se actualiza antes de cerrar
+    // Delay más largo para asegurar reset de estados
     setTimeout(() => {
-      onClose();
-    }, 100);
+      // Llamar onClose() y asegurar que se ejecute
+      if (onClose) {
+        onClose();
+      }
+    }, 500);
   };
 
   const handleRetry = () => {
