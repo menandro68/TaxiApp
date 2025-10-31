@@ -2855,7 +2855,16 @@ const renderLoadingScreen = () => {
         {/* Modal de búsqueda de conductores */}
         <DriverSearchModal
           visible={searchModalVisible}
-          onClose={() => setSearchModalVisible(false)}
+       onClose={() => {
+  setSearchModalVisible(false);
+  // Refrescar la pantalla como lo hace closeDrawer
+  setTimeout(() => {
+    // Forzar un pequeño refresh del estado principal
+    if (navigation && navigation.navigate) {
+      navigation.navigate('Main');
+    }
+  }, 100);
+}}
           onDriverFound={handleDriverFound}
           userLocation={userLocation}
         />
