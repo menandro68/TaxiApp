@@ -90,7 +90,10 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const handleClose = () => {
-    // Resetear todos los estados ANTES de cerrar
+    // Detener animación inmediatamente
+    pulseAnim.setValue(1);
+    
+    // Limpiar TODOS los estados al mismo tiempo
     setIsSearching(false);
     setSearchProgress({
       attempt: 0,
@@ -101,13 +104,8 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
     setDriverFound(null);
     setSearchFailed(false);
     
-    // Delay más largo para asegurar reset de estados
-    setTimeout(() => {
-      // Llamar onClose() y asegurar que se ejecute
-      if (onClose) {
-        onClose();
-      }
-    }, 500);
+    // Cerrar sin delay
+    onClose();
   };
 
   const handleRetry = () => {
