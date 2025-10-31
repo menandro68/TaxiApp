@@ -56,7 +56,7 @@ class DriverSearchService {
         console.log(`✅ ${drivers.length} conductor(es) encontrado(s) en ${radius}km`);
         
         // AGREGAR DELAY MÍNIMO PARA MOSTRAR BÚSQUEDA (3-5 segundos)
-      const minSearchTime = 30000 + Math.random() * 10000; // 30-40 segundos aleatorios
+        const minSearchTime = 3000 + Math.random() * 2000; // 3-5 segundos aleatorios
         await this.delay(minSearchTime);
         
         return {
@@ -147,20 +147,8 @@ class DriverSearchService {
       console.warn(`⚠️ Error conectando a API: ${error.message}`);
     }
 
-    console.log('⚠️ Usando datos simulados como fallback');
-    const mockDrivers = this.generateMockDrivers(userLocation, radiusKm);
-    
-    const driversInRadius = mockDrivers.filter(driver => {
-      const distance = this.calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        driver.location.latitude,
-        driver.location.longitude
-      );
-      return distance <= radiusKm;
-    });
-    
-    return driversInRadius;
+    console.log('⚠️ No hay conductores disponibles - SIN FALLBACK');
+    return []; // Retornar array vacío - NO usar mock drivers
   }
 
   // Ordenar conductores por distancia

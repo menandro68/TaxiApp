@@ -198,7 +198,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
       
       <Text style={styles.failedTitle}>Sin conductores disponibles</Text>
       <Text style={styles.failedMessage}>
-        En este momento no tenemos conductores disponibles. Inténtelo más tarde por favor.
+        EN ESTE MOMENTO NO TENEMOS CONDUCTORES DISPONIBLE INTENTELO MAS TARDES
       </Text>
 
       <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
