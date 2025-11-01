@@ -90,21 +90,6 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const handleClose = () => {
-    // Detener animación inmediatamente
-    pulseAnim.setValue(1);
-    
-    // Limpiar TODOS los estados al mismo tiempo
-    setIsSearching(false);
-    setSearchProgress({
-      attempt: 0,
-      totalAttempts: 5,
-      radius: 0,
-      message: 'Iniciando búsqueda...',
-    });
-    setDriverFound(null);
-    setSearchFailed(false);
-    
-    // Cerrar sin delay
     onClose();
   };
 
@@ -219,6 +204,9 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
       animationType="fade"
       transparent={true}
       onRequestClose={handleClose}
+      onDismiss={() => {
+        setIsSearching(false);
+      }}
       pointerEvents={visible ? 'auto' : 'none'}
     >
       <View style={styles.modalContainer}>
