@@ -1221,15 +1221,16 @@ const processRideRequest = async () => {
   }
 };
 
-// NUEVA FUNCIÓN: Enviar solicitud de viaje al backend
 const sendTripRequestToBackend = async (tripData) => {
   try {
     console.log('Enviando solicitud al backend:', tripData);
+    console.log('URL:', `${getBackendUrl()}/trips/create`);
     
-     const response = await fetch(`${getBackendUrl()}/trips/create`, {
+    const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         user_id: tripData.userId,
@@ -1245,60 +1246,31 @@ const sendTripRequestToBackend = async (tripData) => {
       })
     });
 
+    console.log('✅ Response recibido:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
     const data = await response.json();
+    console.log('✅ Datos parseados:', data);
     
     if (data.success) {
-      console.log('✅ Viaje creado en el backend:', data.tripId);
-      
-      // VERIFICAR SI SE ENCONTRÓ CONDUCTOR
-      if (data.driverFound && data.driver) {
-        console.log('✅ Conductor asignado automáticamente:', data.driver.name);
-        
-        // FORMATEAR DATOS DEL CONDUCTOR REAL
-        const realDriverInfo = {
-          id: data.driver.id,
-          name: data.driver.name,
-          car: `${data.driver.vehicle.model} - ${data.driver.vehicle.plate}`,
-          rating: data.driver.rating || 4.8,
-          eta: `${data.driver.eta} min`,
-          phone: data.driver.phone,
-          currentLocation: {
-            latitude: data.driver.location.latitude,
-            longitude: data.driver.location.longitude,
-          },
-          distance: `${data.driver.distance} km`
-        };
-        
-        // ASIGNAR CONDUCTOR INMEDIATAMENTE
-        setDriverInfo(realDriverInfo);
-        setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
-        
-        // Iniciar tracking del conductor
-        await startDriverTracking(realDriverInfo, userLocation);
-        
-        // Cerrar modal de búsqueda si está abierto
-        setSearchModalVisible(false);
-        setIsSearchingDriver(false);
-        
-        Alert.alert(
-          '¡Conductor encontrado!',
-          `${realDriverInfo.name} llegará en ${realDriverInfo.eta}\nDistancia: ${realDriverInfo.distance}`
-        );
-        
-      } else {
-        // No se encontró conductor - usar búsqueda modal
-        console.log('⚠️ No se encontró conductor disponible, usando búsqueda modal');
-        searchForDriver();
-      }
+      console.log('✅ Viaje creado:', data.tripId);
+      setDriverInfo(data.driver || null);
+      setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
+      setSearchModalVisible(false);
     } else {
-      throw new Error(data.error || 'Error creando viaje');
+      throw new Error(data.message || 'Error desconocido');
     }
     
   } catch (error) {
-    console.error('❌ Error enviando al backend:', error);
-    Alert.alert('Error de conexión', 'No se pudo conectar con el servidor. Usando modo simulado.');
-    // Fallback a búsqueda simulada si falla el backend
-    searchForDriver();
+    console.error('❌ Error completo:', error);
+    console.error('Mensaje:', error.message);
+    console.error('Stack:', error.stack);
+    
+    Alert.alert('Error de conexión', error.message || 'No se pudo conectar');
+    fallbackRequestRide();
   }
 };
   // Función de fallback si falla el API (SOLO UNA VEZ)
