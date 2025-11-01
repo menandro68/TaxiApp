@@ -207,7 +207,6 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
       onDismiss={() => {
         setIsSearching(false);
       }}
-      pointerEvents={visible ? 'auto' : 'none'}
     >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
