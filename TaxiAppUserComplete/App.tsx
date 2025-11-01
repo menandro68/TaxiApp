@@ -2862,16 +2862,7 @@ const renderLoadingScreen = () => {
   />
       )}
         {/* Modal de búsqueda de conductores */}
-        {rideStatus === 'searching' && (
-          <Modal
-            visible={rideStatus === 'searching'}
-            transparent={true}
-            animationType="fade"
-          >
-            {/* ... contenido del modal de búsqueda ... */}
-          </Modal>
-        )}
-
+      
         {/* MODAL DE MÉTODOS DE PAGO */}
         {showPaymentModal && (
           <Modal
