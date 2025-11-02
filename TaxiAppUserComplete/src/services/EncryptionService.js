@@ -289,28 +289,11 @@ class EncryptionService {
   }
 }
 
-// Instanciar con protección try-catch
-let encryptionServiceInstance = null;
-
+let instance = null;
 try {
-  encryptionServiceInstance = new EncryptionService();
-} catch (error) {
-  console.error('Error inicializando EncryptionService:', error);
-  encryptionServiceInstance = null;
+  instance = new EncryptionService();
+} catch (e) {
+  console.warn('EncryptionService init deferred', e);
 }
 
-// Exportar con fallback seguro
-export default encryptionServiceInstance || {
-  encrypt: async (data) => data,
-  decrypt: async (data) => data,
-  hashPassword: async (pwd) => pwd,
-  verifyPassword: async (pwd, hash) => false,
-  encryptCardData: async (card) => ({ masked: '****', encrypted: null, token: null }),
-  generateSecureToken: async () => 'token',
-  encryptBySecurityLevel: async (data) => data,
-  verifyDataIntegrity: async (data, sig) => false,
-  generateSignature: async (data) => null,
-  encryptJSON: async (json) => null,
-  clearSensitiveData: () => {},
-  initialize: async () => {}
-};
+export default instance || new EncryptionService();
