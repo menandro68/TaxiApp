@@ -1,48 +1,21 @@
-import * as Crypto from 'expo-crypto';
+import CryptoJS from 'crypto-js';
+import SecurityConfig from './SecurityConfig';
 
 /**
- * Servicio de Encriptación para TaxiApp - Compatible con React Native
+ * Servicio de Encriptación para TaxiApp
  * Maneja toda la encriptación/desencriptación de datos sensibles
- * 
- * CARACTERÍSTICAS:
- * - Sin importación de SecurityConfig en tiempo de carga
- * - Claves hardcoded disponibles inmediatamente
- * - initialize() async bajo demanda (compatibilidad)
- * - Compatible con expo-crypto
- * - Cero bloqueos en startup
  */
 class EncryptionService {
   constructor() {
-    // Claves disponibles inmediatamente sin importaciones
-    this.secretKey = 'TaxiApp2025SecureKey$RD#';
-    this.salt = 'TaxiRD$2025#Salt';
-    this.initialized = true;
+    // Usar clave desde configuración centralizada
+    this.secretKey = SecurityConfig.ENCRYPTION_KEY;
+    this.salt = SecurityConfig.PASSWORD_SALT;
   }
 
   /**
-   * Inicializa el servicio (compatibilidad, ya está inicializado)
+   * Encripta cualquier dato sensible
    */
-  async initialize() {
-    if (this.initialized) return;
-    
-    try {
-      // Las claves ya están en el constructor
-      this.initialized = true;
-    } catch (error) {
-      console.error('Error inicializando EncryptionService:', error);
-      this.secretKey = 'TaxiApp2025SecureKey$RD#';
-      this.salt = 'TaxiRD$2025#Salt';
-      this.initialized = true;
-    }
-  }
-
-  /**
-   * Encripta datos usando hash SHA256
-   * En React Native usamos hashing en lugar de encriptación AES
-   */
-  async encrypt(data) {
-    await this.initialize();
-    
+  encrypt(data) {
     try {
       if (!data) return null;
       
@@ -50,275 +23,194 @@ class EncryptionService {
         ? JSON.stringify(data) 
         : String(data);
       
-      const hashInput = dataString + this.secretKey + Math.random();
-      const encrypted = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        hashInput
-      );
-      
+      const encrypted = CryptoJS.AES.encrypt(dataString, this.secretKey).toString();
+      console.log('🔐 Dato encriptado correctamente');
       return encrypted;
     } catch (error) {
-      console.error('Error encriptando datos:', error);
+      console.error('Error encriptando:', error);
       return null;
     }
   }
 
   /**
-   * Desencripta datos (devuelve el hash)
-   * En React Native el hash no es reversible, solo validamos
+   * Desencripta datos con manejo robusto de errores
    */
-  async decrypt(encryptedData) {
-    await this.initialize();
-    
+  decrypt(encryptedData) {
     try {
-      if (!encryptedData || typeof encryptedData !== 'string') return null;
-      
-      // Validar que es un hash válido
-      if (!this.isValidEncryptedFormat(encryptedData)) {
+      // Validación inicial
+      if (!encryptedData) {
+        console.warn('⚠️ No hay datos para desencriptar');
         return null;
       }
       
-      return encryptedData;
+      // Validar tipo de dato
+      if (typeof encryptedData !== 'string') {
+        console.error('❌ Tipo de dato incorrecto para desencriptar:', typeof encryptedData);
+        return null;
+      }
+      
+      // Verificar formato de dato encriptado con AES
+      // Los datos encriptados con CryptoJS AES tienen un formato específico
+      try {
+        // Intentar parsear como estructura CryptoJS
+        const isEncrypted = this.isValidEncryptedFormat(encryptedData);
+        
+        if (!isEncrypted) {
+          console.warn('⚠️ Formato de encriptación no válido');
+          // NO retornar el dato original por seguridad
+          return null;
+        }
+      } catch (e) {
+        console.error('❌ Error validando formato:', e.message);
+        return null;
+      }
+      
+      // Realizar desencriptación
+      let decrypted;
+      try {
+        decrypted = CryptoJS.AES.decrypt(encryptedData, this.secretKey);
+      } catch (cryptoError) {
+        console.error('❌ Error en proceso de desencriptación:', cryptoError.message);
+        return null;
+      }
+      
+      // Convertir a string UTF-8
+      let decryptedString;
+      try {
+        decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+      } catch (encodingError) {
+        console.error('❌ Error decodificando UTF-8:', encodingError.message);
+        return null;
+      }
+      
+      // Verificar que la desencriptación produjo contenido válido
+      if (!decryptedString || decryptedString.length === 0) {
+        console.error('❌ Desencriptación produjo resultado vacío - posible clave incorrecta');
+        return null;
+      }
+      
+      // Intentar parsear como JSON si es posible
+      try {
+        const parsed = JSON.parse(decryptedString);
+        console.log('✅ Dato desencriptado correctamente (JSON)');
+        return parsed;
+      } catch {
+        // No es JSON, retornar como string
+        console.log('✅ Dato desencriptado correctamente (texto)');
+        return decryptedString;
+      }
+      
     } catch (error) {
-      console.error('Error desencriptando datos:', error);
+      // Error general no capturado
+      console.error('❌ Error crítico en desencriptación:', {
+        message: error.message,
+        stack: error.stack,
+        dataType: typeof encryptedData,
+        dataLength: encryptedData?.length || 0
+      });
+      
+      // Por seguridad, nunca retornar datos parciales o corruptos
       return null;
     }
   }
 
   /**
-   * Valida si el formato del dato encriptado es correcto
+   * Valida si un string tiene formato de dato encriptado válido
    */
   isValidEncryptedFormat(data) {
-    if (!data || typeof data !== 'string') return false;
+    if (!data || typeof data !== 'string') {
+      return false;
+    }
     
+    // CryptoJS AES produce salida en formato específico
+    // Generalmente Base64 con estructura específica
     try {
-      // SHA256 produce un hash hexadecimal de 64 caracteres
-      return /^[a-f0-9]{64}$/i.test(data);
+      // Verificar que parece Base64
+      const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+      const cleanData = data.replace(/\s/g, '');
+      
+      if (!base64Regex.test(cleanData)) {
+        return false;
+      }
+      
+      // Verificar longitud mínima (AES produce al menos 24 caracteres)
+      if (cleanData.length < 24) {
+        return false;
+      }
+      
+      // Intentar decodificar Base64 para verificar validez
+      const decoded = atob(cleanData);
+      
+      // Un dato AES encriptado debe tener cierta estructura
+      return decoded.length > 0;
+      
     } catch {
       return false;
     }
   }
 
   /**
-   * Desencripta con fallback
+   * Método auxiliar para intentar desencriptar con manejo de versiones
    */
-  async decryptWithFallback(encryptedData) {
-    try {
-      const result = await this.decrypt(encryptedData);
-      return result || encryptedData;
-    } catch (error) {
-      console.error('Error en desencriptación con fallback:', error);
-      return encryptedData;
+  decryptWithFallback(encryptedData) {
+    // Primero intentar con la clave actual
+    let result = this.decrypt(encryptedData);
+    
+    if (result !== null) {
+      return result;
     }
+    
+    // Si falla, podría ser un dato con clave antigua
+    console.warn('⚠️ Intentando con claves anteriores...');
+    
+    // Aquí podrías intentar con claves anteriores si tienes un sistema de rotación
+    // Por ahora, retornar null
+    return null;
   }
 
   /**
-   * Genera hash de contraseña con salt
+   * Encripta contraseñas con hash adicional y salt
    */
-  async hashPassword(password) {
-    await this.initialize();
-    
-    try {
-      if (!password || typeof password !== 'string') return null;
-      
-      const hashInput = password + this.salt;
-      const hashed = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        hashInput
-      );
-      
-      return hashed;
-    } catch (error) {
-      console.error('Error generando hash de contraseña:', error);
-      return null;
-    }
+  hashPassword(password) {
+    return CryptoJS.SHA256(password + this.salt).toString();
   }
 
   /**
    * Verifica si una contraseña coincide con su hash
    */
-  async verifyPassword(password, hash) {
-    try {
-      if (!password || !hash) return false;
-      
-      const passwordHash = await this.hashPassword(password);
-      return passwordHash === hash;
-    } catch (error) {
-      console.error('Error verificando contraseña:', error);
-      return false;
-    }
+  verifyPassword(password, hash) {
+    const passwordHash = this.hashPassword(password);
+    return passwordHash === hash;
   }
 
   /**
-   * Encripta datos de tarjeta de crédito
+   * Encripta datos de tarjetas
    */
-  async encryptCardData(cardData) {
-    await this.initialize();
+  encryptCardData(cardNumber) {
+    const masked = '**** **** **** ' + cardNumber.slice(-4);
+    const encrypted = this.encrypt(cardNumber);
+    return { masked, encrypted };
+  }
+
+  /**
+   * Genera un token seguro
+   */
+  generateSecureToken() {
+    const random = CryptoJS.lib.WordArray.random(32);
+    return CryptoJS.enc.Hex.stringify(random);
+  }
+
+  /**
+   * Encripta datos según su nivel de seguridad
+   */
+  encryptBySecurityLevel(data, dataType) {
+    const level = SecurityConfig.getSecurityLevel(dataType);
     
-    try {
-      if (!cardData) return null;
-      
-      const cardString = typeof cardData === 'object' 
-        ? JSON.stringify(cardData) 
-        : String(cardData);
-      
-      const encrypted = await this.encrypt(cardString);
-      
-      // Devolver datos enmascarados
-      return {
-        masked: '****-****-****-' + (cardData.number ? String(cardData.number).slice(-4) : '****'),
-        encrypted: encrypted,
-        token: await this.generateSecureToken()
-      };
-    } catch (error) {
-      console.error('Error encriptando datos de tarjeta:', error);
-      return {
-        masked: '****-****-****-****',
-        encrypted: null,
-        token: null
-      };
+    if (level >= SecurityConfig.SECURITY_LEVELS.HIGH) {
+      return this.encrypt(data);
     }
-  }
-
-  /**
-   * Genera un token seguro para sesiones
-   */
-  async generateSecureToken() {
-    try {
-      await this.initialize();
-      
-      // Generar bytes aleatorios
-      const randomBytes = await Crypto.getRandomBytesAsync(32);
-      
-      // Convertir a string hexadecimal
-      const token = randomBytes
-        .split('')
-        .map((byte) => {
-          const hex = byte.charCodeAt(0).toString(16);
-          return hex.length === 1 ? '0' + hex : hex;
-        })
-        .join('')
-        .substring(0, 64);
-      
-      return token;
-    } catch (error) {
-      console.error('Error generando token seguro:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Encripta datos según nivel de seguridad
-   */
-  async encryptBySecurityLevel(data, level = 'HIGH') {
-    try {
-      await this.initialize();
-      
-      if (level === 'CRITICAL' || level === 'HIGH') {
-        return await this.encrypt(data);
-      } else if (level === 'MEDIUM') {
-        // Para datos medios, aplicar hash simple
-        const dataString = typeof data === 'object' 
-          ? JSON.stringify(data) 
-          : String(data);
-        
-        return await Crypto.digestStringAsync(
-          Crypto.CryptoDigestAlgorithm.SHA256,
-          dataString
-        );
-      } else {
-        // Para datos bajos, devolver como está
-        return data;
-      }
-    } catch (error) {
-      console.error('Error encriptando por nivel de seguridad:', error);
-      return data;
-    }
-  }
-
-  /**
-   * Verifica integridad de datos
-   */
-  async verifyDataIntegrity(data, signature) {
-    try {
-      if (!data || !signature) return false;
-      
-      const dataHash = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        typeof data === 'object' ? JSON.stringify(data) : String(data)
-      );
-      
-      return dataHash === signature;
-    } catch (error) {
-      console.error('Error verificando integridad:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Genera firma para verificación de integridad
-   */
-  async generateSignature(data) {
-    try {
-      const signature = await Crypto.digestStringAsync(
-        Crypto.CryptoDigestAlgorithm.SHA256,
-        typeof data === 'object' ? JSON.stringify(data) : String(data)
-      );
-      
-      return signature;
-    } catch (error) {
-      console.error('Error generando firma:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Encripta JSON de forma segura
-   */
-  async encryptJSON(jsonObject) {
-    try {
-      const jsonString = JSON.stringify(jsonObject);
-      return await this.encrypt(jsonString);
-    } catch (error) {
-      console.error('Error encriptando JSON:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Limpia claves sensibles de memoria
-   */
-  clearSensitiveData() {
-    this.secretKey = null;
-    this.salt = null;
-    this.initialized = false;
+    return data; // No encriptar datos de bajo nivel
   }
 }
 
-// Instanciar con protección try-catch
-let encryptionServiceInstance = null;
-
-try {
-  encryptionServiceInstance = new EncryptionService();
-} catch (error) {
-  console.error('Error inicializando EncryptionService:', error);
-  encryptionServiceInstance = null;
-}
-
-// Exportar con fallback seguro
-export default encryptionServiceInstance || {
-  encrypt: async (data) => data,
-  decrypt: async (data) => data,
-  hashPassword: async (pwd) => pwd,
-  verifyPassword: async (pwd, hash) => false,
-  encryptCardData: async (card) => ({ masked: '****', encrypted: null, token: null }),
-  generateSecureToken: async () => 'token',
-  encryptBySecurityLevel: async (data) => data,
-  verifyDataIntegrity: async (data, sig) => false,
-  generateSignature: async (data) => null,
-  encryptJSON: async (json) => null,
-  clearSensitiveData: () => {},
-  initialize: async () => {},
-  isValidEncryptedFormat: (data) => false,
-  decryptWithFallback: async (data) => data
-};
+export default new EncryptionService();
