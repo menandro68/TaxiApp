@@ -1,28 +1,20 @@
 import * as Crypto from 'expo-crypto';
-
-// Importación lazy de SecurityConfig
-let SecurityConfig = null;
-const getSecurityConfig = async () => {
-  if (!SecurityConfig) {
-    try {
-      SecurityConfig = (await import('./SecurityConfig')).default;
-    } catch (e) {
-      console.warn('SecurityConfig load deferred', e);
-      SecurityConfig = {
-        ENCRYPTION_KEY: 'TaxiApp2025SecureKey$RD#',
-        PASSWORD_SALT: 'TaxiRD$2025#Salt'
-      };
-    }
-  }
-  return SecurityConfig;
-};
+import SecurityConfig from './SecurityConfig';
 
 /**
  * Servicio de Encriptación para TaxiApp - Compatible con React Native
  * Maneja toda la encriptación/desencriptación de datos sensibles
+ * 
+ * CARACTERÍSTICAS:
+ * - Importación sincrónica de SecurityConfig
+ * - Constructor vacío (sin inicialización que cause crash)
+ * - initialize() async bajo demanda
+ * - Compatible con expo-crypto
+ * - Sin importación dinámica
  */
 class EncryptionService {
   constructor() {
+    // Constructor vacío - no inicializar aquí
     this.secretKey = null;
     this.salt = null;
     this.initialized = false;
@@ -35,9 +27,8 @@ class EncryptionService {
     if (this.initialized) return;
     
     try {
-      const config = await getSecurityConfig();
-      this.secretKey = config.ENCRYPTION_KEY;
-      this.salt = config.PASSWORD_SALT;
+      this.secretKey = SecurityConfig.ENCRYPTION_KEY;
+      this.salt = SecurityConfig.PASSWORD_SALT;
       this.initialized = true;
     } catch (error) {
       console.error('Error inicializando EncryptionService:', error);
@@ -329,5 +320,7 @@ export default encryptionServiceInstance || {
   generateSignature: async (data) => null,
   encryptJSON: async (json) => null,
   clearSensitiveData: () => {},
-  initialize: async () => {}
+  initialize: async () => {},
+  isValidEncryptedFormat: (data) => false,
+  decryptWithFallback: async (data) => data
 };
