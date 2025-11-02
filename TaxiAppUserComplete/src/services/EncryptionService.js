@@ -1,15 +1,15 @@
 import CryptoJS from 'crypto-js';
-import SecurityConfig from './SecurityConfig';
 
 /**
  * Servicio de Encriptación para TaxiApp
  * Maneja toda la encriptación/desencriptación de datos sensibles
+ * ✅ Claves hardcoded - sin importación de SecurityConfig
  */
 class EncryptionService {
   constructor() {
-    // Usar clave desde configuración centralizada
-    this.secretKey = SecurityConfig.ENCRYPTION_KEY;
-    this.salt = SecurityConfig.PASSWORD_SALT;
+    // Claves hardcoded disponibles inmediatamente
+    this.secretKey = 'TaxiApp2025SecureKey$RD#';
+    this.salt = 'TaxiRD$2025#Salt';
   }
 
   /**
@@ -50,14 +50,11 @@ class EncryptionService {
       }
       
       // Verificar formato de dato encriptado con AES
-      // Los datos encriptados con CryptoJS AES tienen un formato específico
       try {
-        // Intentar parsear como estructura CryptoJS
         const isEncrypted = this.isValidEncryptedFormat(encryptedData);
         
         if (!isEncrypted) {
           console.warn('⚠️ Formato de encriptación no válido');
-          // NO retornar el dato original por seguridad
           return null;
         }
       } catch (e) {
@@ -95,13 +92,11 @@ class EncryptionService {
         console.log('✅ Dato desencriptado correctamente (JSON)');
         return parsed;
       } catch {
-        // No es JSON, retornar como string
         console.log('✅ Dato desencriptado correctamente (texto)');
         return decryptedString;
       }
       
     } catch (error) {
-      // Error general no capturado
       console.error('❌ Error crítico en desencriptación:', {
         message: error.message,
         stack: error.stack,
@@ -109,7 +104,6 @@ class EncryptionService {
         dataLength: encryptedData?.length || 0
       });
       
-      // Por seguridad, nunca retornar datos parciales o corruptos
       return null;
     }
   }
@@ -122,10 +116,7 @@ class EncryptionService {
       return false;
     }
     
-    // CryptoJS AES produce salida en formato específico
-    // Generalmente Base64 con estructura específica
     try {
-      // Verificar que parece Base64
       const base64Regex = /^[A-Za-z0-9+/]+=*$/;
       const cleanData = data.replace(/\s/g, '');
       
@@ -133,15 +124,11 @@ class EncryptionService {
         return false;
       }
       
-      // Verificar longitud mínima (AES produce al menos 24 caracteres)
       if (cleanData.length < 24) {
         return false;
       }
       
-      // Intentar decodificar Base64 para verificar validez
       const decoded = atob(cleanData);
-      
-      // Un dato AES encriptado debe tener cierta estructura
       return decoded.length > 0;
       
     } catch {
@@ -153,18 +140,13 @@ class EncryptionService {
    * Método auxiliar para intentar desencriptar con manejo de versiones
    */
   decryptWithFallback(encryptedData) {
-    // Primero intentar con la clave actual
     let result = this.decrypt(encryptedData);
     
     if (result !== null) {
       return result;
     }
     
-    // Si falla, podría ser un dato con clave antigua
     console.warn('⚠️ Intentando con claves anteriores...');
-    
-    // Aquí podrías intentar con claves anteriores si tienes un sistema de rotación
-    // Por ahora, retornar null
     return null;
   }
 
@@ -204,12 +186,63 @@ class EncryptionService {
    * Encripta datos según su nivel de seguridad
    */
   encryptBySecurityLevel(data, dataType) {
-    const level = SecurityConfig.getSecurityLevel(dataType);
-    
-    if (level >= SecurityConfig.SECURITY_LEVELS.HIGH) {
-      return this.encrypt(data);
+    // Sin SecurityConfig, encriptar todo de forma segura
+    return this.encrypt(data);
+  }
+
+  /**
+   * Verifica integridad de datos
+   */
+  verifyDataIntegrity(data, signature) {
+    try {
+      if (!data || !signature) return false;
+      
+      const dataHash = CryptoJS.SHA256(
+        typeof data === 'object' ? JSON.stringify(data) : String(data)
+      ).toString();
+      
+      return dataHash === signature;
+    } catch (error) {
+      console.error('Error verificando integridad:', error);
+      return false;
     }
-    return data; // No encriptar datos de bajo nivel
+  }
+
+  /**
+   * Genera firma para verificación de integridad
+   */
+  generateSignature(data) {
+    try {
+      const signature = CryptoJS.SHA256(
+        typeof data === 'object' ? JSON.stringify(data) : String(data)
+      ).toString();
+      
+      return signature;
+    } catch (error) {
+      console.error('Error generando firma:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Encripta JSON de forma segura
+   */
+  encryptJSON(jsonObject) {
+    try {
+      const jsonString = JSON.stringify(jsonObject);
+      return this.encrypt(jsonString);
+    } catch (error) {
+      console.error('Error encriptando JSON:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Limpia claves sensibles de memoria
+   */
+  clearSensitiveData() {
+    this.secretKey = null;
+    this.salt = null;
   }
 }
 
