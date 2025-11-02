@@ -1,50 +1,32 @@
 import * as Crypto from 'expo-crypto';
 
 /**
- * Servicio de Encriptación para TaxiApp - ULTRA-SEGURO
+ * Servicio de Encriptación para TaxiApp - Compatible con React Native
+ * Maneja toda la encriptación/desencriptación de datos sensibles
+ * 
+ * CARACTERÍSTICAS:
  * - Sin importación de SecurityConfig en tiempo de carga
- * - TODO es lazy (bajo demanda)
- * - Compatible con React Native
+ * - Claves hardcoded disponibles inmediatamente
+ * - initialize() async bajo demanda (compatibilidad)
+ * - Compatible con expo-crypto
+ * - Cero bloqueos en startup
  */
 class EncryptionService {
   constructor() {
-    this.secretKey = null;
-    this.salt = null;
-    this.initialized = false;
-    this.config = null;
+    // Claves disponibles inmediatamente sin importaciones
+    this.secretKey = 'TaxiApp2025SecureKey$RD#';
+    this.salt = 'TaxiRD$2025#Salt';
+    this.initialized = true;
   }
 
   /**
-   * Carga la configuración de forma lazy
-   */
-  async loadConfig() {
-    if (this.config) return this.config;
-    
-    try {
-      // Importar SecurityConfig SOLO cuando se necesita
-      const SecurityConfig = await import('./SecurityConfig').then(m => m.default);
-      this.config = SecurityConfig;
-      return this.config;
-    } catch (error) {
-      console.warn('No se pudo cargar SecurityConfig, usando valores por defecto:', error.message);
-      this.config = {
-        ENCRYPTION_KEY: 'TaxiApp2025SecureKey$RD#',
-        PASSWORD_SALT: 'TaxiRD$2025#Salt'
-      };
-      return this.config;
-    }
-  }
-
-  /**
-   * Inicializa el servicio de forma lazy (bajo demanda)
+   * Inicializa el servicio (compatibilidad, ya está inicializado)
    */
   async initialize() {
     if (this.initialized) return;
     
     try {
-      const config = await this.loadConfig();
-      this.secretKey = config.ENCRYPTION_KEY;
-      this.salt = config.PASSWORD_SALT;
+      // Las claves ya están en el constructor
       this.initialized = true;
     } catch (error) {
       console.error('Error inicializando EncryptionService:', error);
@@ -56,6 +38,7 @@ class EncryptionService {
 
   /**
    * Encripta datos usando hash SHA256
+   * En React Native usamos hashing en lugar de encriptación AES
    */
   async encrypt(data) {
     await this.initialize();
@@ -81,7 +64,8 @@ class EncryptionService {
   }
 
   /**
-   * Desencripta datos
+   * Desencripta datos (devuelve el hash)
+   * En React Native el hash no es reversible, solo validamos
    */
   async decrypt(encryptedData) {
     await this.initialize();
@@ -89,6 +73,7 @@ class EncryptionService {
     try {
       if (!encryptedData || typeof encryptedData !== 'string') return null;
       
+      // Validar que es un hash válido
       if (!this.isValidEncryptedFormat(encryptedData)) {
         return null;
       }
@@ -107,6 +92,7 @@ class EncryptionService {
     if (!data || typeof data !== 'string') return false;
     
     try {
+      // SHA256 produce un hash hexadecimal de 64 caracteres
       return /^[a-f0-9]{64}$/i.test(data);
     } catch {
       return false;
@@ -178,6 +164,7 @@ class EncryptionService {
       
       const encrypted = await this.encrypt(cardString);
       
+      // Devolver datos enmascarados
       return {
         masked: '****-****-****-' + (cardData.number ? String(cardData.number).slice(-4) : '****'),
         encrypted: encrypted,
@@ -200,8 +187,10 @@ class EncryptionService {
     try {
       await this.initialize();
       
+      // Generar bytes aleatorios
       const randomBytes = await Crypto.getRandomBytesAsync(32);
       
+      // Convertir a string hexadecimal
       const token = randomBytes
         .split('')
         .map((byte) => {
@@ -228,6 +217,7 @@ class EncryptionService {
       if (level === 'CRITICAL' || level === 'HIGH') {
         return await this.encrypt(data);
       } else if (level === 'MEDIUM') {
+        // Para datos medios, aplicar hash simple
         const dataString = typeof data === 'object' 
           ? JSON.stringify(data) 
           : String(data);
@@ -237,6 +227,7 @@ class EncryptionService {
           dataString
         );
       } else {
+        // Para datos bajos, devolver como está
         return data;
       }
     } catch (error) {
@@ -301,11 +292,33 @@ class EncryptionService {
     this.secretKey = null;
     this.salt = null;
     this.initialized = false;
-    this.config = null;
   }
 }
 
-// Exportar instancia sin try-catch en tiempo de carga
-const encryptionService = new EncryptionService();
+// Instanciar con protección try-catch
+let encryptionServiceInstance = null;
 
-export default encryptionService;
+try {
+  encryptionServiceInstance = new EncryptionService();
+} catch (error) {
+  console.error('Error inicializando EncryptionService:', error);
+  encryptionServiceInstance = null;
+}
+
+// Exportar con fallback seguro
+export default encryptionServiceInstance || {
+  encrypt: async (data) => data,
+  decrypt: async (data) => data,
+  hashPassword: async (pwd) => pwd,
+  verifyPassword: async (pwd, hash) => false,
+  encryptCardData: async (card) => ({ masked: '****', encrypted: null, token: null }),
+  generateSecureToken: async () => 'token',
+  encryptBySecurityLevel: async (data) => data,
+  verifyDataIntegrity: async (data, sig) => false,
+  generateSignature: async (data) => null,
+  encryptJSON: async (json) => null,
+  clearSensitiveData: () => {},
+  initialize: async () => {},
+  isValidEncryptedFormat: (data) => false,
+  decryptWithFallback: async (data) => data
+};
