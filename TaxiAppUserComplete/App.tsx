@@ -37,7 +37,7 @@ import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
 import MultipleDestinationsModal from './src/components/MultipleDestinationsModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ValidationUtils } from './src/utils/ValidationUtils';
-import { getBackendUrl } from './src/config.js';
+import { getBackendUrl } from './src/config/config.js';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
