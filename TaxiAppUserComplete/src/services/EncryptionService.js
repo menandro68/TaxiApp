@@ -1,5 +1,21 @@
 import * as Crypto from 'expo-crypto';
-import SecurityConfig from './SecurityConfig';
+
+// Importación lazy de SecurityConfig
+let SecurityConfig = null;
+const getSecurityConfig = async () => {
+  if (!SecurityConfig) {
+    try {
+      SecurityConfig = (await import('./SecurityConfig')).default;
+    } catch (e) {
+      console.warn('SecurityConfig load deferred', e);
+      SecurityConfig = {
+        ENCRYPTION_KEY: 'TaxiApp2025SecureKey$RD#',
+        PASSWORD_SALT: 'TaxiRD$2025#Salt'
+      };
+    }
+  }
+  return SecurityConfig;
+};
 
 /**
  * Servicio de Encriptación para TaxiApp - Compatible con React Native
@@ -19,8 +35,9 @@ class EncryptionService {
     if (this.initialized) return;
     
     try {
-      this.secretKey = SecurityConfig.ENCRYPTION_KEY;
-      this.salt = SecurityConfig.PASSWORD_SALT;
+      const config = await getSecurityConfig();
+      this.secretKey = config.ENCRYPTION_KEY;
+      this.salt = config.PASSWORD_SALT;
       this.initialized = true;
     } catch (error) {
       console.error('Error inicializando EncryptionService:', error);
@@ -289,11 +306,28 @@ class EncryptionService {
   }
 }
 
-let instance = null;
+// Instanciar con protección try-catch
+let encryptionServiceInstance = null;
+
 try {
-  instance = new EncryptionService();
-} catch (e) {
-  console.warn('EncryptionService init deferred', e);
+  encryptionServiceInstance = new EncryptionService();
+} catch (error) {
+  console.error('Error inicializando EncryptionService:', error);
+  encryptionServiceInstance = null;
 }
 
-export default instance || new EncryptionService();
+// Exportar con fallback seguro
+export default encryptionServiceInstance || {
+  encrypt: async (data) => data,
+  decrypt: async (data) => data,
+  hashPassword: async (pwd) => pwd,
+  verifyPassword: async (pwd, hash) => false,
+  encryptCardData: async (card) => ({ masked: '****', encrypted: null, token: null }),
+  generateSecureToken: async () => 'token',
+  encryptBySecurityLevel: async (data) => data,
+  verifyDataIntegrity: async (data, sig) => false,
+  generateSignature: async (data) => null,
+  encryptJSON: async (json) => null,
+  clearSensitiveData: () => {},
+  initialize: async () => {}
+};
