@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 // FUNCIÓN AUXILIAR: Calcular distancia entre dos puntos (Haversine)
 function calculateDistance(lat1, lon1, lat2, lon2) {
