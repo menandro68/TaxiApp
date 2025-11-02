@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { GOOGLE_MAPS_CONFIG } from '../config/config'; 
-import UserSharedStorage from './SharedStorage';
+import UserSharedStorage from '../services/SharedStorage';
 
 const { width } = Dimensions.get('window');
 
