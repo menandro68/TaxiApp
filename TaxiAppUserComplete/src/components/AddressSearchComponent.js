@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { GOOGLE_MAPS_CONFIG } from './config';
+import { GOOGLE_MAPS_CONFIG } from '../config/config'; 
 import UserSharedStorage from './SharedStorage';
 
 const { width } = Dimensions.get('window');
