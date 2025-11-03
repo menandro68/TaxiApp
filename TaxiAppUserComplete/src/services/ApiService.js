@@ -184,7 +184,7 @@ import { getBackendUrl } from '../config/config.js';
 
   async login(email, password) {
     try {
-      const response = await this.makeRequestWithRetry('/auth/login', 'POST', {
+      const response = await this.makeRequestWithRetry('/users/login', 'POST', {
         email,
         password
       }, false);
@@ -204,7 +204,7 @@ import { getBackendUrl } from '../config/config.js';
 
   async register(userData) {
     try {
-      const response = await this.makeRequestWithRetry('/auth/register', 'POST', userData, false);
+      const response = await this.makeRequestWithRetry('/users/register', 'POST', userData, false);
 
       if (response.success) {
         await this.saveTokens(response.token, response.refreshToken);
