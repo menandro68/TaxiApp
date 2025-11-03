@@ -7,10 +7,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { Platform } from 'react-native';
+import { getBackendUrl } from '../config/config.js';
 
-class ApiService {
+   class ApiService {
   constructor() {
-    this.BASE_URL = `${window.location.origin}/api`;
+   this.BASE_URL = `${getBackendUrl()}/api`;
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;
