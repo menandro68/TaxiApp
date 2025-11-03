@@ -62,7 +62,7 @@ import SharedStorage, { TRIP_STATES } from './src/services/SharedStorage';
 import RouteService from './src/services/RouteService';
 import DriverTrackingService from './src/services/DriverTrackingService';
 import LocationFallbackService, { POPULAR_LOCATIONS } from './src/services/LocationFallbackService';
-import ApiService from './src/services/ApiService_Simulado';
+import ApiService from './src/services/ApiService';
 import UserProfile from './src/screens/UserProfile';
 
 // Configuración del drawer
