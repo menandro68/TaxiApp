@@ -204,17 +204,26 @@ import { getBackendUrl } from '../config/config.js';
 
   async register(userData) {
     try {
+      console.log('📤 [REGISTRO] Enviando datos:', userData);
+      
       const response = await this.makeRequestWithRetry('/users/register', 'POST', userData, false);
+      
+      console.log('📥 [REGISTRO] Respuesta del backend:', response);
+      console.log('📥 [REGISTRO] response.success =', response?.success);
 
       if (response.success) {
+        console.log('✅ [REGISTRO] Registro exitoso');
         await this.saveTokens(response.token, response.refreshToken);
         await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
         return response;
       }
 
-      throw new Error(response.message || 'Error en el registro');
+      const errorMessage = response.message || 'Error en el registro';
+      console.error('❌ [REGISTRO] Error:', errorMessage);
+      throw new Error(errorMessage);
     } catch (error) {
-      console.error('Error en registro:', error);
+      console.error('❌ [REGISTRO] Error capturado:', error.message);
+      console.error('❌ [REGISTRO] Stack:', error.stack);
       throw error;
     }
   }
