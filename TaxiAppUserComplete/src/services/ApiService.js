@@ -72,8 +72,7 @@ import { getBackendUrl } from '../config/config.js';
     
     const config = {
       method,
-      headers: this.getHeaders(includeAuth),
-      signal: AbortSignal.timeout(timeout)
+      headers: this.getHeaders(includeAuth)
     };
 
     if (data && method !== 'GET') {
