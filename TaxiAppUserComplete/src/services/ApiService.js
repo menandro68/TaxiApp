@@ -79,6 +79,8 @@ import { getBackendUrl } from '../config/config.js';
       config.body = JSON.stringify(data);
     }
 
+    console.log('🔍 [FETCH] Conectando a:', url);
+    console.log('🔍 [FETCH] Config:', config);
     const response = await fetch(url, config);
     
     if (!response.ok) {
