@@ -11,7 +11,10 @@ import { getBackendUrl } from '../config/config.js';
 
    class ApiService {
   constructor() {
-   this.BASE_URL = `${getBackendUrl()}/api`;
+   const backendUrl = getBackendUrl();
+   console.log('🔴 [ApiService] Backend URL:', backendUrl);
+   this.BASE_URL = `${backendUrl}/api`;
+   console.log('🔴 [ApiService] BASE_URL:', this.BASE_URL);
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;
