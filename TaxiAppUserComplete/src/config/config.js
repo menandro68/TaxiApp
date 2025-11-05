@@ -30,8 +30,8 @@ export const API_CONFIG = {
   // URLs del backend por entorno
   BACKEND_URLS: {
     development: 'http://192.168.1.26:3000',
-    staging: 'https://staging-taxiapp.herokuapp.com/api',
-    production: 'https://web-production-99844.up.railway.app/api'
+    staging: 'https://staging-taxiapp.herokuapp.com',
+    production: 'https://web-production-99844.up.railway.app'
   },
   
   // Configuración de timeouts
