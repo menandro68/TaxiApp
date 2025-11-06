@@ -37,9 +37,9 @@ router.post('/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Error en registro:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'El email ya está siendo utilizado. Por favor, usa otro email.' });
-        }
+       if (error.code === '23505') {
+    return res.status(400).json({ error: 'Email ya registrado' });
+}
         res.status(500).json({ error: 'Error del servidor' });
     }
 });
