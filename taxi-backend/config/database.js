@@ -230,6 +230,18 @@ async function initDatabase() {
       )
     `);
 
+    // Tabla de logs encriptados
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS encrypted_logs (
+        id SERIAL PRIMARY KEY,
+        action TEXT,
+        user_id INTEGER,
+        data_encrypted TEXT,
+        ip_address VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Crear índices para mejor rendimiento
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status)`);
