@@ -135,6 +135,8 @@ import { getBackendUrl } from '../config/config.js';
         
         // Si es el último intento, lanzar el error
         if (attempt === retries - 1) {
+          const errorMsg = error?.message || JSON.stringify(error);
+          alert('🔴 ERROR FINAL:\n' + errorMsg);
           throw error;
         }
         
