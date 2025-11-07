@@ -236,6 +236,7 @@ import { getBackendUrl } from '../config/config.js';
     } catch (error) {
       console.error('❌ [REGISTRO] Error capturado:', error.message);
       console.error('❌ [REGISTRO] Stack:', error.stack);
+      alert('🔴 ERROR DE REGISTRO:\n' + error.message);
       throw error;
     }
   }
