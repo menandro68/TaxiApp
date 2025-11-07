@@ -14,7 +14,7 @@ import { getBackendUrl } from '../config/config.js';
    const backendUrl = getBackendUrl();
    alert('🔴 Backend URL: ' + backendUrl);
    console.log('🔴 [ApiService] Backend URL:', backendUrl);
-   this.BASE_URL = `${backendUrl}/api`;
+   this.BASE_URL = backendUrl;
    alert('🔴 BASE_URL: ' + this.BASE_URL);
    console.log('🔴 [ApiService] BASE_URL:', this.BASE_URL);
     this.token = null;
