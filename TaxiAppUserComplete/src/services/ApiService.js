@@ -86,28 +86,32 @@ import { getBackendUrl } from '../config/config.js';
 
     console.log('🔍 [FETCH] Conectando a:', url);
     console.log('🔍 [FETCH] Config:', config);
-    const response = await fetch(url, config);
     
-    const responseData = await response.json();
+    try {
+      const response = await fetch(url, config);
+      
+      const responseData = await response.json();
 
-    if (!response.ok) {
-      if (response.status === 401 && includeAuth && this.refreshToken && !this.isRefreshing) {
-        // Token expirado, intentar renovar
-        const newToken = await this.refreshAccessToken();
-        if (newToken) {
-          // Reintentar con nuevo token
-          config.headers.Authorization = `Bearer ${newToken}`;
-          const retryResponse = await fetch(url, config);
-          if (retryResponse.ok) {
-            return await retryResponse.json();
+      if (!response.ok) {
+        if (response.status === 401 && includeAuth && this.refreshToken && !this.isRefreshing) {
+          const newToken = await this.refreshAccessToken();
+          if (newToken) {
+            config.headers.Authorization = `Bearer ${newToken}`;
+            const retryResponse = await fetch(url, config);
+            if (retryResponse.ok) {
+              return await retryResponse.json();
+            }
           }
         }
+        
+        throw new Error(responseData?.error || `HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      throw new Error(responseData?.error || `HTTP ${response.status}: ${response.statusText}`);
-    }
 
-    return responseData;
+      return responseData;
+    } catch (error) {
+      console.error('🔴 [FETCH ERROR]', error.message);
+      throw error;
+    }
   }
 
   async makeRequestWithRetry(endpoint, method = 'GET', data = null, includeAuth = true, retries = this.MAX_RETRIES) {
