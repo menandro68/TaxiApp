@@ -30,9 +30,14 @@ router.post('/register', async (req, res) => {
         );
         
         res.json({
-            id: userId,
-            name: result.rows[0].name,
-            email: result.rows[0].email,
+            success: true,
+            token: 'user_token_temp',
+            refreshToken: 'refresh_token_temp',
+            user: {
+                id: userId,
+                name: result.rows[0].name,
+                email: result.rows[0].email
+            },
             message: 'Usuario registrado exitosamente'
         });
     } catch (error) {
