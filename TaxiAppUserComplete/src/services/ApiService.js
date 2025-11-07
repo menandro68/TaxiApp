@@ -14,7 +14,7 @@ import { getBackendUrl } from '../config/config.js';
    const backendUrl = getBackendUrl();
    alert('🔴 Backend URL: ' + backendUrl);
    console.log('🔴 [ApiService] Backend URL:', backendUrl);
-   this.BASE_URL = backendUrl;
+   this.BASE_URL = `${backendUrl}/api`;
    alert('🔴 BASE_URL: ' + this.BASE_URL);
    console.log('🔴 [ApiService] BASE_URL:', this.BASE_URL);
     this.token = null;
@@ -88,6 +88,8 @@ import { getBackendUrl } from '../config/config.js';
     console.log('🔍 [FETCH] Config:', config);
     const response = await fetch(url, config);
     
+    const data = await response.json();
+
     if (!response.ok) {
       if (response.status === 401 && includeAuth && this.refreshToken && !this.isRefreshing) {
         // Token expirado, intentar renovar
@@ -102,10 +104,10 @@ import { getBackendUrl } from '../config/config.js';
         }
       }
       
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(data?.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return await response.json();
+    return data;
   }
 
   async makeRequestWithRetry(endpoint, method = 'GET', data = null, includeAuth = true, retries = this.MAX_RETRIES) {
