@@ -88,7 +88,7 @@ import { getBackendUrl } from '../config/config.js';
     console.log('🔍 [FETCH] Config:', config);
     const response = await fetch(url, config);
     
-    const data = await response.json();
+    const responseData = await response.json();
 
     if (!response.ok) {
       if (response.status === 401 && includeAuth && this.refreshToken && !this.isRefreshing) {
@@ -104,10 +104,10 @@ import { getBackendUrl } from '../config/config.js';
         }
       }
       
-      throw new Error(data?.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(responseData?.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return data;
+    return responseData;
   }
 
   async makeRequestWithRetry(endpoint, method = 'GET', data = null, includeAuth = true, retries = this.MAX_RETRIES) {
