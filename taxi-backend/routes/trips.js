@@ -31,7 +31,7 @@ router.post('/create', async (req, res) => {
             `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at)
              VALUES ($1, $2, $3, $4, $5, NOW())
              RETURNING id`,
-            [user_id, pickup_location, destination, 'pending', estimated_price || 0]
+            [parseInt(user_id), pickup_location, destination, 'pending', estimated_price || 0]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -97,7 +97,7 @@ router.post('/create', async (req, res) => {
             // OBTENER INFO DEL USUARIO
             const userResult = await db.query(
                 `SELECT name, phone FROM users WHERE id = $1`,
-                [user_id]
+                [parseInt(user_id)]
             );
 
             const user = userResult.rows[0] || {};
@@ -257,7 +257,7 @@ router.get('/history/:userId', async (req, res) => {
              LEFT JOIN drivers d ON t.driver_id = d.id
              WHERE t.user_id = $1
              ORDER BY t.created_at DESC`,
-            [userId]
+            [parseInt(userId)]
         );
         
         res.json(result.rows);
