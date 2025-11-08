@@ -20,6 +20,23 @@ router.post('/create', async (req, res) => {
     try {
         const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords } = req.body;
 
+        // VALIDAR user_id
+        if (!user_id) {
+            return res.status(400).json({ 
+                error: 'user_id requerido',
+                success: false 
+            });
+        }
+
+        const userIdParsed = parseInt(user_id);
+        if (isNaN(userIdParsed)) {
+            return res.status(400).json({ 
+                error: `user_id inválido: "${user_id}" no es un número`,
+                success: false,
+                receivedValue: user_id
+            });
+        }
+
         if (!pickup_coords || !pickup_coords.latitude || !pickup_coords.longitude) {
             return res.status(400).json({ 
                 error: 'Coordenadas de ubicación requeridas',
@@ -31,7 +48,7 @@ router.post('/create', async (req, res) => {
             `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at)
              VALUES ($1, $2, $3, $4, $5, NOW())
              RETURNING id`,
-            [parseInt(user_id), pickup_location, destination, 'pending', estimated_price || 0]
+            [userIdParsed, pickup_location, destination, 'pending', estimated_price || 0]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -97,7 +114,7 @@ router.post('/create', async (req, res) => {
             // OBTENER INFO DEL USUARIO
             const userResult = await db.query(
                 `SELECT name, phone FROM users WHERE id = $1`,
-                [parseInt(user_id)]
+                [userIdParsed]
             );
 
             const user = userResult.rows[0] || {};
