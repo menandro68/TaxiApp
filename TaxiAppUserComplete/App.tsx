@@ -1202,7 +1202,7 @@ if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
    console.log('🔍 DEBUG: storedUserId =', storedUserId);
      console.log('🔍 DEBUG: tipo de storedUserId =', typeof storedUserId);
     const request = {
-      userId: storedUserId || 'user_123',
+     userId: storedUserId || 123,
       origin: {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
