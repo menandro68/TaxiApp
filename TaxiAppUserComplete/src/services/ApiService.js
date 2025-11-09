@@ -132,12 +132,11 @@ import { getBackendUrl } from '../config/config.js';
         console.log(`[ApiService] ❌ Error en intento ${attempt + 1}:`, error.message);
         
         // Si es el último intento, lanzar el error
-        if (attempt === retries - 1) {
-          const errorMsg = error?.message || JSON.stringify(error);
-          alert('🔴 ERROR FINAL:\n' + errorMsg);
-          throw error;
-        }
-        
+      if (attempt === retries - 1) {
+       const errorMsg = error?.message || JSON.stringify(error);
+      console.error('🔴 ERROR FINAL:', errorMsg);  // ← REEMPLAZA CON ESTO
+       throw error;
+       }
         // Calcular delay exponencial: 1s, 2s, 4s, 8s...
         const delay = this.RETRY_DELAY_BASE * Math.pow(2, attempt);
         console.log(`[ApiService] ⏳ Reintentando en ${delay}ms...`);
