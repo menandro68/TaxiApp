@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ApiService from '../../services/ApiService';
+import SharedStorage from '../../services/SharedStorage';
 
 const LoginScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -70,6 +71,11 @@ const LoginScreen = ({ navigation }) => {
       console.log('✅ [LOGIN] Respuesta del servidor:', response);
 
       if (response && response.success) {
+        // Guardar user_id de forma segura
+        if (response.user && response.user.id) {
+          await SharedStorage.saveUserId(response.user.id);
+          console.log('✅ User ID guardado:', response.user.id);
+        }
         Alert.alert('✅ Éxito', 'Sesión iniciada correctamente');
         // Navegar a la pantalla principal
         navigation.reset({
@@ -123,6 +129,11 @@ const LoginScreen = ({ navigation }) => {
       console.log('✅ [REGISTRO] Respuesta del servidor:', response);
 
       if (response && response.success) {
+        // Guardar user_id de forma segura
+        if (response.user && response.user.id) {
+          await SharedStorage.saveUserId(response.user.id);
+          console.log('✅ User ID guardado en registro:', response.user.id);
+        }
         Alert.alert('✅ ¡Éxito!', 'Cuenta creada correctamente. Inicia sesión ahora.');
         // Limpiar campos y volver a login
         setRegisterName('');
