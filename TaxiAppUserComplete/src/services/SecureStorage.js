@@ -81,6 +81,20 @@ class SecureStorage {
   }
 
   /**
+   * Guarda user ID encriptado
+   */
+  async saveUserId(userId) {
+    return await this.setSecureItem('user_id', userId);
+  }
+
+  /**
+   * Obtiene user ID desencriptado
+   */
+  async getUserId() {
+    return await this.getSecureItem('user_id');
+  }
+
+  /**
    * Guarda perfil de usuario encriptado
    */
   async saveUserProfile(profile) {
@@ -117,7 +131,8 @@ class SecureStorage {
         'user_credentials',
         'auth_token',
         'user_profile',
-        'user_location'
+        'user_location',
+        'user_id'
       ];
       
       for (const key of keys) {
