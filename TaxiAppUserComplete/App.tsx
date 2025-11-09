@@ -1930,14 +1930,16 @@ const renderLoadingScreen = () => {
                 </View>
               )}
 
-              {/* Nota informativa */}
-              <View style={modalStyles.infoBox}>
-                <Icon name="information-circle" size={20} color="#007AFF" />
-                <Text style={modalStyles.infoText}>
-                  Cada parada adicional agrega RD$50 al precio base.
-                  El conductor seguirá el orden de las paradas.
-                </Text>
-              </View>
+             {/* Nota informativa - OCULTA */}
+     {false && (
+     <View style={modalStyles.infoBox}>
+     <Icon name="information-circle" size={20} color="#007AFF" />
+     <Text style={modalStyles.infoText}>
+      Cada parada adicional agrega RD$50 al precio base.
+      El conductor seguirá el orden de las paradas.
+     </Text>
+     </View>
+       )}
             </ScrollView>
 
             {/* Botones de acción */}
