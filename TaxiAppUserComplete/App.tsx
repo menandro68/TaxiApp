@@ -1919,7 +1919,7 @@ const renderLoadingScreen = () => {
       Cada parada adicional agrega RD$50 al precio base.
       El conductor seguirá el orden de las paradas.
      </Text>
-     </View>
+    </View>
        )}
             </ScrollView>
 
@@ -1927,26 +1927,19 @@ const renderLoadingScreen = () => {
             <View style={modalStyles.footer}>
               <TouchableOpacity 
                 style={modalStyles.cancelButton}
-                onPress={() => setShowAddDestinationModal(false)}
+                onPress={() => setShowLocationModal(false)}
               >
                 <Text style={modalStyles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[
-                  modalStyles.confirmButton,
-                  additionalDestinations.length === 0 && modalStyles.confirmButtonDisabled
-                ]}
-                onPress={() => setShowAddDestinationModal(false)}
-                disabled={additionalDestinations.length === 0}
+                style={modalStyles.confirmButton}
+                onPress={() => setShowLocationModal(false)}
               >
-                <Text style={modalStyles.confirmButtonText}>
-                  Confirmar ({additionalDestinations.length + 1} paradas)
-                </Text>
+                <Text style={modalStyles.confirmButtonText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-        
         {/* Selector de destinos para agregar paradas */}
         <SmartDestinationSelector
           visible={showDestinationSelectorForAdd}
