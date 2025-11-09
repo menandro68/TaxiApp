@@ -455,6 +455,7 @@ const initializeApp = async () => {
       if (loginResponse.success) {
         // Guardar token y datos del usuario
         await SharedStorage.saveAuthToken(loginResponse.token);
+        console.log('✅ TOKEN GUARDADO:', loginResponse.token);
         // Guardar credenciales encriptadas
         await SecureStorage.saveCredentials(authForm.email, authForm.password);
         await SharedStorage.saveUserProfile(loginResponse.user);
