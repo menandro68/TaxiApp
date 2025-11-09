@@ -1886,19 +1886,19 @@ const renderLoadingScreen = () => {
                 {isLoadingLocation && <ActivityIndicator size="small" />}
               </TouchableOpacity>
 
-              {/* Opción 2: Ubicaciones populares */}
-              <TouchableOpacity 
-                style={styles.locationOption}
-                onPress={() => setShowPopularLocations(true)}
-              >
-                <Text style={styles.locationOptionIcon}>🏢</Text>
-                <View style={styles.locationOptionContent}>
-                  <Text style={styles.locationOptionTitle}>Ubicaciones populares</Text>
-                  <Text style={styles.locationOptionDescription}>
-                    Centros comerciales, hospitales, aeropuerto
-                  </Text>
-                </View>
-              </TouchableOpacity>
+           {/* Opción 2: Agregar dirección */}
+<TouchableOpacity 
+  style={styles.locationOption}
+  onPress={() => setShowDestinationSelectorForAdd(true)}
+>
+  <Text style={styles.locationOptionIcon}>➕</Text>
+  <View style={styles.locationOptionContent}>
+    <Text style={styles.locationOptionTitle}>Agregar dirección</Text>
+    <Text style={styles.locationOptionDescription}>
+      Ingresa una dirección personalizada
+    </Text>
+  </View>
+</TouchableOpacity>
 
               {/* Opción 3: Usar ubicación por defecto */}
               <TouchableOpacity 
