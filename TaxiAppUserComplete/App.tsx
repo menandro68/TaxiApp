@@ -1192,6 +1192,12 @@ const processRideRequest = async () => {
       parseFloat(routeInfo.price) : 
       (estimatedPrice || 150);
 
+      // Validar que userLocation tiene coordenadas
+if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+  Alert.alert('Error', 'No se puede obtener tu ubicación. Intenta de nuevo.');
+  return;
+}
+
    const storedUserId = await SharedStorage.getUserId();
     const request = {
       userId: storedUserId || 'user_123',
