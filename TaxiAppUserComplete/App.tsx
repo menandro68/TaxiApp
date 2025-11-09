@@ -709,16 +709,7 @@ const initializeLocationService = async () => {
         
         if (locationResult.warning) {
           // Mostrar warning pero no bloquear la app
-          setTimeout(() => {
-            Alert.alert(
-              'Ubicación aproximada',
-              locationResult.warning + '\n\n¿Quieres seleccionar una ubicación más precisa?',
-              [
-                { text: 'No, continuar', style: 'cancel' },
-                { text: 'Sí, seleccionar', onPress: () => setShowLocationModal(true) }
-              ]
-            );
-          }, 2000);
+        
         }
       } else {
         // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK
