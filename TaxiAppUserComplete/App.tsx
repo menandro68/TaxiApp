@@ -1199,6 +1199,8 @@ if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
 }
 
    const storedUserId = await SharedStorage.getUserId();
+   console.log('🔍 DEBUG: storedUserId =', storedUserId);
+     console.log('🔍 DEBUG: tipo de storedUserId =', typeof storedUserId);
     const request = {
       userId: storedUserId || 'user_123',
       origin: {
@@ -1232,6 +1234,11 @@ const sendTripRequestToBackend = async (tripData) => {
   try {
     console.log('Enviando solicitud al backend:', tripData);
     console.log('URL:', `${getBackendUrl()}/trips/create`);
+
+    console.log('🔍 DEBUG: Enviando user_id =', tripData.userId);
+    console.log('🔍 DEBUG: tipo =', typeof tripData.userId);
+    console.log('🔍 DEBUG: origin.latitude =', tripData.origin.latitude);
+    console.log('🔍 DEBUG: origin.longitude =', tripData.origin.longitude);
     
     const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
