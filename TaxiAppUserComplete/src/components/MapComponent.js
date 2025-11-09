@@ -8,26 +8,21 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
 
-  // Región por defecto más zoomed
+  // Región por defecto - Santo Domingo
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
-    latitudeDelta: 0.05,    // ← REDUCIDO de 0.1
-    longitudeDelta: 0.05,   // ← REDUCIDO de 0.1
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   };
 
-  // ✅ NUEVO: Hacer zoom automático a la ubicación del usuario
+  // ✅ Hacer zoom automático a la ubicación del usuario
   useEffect(() => {
-    if (mapRef.current) {
-      const targetLocation = userLocation || {
-        latitude: 18.4861,
-        longitude: -69.9312,
-      };
-      
+    if (mapRef.current && userLocation) {
       mapRef.current.animateToRegion(
         {
-          latitude: targetLocation.latitude,
-          longitude: targetLocation.longitude,
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         },
@@ -48,18 +43,45 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={santodomingo}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
+        showsUserLocation={true}
+        showsMyLocationButton={true}
         showsCompass={true}
         showsScale={true}
         mapType="standard"
       >
+        {/* Marcador de ubicación actual del usuario */}
         <Marker
           coordinate={defaultUserLocation}
-          title="📍 Tu ubicación"
-          description="Ubicación actual"
+          title="📍 Mi ubicación"
+          description={userLocation?.address || "Tu ubicación actual"}
           pinColor="#007AFF"
         />
+
+        {/* Marcador de destino si existe */}
+        {destination && destination.latitude && destination.longitude && (
+          <Marker
+            coordinate={{
+              latitude: destination.latitude,
+              longitude: destination.longitude,
+            }}
+            title="📍 Destino"
+            description={destination.address || "Destino del viaje"}
+            pinColor="#FF3B30"
+          />
+        )}
+
+        {/* Marcador del conductor si existe */}
+        {showDriverLocation && driverInfo && driverInfo.currentLocation && (
+          <Marker
+            coordinate={{
+              latitude: driverInfo.currentLocation.latitude,
+              longitude: driverInfo.currentLocation.longitude,
+            }}
+            title="🚗 Conductor"
+            description={driverInfo.name}
+            pinColor="#34C759"
+          />
+        )}
       </MapView>
     </View>
   );
