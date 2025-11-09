@@ -1869,7 +1869,7 @@ const renderLoadingScreen = () => {
               >
                 <Text style={styles.locationOptionIcon}>🎯</Text>
                 <View style={styles.locationOptionContent}>
-                  <Text style={styles.locationOptionTitle}>Usar mi ubicación GPS</Text>
+                  <Text style={styles.locationOptionTitle}>Usar mi ubicación Actual</Text>
                   <Text style={styles.locationOptionDescription}>
                     Más precisa para calcular rutas y precios
                   </Text>
