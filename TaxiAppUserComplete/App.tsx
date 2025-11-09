@@ -1192,8 +1192,9 @@ const processRideRequest = async () => {
       parseFloat(routeInfo.price) : 
       (estimatedPrice || 150);
 
+   const storedUserId = await SharedStorage.getUserId();
     const request = {
-      userId: 'user_123',
+      userId: storedUserId || 'user_123',
       origin: {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
