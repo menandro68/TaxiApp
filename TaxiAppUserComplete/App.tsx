@@ -1900,24 +1900,19 @@ const renderLoadingScreen = () => {
   </View>
 </TouchableOpacity>
 
-              {/* Opción 3: Usar ubicación por defecto */}
-              <TouchableOpacity 
-                style={styles.locationOption}
-                onPress={() => handleLocationSelected({
-                  latitude: 18.4861,
-                  longitude: -69.9312,
-                  address: 'Santo Domingo Este, República Dominicana',
-                  source: 'default'
-                })}
-              >
-                <Text style={styles.locationOptionIcon}>📍</Text>
-                <View style={styles.locationOptionContent}>
-                  <Text style={styles.locationOptionTitle}>Santo Domingo Este</Text>
-                  <Text style={styles.locationOptionDescription}>
-                    Ubicación por defecto (aproximada)
-                  </Text>
-                </View>
-              </TouchableOpacity>
+         {/* Opción 3: Fijar en el mapa */}
+        <TouchableOpacity 
+        style={styles.locationOption}
+         onPress={() => setShowMapPicker(true)}
+>
+         <Text style={styles.locationOptionIcon}>🗺️</Text>
+        <View style={styles.locationOptionContent}>
+        <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
+        <Text style={styles.locationOptionDescription}>
+           Selecciona una ubicación en el mapa
+        </Text>
+        </View>
+        </TouchableOpacity>
 
               {/* Información sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
