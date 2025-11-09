@@ -1229,16 +1229,44 @@ if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
     fallbackRequestRide();
   }
 };
-
 const sendTripRequestToBackend = async (tripData) => {
   try {
     console.log('Enviando solicitud al backend:', tripData);
     console.log('URL:', `${getBackendUrl()}/trips/create`);
 
+    // DEBUG: User ID
     console.log('🔍 DEBUG: Enviando user_id =', tripData.userId);
     console.log('🔍 DEBUG: tipo =', typeof tripData.userId);
+    
+    // DEBUG: Coordenadas
     console.log('🔍 DEBUG: origin.latitude =', tripData.origin.latitude);
     console.log('🔍 DEBUG: origin.longitude =', tripData.origin.longitude);
+    
+    // DEBUG: Precio ANTES de transformación
+    console.log('🔍 DEBUG: Precio ANTES =', tripData.price);
+    console.log('🔍 DEBUG: ¿Es NaN?', isNaN(tripData.price));
+    
+    // Transformar precio
+    const finalEstimatedPrice = isNaN(tripData.price) ? 150 : tripData.price;
+    console.log('🔍 DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
+    console.log('🔍 DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
+    
+    // Construir JSON
+    const requestBody = {
+      user_id: tripData.userId,
+      pickup_location: tripData.origin.address,
+      destination: tripData.destination.address,
+      vehicle_type: tripData.vehicleType,
+      payment_method: tripData.paymentMethod,
+      estimated_price: finalEstimatedPrice,
+      pickup_coords: {
+        latitude: tripData.origin.latitude,
+        longitude: tripData.origin.longitude
+      }
+    };
+    
+    // DEBUG: JSON completo que se envía
+    console.log('🔍 DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
     
     const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
@@ -1246,24 +1274,16 @@ const sendTripRequestToBackend = async (tripData) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        user_id: tripData.userId,
-        pickup_location: tripData.origin.address,
-        destination: tripData.destination.address,
-        vehicle_type: tripData.vehicleType,
-        payment_method: tripData.paymentMethod,
-        estimated_price: isNaN(tripData.price) ? 150 : tripData.price,
-        pickup_coords: {
-          latitude: tripData.origin.latitude,
-          longitude: tripData.origin.longitude
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     console.log('✅ Response recibido:', response.status);
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // DEBUG: Intentar leer el error del servidor
+      const errorText = await response.text();
+      console.log('🔴 Respuesta del servidor:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
