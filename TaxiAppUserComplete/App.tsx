@@ -1252,7 +1252,7 @@ const sendTripRequestToBackend = async (tripData) => {
         destination: tripData.destination.address,
         vehicle_type: tripData.vehicleType,
         payment_method: tripData.paymentMethod,
-        estimated_price: tripData.price,
+        estimated_price: isNaN(tripData.price) ? 150 : tripData.price,
         pickup_coords: {
           latitude: tripData.origin.latitude,
           longitude: tripData.origin.longitude
