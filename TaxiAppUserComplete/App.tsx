@@ -1299,7 +1299,7 @@ const sendTripRequestToBackend = async (tripData) => {
       console.log('✅ Viaje creado:', data.tripId);
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
-      setSearchModalVisible(false);
+     setSearchModalVisible(true);
     } else {
       throw new Error(data.message || 'Error desconocido');
     }
