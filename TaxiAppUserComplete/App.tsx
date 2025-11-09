@@ -2506,7 +2506,7 @@ const renderLoadingScreen = () => {
           <View style={styles.destinationContainer}>
             <TouchableOpacity 
               style={styles.destinationInput}
-              onPress={() => setShowDestinationSelector(true)}
+             onPress={() => setShowLocationModal(true)}
             >
               <Text style={[
                 styles.destinationInputText,
