@@ -370,7 +370,6 @@ const initializeApp = async () => {
     
   } catch (error) {
     console.error('Error inicializando la app:', error);
-    Alert.alert('Error', 'Error al inicializar la aplicación');
     setIsAuthenticated(false);
     setShowAuthModal(true);
   } finally {
