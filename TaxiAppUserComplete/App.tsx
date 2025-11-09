@@ -458,6 +458,9 @@ const initializeApp = async () => {
         // Guardar credenciales encriptadas
         await SecureStorage.saveCredentials(authForm.email, authForm.password);
         await SharedStorage.saveUserProfile(loginResponse.user);
+        // Guardar el ID real del usuario
+        await SharedStorage.saveUserId(loginResponse.user.id.toString());
+        console.log('✅ User ID guardado en login:', loginResponse.user.id);
         
         setIsAuthenticated(true);
         setShowAuthModal(false);
@@ -529,6 +532,9 @@ const initializeApp = async () => {
         // Guardar credenciales encriptadas
         await SecureStorage.saveCredentials(authForm.email, authForm.password);
         await SharedStorage.saveUserProfile(registerResponse.user);
+        // Guardar el ID real del usuario
+       await SharedStorage.saveUserId(registerResponse.user.id.toString());
+       console.log('✅ User ID guardado en registro:', registerResponse.user.id);
         
         setIsAuthenticated(true);
         setShowAuthModal(false);
