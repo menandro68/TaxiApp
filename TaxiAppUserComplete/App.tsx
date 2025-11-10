@@ -2462,9 +2462,13 @@ const renderLoadingScreen = () => {
     return (
       <View style={styles.requestContainer}>
         <View style={styles.mapContainer}>
-          <MapComponent 
-            userLocation={userLocation || { latitude: 18.5204, longitude: -69.8340 }} 
-          />
+        <MapComponent 
+        userLocation={userLocation || { 
+         latitude: 18.4861, 
+         longitude: -69.9312,
+         address: 'Santo Domingo Este, República Dominicana'
+        }} 
+     />
         </View>
         {/* CAMBIO PRINCIPAL - DE View A ScrollView */}
         <ScrollView style={styles.controlsContainer} showsVerticalScrollIndicator={false}>

@@ -8,27 +8,12 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
 
-  // Región por defecto - Santo Domingo
-  const santodomingo = {
-    latitude: 18.4861,
-    longitude: -69.9312,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  };
-
-  // ✅ Usar la ubicación del usuario si existe
-  const displayRegion = userLocation 
-    ? {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }
-    : santodomingo;
-
-  const defaultUserLocation = {
-    latitude: userLocation?.latitude || 18.4861,
-    longitude: userLocation?.longitude || -69.9312,
+  // ✅ USAR SIEMPRE userLocation - NUNCA será null aquí
+  const initialRegion = {
+    latitude: userLocation.latitude || 18.4861,
+    longitude: userLocation.longitude || -69.9312,
+    latitudeDelta: 0.08,
+    longitudeDelta: 0.08,
   };
 
   return (
@@ -37,22 +22,25 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={displayRegion}
+        initialRegion={initialRegion}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
         showsScale={true}
         mapType="standard"
       >
-        {/* Marcador de ubicación actual del usuario */}
+        {/* Marcador de usuario */}
         <Marker
-          coordinate={defaultUserLocation}
+          coordinate={{
+            latitude: userLocation.latitude || 18.4861,
+            longitude: userLocation.longitude || -69.9312,
+          }}
           title="📍 Mi ubicación"
           description={userLocation?.address || "Tu ubicación actual"}
           pinColor="#0099FF"
         />
 
-        {/* Marcador de destino si existe */}
+        {/* Marcador de destino */}
         {destination && destination.latitude && destination.longitude && (
           <Marker
             coordinate={{
@@ -65,7 +53,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
           />
         )}
 
-        {/* Marcador del conductor si existe */}
+        {/* Marcador de conductor */}
         {showDriverLocation && driverInfo && driverInfo.currentLocation && (
           <Marker
             coordinate={{
