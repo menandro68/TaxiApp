@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,18 +7,27 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
 
-  // Región por defecto - Santo Domingo
+  // Región por defecto - Santo Domingo CORRECTO
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
+    latitudeDelta: 0.1,
+    longitudeDelta: 0.1,
   };
 
-  // ✅ Hacer zoom automático a la ubicación del usuario
+  // ✅ Inicializar cuando el mapa está listo
+  const handleMapReady = () => {
+    setMapReady(true);
+    if (mapRef.current) {
+      mapRef.current.animateToRegion(santodomingo, 500);
+    }
+  };
+
+  // ✅ Hacer zoom automático a la ubicación del usuario si existe
   useEffect(() => {
-    if (mapRef.current && userLocation) {
+    if (mapRef.current && userLocation && mapReady) {
       mapRef.current.animateToRegion(
         {
           latitude: userLocation.latitude,
@@ -29,7 +38,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         500
       );
     }
-  }, [userLocation]);
+  }, [userLocation, mapReady]);
 
   const defaultUserLocation = {
     latitude: userLocation?.latitude || 18.4861,
@@ -43,6 +52,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={santodomingo}
+        onMapReady={handleMapReady}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
@@ -54,7 +64,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
           coordinate={defaultUserLocation}
           title="📍 Mi ubicación"
           description={userLocation?.address || "Tu ubicación actual"}
-          pinColor="#007AFF"
+          pinColor="#0099FF"
         />
 
         {/* Marcador de destino si existe */}
