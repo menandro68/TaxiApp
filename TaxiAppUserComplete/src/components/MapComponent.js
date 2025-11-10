@@ -76,7 +76,12 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        region={currentLocation}
+        initialRegion={{
+          latitude: 18.4861,
+          longitude: -69.9312,
+          latitudeDelta: 0.2,
+          longitudeDelta: 0.2,
+        }}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
