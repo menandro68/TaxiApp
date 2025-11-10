@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,38 +7,24 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
 
-  // Región por defecto - Santo Domingo CORRECTO
+  // Región por defecto - Santo Domingo
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
-    latitudeDelta: 0.1,
-    longitudeDelta: 0.1,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   };
 
-  // ✅ Inicializar cuando el mapa está listo
-  const handleMapReady = () => {
-    setMapReady(true);
-    if (mapRef.current) {
-      mapRef.current.animateToRegion(santodomingo, 500);
-    }
-  };
-
-  // ✅ Hacer zoom automático a la ubicación del usuario si existe
-  useEffect(() => {
-    if (mapRef.current && userLocation && mapReady) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        },
-        500
-      );
-    }
-  }, [userLocation, mapReady]);
+  // ✅ Usar la ubicación del usuario si existe
+  const displayRegion = userLocation 
+    ? {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }
+    : santodomingo;
 
   const defaultUserLocation = {
     latitude: userLocation?.latitude || 18.4861,
@@ -51,8 +37,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={santodomingo}
-        onMapReady={handleMapReady}
+        initialRegion={displayRegion}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
