@@ -11,8 +11,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
   const [currentLocation, setCurrentLocation] = useState({
     latitude: userLocation?.latitude || 18.4861,
     longitude: userLocation?.longitude || -69.9312,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitudeDelta: 0.5,
+    longitudeDelta: 0.5,
   });
 
   const [origin, setOrigin] = useState(null);
@@ -37,8 +37,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
       const newLocation = {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
+        latitudeDelta: 0.5,
+        longitudeDelta: 0.5,
       };
       setCurrentLocation(newLocation);
       setOrigin({
@@ -56,8 +56,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
           const newLocation = {
             latitude,
             longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitudeDelta: 0.5,
+            longitudeDelta: 0.5,
           };
           setCurrentLocation(newLocation);
           setOrigin({ latitude, longitude });
@@ -79,8 +79,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         initialRegion={{
           latitude: 18.4861,
           longitude: -69.9312,
-          latitudeDelta: 0.2,
-          longitudeDelta: 0.2,
+          latitudeDelta: 0.5,
+          longitudeDelta: 0.5,
         }}
         showsUserLocation={true}
         showsMyLocationButton={true}
