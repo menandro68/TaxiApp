@@ -7,21 +7,46 @@ import { GOOGLE_MAPS_APIKEY } from '../config/googleMapsConfig';
 
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
   
-  const [currentLocation, setCurrentLocation] = useState({
-    latitude: userLocation?.latitude || 18.4861,
-    longitude: userLocation?.longitude || -69.9312,
-    latitudeDelta: 0.5,
-    longitudeDelta: 0.5,
-  });
-
   const [origin, setOrigin] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
 
+  // Región por defecto - Santo Domingo
+  const santodomingo = {
+    latitude: 18.4861,
+    longitude: -69.9312,
+    latitudeDelta: 0.1,
+    longitudeDelta: 0.1,
+  };
+
+  // ✅ Inicializar cuando el mapa está listo
+  const handleMapReady = () => {
+    setMapReady(true);
+    if (mapRef.current) {
+      mapRef.current.animateToRegion(santodomingo, 500);
+    }
+  };
+
+  // ✅ Hacer zoom automático a la ubicación del usuario si existe
   useEffect(() => {
-    getCurrentLocation();
-  }, [userLocation]);
+    if (mapRef.current && userLocation && mapReady) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        },
+        500
+      );
+      setOrigin({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      });
+    }
+  }, [userLocation, mapReady]);
 
   useEffect(() => {
     if (destination) {
@@ -32,42 +57,9 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
     }
   }, [destination]);
 
-  const getCurrentLocation = () => {
-    if (userLocation) {
-      const newLocation = {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        latitudeDelta: 0.5,
-        longitudeDelta: 0.5,
-      };
-      setCurrentLocation(newLocation);
-      setOrigin({
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-      });
-
-      if (mapRef.current) {
-        mapRef.current.animateToRegion(newLocation, 1000);
-      }
-    } else {
-      Geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const newLocation = {
-            latitude,
-            longitude,
-            latitudeDelta: 0.5,
-            longitudeDelta: 0.5,
-          };
-          setCurrentLocation(newLocation);
-          setOrigin({ latitude, longitude });
-        },
-        (error) => {
-          console.log('Error obteniendo ubicación:', error);
-        },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-      );
-    }
+  const defaultUserLocation = {
+    latitude: userLocation?.latitude || 18.4861,
+    longitude: userLocation?.longitude || -69.9312,
   };
 
   return (
@@ -76,19 +68,15 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={{
-          latitude: 18.4861,
-          longitude: -69.9312,
-          latitudeDelta: 0.5,
-          longitudeDelta: 0.5,
-        }}
+        initialRegion={santodomingo}
+        onMapReady={handleMapReady}
         showsUserLocation={true}
         showsMyLocationButton={true}
         showsCompass={true}
         showsScale={true}
         mapType="standard"
       >
-        {/* Marcador del usuario */}
+        {/* Marcador de usuario */}
         {origin && (
           <Marker
             coordinate={origin}
