@@ -2535,10 +2535,10 @@ const renderLoadingScreen = () => {
           <TouchableOpacity 
             style={[
               styles.requestButton,
-              (!destination.trim() || !userLocation || isCalculatingRoute) && styles.requestButtonDisabled
+              (!destination || (typeof destination === 'string' && !destination.trim()) || !userLocation || isCalculatingRoute) && styles.requestButtonDisabled
             ]} 
             onPress={requestRide}
-            disabled={!destination.trim() || !userLocation || isCalculatingRoute}
+            disabled={!destination || (typeof destination === 'string' && !destination.trim()) || !userLocation || isCalculatingRoute}
           >
             <Text style={styles.requestButtonText}>
               {isCalculatingRoute ? 'Calculando...' : 
