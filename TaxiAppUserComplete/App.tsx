@@ -2541,11 +2541,10 @@ const renderLoadingScreen = () => {
             disabled={!destination || (typeof destination === 'string' && !destination.trim()) || !userLocation || isCalculatingRoute}
           >
             <Text style={styles.requestButtonText}>
-              {isCalculatingRoute ? 'Calculando...' : 
-               !userLocation ? 'Selecciona ubicación' :
-               !destination ? 'Selecciona destino' :
+            {isCalculatingRoute ? 'Calculando...' : 
+              !userLocation ? 'Selecciona ubicación' :
                realTimePrice > 0 ? `Solicitar viaje • RD${realTimePrice}` :
-               'Solicitar viaje'}
+              'Solicitar viaje'}
             </Text>
           </TouchableOpacity>
           {/* Botón temporal para probar búsqueda de conductores */}
