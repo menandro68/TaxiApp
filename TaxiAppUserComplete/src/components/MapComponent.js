@@ -12,8 +12,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
+    latitudeDelta: 0.15,
+    longitudeDelta: 0.15,
   };
 
   // ✅ Hacer zoom automático a la ubicación del usuario
@@ -23,8 +23,8 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         {
           latitude: userLocation.latitude,
           longitude: userLocation.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
+          latitudeDelta: 0.15,
+          longitudeDelta: 0.15,
         },
         500
       );
