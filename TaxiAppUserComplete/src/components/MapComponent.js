@@ -16,7 +16,14 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
     longitudeDelta: 0.15,
   };
 
-  // ✅ Hacer zoom automático a la ubicación del usuario
+  // ✅ FORZAR zoom a Santo Domingo cuando el componente se monta
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.animateToRegion(santodomingo, 500);
+    }
+  }, []); // Sin dependencias = ejecuta SOLO al montar
+
+  // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia
   useEffect(() => {
     if (mapRef.current && userLocation) {
       mapRef.current.animateToRegion(
