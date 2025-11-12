@@ -163,7 +163,7 @@ class LocationFallbackService {
           success: true,
           location: {
             ...gpsCheck.location,
-            address: 'Ubicación actual (GPS)',
+            address: 'Punto de origen',
             source: 'gps'
           }
         };
