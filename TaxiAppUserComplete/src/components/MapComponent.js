@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
   const mapRef = useRef(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   // Región por defecto - Santo Domingo
   const santodomingo = {
@@ -16,16 +17,19 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
     longitudeDelta: 0.15,
   };
 
-  // ✅ FORZAR zoom a Santo Domingo cuando el componente se monta
+  // ✅ FORZAR zoom a Santo Domingo después de montar
   useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.animateToRegion(santodomingo, 500);
+    if (mapRef.current && !mapInitialized) {
+      setTimeout(() => {
+        mapRef.current.animateToRegion(santodomingo, 800);
+        setMapInitialized(true);
+      }, 500);
     }
-  }, []); // Sin dependencias = ejecuta SOLO al montar
+  }, [mapInitialized]);
 
   // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia
   useEffect(() => {
-    if (mapRef.current && userLocation) {
+    if (mapRef.current && userLocation && mapInitialized) {
       mapRef.current.animateToRegion(
         {
           latitude: userLocation.latitude,
@@ -36,7 +40,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         500
       );
     }
-  }, [userLocation]);
+  }, [userLocation, mapInitialized]);
 
   const defaultUserLocation = {
     latitude: userLocation?.latitude || 18.4861,
