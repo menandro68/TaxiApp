@@ -142,8 +142,9 @@ class LocationFallbackService {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 10000
+          timeout: 30000,           // ✅ 30 segundos (más tiempo para GPS)
+          maximumAge: 0,            // ✅ Siempre buscar posición fresca
+          distanceFilter: 0         // ✅ Cualquier cambio de ubicación
         }
       );
     });
