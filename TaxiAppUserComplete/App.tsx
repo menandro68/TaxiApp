@@ -1867,7 +1867,8 @@ const renderLoadingScreen = () => {
                 {isLoadingLocation && <ActivityIndicator size="small" />}
               </TouchableOpacity>
 
-           {/* Opción 2: Agregar dirección */}
+ {/* Opción 2: Agregar dirección */}
+{/*
 <TouchableOpacity 
   style={styles.locationOption}
   onPress={() => setShowDestinationSelectorForAdd(true)}
@@ -1880,20 +1881,23 @@ const renderLoadingScreen = () => {
     </Text>
   </View>
 </TouchableOpacity>
+*/}
 
-         {/* Opción 3: Fijar en el mapa */}
-        <TouchableOpacity 
-        style={styles.locationOption}
-         onPress={() => setShowMapPicker(true)}
+{/* Opción 3: Fijar en el mapa */}
+{/*
+<TouchableOpacity 
+  style={styles.locationOption}
+  onPress={() => setShowMapPicker(true)}
 >
-         <Text style={styles.locationOptionIcon}>🗺️</Text>
-        <View style={styles.locationOptionContent}>
-        <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
-        <Text style={styles.locationOptionDescription}>
-           Selecciona una ubicación en el mapa
-        </Text>
-        </View>
-        </TouchableOpacity>
+  <Text style={styles.locationOptionIcon}>🗺️</Text>
+  <View style={styles.locationOptionContent}>
+    <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
+    <Text style={styles.locationOptionDescription}>
+      Selecciona una ubicación en el mapa
+    </Text>
+  </View>
+</TouchableOpacity>
+*/}
 
               {/* Información sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
