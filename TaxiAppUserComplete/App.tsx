@@ -2478,7 +2478,7 @@ const renderLoadingScreen = () => {
           <View style={styles.formGroup}>
             <TouchableOpacity
               style={styles.pickupInput}
-              onPress={() => setShowPickupSelector(true)}
+             onPress={() => setShowLocationModal(true)}
             >
               <Icon name="location" size={20} color="#007AFF" />
               <View style={styles.pickupTextContainer}>
