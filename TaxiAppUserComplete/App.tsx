@@ -2483,7 +2483,7 @@ const renderLoadingScreen = () => {
               <Icon name="location" size={20} color="#007AFF" />
               <View style={styles.pickupTextContainer}>
                 <Text style={styles.pickupText}>
-                  {pickupLocation?.address || userLocation?.address || 'Punto de recogida'}
+                  {pickupLocation?.address || 'Punto de recogida'}
                 </Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#999" />
