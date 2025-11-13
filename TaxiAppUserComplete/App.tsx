@@ -96,6 +96,7 @@ const App = ({ navigation }) =>  {
     });
   }, []); // Solo se ejecuta una vez al montar el componente
 
+  const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
   const { t, i18n } = useTranslation(); 
   const [showTestI18n, setShowTestI18n] = useState(false);
   const [driverInfo, setDriverInfo] = useState(null);
@@ -896,9 +897,13 @@ const initializeLocationService = async () => {
       if (locationResult.success && locationResult.location) {
         await handleLocationSelected(locationResult.location);
         
-        if (locationResult.location.source === 'gps') {
-          Alert.alert('¡Éxito!', 'Ubicación GPS obtenida correctamente');
-        } else {
+       if (locationResult.location.source === 'gps') {
+  Alert.alert(
+    '¡Éxito!', 
+    'Ubicación GPS obtenida correctamente',
+    [{ text: 'OK', onPress: () => setPickupLocationConfirmed(true) }]
+  );
+  } else {
           Alert.alert(
             'GPS no disponible', 
             'Se usó ubicación aproximada. ' + (locationResult.warning || '')
@@ -2487,8 +2492,8 @@ const renderLoadingScreen = () => {
               <Icon name="location" size={20} color="#007AFF" />
               <View style={styles.pickupTextContainer}>
                 <Text style={styles.pickupText}>
-                  {pickupLocation?.address || 'Punto de recogida'}
-                </Text>
+                     {pickupLocationConfirmed ? 'Ubicación confirmada' : (pickupLocation?.address || 'Punto de recogida')}
+                  </Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
