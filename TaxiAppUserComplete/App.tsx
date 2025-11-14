@@ -1857,11 +1857,19 @@ const renderLoadingScreen = () => {
 
           <ScrollView style={styles.modalContent}>
       {/* Opción 1: Direcciones Favoritas */}
-      <TouchableOpacity 
-        style={styles.locationOption}
-        onPress={retryGPSLocation}
-        disabled={isLoadingLocation}
-      >
+   <TouchableOpacity 
+  style={styles.locationOption}
+  onPress={() => {
+    setShowLocationModal(false);
+    setTimeout(() => {
+      if (navigation && navigation.navigate) {
+        navigation.navigate('FavoriteAddresses');
+      } else {
+        Alert.alert('Error', 'No se puede navegar a esta pantalla');
+      }
+    }, 300);
+  }}
+>
         <Text style={styles.locationOptionIcon}>🎯</Text>
         <View style={styles.locationOptionContent}>
           <Text style={styles.locationOptionTitle}>Direcciones Favoritas</Text>
