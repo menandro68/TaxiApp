@@ -164,7 +164,7 @@ class LocationFallbackService {
           success: true,
           location: {
             ...gpsCheck.location,
-            address: 'Punto de origen',
+            address: await this.getReverseGeocode(gpsCheck.location.latitude, gpsCheck.location.longitude),
             source: 'gps'
           }
         };
@@ -420,6 +420,36 @@ class LocationFallbackService {
         error: error.message,
         warning: 'Error obteniendo ubicación, usando ubicación por defecto'
       };
+    }
+  }
+
+  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección
+  static async getReverseGeocode(latitude, longitude) {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=18&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      if (data.address) {
+        const address = data.address;
+        const street = address.road || address.pedestrian || '';
+        const number = address.house_number || '';
+        const neighborhood = address.neighbourhood || address.suburb || '';
+        const city = address.city || address.town || 'Santo Domingo';
+        
+        const fullAddress = [
+          street && number ? `${street} ${number}` : street,
+          neighborhood,
+          city
+        ].filter(Boolean).join(', ');
+        
+        return fullAddress || 'Ubicación desconocida';
+      }
+      return 'Ubicación desconocida';
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return 'Ubicación desconocida';
     }
   }
 }
