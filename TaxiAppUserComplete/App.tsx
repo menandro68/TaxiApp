@@ -1855,56 +1855,51 @@ const renderLoadingScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
-         {/* Opción 1: Reintentar GPS - COMENTADO */}
-{
-<TouchableOpacity 
-  style={styles.locationOption}
-  onPress={retryGPSLocation}
-  disabled={isLoadingLocation}
->
-  <Text style={styles.locationOptionIcon}>🎯</Text>
-  <View style={styles.locationOptionContent}>
-    <Text style={styles.locationOptionTitle}>Direcciones Favoritas</Text>
-    <Text style={styles.locationOptionDescription}>
-      Más precisa para calcular rutas y precios
-    </Text>
-  </View>
-  {isLoadingLocation && <ActivityIndicator size="small" />}
-</TouchableOpacity>
-}
+          <ScrollView style={styles.modalContent}>
+      {/* Opción 1: Direcciones Favoritas */}
+      <TouchableOpacity 
+        style={styles.locationOption}
+        onPress={retryGPSLocation}
+        disabled={isLoadingLocation}
+      >
+        <Text style={styles.locationOptionIcon}>🎯</Text>
+        <View style={styles.locationOptionContent}>
+          <Text style={styles.locationOptionTitle}>Direcciones Favoritas</Text>
+          <Text style={styles.locationOptionDescription}>
+            Más precisa para calcular rutas y precios
+          </Text>
+        </View>
+        {isLoadingLocation && <ActivityIndicator size="small" />}
+      </TouchableOpacity>
 
- {/* Opción 2: Agregar dirección */}
+      {/* Opción 2: Agregar dirección */}
+      <TouchableOpacity 
+        style={styles.locationOption}
+        onPress={() => setShowDestinationSelectorForAdd(true)}
+      >
+        <Text style={styles.locationOptionIcon}>➕</Text>
+        <View style={styles.locationOptionContent}>
+          <Text style={styles.locationOptionTitle}>Agregar dirección</Text>
+          <Text style={styles.locationOptionDescription}>
+            Ingresa una dirección personalizada
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-<TouchableOpacity 
-  style={styles.locationOption}
-  onPress={() => setShowDestinationSelectorForAdd(true)}
->
-  <Text style={styles.locationOptionIcon}>➕</Text>
-  <View style={styles.locationOptionContent}>
-    <Text style={styles.locationOptionTitle}>Agregar dirección</Text>
-    <Text style={styles.locationOptionDescription}>
-      Ingresa una dirección personalizada
-    </Text>
-  </View>
-</TouchableOpacity>
-}
+      {/* Opción 3: Fijar en el mapa */}
+      <TouchableOpacity 
+        style={styles.locationOption}
+        onPress={() => setShowMapPicker(true)}
+      >
+        <Text style={styles.locationOptionIcon}>🗺️</Text>
+        <View style={styles.locationOptionContent}>
+          <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
+          <Text style={styles.locationOptionDescription}>
+            Selecciona una ubicación en el mapa
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-{/* Opción 3: Fijar en el mapa */}
-{
-<TouchableOpacity 
-  style={styles.locationOption}
-  onPress={() => setShowMapPicker(true)}
->
-  <Text style={styles.locationOptionIcon}>🗺️</Text>
-  <View style={styles.locationOptionContent}>
-    <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
-    <Text style={styles.locationOptionDescription}>
-      Selecciona una ubicación en el mapa
-    </Text>
-  </View>
-</TouchableOpacity>
-}
 
               {/* Información sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
