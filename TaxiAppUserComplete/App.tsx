@@ -1857,7 +1857,7 @@ const renderLoadingScreen = () => {
 
             <ScrollView style={styles.modalContent}>
          {/* Opción 1: Reintentar GPS - COMENTADO */}
-{/*
+{
 <TouchableOpacity 
   style={styles.locationOption}
   onPress={retryGPSLocation}
@@ -1865,14 +1865,14 @@ const renderLoadingScreen = () => {
 >
   <Text style={styles.locationOptionIcon}>🎯</Text>
   <View style={styles.locationOptionContent}>
-    <Text style={styles.locationOptionTitle}>Usar mi ubicación Actual</Text>
+    <Text style={styles.locationOptionTitle}>Direcciones Favoritas</Text>
     <Text style={styles.locationOptionDescription}>
       Más precisa para calcular rutas y precios
     </Text>
   </View>
   {isLoadingLocation && <ActivityIndicator size="small" />}
 </TouchableOpacity>
-*/}
+}
 
  {/* Opción 2: Agregar dirección */}
 
