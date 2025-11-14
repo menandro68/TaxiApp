@@ -1873,7 +1873,7 @@ const renderLoadingScreen = () => {
               </TouchableOpacity>
 
  {/* Opción 2: Agregar dirección */}
-{/*
+{
 <TouchableOpacity 
   style={styles.locationOption}
   onPress={() => setShowDestinationSelectorForAdd(true)}
@@ -1886,10 +1886,10 @@ const renderLoadingScreen = () => {
     </Text>
   </View>
 </TouchableOpacity>
-*/}
+}
 
 {/* Opción 3: Fijar en el mapa */}
-{/*
+{
 <TouchableOpacity 
   style={styles.locationOption}
   onPress={() => setShowMapPicker(true)}
@@ -1902,7 +1902,7 @@ const renderLoadingScreen = () => {
     </Text>
   </View>
 </TouchableOpacity>
-*/}
+}
 
               {/* Información sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
