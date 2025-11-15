@@ -129,6 +129,10 @@ const App = ({ navigation }) =>  {
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [mapPickerLocation, setMapPickerLocation] = useState(null);
+  const [mapPickerAddress, setMapPickerAddress] = useState('');
+  const [isGeocodingMapPicker, setIsGeocodingMapPicker] = useState(false);
   const [authForm, setAuthForm] = useState({
     email: '',
     password: '',
@@ -882,6 +886,34 @@ const initializeLocationService = async () => {
       Alert.alert('Error', 'No se pudo actualizar la ubicación');
     }
   };
+
+  const reverseGeocodeMapLocation = async (latitude, longitude) => {
+  try {
+    setIsGeocodingMapPicker(true);
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+    );
+    
+    if (!response.ok) throw new Error('Geocoding failed');
+    
+    const data = await response.json();
+    const address = data.address?.road 
+      ? `${data.address.road}, ${data.address.city || data.address.town || ''}`
+      : data.display_name;
+    
+    setMapPickerAddress(address);
+    setMapPickerLocation({ latitude, longitude, address });
+    
+    return address;
+  } catch (error) {
+    console.error('Error en reverse geocoding:', error);
+    setMapPickerAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+    setMapPickerLocation({ latitude, longitude });
+  } finally {
+    setIsGeocodingMapPicker(false);
+  }
+};
 
   // NUEVA FUNCIÓN: Reintentar obtener GPS
   const retryGPSLocation = async () => {
@@ -1895,18 +1927,21 @@ const renderLoadingScreen = () => {
       </TouchableOpacity>
 
       {/* Opción 3: Fijar en el mapa */}
-      <TouchableOpacity 
-        style={styles.locationOption}
-        onPress={() => setShowMapPicker(true)}
-      >
-        <Text style={styles.locationOptionIcon}>🗺️</Text>
-        <View style={styles.locationOptionContent}>
-          <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
-          <Text style={styles.locationOptionDescription}>
-            Selecciona una ubicación en el mapa
-          </Text>
-        </View>
-      </TouchableOpacity>
+    <TouchableOpacity 
+  style={styles.locationOption}
+  onPress={() => {
+    setShowLocationModal(false);
+    setTimeout(() => setShowMapPicker(true), 300);
+  }}
+>
+  <Text style={styles.locationOptionIcon}>🗺️</Text>
+  <View style={styles.locationOptionContent}>
+    <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
+    <Text style={styles.locationOptionDescription}>
+      Selecciona una ubicación en el mapa
+    </Text>
+  </View>
+</TouchableOpacity>
 
 
               {/* Información sobre permisos */}
@@ -2986,6 +3021,7 @@ const renderLoadingScreen = () => {
         {showLocationModal && renderLocationModal()}
         {showPopularLocations && renderPopularLocationsModal()}
         {showAuthModal && renderAuthModal()}
+        {showMapPicker && renderMapPicker()}
         
         {/* NUEVO: Drawer Menu */}
         {renderDrawerMenu()}
@@ -3107,6 +3143,114 @@ const renderLoadingScreen = () => {
 </ErrorBoundary>
 );
 }
+
+const renderMapPicker = () => {
+  return (
+    <Modal
+      visible={showMapPicker}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setShowMapPicker(false)}
+    >
+      <View style={styles.mapPickerOverlay}>
+        {/* Header */}
+        <View style={styles.mapPickerHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowMapPicker(false)}
+            style={styles.mapPickerBackButton}
+          >
+            <Icon name="arrow-back" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.mapPickerTitle}>Fijar ubicación en mapa</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Mapa */}
+        <View style={styles.mapPickerContainer}>
+          <MapComponent 
+            userLocation={mapPickerLocation || userLocation || { 
+              latitude: 18.4861, 
+              longitude: -69.9312 
+            }}
+            onMapPress={(location) => {
+              console.log('Ubicación seleccionada:', location);
+              reverseGeocodeMapLocation(location.latitude, location.longitude);
+            }}
+            interactive={true}
+          />
+          
+          {/* Pin de centro */}
+          <View style={styles.mapPickerPin}>
+            <Text style={styles.mapPickerPinIcon}>📍</Text>
+          </View>
+        </View>
+
+        {/* Información de ubicación seleccionada */}
+        <View style={styles.mapPickerInfo}>
+          <View style={styles.mapPickerInfoContent}>
+            <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
+            
+            {isGeocodingMapPicker ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#007AFF" />
+                <Text style={styles.loadingText}>Obteniendo dirección...</Text>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.mapPickerInfoAddress}>
+                  {mapPickerAddress || 'Toca el mapa para seleccionar'}
+                </Text>
+                
+                {mapPickerLocation && (
+                  <Text style={styles.mapPickerInfoCoords}>
+                    {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Botones de acción */}
+        <View style={styles.mapPickerActions}>
+          <TouchableOpacity 
+            style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
+            onPress={() => {
+              setShowMapPicker(false);
+              setMapPickerLocation(null);
+              setMapPickerAddress('');
+            }}
+          >
+            <Text style={styles.mapPickerCancelButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[
+              styles.mapPickerButton, 
+              styles.mapPickerConfirmButton,
+              (!mapPickerLocation || isGeocodingMapPicker) && styles.mapPickerButtonDisabled
+            ]}
+            onPress={() => {
+              if (mapPickerLocation) {
+                handleLocationSelected(mapPickerLocation);
+                setShowMapPicker(false);
+                setMapPickerLocation(null);
+                setMapPickerAddress('');
+              }
+            }}
+            disabled={!mapPickerLocation || isGeocodingMapPicker}
+          >
+            {isGeocodingMapPicker ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.mapPickerConfirmButtonText}>Confirmar</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -4159,6 +4303,127 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
   },
+  
+  // ESTILOS PARA MAP PICKER
+mapPickerOverlay: {
+  flex: 1,
+  backgroundColor: '#fff',
+},
+mapPickerHeader: {
+  backgroundColor: '#007AFF',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingHorizontal: 15,
+  paddingVertical: 15,
+  paddingTop: 10,
+},
+mapPickerBackButton: {
+  padding: 5,
+},
+mapPickerTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#fff',
+  flex: 1,
+  textAlign: 'center',
+},
+mapPickerContainer: {
+  flex: 1,
+  position: 'relative',
+},
+mapPickerPin: {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  marginLeft: -20,
+  marginTop: -40,
+  width: 40,
+  height: 40,
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10,
+},
+mapPickerPinIcon: {
+  fontSize: 40,
+  textShadowColor: 'rgba(0, 0, 0, 0.3)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 2,
+},
+mapPickerInfo: {
+  backgroundColor: '#f8f9fa',
+  borderTopWidth: 1,
+  borderTopColor: '#e9ecef',
+  padding: 15,
+  minHeight: 100,
+},
+mapPickerInfoContent: {
+  flex: 1,
+},
+mapPickerInfoLabel: {
+  fontSize: 14,
+  color: '#666',
+  marginBottom: 8,
+  fontWeight: '600',
+},
+mapPickerInfoAddress: {
+  fontSize: 16,
+  color: '#333',
+  fontWeight: '500',
+  marginBottom: 4,
+},
+mapPickerInfoCoords: {
+  fontSize: 12,
+  color: '#999',
+  fontFamily: 'monospace',
+  marginTop: 4,
+},
+loadingContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+loadingText: {
+  marginLeft: 10,
+  fontSize: 14,
+  color: '#007AFF',
+},
+mapPickerActions: {
+  flexDirection: 'row',
+  padding: 15,
+  borderTopWidth: 1,
+  borderTopColor: '#e9ecef',
+  gap: 10,
+},
+mapPickerButton: {
+  flex: 1,
+  paddingVertical: 15,
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+mapPickerCancelButton: {
+  backgroundColor: '#f8f9fa',
+  borderWidth: 1,
+  borderColor: '#dee2e6',
+},
+mapPickerCancelButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#495057',
+},
+mapPickerConfirmButton: {
+  backgroundColor: '#007AFF',
+},
+mapPickerConfirmButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#fff',
+},
+mapPickerButtonDisabled: {
+  backgroundColor: '#ccc',
+  opacity: 0.6,
+},
+
 }); // CIERRE CORRECTO DEL StyleSheet.create
 
 // Componente principal de la app
