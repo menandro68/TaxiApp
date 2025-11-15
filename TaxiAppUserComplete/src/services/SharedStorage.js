@@ -377,6 +377,27 @@ const SharedStorage = {
     console.log('🧹 Todos los datos del viaje eliminados');
   },
 
+  // === GESTIÓN DE USER_ID ===
+  saveUserId: async (userId) => {
+    try {
+      await SecureStorage.saveUserId(userId);
+      console.log('✅ User ID guardado de forma segura:', userId);
+    } catch (error) {
+      console.error('❌ Error guardando user ID:', error);
+    }
+  },
+
+  getUserId: async () => {
+    try {
+      const userId = await SecureStorage.getUserId();
+      console.log('👤 User ID obtenido:', userId);
+      return userId;
+    } catch (error) {
+      console.error('❌ Error obteniendo user ID:', error);
+      return null;
+    }
+  },
+
   // === AUTENTICACIÓN (ENCRIPTADA) ===
   getAuthToken: async () => {
     try {

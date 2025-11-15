@@ -82,19 +82,7 @@ const App = ({ navigation }) =>  {
   const Stack = createStackNavigator();
 
   // Agregar después de todos los useState
-  useEffect(() => {
-    // Configurar manejador global de errores
-    GlobalErrorHandler.setup();
-    // Inicializar Analytics
-    AnalyticsService.initialize();
-    
-    console.log('Iniciando diagnostico de storage...');
-    StorageDiagnostic.runDiagnostic().then(() => {
-      console.log('Diagnostico completado');
-      // Inicializar servicio de emergencia
-      EmergencyService.initialize();
-    });
-  }, []); // Solo se ejecuta una vez al montar el componente
+
 
   const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
   const { t, i18n } = useTranslation(); 
@@ -164,6 +152,20 @@ const App = ({ navigation }) =>  {
   const [passwordStrength, setPasswordStrength] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [newDestination, setNewDestination] = useState('');
+    useEffect(() => {
+    // Configurar manejador global de errores
+    GlobalErrorHandler.setup();
+    // Inicializar Analytics
+    AnalyticsService.initialize();
+    
+    console.log('Iniciando diagnostico de storage...');
+    StorageDiagnostic.runDiagnostic().then(() => {
+      console.log('Diagnostico completado');
+      // Inicializar servicio de emergencia
+      EmergencyService.initialize();
+    });
+  }, []); // Solo se ejecuta una vez al montar el componente
+
 
   useEffect(() => {
     initializeApp();
