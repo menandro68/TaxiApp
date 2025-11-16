@@ -3019,16 +3019,15 @@ const renderLoadingScreen = () => {
           mode="destination"
         />
         
-        {/* Modales existentes */}
-        {showLocationModal && renderLocationModal()}
-        {showPopularLocations && renderPopularLocationsModal()}
-        {showAuthModal && renderAuthModal()}
-        {showMapPicker && renderMapPicker()}
-        
-        {/* NUEVO: Drawer Menu */}
-        {renderDrawerMenu()}
-        
-        {/* MODAL DE MÚLTIPLES DESTINOS */}
+    {/* Modales existentes */}
+    {showLocationModal && renderLocationModal()}
+    {showPopularLocations && renderPopularLocationsModal()}
+    {showAuthModal && renderAuthModal()}
+
+    {/* NUEVO: Drawer Menu */}
+    {renderDrawerMenu()}
+
+    {/* MODAL DE MÚLTIPLES DESTINOS */}
         <MultipleDestinationsModal
           visible={showAddDestinationModal}
           onClose={() => setShowAddDestinationModal(false)}
