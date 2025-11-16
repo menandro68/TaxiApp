@@ -3137,123 +3137,121 @@ const renderLoadingScreen = () => {
       Alert.alert(
         'Viaje para tercero confirmado',
         `El conductor contactará a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}`
-      );
+    );
     }
   }}
 />
 
-</ErrorBoundary>
-);
-}
+{/* MAP PICKER MODAL - DENTRO DEL COMPONENTE */}
+{showMapPicker && (
+  <Modal
+    visible={showMapPicker}
+    transparent={true}
+    animationType="slide"
+    onRequestClose={() => setShowMapPicker(false)}
+  >
+    <View style={styles.mapPickerOverlay}>
+      {/* Header */}
+      <View style={styles.mapPickerHeader}>
+        <TouchableOpacity 
+          onPress={() => setShowMapPicker(false)}
+          style={styles.mapPickerBackButton}
+        >
+          <Icon name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.mapPickerTitle}>Fijar ubicación en mapa</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-const renderMapPicker = () => {
-  return (
-    <Modal
-      visible={showMapPicker}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowMapPicker(false)}
-    >
-      <View style={styles.mapPickerOverlay}>
-        {/* Header */}
-        <View style={styles.mapPickerHeader}>
-          <TouchableOpacity 
-            onPress={() => setShowMapPicker(false)}
-            style={styles.mapPickerBackButton}
-          >
-            <Icon name="arrow-back" size={28} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.mapPickerTitle}>Fijar ubicación en mapa</Text>
-          <View style={{ width: 40 }} />
+      {/* Mapa */}
+      <View style={styles.mapPickerContainer}>
+        <MapComponent 
+          userLocation={mapPickerLocation || userLocation || { 
+            latitude: 18.4861, 
+            longitude: -69.9312 
+          }}
+          onMapPress={(location) => {
+            console.log('Ubicación seleccionada:', location);
+            reverseGeocodeMapLocation(location.latitude, location.longitude);
+          }}
+          interactive={true}
+        />
+        
+        {/* Pin de centro */}
+        <View style={styles.mapPickerPin}>
+          <Text style={styles.mapPickerPinIcon}>📍</Text>
         </View>
+      </View>
 
-        {/* Mapa */}
-        <View style={styles.mapPickerContainer}>
-          <MapComponent 
-            userLocation={mapPickerLocation || userLocation || { 
-              latitude: 18.4861, 
-              longitude: -69.9312 
-            }}
-            onMapPress={(location) => {
-              console.log('Ubicación seleccionada:', location);
-              reverseGeocodeMapLocation(location.latitude, location.longitude);
-            }}
-            interactive={true}
-          />
+      {/* Información de ubicación seleccionada */}
+      <View style={styles.mapPickerInfo}>
+        <View style={styles.mapPickerInfoContent}>
+          <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
           
-          {/* Pin de centro */}
-          <View style={styles.mapPickerPin}>
-            <Text style={styles.mapPickerPinIcon}>📍</Text>
-          </View>
-        </View>
-
-        {/* Información de ubicación seleccionada */}
-        <View style={styles.mapPickerInfo}>
-          <View style={styles.mapPickerInfoContent}>
-            <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
-            
-            {isGeocodingMapPicker ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#007AFF" />
-                <Text style={styles.loadingText}>Obteniendo dirección...</Text>
-              </View>
-            ) : (
-              <View>
-                <Text style={styles.mapPickerInfoAddress}>
-                  {mapPickerAddress || 'Toca el mapa para seleccionar'}
+          {isGeocodingMapPicker ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.loadingText}>Obteniendo dirección...</Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.mapPickerInfoAddress}>
+                {mapPickerAddress || 'Toca el mapa para seleccionar'}
+              </Text>
+              
+              {mapPickerLocation && (
+                <Text style={styles.mapPickerInfoCoords}>
+                  {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
                 </Text>
-                
-                {mapPickerLocation && (
-                  <Text style={styles.mapPickerInfoCoords}>
-                    {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
-                  </Text>
-                )}
-              </View>
-            )}
-          </View>
+              )}
+            </View>
+          )}
         </View>
+      </View>
 
-        {/* Botones de acción */}
-        <View style={styles.mapPickerActions}>
-          <TouchableOpacity 
-            style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
-            onPress={() => {
+      {/* Botones de acción */}
+      <View style={styles.mapPickerActions}>
+        <TouchableOpacity 
+          style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
+          onPress={() => {
+            setShowMapPicker(false);
+            setMapPickerLocation(null);
+            setMapPickerAddress('');
+          }}
+        >
+          <Text style={styles.mapPickerCancelButtonText}>Cancelar</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[
+            styles.mapPickerButton, 
+            styles.mapPickerConfirmButton,
+            (!mapPickerLocation || isGeocodingMapPicker) && styles.mapPickerButtonDisabled
+          ]}
+          onPress={() => {
+            if (mapPickerLocation) {
+              handleLocationSelected(mapPickerLocation);
               setShowMapPicker(false);
               setMapPickerLocation(null);
               setMapPickerAddress('');
-            }}
-          >
-            <Text style={styles.mapPickerCancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.mapPickerButton, 
-              styles.mapPickerConfirmButton,
-              (!mapPickerLocation || isGeocodingMapPicker) && styles.mapPickerButtonDisabled
-            ]}
-            onPress={() => {
-              if (mapPickerLocation) {
-                handleLocationSelected(mapPickerLocation);
-                setShowMapPicker(false);
-                setMapPickerLocation(null);
-                setMapPickerAddress('');
-              }
-            }}
-            disabled={!mapPickerLocation || isGeocodingMapPicker}
-          >
-            {isGeocodingMapPicker ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.mapPickerConfirmButtonText}>Confirmar</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            }
+          }}
+          disabled={!mapPickerLocation || isGeocodingMapPicker}
+        >
+          {isGeocodingMapPicker ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.mapPickerConfirmButtonText}>Confirmar</Text>
+          )}
+        </TouchableOpacity>
       </View>
-    </Modal>
-  );
-};
+    </View>
+  </Modal>
+)}
 
+</ErrorBoundary>
+    );
+  }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
