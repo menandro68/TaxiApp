@@ -4,10 +4,20 @@ import {
   StyleSheet,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { GestureResponder } from 'react-native';
 
-const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false }) => {
+const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocation = false, onMapPress = null, interactive = false }) => {
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
+
+  // ✅ Manejar clicks en el mapa para seleccionar ubicación
+  const handleMapPress = (event) => {
+    if (interactive && onMapPress) {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      console.log('Ubicación seleccionada:', latitude, longitude);
+      onMapPress({ latitude, longitude });
+    }
+  };
 
   // Región por defecto - Santo Domingo
   const santodomingo = {
@@ -59,6 +69,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         showsCompass={true}
         showsScale={true}
         mapType="standard"
+        onPress={handleMapPress}
       >
         {/* Marcador de ubicación actual del usuario */}
         <Marker
