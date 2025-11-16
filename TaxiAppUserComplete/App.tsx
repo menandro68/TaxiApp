@@ -1961,8 +1961,7 @@ const renderLoadingScreen = () => {
                   </TouchableOpacity>
                 </View>
               )}
-
-             {/* Nota informativa - OCULTA */}
+{/* Nota informativa - OCULTA */}
      {false && (
      <View style={modalStyles.infoBox}>
      <Icon name="information-circle" size={20} color="#007AFF" />
@@ -1973,8 +1972,7 @@ const renderLoadingScreen = () => {
     </View>
        )}
             </ScrollView>
-
-            {/* Botones de acción */}
+            {/* Botones de acción - COMENTARIO DENTRO DE JSX */}
             <View style={modalStyles.footer}>
               <TouchableOpacity 
                 style={modalStyles.cancelButton}
@@ -3216,14 +3214,13 @@ const renderLoadingScreen = () => {
               {mapPickerLocation && (
                 <Text style={styles.mapPickerInfoCoords}>
                   {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
-                </Text>
+         </Text>
               )}
             </View>
-          )}
-        </View>
-      </View>
-      
-{/* Botones de acción */}
+          )}  {/* ← CIERRA el ternario isGeocodingMapPicker */}
+        </View>  {/* ← CIERRA mapPickerInfoContent */}
+      </View>  {/* ← CIERRA mapPickerInfo */}
+      {/* Botones de acción */}
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
           style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
@@ -3236,7 +3233,7 @@ const renderLoadingScreen = () => {
           <Text style={styles.mapPickerCancelButtonText}>Cancelar</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
             styles.mapPickerButton, 
             styles.mapPickerConfirmButton,
@@ -3257,8 +3254,8 @@ const renderLoadingScreen = () => {
           ) : (
             <Text style={styles.mapPickerConfirmButtonText}>Confirmar</Text>
           )}
-        </TouchableOpacity>
-      </View>
+   </TouchableOpacity>
+      </View>  {/* ← CIERRA mapPickerActions */}
     </View>  {/* ← CIERRA mapPickerOverlay */}
   </Modal>
 )}
