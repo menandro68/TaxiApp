@@ -3163,7 +3163,7 @@ const renderLoadingScreen = () => {
       </View>
 
       {/* Mapa */}
-      <View style={styles.mapPickerContainer}>
+<View style={styles.mapPickerContainer}>
         <MapComponent 
           userLocation={mapPickerLocation || userLocation || { 
             latitude: 18.4861, 
@@ -3171,15 +3171,30 @@ const renderLoadingScreen = () => {
           }}
           onMapPress={(location) => {
             console.log('Ubicación seleccionada:', location);
+            setMapPickerLocation({
+              latitude: location.latitude,
+              longitude: location.longitude
+            });
             reverseGeocodeMapLocation(location.latitude, location.longitude);
           }}
           interactive={true}
         />
         
-        {/* Pin de centro */}
-        <View style={styles.mapPickerPin}>
+        {/* Pin de centro - TOCABLE */}
+        <TouchableOpacity 
+          style={styles.mapPickerPin}
+          onPress={() => {
+            console.log('Pin tocado, confirmando ubicación:', mapPickerLocation);
+            if (mapPickerLocation) {
+              handleLocationSelected(mapPickerLocation);
+              setShowMapPicker(false);
+              setMapPickerLocation(null);
+              setMapPickerAddress('');
+            }
+          }}
+        >
           <Text style={styles.mapPickerPinIcon}>📍</Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Información de ubicación seleccionada */}
@@ -3207,8 +3222,7 @@ const renderLoadingScreen = () => {
           )}
         </View>
       </View>
-
-      {/* Botones de acción */}
+{/* Botones de acción */}
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
           style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
@@ -3244,7 +3258,7 @@ const renderLoadingScreen = () => {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </View>  {/* ← CIERRA mapPickerOverlay */}
   </Modal>
 )}
 
