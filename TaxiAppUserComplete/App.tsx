@@ -3222,6 +3222,7 @@ const renderLoadingScreen = () => {
           )}
         </View>
       </View>
+      
 {/* Botones de acción */}
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
