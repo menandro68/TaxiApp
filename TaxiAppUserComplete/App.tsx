@@ -3194,8 +3194,7 @@ const renderLoadingScreen = () => {
           <Text style={styles.mapPickerPinIcon}>📍</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Información de ubicación seleccionada */}
+{/* Información de ubicación seleccionada */}
       <View style={styles.mapPickerInfo}>
         <View style={styles.mapPickerInfoContent}>
           <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
@@ -3214,10 +3213,10 @@ const renderLoadingScreen = () => {
               {mapPickerLocation && (
                 <Text style={styles.mapPickerInfoCoords}>
                   {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
-         </Text>
+                </Text>
               )}
             </View>
-          )}  {/* ← CIERRA el ternario isGeocodingMapPicker */}
+          )}
         </View>  {/* ← CIERRA mapPickerInfoContent */}
       </View>  {/* ← CIERRA mapPickerInfo */}
       {/* Botones de acción */}
@@ -3864,12 +3863,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderRadius: 4,
   },
-  trackingStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  statusIndicator: {
+trackingStatusContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 8,
+},
+statusText: {
+  fontSize: 12,
+  color: '#666',
+},
+statusIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
