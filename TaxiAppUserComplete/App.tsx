@@ -3138,7 +3138,6 @@ const renderLoadingScreen = () => {
     }
   }}
 />
-
 {/* MAP PICKER MODAL - DENTRO DEL COMPONENTE */}
 {showMapPicker && (
   <Modal
@@ -3160,8 +3159,7 @@ const renderLoadingScreen = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Mapa */}
-<View style={styles.mapPickerContainer}>
+      <View style={styles.mapPickerContainer}>
         <MapComponent 
           userLocation={mapPickerLocation || userLocation || { 
             latitude: 18.4861, 
@@ -3178,7 +3176,6 @@ const renderLoadingScreen = () => {
           interactive={true}
         />
         
-        {/* Pin de centro - TOCABLE */}
         <TouchableOpacity 
           style={styles.mapPickerPin}
           onPress={() => {
@@ -3194,7 +3191,7 @@ const renderLoadingScreen = () => {
           <Text style={styles.mapPickerPinIcon}>📍</Text>
         </TouchableOpacity>
       </View>
-{/* Información de ubicación seleccionada */}
+
       <View style={styles.mapPickerInfo}>
         <View style={styles.mapPickerInfoContent}>
           <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
@@ -3207,19 +3204,19 @@ const renderLoadingScreen = () => {
           ) : (
             <View>
               <Text style={styles.mapPickerInfoAddress}>
-                {mapPickerAddress || 'Toca el mapa para seleccionar'}
+                {mapPickerAddress ? mapPickerAddress : 'Toca el mapa para seleccionar'}
               </Text>
               
               {mapPickerLocation && (
                 <Text style={styles.mapPickerInfoCoords}>
-                  {mapPickerLocation.latitude.toFixed(4)}, {mapPickerLocation.longitude.toFixed(4)}
+                  {mapPickerLocation.latitude.toFixed(4) + ', ' + mapPickerLocation.longitude.toFixed(4)}
                 </Text>
               )}
             </View>
           )}
-        </View>  {/* ← CIERRA mapPickerInfoContent */}
-      </View>  {/* ← CIERRA mapPickerInfo */}
-      {/* Botones de acción */}
+        </View>
+      </View>
+
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
           style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
@@ -3253,13 +3250,13 @@ const renderLoadingScreen = () => {
           ) : (
             <Text style={styles.mapPickerConfirmButtonText}>Confirmar</Text>
           )}
-   </TouchableOpacity>
-      </View>  {/* ← CIERRA mapPickerActions */}
-    </View>  {/* ← CIERRA mapPickerOverlay */}
+        </TouchableOpacity>
+      </View>
+    </View>
   </Modal>
 )}
 
-</ErrorBoundary>
+      </ErrorBoundary>
     );
   }
 const styles = StyleSheet.create({

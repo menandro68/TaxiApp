@@ -74,7 +74,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
         {/* Marcador de ubicación actual del usuario */}
         <Marker
           coordinate={defaultUserLocation}
-          title="📍 Mi ubicación"
+          title="Mi ubicación"
           description={userLocation?.address || "Tu ubicación actual"}
           pinColor="#007AFF"
         />
@@ -86,7 +86,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
               latitude: destination.latitude,
               longitude: destination.longitude,
             }}
-            title="📍 Destino"
+            title="Destino"
             description={destination.address || "Destino del viaje"}
             pinColor="#FF3B30"
           />
@@ -99,7 +99,7 @@ const MapComponent = ({ userLocation, driverInfo, destination, showDriverLocatio
               latitude: driverInfo.currentLocation.latitude,
               longitude: driverInfo.currentLocation.longitude,
             }}
-            title="🚗 Conductor"
+            title="Conductor"
             description={driverInfo.name}
             pinColor="#34C759"
           />
