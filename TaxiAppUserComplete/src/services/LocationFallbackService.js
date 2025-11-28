@@ -83,11 +83,11 @@ class LocationFallbackService {
   // ✅ VERIFICAR SI GPS ESTÁ DISPONIBLE Y HABILITADO
   static async checkGPSAvailability() {
     return new Promise(async (resolve) => {
-      console.log('🔍 Verificando disponibilidad del GPS...');
-      
+      console.log('📍 Verificando disponibilidad del GPS...');
+
       // Primero verificar y solicitar permisos
       const permissionResult = await PermissionService.requestLocationPermission();
-      
+
       if (!permissionResult.success) {
         resolve({
           available: false,
@@ -97,56 +97,82 @@ class LocationFallbackService {
         });
         return;
       }
+
+      // Intentar obtener ubicación con reintentos
+      let attempts = 0;
+      const maxAttempts = 3;
       
-      // Si tenemos permisos, intentar obtener la ubicación
-      Geolocation.getCurrentPosition(
-        (position) => {
-          console.log('✅ GPS disponible y funcionando');
-          resolve({
-            available: true,
-            reason: 'success',
-            message: 'GPS disponible',
-            location: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy
+      const tryGetLocation = (useHighAccuracy, timeout, maxAge) => {
+        attempts++;
+        console.log(`📍 Intento ${attempts}/${maxAttempts} - HighAccuracy: ${useHighAccuracy}, Timeout: ${timeout}ms, MaxAge: ${maxAge}ms`);
+        
+        Geolocation.getCurrentPosition(
+          (position) => {
+            console.log('✅ GPS disponible y funcionando');
+            resolve({
+              available: true,
+              reason: 'success',
+              message: 'GPS disponible',
+              location: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy
+              }
+            });
+          },
+          (error) => {
+            console.log(`❌ Intento ${attempts} falló:`, error.message);
+            
+            // Si aún tenemos intentos, probar con diferentes configuraciones
+            if (attempts < maxAttempts) {
+              if (attempts === 1) {
+                // Segundo intento: usar ubicación en caché (últimos 60 segundos)
+                console.log('🔄 Reintentando con ubicación en caché...');
+                tryGetLocation(true, 15000, 60000);
+              } else if (attempts === 2) {
+                // Tercer intento: baja precisión, caché más antigua
+                console.log('🔄 Reintentando con baja precisión...');
+                tryGetLocation(false, 10000, 300000);
+              }
+            } else {
+              // Todos los intentos fallaron
+              let reason = 'unknown_error';
+              let message = 'Error desconocido';
+
+              switch (error.code) {
+                case 1:
+                  reason = 'permission_denied';
+                  message = 'Permisos de ubicación denegados';
+                  break;
+                case 2:
+                  reason = 'position_unavailable';
+                  message = 'Ubicación no disponible';
+                  break;
+                case 3:
+                  reason = 'timeout';
+                  message = 'Tiempo de espera agotado';
+                  break;
+              }
+
+              resolve({
+                available: false,
+                reason,
+                message,
+                location: null
+              });
             }
-          });
-        },
-        (error) => {
-          console.log('❌ Error al obtener ubicación GPS:', error.message);
-          let reason = 'unknown_error';
-          let message = 'Error desconocido';
-          
-          switch (error.code) {
-            case 1: // PERMISSION_DENIED
-              reason = 'permission_denied';
-              message = 'Permisos de ubicación denegados';
-              break;
-            case 2: // POSITION_UNAVAILABLE
-              reason = 'position_unavailable';
-              message = 'Ubicación no disponible';
-              break;
-            case 3: // TIMEOUT
-              reason = 'timeout';
-              message = 'Tiempo de espera agotado';
-              break;
+          },
+          {
+            enableHighAccuracy: useHighAccuracy,
+            timeout: timeout,
+            maximumAge: maxAge,
+            distanceFilter: 0
           }
-          
-          resolve({
-            available: false,
-            reason,
-            message,
-            location: null
-          });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 30000,           // ✅ 30 segundos (más tiempo para GPS)
-          maximumAge: 0,            // ✅ Siempre buscar posición fresca
-          distanceFilter: 0         // ✅ Cualquier cambio de ubicación
-        }
-      );
+        );
+      };
+      
+      // Primer intento: alta precisión, caché de 10 segundos
+      tryGetLocation(true, 20000, 10000);
     });
   }
 

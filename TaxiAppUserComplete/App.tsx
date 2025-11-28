@@ -691,7 +691,7 @@ const initializeLocationService = async () => {
       // 2. Intentar obtener ubicación con fallback automático
       const locationResult = await LocationFallbackService.getLocationForUser({
         showUserPrompt: false,
-        timeout: 8000
+        timeout: 20000
       });
       
       if (locationResult.success && locationResult.location) {
