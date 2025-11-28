@@ -181,11 +181,15 @@ const FavoriteAddressesScreen = ({ navigation }) => {
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Usar',
-          onPress: () => {
-            // Aquí se podría navegar de vuelta a la pantalla principal
-            // y establecer esta dirección como destino
+          onPress: async () => {
+            // Guardar dirección en AsyncStorage y volver
+            await AsyncStorage.setItem('pendingFavoriteAddress', JSON.stringify({
+              name: address.name,
+              address: address.address,
+              coordinates: address.coordinates,
+              type: 'favorite'
+            }));
             navigation.goBack();
-            // Podrías pasar la dirección seleccionada
           }
         }
       ]

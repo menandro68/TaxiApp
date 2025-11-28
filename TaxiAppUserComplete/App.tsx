@@ -69,7 +69,7 @@ import UserProfile from './src/screens/UserProfile';
 const { width: screenWidth } = Dimensions.get('window');
 const DRAWER_WIDTH = screenWidth * 0.75;
 
-const App = ({ navigation }) =>  {
+  const App = ({ navigation, route }) =>  {
   const [destination, setDestination] = useState('');
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [rideStatus, setRideStatus] = useState(TRIP_STATES.IDLE);
@@ -176,6 +176,49 @@ const App = ({ navigation }) =>  {
       DriverTrackingService.stopTracking();
     };
   }, []);
+
+
+// Recibir dirección favorita seleccionada desde AsyncStorage
+  useEffect(() => {
+    const checkPendingFavoriteAddress = async () => {
+      try {
+        const pendingAddress = await AsyncStorage.getItem('pendingFavoriteAddress');
+        if (pendingAddress) {
+          const favoriteAddress = JSON.parse(pendingAddress);
+          console.log('📍 Dirección favorita recibida:', favoriteAddress);
+          
+          // Limpiar inmediatamente para evitar duplicados
+          await AsyncStorage.removeItem('pendingFavoriteAddress');
+          
+          // Establecer como destino
+          setDestination(favoriteAddress.address);
+          setSelectedDestination({
+            name: favoriteAddress.name,
+            address: favoriteAddress.address,
+            location: favoriteAddress.coordinates ? {
+              latitude: favoriteAddress.coordinates.lat,
+              longitude: favoriteAddress.coordinates.lng
+            } : null
+          });
+          
+          // Calcular ruta si tenemos coordenadas
+          if (favoriteAddress.coordinates && userLocation) {
+            const destLocation = {
+              latitude: favoriteAddress.coordinates.lat,
+              longitude: favoriteAddress.coordinates.lng
+            };
+            calculateRouteAndPrice(userLocation, destLocation, selectedVehicleType);
+          }
+        }
+      } catch (error) {
+        console.error('Error leyendo dirección favorita:', error);
+      }
+    };
+    
+    // Verificar cuando la pantalla obtiene foco
+    const unsubscribe = navigation.addListener('focus', checkPendingFavoriteAddress);
+    return unsubscribe;
+  }, [navigation, userLocation, selectedVehicleType]);
 
   // Verificar si el usuario ya vio el onboarding
   useEffect(() => {
