@@ -348,13 +348,39 @@ import { getBackendUrl } from '../config/config.js';
 
   async getRouteEstimate(pickup, destination, vehicleType = 'standard') {
     try {
-      return await this.makeRequestWithRetry('/routes/estimate', 'POST', {
-        pickup,
+      return await this.makeRequestWithRetry('/pricing/calculate', 'POST', {
+        origin: pickup,
         destination,
-        vehicleType
+        vehicle_type: vehicleType
       }, true);
     } catch (error) {
       console.error('Error obteniendo estimación de ruta:', error);
+      throw error;
+    }
+  }
+
+  async calculateRoute(origin, destination, vehicleType = 'economy') {
+    try {
+      return await this.makeRequestWithRetry('/pricing/calculate', 'POST', {
+        origin,
+        destination,
+        vehicle_type: vehicleType
+      }, true);
+    } catch (error) {
+      console.error('Error calculando ruta:', error);
+      throw error;
+    }
+  }
+
+  async estimatePrice(origin, destination, vehicleType = 'economy') {
+    try {
+      return await this.makeRequestWithRetry('/pricing/calculate', 'POST', {
+        origin,
+        destination,
+        vehicle_type: vehicleType
+      }, true);
+    } catch (error) {
+      console.error('Error estimando precio:', error);
       throw error;
     }
   }
