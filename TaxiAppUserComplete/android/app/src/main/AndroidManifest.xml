@@ -25,6 +25,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q" />
 
+        <!-- API Key de Mapbox -->
+        <meta-data
+            android:name="com.mapbox.api_key"
+            android:value="pk_eyJ1Ijo1bWUyVySkdm8lOCI5sImE1Oj1jWl4lY2hl8lcwY29sZVU4Ndk2dm1lltI8m*ZFoGo8QA7Q5jPbGaOG8Q" />
+
         <!-- Servicio FCM -->
         <service
             android:name=".firebase.MyFirebaseMessagingService"

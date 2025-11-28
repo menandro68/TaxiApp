@@ -15,7 +15,24 @@ buildscript {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
-        classpath 'com.google.gms:google-services:4.3.15'  // ✅ Agregado correctamente
+        classpath 'com.google.gms:google-services:4.3.15'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = 'mapbox'
+                password = 'sk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlncWRtYTUwOTlxM2VvZnhlazlzM29qIn0.ckBq3i6hhNird-71V8yUZA'
+            }
+        }
     }
 }
 

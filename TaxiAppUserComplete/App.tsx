@@ -121,6 +121,7 @@ const App = ({ navigation }) =>  {
   const [mapPickerLocation, setMapPickerLocation] = useState(null);
   const [mapPickerAddress, setMapPickerAddress] = useState('');
   const [isGeocodingMapPicker, setIsGeocodingMapPicker] = useState(false);
+  const [mapPickerMode, setMapPickerMode] = useState('destination'); // 'origin' o 'destination'
   const [authForm, setAuthForm] = useState({
     email: '',
     password: '',
@@ -889,33 +890,6 @@ const initializeLocationService = async () => {
     }
   };
 
-  const reverseGeocodeMapLocation = async (latitude, longitude) => {
-  try {
-    setIsGeocodingMapPicker(true);
-    
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-    );
-    
-    if (!response.ok) throw new Error('Geocoding failed');
-    
-    const data = await response.json();
-    const address = data.address?.road 
-      ? `${data.address.road}, ${data.address.city || data.address.town || ''}`
-      : data.display_name;
-    
-    setMapPickerAddress(address);
-    setMapPickerLocation({ latitude, longitude, address });
-    
-    return address;
-  } catch (error) {
-    console.error('Error en reverse geocoding:', error);
-    setMapPickerAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-    setMapPickerLocation({ latitude, longitude });
-  } finally {
-    setIsGeocodingMapPicker(false);
-  }
-};
 
   // NUEVA FUNCIÓN: Reintentar obtener GPS
   const retryGPSLocation = async () => {
@@ -1652,6 +1626,142 @@ const searchForDriver = () => {
     Alert.alert('¡Viaje iniciado!', 'Disfruta tu viaje');
   } catch (error) {
     console.error('Error iniciando viaje:', error);
+  }
+};
+
+/**
+ * ✅ HANDLER ROBUSTO PARA MAP PICKER
+ */
+const handleMapPickerPress = async (event) => {
+  try {
+ const { latitude, longitude } = event;
+
+    console.log('🔍 DEBUG: handleMapPickerPress iniciado', {
+      latitude: latitude.toFixed(6),
+      longitude: longitude.toFixed(6),
+      timestamp: new Date().toISOString(),
+    });
+
+    if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+      console.error('❌ Coordenadas inválidas:', { latitude, longitude });
+      Alert.alert(
+        'Error',
+        'Las coordenadas no son válidas. Por favor intenta de nuevo.'
+      );
+      return;
+    }
+
+    const validation = LocationFallbackService.validateCoordinates(latitude, longitude);
+    
+    if (!validation.valid) {
+      console.error('❌ Coordenadas fuera de rango:', { latitude, longitude });
+      Alert.alert(
+        'Ubicación no válida',
+        validation.message || 'Las coordenadas están fuera de rango válido.'
+      );
+      return;
+    }
+
+    if (!validation.inDominicanRepublic) {
+      console.warn('⚠️ Ubicación fuera de República Dominicana:', { latitude, longitude });
+      Alert.alert(
+        'Fuera de servicio',
+        'TaxiApp actualmente solo opera en República Dominicana.\n\nPor favor selecciona una ubicación dentro del país.'
+      );
+      return;
+    }
+
+    console.log('✅ Coordenadas válidas. Actualizando estado...');
+    
+    setMapPickerLocation({
+      latitude,
+      longitude
+    });
+
+    console.log('🔄 Iniciando geocoding inverso...');
+    
+    try {
+      await Promise.race([
+        reverseGeocodeMapLocation(latitude, longitude),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Geocoding timeout (5s)')), 5000)
+        )
+      ]);
+      
+      console.log('✅ Geocoding completado exitosamente');
+      
+    } catch (geocodingError) {
+      console.warn('⚠️ Error en geocoding:', geocodingError.message);
+      setMapPickerAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Error CRÍTICO en handleMapPickerPress:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+    });
+    
+    Alert.alert(
+      'Error',
+      'No se pudo procesar la ubicación. Por favor intenta de nuevo.'
+    );
+  }
+};
+
+/**
+ * 📍 FUNCIÓN: Reverse Geocoding Mejorada
+ */
+const reverseGeocodeMapLocation = async (latitude, longitude) => {
+  try {
+    setIsGeocodingMapPicker(true);
+    
+    console.log('🌐 Iniciando reverse geocoding:', { latitude, longitude });
+    
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+      {
+        headers: {
+          'User-Agent': 'TaxiApp/1.0.0'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    console.log('✅ Respuesta de geocoding:', data.address);
+    
+    const address = data.address?.road 
+      ? `${data.address.road}, ${data.address.city || data.address.town || 'República Dominicana'}`
+      : data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    
+    setMapPickerAddress(address);
+    setMapPickerLocation({ latitude, longitude, address });
+    
+    console.log('✅ Dirección establecida:', address);
+    
+    return address;
+    
+  } catch (error) {
+    console.error('❌ Error en reverse geocoding:', {
+      message: error.message,
+      latitude,
+      longitude,
+      timestamp: new Date().toISOString(),
+    });
+    
+    const fallbackAddress = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+    setMapPickerAddress(fallbackAddress);
+    setMapPickerLocation({ latitude, longitude });
+    
+    return fallbackAddress;
+    
+  } finally {
+    setIsGeocodingMapPicker(false);
   }
 };
 
@@ -2540,18 +2650,21 @@ const renderLoadingScreen = () => {
           </View>
           
           <View style={styles.destinationContainer}>
-            <TouchableOpacity 
-              style={styles.destinationInput}
-             onPress={() => setShowLocationModal(true)}
-            >
-              <Text style={[
-                styles.destinationInputText,
-                !destination && styles.destinationInputPlaceholder
-              ]}>
-                {destination || "¿A dónde quieres ir?"}
-              </Text>
-              <Icon name="search" size={20} color="#999" />
-            </TouchableOpacity>
+<TouchableOpacity 
+  style={styles.destinationInput}
+  onPress={() => {
+    setMapPickerMode('destination');
+    setShowLocationModal(true);
+  }}
+>
+  <Text style={[
+    styles.destinationInputText,
+    !destination && styles.destinationInputPlaceholder
+  ]}>
+    {destination || "¿A dónde quieres ir?"}
+  </Text>
+  <Icon name="search" size={20} color="#999" />
+</TouchableOpacity>
             {/* Botón para viajes de terceros */}
             <TouchableOpacity 
               style={styles.thirdPartyButton}
@@ -3160,38 +3273,25 @@ const renderLoadingScreen = () => {
       </View>
 
       <View style={styles.mapPickerContainer}>
-        <MapComponent 
-          userLocation={mapPickerLocation || userLocation || { 
-            latitude: 18.4861, 
-            longitude: -69.9312 
-          }}
-          onMapPress={(location) => {
-            console.log('Ubicación seleccionada:', location);
-            setMapPickerLocation({
-              latitude: location.latitude,
-              longitude: location.longitude
-            });
-            reverseGeocodeMapLocation(location.latitude, location.longitude);
-          }}
-          interactive={true}
-        />
+        {/* MapComponent - CON INTERACTIVIDAD COMPLETA */}
+          <MapComponent 
+      userLocation={{
+        latitude: 18.4861,
+        longitude: -69.9312,
+        address: 'Santo Domingo, República Dominicana'
+      }}
+      interactive={true}
+      onMapPress={handleMapPickerPress}
+    />
         
-        <TouchableOpacity 
-          style={styles.mapPickerPin}
-          onPress={() => {
-            console.log('Pin tocado, confirmando ubicación:', mapPickerLocation);
-            if (mapPickerLocation) {
-              handleLocationSelected(mapPickerLocation);
-              setShowMapPicker(false);
-              setMapPickerLocation(null);
-              setMapPickerAddress('');
-            }
-          }}
-        >
-          <Text style={styles.mapPickerPinIcon}>📍</Text>
-        </TouchableOpacity>
+        {/* Pin visual en el centro */}
+      {/* Pin visual en el centro - NO BLOQUEA TAPS */}
+        <View style={styles.mapPickerPin} pointerEvents="none">
+        <Text style={styles.mapPickerPinIcon}>📍</Text>
+      </View>
       </View>
 
+      {/* Información y acciones */}
       <View style={styles.mapPickerInfo}>
         <View style={styles.mapPickerInfoContent}>
           <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
@@ -3217,6 +3317,7 @@ const renderLoadingScreen = () => {
         </View>
       </View>
 
+      {/* Botones de acción */}
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
           style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
@@ -3235,14 +3336,31 @@ const renderLoadingScreen = () => {
             styles.mapPickerConfirmButton,
             (!mapPickerLocation || isGeocodingMapPicker) && styles.mapPickerButtonDisabled
           ]}
-          onPress={() => {
-            if (mapPickerLocation) {
-              handleLocationSelected(mapPickerLocation);
-              setShowMapPicker(false);
-              setMapPickerLocation(null);
-              setMapPickerAddress('');
-            }
-          }}
+     onPress={() => {
+  if (mapPickerLocation) {
+    if (mapPickerMode === 'destination') {
+      // Guardar como DESTINO
+      setDestination(mapPickerAddress || `${mapPickerLocation.latitude.toFixed(4)}, ${mapPickerLocation.longitude.toFixed(4)}`);
+      setSelectedDestination({
+        name: mapPickerAddress,
+        location: {
+          latitude: mapPickerLocation.latitude,
+          longitude: mapPickerLocation.longitude,
+        }
+      });
+      // Calcular ruta y precio
+      if (userLocation) {
+        calculateRouteAndPrice(userLocation, mapPickerLocation, selectedVehicleType);
+      }
+    } else {
+      // Guardar como ORIGEN
+      handleLocationSelected(mapPickerLocation);
+    }
+    setShowMapPicker(false);
+    setMapPickerLocation(null);
+    setMapPickerAddress('');
+  }
+}}
           disabled={!mapPickerLocation || isGeocodingMapPicker}
         >
           {isGeocodingMapPicker ? (
@@ -3255,7 +3373,6 @@ const renderLoadingScreen = () => {
     </View>
   </Modal>
 )}
-
       </ErrorBoundary>
     );
   }
@@ -4388,6 +4505,15 @@ mapPickerInfoCoords: {
   color: '#999',
   fontFamily: 'monospace',
   marginTop: 4,
+},
+mapTapOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 999,
+  pointerEvents: 'auto',
 },
 loadingContainer: {
   flexDirection: 'row',
