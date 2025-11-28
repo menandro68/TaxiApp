@@ -112,6 +112,89 @@ router.put('/zones/:id', async (req, res) => {
     }
 });
 
+// ============================================
+// CALCULAR PRECIO DE VIAJE
+// ============================================
+router.post('/calculate', async (req, res) => {
+    try {
+        const { origin, destination, vehicle_type = 'economy' } = req.body;
+        
+        // Validar datos de entrada
+        if (!origin || !destination) {
+            return res.status(400).json({ 
+                error: 'Origen y destino son requeridos',
+                success: false 
+            });
+        }
+        
+        // Calcular distancia usando fórmula Haversine
+        const R = 6371; // Radio de la Tierra en km
+        const dLat = (destination.latitude - origin.latitude) * Math.PI / 180;
+        const dLon = (destination.longitude - origin.longitude) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(origin.latitude * Math.PI / 180) * Math.cos(destination.latitude * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distanceKm = R * c;
+        
+        // Estimar duración (promedio 25 km/h en ciudad)
+        const durationMinutes = Math.round((distanceKm / 25) * 60);
+        
+        // Tarifas base por tipo de vehículo (en RD$)
+        const VEHICLE_RATES = {
+            economy: { base: 80, perKm: 25, perMin: 3, minimum: 100 },
+            comfort: { base: 100, perKm: 35, perMin: 4, minimum: 150 },
+            premium: { base: 150, perKm: 50, perMin: 6, minimum: 250 },
+            xl: { base: 120, perKm: 40, perMin: 5, minimum: 200 },
+            moto: { base: 50, perKm: 15, perMin: 2, minimum: 60 }
+        };
+        
+        const rates = VEHICLE_RATES[vehicle_type] || VEHICLE_RATES.economy;
+        
+        // Calcular precio
+        let basePrice = rates.base;
+        let distancePrice = distanceKm * rates.perKm;
+        let timePrice = durationMinutes * rates.perMin;
+        let subtotal = basePrice + distancePrice + timePrice;
+        
+        // Aplicar tarifa mínima
+        let finalPrice = Math.max(subtotal, rates.minimum);
+        
+        // Redondear al múltiplo de 5 más cercano
+        finalPrice = Math.round(finalPrice / 5) * 5;
+        
+        res.json({
+            success: true,
+            distance: {
+                value: Math.round(distanceKm * 1000), // metros
+                text: `${distanceKm.toFixed(1)} km`
+            },
+            duration: {
+                value: durationMinutes * 60, // segundos
+                text: `${durationMinutes} min`
+            },
+            pricing: {
+                base_fare: rates.base,
+                distance_fare: Math.round(distancePrice),
+                time_fare: Math.round(timePrice),
+                subtotal: Math.round(subtotal),
+                final_price: finalPrice,
+                currency: 'RD$'
+            },
+            vehicle_type: vehicle_type,
+            estimated_price: finalPrice
+        });
+        
+    } catch (error) {
+        console.error('Error calculando precio:', error);
+        res.status(500).json({ 
+            error: 'Error al calcular precio',
+            success: false 
+        });
+    }
+});
+
 // Obtener historial de cambios
 router.get('/history', async (req, res) => {
     try {
