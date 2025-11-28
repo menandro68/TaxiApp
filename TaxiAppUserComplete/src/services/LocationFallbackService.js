@@ -128,11 +128,11 @@ class LocationFallbackService {
               if (attempts === 1) {
                 // Segundo intento: usar ubicación en caché (últimos 60 segundos)
                 console.log('🔄 Reintentando con ubicación en caché...');
-                tryGetLocation(true, 15000, 60000);
+                tryGetLocation(true, 3000, 60000);
               } else if (attempts === 2) {
                 // Tercer intento: baja precisión, caché más antigua
                 console.log('🔄 Reintentando con baja precisión...');
-                tryGetLocation(false, 10000, 300000);
+                tryGetLocation(false, 2000, 300000);
               }
             } else {
               // Todos los intentos fallaron
@@ -172,7 +172,7 @@ class LocationFallbackService {
       };
       
       // Primer intento: alta precisión, caché de 10 segundos
-      tryGetLocation(true, 20000, 10000);
+      tryGetLocation(true, 5000, 10000);
     });
   }
 

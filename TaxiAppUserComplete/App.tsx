@@ -369,12 +369,20 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   };
 
 const initializeApp = async () => {
-try {
-  console.log('Inicializando TaxiApp Usuario...');
-  setIsLoading(true);
-  
-  // 1. SIEMPRE inicializar ubicación primero
-  await initializeLocationService();
+  try {
+    console.log('Inicializando TaxiApp Usuario...');
+    setIsLoading(true);
+
+    // 1. Establecer ubicación por defecto INMEDIATAMENTE
+    setUserLocation({
+      latitude: 18.4861,
+      longitude: -69.9312,
+      address: 'Santo Domingo Este, República Dominicana',
+      source: 'default'
+    });
+
+    // 2. Obtener GPS en segundo plano (no bloquea)
+    initializeLocationService();
   
   // 2. Verificar si el usuario está autenticado
   const authToken = await SharedStorage.getAuthToken();
