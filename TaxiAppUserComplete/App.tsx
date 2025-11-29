@@ -121,6 +121,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [mapPickerLocation, setMapPickerLocation] = useState(null);
   const [mapPickerAddress, setMapPickerAddress] = useState('');
   const [isGeocodingMapPicker, setIsGeocodingMapPicker] = useState(false);
+  const [activeMultiDestinationStopId, setActiveMultiDestinationStopId] = useState(null);
   const [mapPickerMode, setMapPickerMode] = useState('destination'); // 'origin' o 'destination'
   const [authForm, setAuthForm] = useState({
     email: '',
@@ -3190,31 +3191,27 @@ const renderLoadingScreen = () => {
     {renderDrawerMenu()}
 
     {/* MODAL DE MÚLTIPLES DESTINOS */}
-        <MultipleDestinationsModal
-          visible={showAddDestinationModal}
-          onClose={() => setShowAddDestinationModal(false)}
-          currentDestination={destination}
-          userLocation={userLocation}
-          vehicleType={selectedVehicleType}
-          onConfirm={(destinationsData) => {
-            // Actualizar destino principal - asegurarse de que sea string
-            setDestination(destinationsData.main || currentDestination || '');
-            
-            // Guardar destinos adicionales
-            setAdditionalDestinations(destinationsData.additional);
-            
-            // Actualizar precio estimado
-            setEstimatedPrice(destinationsData.estimatedPrice);
-            
-            // Cerrar modal
-            setShowAddDestinationModal(false);
-            
-            console.log('Destinos confirmados:', destinationsData);
-          }}
-          onPriceUpdate={(newPrice, totalStops) => {
-            console.log(`Precio actualizado: RD${newPrice} para ${totalStops} paradas`);
-          }}
-        />
+ <MultipleDestinationsModal
+  visible={showAddDestinationModal}
+  onClose={() => setShowAddDestinationModal(false)}
+  currentDestination={destination}
+  userLocation={userLocation}
+  vehicleType={selectedVehicleType}
+  onConfirm={(destinationsData) => {
+    setDestination(destinationsData.main || currentDestination || '');
+    setAdditionalDestinations(destinationsData.additional);
+    setEstimatedPrice(destinationsData.estimatedPrice);
+    setShowAddDestinationModal(false);
+    console.log('Destinos confirmados:', destinationsData);
+  }}
+  onSelectLocation={(stopId) => {
+    // Guardar el stopId para saber cuál destino estamos editando
+    setActiveMultiDestinationStopId(stopId);
+    // Abrir el modal de selección de ubicación
+    setShowLocationModal(true);
+  }}
+/>
+
       </View>
       
       {/* Modal de recuperación de contraseña */}
