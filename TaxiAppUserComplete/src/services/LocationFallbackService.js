@@ -98,81 +98,58 @@ class LocationFallbackService {
         return;
       }
 
-      // Intentar obtener ubicación con reintentos
-      let attempts = 0;
-      const maxAttempts = 3;
+      // Obtener ubicación con caché agresivo (máximo 2-3 segundos)
+      console.log('📍 Obteniendo ubicación con caché agresivo...');
       
-      const tryGetLocation = (useHighAccuracy, timeout, maxAge) => {
-        attempts++;
-        console.log(`📍 Intento ${attempts}/${maxAttempts} - HighAccuracy: ${useHighAccuracy}, Timeout: ${timeout}ms, MaxAge: ${maxAge}ms`);
-        
-        Geolocation.getCurrentPosition(
-          (position) => {
-            console.log('✅ GPS disponible y funcionando');
-            resolve({
-              available: true,
-              reason: 'success',
-              message: 'GPS disponible',
-              location: {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy
-              }
-            });
-          },
-          (error) => {
-            console.log(`❌ Intento ${attempts} falló:`, error.message);
-            
-            // Si aún tenemos intentos, probar con diferentes configuraciones
-            if (attempts < maxAttempts) {
-              if (attempts === 1) {
-                // Segundo intento: usar ubicación en caché (últimos 60 segundos)
-                console.log('🔄 Reintentando con ubicación en caché...');
-                tryGetLocation(true, 3000, 60000);
-              } else if (attempts === 2) {
-                // Tercer intento: baja precisión, caché más antigua
-                console.log('🔄 Reintentando con baja precisión...');
-                tryGetLocation(false, 2000, 300000);
-              }
-            } else {
-              // Todos los intentos fallaron
-              let reason = 'unknown_error';
-              let message = 'Error desconocido';
-
-              switch (error.code) {
-                case 1:
-                  reason = 'permission_denied';
-                  message = 'Permisos de ubicación denegados';
-                  break;
-                case 2:
-                  reason = 'position_unavailable';
-                  message = 'Ubicación no disponible';
-                  break;
-                case 3:
-                  reason = 'timeout';
-                  message = 'Tiempo de espera agotado';
-                  break;
-              }
-
-              resolve({
-                available: false,
-                reason,
-                message,
-                location: null
-              });
+      Geolocation.getCurrentPosition(
+        (position) => {
+          console.log('✅ GPS disponible y funcionando');
+          resolve({
+            available: true,
+            reason: 'success',
+            message: 'GPS disponible',
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
             }
-          },
-          {
-            enableHighAccuracy: useHighAccuracy,
-            timeout: timeout,
-            maximumAge: maxAge,
-            distanceFilter: 0
+          });
+        },
+        (error) => {
+          console.log('❌ GPS falló:', error.message);
+          
+          let reason = 'unknown_error';
+          let message = 'Error desconocido';
+
+          switch (error.code) {
+            case 1:
+              reason = 'permission_denied';
+              message = 'Permisos de ubicación denegados';
+              break;
+            case 2:
+              reason = 'position_unavailable';
+              message = 'Ubicación no disponible';
+              break;
+            case 3:
+              reason = 'timeout';
+              message = 'Tiempo de espera agotado';
+              break;
           }
-        );
-      };
-      
-      // Primer intento: alta precisión, caché de 10 segundos
-      tryGetLocation(true, 5000, 10000);
+
+          resolve({
+            available: false,
+            reason,
+            message,
+            location: null
+          });
+        },
+        {
+          enableHighAccuracy: false,  // Baja precisión = más rápido
+          timeout: 2000,              // 2 segundos máximo
+          maximumAge: 600000,         // Usar caché de hasta 10 minutos
+          distanceFilter: 0
+        }
+      );
     });
   }
 
