@@ -148,6 +148,61 @@ app.get('/run-migration-location', async (req, res) => {
     }
 });
 
+// TEMPORAL: Probar notificación FCM
+app.get('/test-fcm/:driverId', async (req, res) => {
+    try {
+        const { driverId } = req.params;
+        
+        // Obtener token FCM del conductor
+        const result = await db.query(
+            'SELECT id, name, fcm_token FROM drivers WHERE id = $1',
+            [driverId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        const driver = result.rows[0];
+        
+        if (!driver.fcm_token) {
+            return res.status(400).json({ error: 'Conductor sin token FCM' });
+        }
+        
+        console.log('📱 Enviando notificación de prueba a:', driver.name);
+        console.log('🔑 Token:', driver.fcm_token.substring(0, 30) + '...');
+        
+        const message = {
+            notification: {
+                title: '🧪 Prueba de Notificación',
+                body: `Hola ${driver.name}, esta es una prueba del sistema FCM`
+            },
+            data: {
+                type: 'TEST',
+                timestamp: new Date().toISOString()
+            },
+            token: driver.fcm_token
+        };
+        
+        const response = await admin.messaging().send(message);
+        console.log('✅ Notificación enviada, ID:', response);
+        
+        res.json({
+            success: true,
+            message: 'Notificación enviada correctamente',
+            messageId: response,
+            driver: driver.name
+        });
+    } catch (error) {
+        console.error('❌ Error enviando FCM:', error);
+        res.status(500).json({ 
+            error: 'Error enviando notificación',
+            details: error.message,
+            code: error.code
+        });
+    }
+});
+
 // ==========================================
 // MANEJO DE ERRORES 404
 // ==========================================
