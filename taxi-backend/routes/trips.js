@@ -15,7 +15,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// CREAR NUEVO VIAJE CON ASIGNACIÓN AUTOMÁTICA
+// CREAR NUEVO VIAJE - SIN ASIGNACIÓN AUTOMÁTICA
 router.post('/create', async (req, res) => {
     try {
         const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords } = req.body;
@@ -44,6 +44,7 @@ router.post('/create', async (req, res) => {
             });
         }
 
+        // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
         const tripResult = await db.query(
             `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at)
              VALUES ($1, $2, $3, $4, $5, NOW())
@@ -52,140 +53,305 @@ router.post('/create', async (req, res) => {
         );
 
         const tripId = tripResult.rows[0].id;
-        console.log(`✅ Viaje ${tripId} creado, buscando conductor...`);
+        console.log(`✅ Viaje ${tripId} creado en estado PENDING`);
 
-        try {
-            // BUSCAR CONDUCTORES DISPONIBLES
-            const driversResult = await db.query(
-                `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, 
-                        current_latitude, current_longitude, fcm_token
-                 FROM drivers 
-                 WHERE status IN ('available', 'online')`
-            );
+        // OBTENER INFO DEL USUARIO
+        const userResult = await db.query(
+            `SELECT name, phone FROM users WHERE id = $1`,
+            [userIdParsed]
+        );
+        const user = userResult.rows[0] || {};
 
-            const availableDrivers = driversResult.rows || [];
-            console.log(`📍 Conductores disponibles: ${availableDrivers.length}`);
+        // BUSCAR CONDUCTORES DISPONIBLES
+        const driversResult = await db.query(
+            `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, 
+                    current_latitude, current_longitude, fcm_token
+             FROM drivers 
+             WHERE status IN ('available', 'online')`
+        );
 
-            if (availableDrivers.length === 0) {
-                console.log('⚠️ No hay conductores disponibles');
-                return res.json({
-                    success: true,
-                    tripId: tripId,
-                    message: 'Viaje creado, pero no hay conductores disponibles',
-                    driverFound: false
-                });
-            }
+        const availableDrivers = driversResult.rows || [];
+        console.log(`📍 Conductores disponibles: ${availableDrivers.length}`);
 
-            // CALCULAR DISTANCIAS
-            const driversWithDistance = availableDrivers
-                .filter(d => d.current_latitude && d.current_longitude)
-                .map(driver => ({
-                    ...driver,
-                    distance: calculateDistance(
-                        pickup_coords.latitude,
-                        pickup_coords.longitude,
-                        driver.current_latitude,
-                        driver.current_longitude
-                    )
-                }))
-                .sort((a, b) => a.distance - b.distance);
-
-            console.log(`🔍 Conductores con distancia calculada: ${driversWithDistance.length}`);
-
-            if (driversWithDistance.length === 0) {
-                console.log('⚠️ Ningún conductor tiene ubicación registrada');
-                return res.json({
-                    success: true,
-                    tripId: tripId,
-                    message: 'Viaje creado, buscando conductor...',
-                    driverFound: false
-                });
-            }
-
-            const nearestDriver = driversWithDistance[0];
-            console.log(`✅ Conductor más cercano: ${nearestDriver.name} (${nearestDriver.distance.toFixed(2)} km)`);
-
-            // ASIGNAR CONDUCTOR
-            await db.query(
-                `UPDATE trips SET driver_id = $1, status = $2 WHERE id = $3`,
-                [nearestDriver.id, 'assigned', tripId]
-            );
-
-            // OBTENER INFO DEL USUARIO
-            const userResult = await db.query(
-                `SELECT name, phone FROM users WHERE id = $1`,
-                [userIdParsed]
-            );
-
-            const user = userResult.rows[0] || {};
-
-            // ENVIAR NOTIFICACIÓN FCM AL CONDUCTOR ASIGNADO
-            if (nearestDriver.fcm_token) {
-                const message = {
-                    notification: {
-                        title: '🚗 Nuevo Viaje Asignado',
-                        body: `Pasajero: ${user.name || 'Usuario'}\nDistancia: ${nearestDriver.distance.toFixed(1)} km`
-                    },
-                    data: {
-                        tripId: tripId.toString(),
-                        user: user.name || 'Usuario',
-                        phone: user.phone || '',
-                        pickup: pickup_location,
-                        destination: destination,
-                        distance: nearestDriver.distance.toFixed(2),
-                        type: 'TRIP_ASSIGNED'
-                    },
-                    token: nearestDriver.fcm_token
-                };
-
-                try {
-                    const admin = require('firebase-admin');
-                    await admin.messaging().send(message);
-                    console.log(`✅ Notificación enviada a ${nearestDriver.name}`);
-                } catch (error) {
-                    console.error('❌ Error enviando notificación FCM:', error);
-                }
-            }
-
-            res.json({
+        if (availableDrivers.length === 0) {
+            return res.json({
                 success: true,
                 tripId: tripId,
-                message: 'Conductor asignado exitosamente',
-                driverFound: true,
-                driver: {
-                    id: nearestDriver.id,
-                    name: nearestDriver.name,
-                    phone: nearestDriver.phone,
-                    vehicle: {
-                        model: nearestDriver.vehicle_model,
-                        plate: nearestDriver.vehicle_plate
-                    },
-                    rating: nearestDriver.rating,
-                    distance: nearestDriver.distance.toFixed(2),
-                    location: {
-                        latitude: nearestDriver.current_latitude,
-                        longitude: nearestDriver.current_longitude
-                    },
-                    eta: Math.ceil(nearestDriver.distance * 3)
-                }
-            });
-
-        } catch (error) {
-            console.error('❌ Error asignando conductor:', error);
-            res.json({
-                success: true,
-                tripId: tripId,
-                message: 'Viaje creado, error buscando conductor',
+                message: 'Viaje creado, buscando conductores...',
                 driverFound: false
             });
         }
+
+        // CALCULAR DISTANCIAS Y ORDENAR POR CERCANÍA
+        const driversWithDistance = availableDrivers
+            .filter(d => d.current_latitude && d.current_longitude)
+            .map(driver => ({
+                ...driver,
+                distance: calculateDistance(
+                    pickup_coords.latitude,
+                    pickup_coords.longitude,
+                    driver.current_latitude,
+                    driver.current_longitude
+                )
+            }))
+            .sort((a, b) => a.distance - b.distance);
+
+        if (driversWithDistance.length === 0) {
+            return res.json({
+                success: true,
+                tripId: tripId,
+                message: 'Viaje creado, esperando conductores con ubicación...',
+                driverFound: false
+            });
+        }
+
+        // ENVIAR NOTIFICACIÓN "NUEVO SERVICIO" AL CONDUCTOR MÁS CERCANO
+        const nearestDriver = driversWithDistance[0];
+        console.log(`📱 Enviando solicitud a: ${nearestDriver.name} (${nearestDriver.distance.toFixed(2)} km)`);
+
+        if (nearestDriver.fcm_token) {
+            const message = {
+                notification: {
+                    title: '🚕 Nuevo Servicio Disponible',
+                    body: `Pasajero: ${user.name || 'Usuario'} - ${nearestDriver.distance.toFixed(1)} km de ti`
+                },
+                data: {
+                    tripId: tripId.toString(),
+                    type: 'NEW_TRIP_REQUEST',
+                    user: user.name || 'Usuario',
+                    phone: user.phone || '',
+                    pickup: pickup_location,
+                    destination: destination,
+                    distance: nearestDriver.distance.toFixed(2),
+                    estimatedPrice: (estimated_price || 0).toString(),
+                    paymentMethod: payment_method || 'Efectivo',
+                    vehicleType: vehicle_type || 'Estándar'
+                },
+                token: nearestDriver.fcm_token
+            };
+
+            try {
+                const admin = require('firebase-admin');
+                await admin.messaging().send(message);
+                console.log(`✅ Solicitud enviada a ${nearestDriver.name}`);
+                
+                // Guardar qué conductor recibió la solicitud
+                await db.query(
+                    `UPDATE trips SET pending_driver_id = $1 WHERE id = $2`,
+                    [nearestDriver.id, tripId]
+                );
+            } catch (error) {
+                console.error('❌ Error enviando notificación FCM:', error);
+            }
+        }
+
+        res.json({
+            success: true,
+            tripId: tripId,
+            message: 'Viaje creado, esperando respuesta del conductor',
+            status: 'pending',
+            notifiedDriver: {
+                id: nearestDriver.id,
+                name: nearestDriver.name,
+                distance: nearestDriver.distance.toFixed(2)
+            }
+        });
+
     } catch (error) {
         console.error('❌ Error creando viaje:', error);
         res.status(500).json({ error: 'Error al crear viaje', success: false });
     }
 });
 
-// ASIGNAR CONDUCTOR A VIAJE
+// CONDUCTOR ACEPTA EL VIAJE
+router.post('/accept/:tripId', async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const { driver_id } = req.body;
+
+        if (!driver_id) {
+            return res.status(400).json({ error: 'driver_id requerido' });
+        }
+
+        // Verificar que el viaje existe y está pendiente
+        const tripCheck = await db.query(
+            `SELECT * FROM trips WHERE id = $1 AND status = 'pending'`,
+            [tripId]
+        );
+
+        if (tripCheck.rows.length === 0) {
+            return res.status(400).json({ 
+                error: 'Viaje no disponible o ya fue tomado',
+                success: false 
+            });
+        }
+
+        // Asignar conductor y cambiar estado a "assigned"
+        const result = await db.query(
+            `UPDATE trips SET driver_id = $1, status = 'assigned' WHERE id = $2 RETURNING *`,
+            [driver_id, tripId]
+        );
+
+        // Obtener info del conductor
+        const driverResult = await db.query(
+            `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, current_latitude, current_longitude
+             FROM drivers WHERE id = $1`,
+            [driver_id]
+        );
+        const driver = driverResult.rows[0];
+
+        // Obtener info del usuario para notificarle
+        const trip = result.rows[0];
+        const userResult = await db.query(
+            `SELECT fcm_token, name FROM users WHERE id = $1`,
+            [trip.user_id]
+        );
+        const user = userResult.rows[0];
+
+        // Notificar al usuario que un conductor aceptó
+        if (user && user.fcm_token) {
+            const admin = require('firebase-admin');
+            await admin.messaging().send({
+                notification: {
+                    title: '🚗 Conductor Asignado',
+                    body: `${driver.name} va en camino - ${driver.vehicle_model}`
+                },
+                data: {
+                    type: 'DRIVER_ASSIGNED',
+                    tripId: tripId.toString(),
+                    driverName: driver.name,
+                    driverPhone: driver.phone || '',
+                    vehicleModel: driver.vehicle_model || '',
+                    vehiclePlate: driver.vehicle_plate || ''
+                },
+                token: user.fcm_token
+            });
+            console.log(`✅ Usuario ${user.name} notificado del conductor asignado`);
+        }
+
+        // Actualizar estado del conductor a "busy"
+        await db.query(
+            `UPDATE drivers SET status = 'busy' WHERE id = $1`,
+            [driver_id]
+        );
+
+        console.log(`✅ Viaje ${tripId} aceptado por conductor ${driver.name}`);
+
+        res.json({
+            success: true,
+            message: 'Viaje aceptado exitosamente',
+            trip: result.rows[0],
+            driver: {
+                id: driver.id,
+                name: driver.name,
+                phone: driver.phone,
+                vehicle: {
+                    model: driver.vehicle_model,
+                    plate: driver.vehicle_plate
+                },
+                rating: driver.rating,
+                location: {
+                    latitude: driver.current_latitude,
+                    longitude: driver.current_longitude
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error aceptando viaje:', error);
+        res.status(500).json({ error: 'Error al aceptar viaje', success: false });
+    }
+});
+
+// CONDUCTOR RECHAZA EL VIAJE
+router.post('/reject/:tripId', async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const { driver_id } = req.body;
+
+        console.log(`❌ Conductor ${driver_id} rechazó viaje ${tripId}`);
+
+        // Obtener el viaje
+        const tripResult = await db.query(
+            `SELECT * FROM trips WHERE id = $1`,
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Viaje no encontrado' });
+        }
+
+        const trip = tripResult.rows[0];
+
+        // Buscar el siguiente conductor disponible
+        const driversResult = await db.query(
+            `SELECT id, name, fcm_token, current_latitude, current_longitude
+             FROM drivers 
+             WHERE status IN ('available', 'online')
+             AND id != $1
+             AND current_latitude IS NOT NULL`,
+            [driver_id]
+        );
+
+        if (driversResult.rows.length > 0) {
+            // Enviar al siguiente conductor
+            const nextDriver = driversResult.rows[0];
+            
+            // Obtener info del usuario
+            const userResult = await db.query(
+                `SELECT name, phone FROM users WHERE id = $1`,
+                [trip.user_id]
+            );
+            const user = userResult.rows[0] || {};
+
+            if (nextDriver.fcm_token) {
+                const admin = require('firebase-admin');
+                await admin.messaging().send({
+                    notification: {
+                        title: '🚕 Nuevo Servicio Disponible',
+                        body: `Pasajero: ${user.name || 'Usuario'}`
+                    },
+                    data: {
+                        tripId: tripId.toString(),
+                        type: 'NEW_TRIP_REQUEST',
+                        user: user.name || 'Usuario',
+                        phone: user.phone || '',
+                        pickup: trip.pickup_location,
+                        destination: trip.destination,
+                        estimatedPrice: (trip.price || 0).toString()
+                    },
+                    token: nextDriver.fcm_token
+                });
+                
+                // Actualizar pending_driver_id
+                await db.query(
+                    `UPDATE trips SET pending_driver_id = $1 WHERE id = $2`,
+                    [nextDriver.id, tripId]
+                );
+                
+                console.log(`📱 Solicitud reenviada a: ${nextDriver.name}`);
+            }
+
+            res.json({
+                success: true,
+                message: 'Viaje rechazado, buscando otro conductor',
+                nextDriver: nextDriver.name
+            });
+        } else {
+            // No hay más conductores disponibles
+            res.json({
+                success: true,
+                message: 'Viaje rechazado, no hay más conductores disponibles'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Error rechazando viaje:', error);
+        res.status(500).json({ error: 'Error al rechazar viaje', success: false });
+    }
+});
+
+// ASIGNAR CONDUCTOR A VIAJE (legado)
 router.put('/assign/:tripId', async (req, res) => {
     try {
         const { tripId } = req.params;

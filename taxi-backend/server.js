@@ -148,6 +148,17 @@ app.get('/run-migration-location', async (req, res) => {
     }
 });
 
+// TEMPORAL: Ejecutar migración pending_driver_id
+app.get('/run-migration-pending', async (req, res) => {
+    try {
+        const migration = require('./migrations/add_pending_driver_column');
+        const result = await migration.up();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // TEMPORAL: Probar notificación FCM
 app.get('/test-fcm/:driverId', async (req, res) => {
     try {
