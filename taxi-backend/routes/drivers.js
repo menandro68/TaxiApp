@@ -224,4 +224,40 @@ router.post('/fcm-token', async (req, res) => {
     }
 });
 
+// ==========================================
+// ACTUALIZAR UBICACIÓN DEL CONDUCTOR
+// ==========================================
+router.post('/location', async (req, res) => {
+    try {
+        const { driverId, latitude, longitude, heading, speed, accuracy, status } = req.body;
+        
+        if (!driverId || !latitude || !longitude) {
+            return res.status(400).json({ error: 'driverId, latitude y longitude son requeridos' });
+        }
+        
+        console.log(`📍 Actualizando ubicación conductor ${driverId}: ${latitude}, ${longitude}`);
+        
+        const result = await db.query(
+            `UPDATE drivers 
+             SET current_latitude = $1, current_longitude = $2, status = COALESCE($3, status)
+             WHERE id = $4 
+             RETURNING id, name, current_latitude, current_longitude`,
+            [latitude, longitude, status, driverId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Ubicación actualizada',
+            driver: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Error actualizando ubicación:', error);
+        res.status(500).json({ error: 'Error actualizando ubicación' });
+    }
+});
+
 module.exports = router;
