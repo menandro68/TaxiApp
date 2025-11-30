@@ -132,14 +132,19 @@ export default function DriverApp({ navigation }) {
       setIsOffline(!isOnline);
     });
     
-    // Configurar función global para manejar solicitudes de viaje
+  // Configurar función global para manejar solicitudes de viaje
     global.handleNewTripRequest = (tripData) => {
       console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
       setPendingRequest(tripData);
       setShowRequestModal(true);
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
+      
+      // 🔊 NUEVO: Reproducir voz "Nuevo Servicio"
+      const Speech = require('react-native-tts').default;
+      Speech.setDefaultLanguage('es-ES');
+      Speech.setDefaultRate(0.5);
+      Speech.speak('Nuevo Servicio');
     };
-
     // Solicitar permisos de ubicación
     requestLocationPermissions();
     
