@@ -252,7 +252,7 @@ export default function DriverApp({ navigation }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          driverId: 8, // ID de Menandro Matos
+          driverId: 1, // ID de Menandro Matos
           latitude: location.latitude,
           longitude: location.longitude,
           heading: 0,
@@ -352,7 +352,7 @@ const toggleDriverStatus = async () => {
       
       if (response.ok) {
         setDriverStatus('online');
-        await fcmService.sendTokenToServer('8');
+        await fcmService.sendTokenToServer('1');
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
@@ -405,46 +405,32 @@ const toggleDriverStatus = async () => {
     }
     
     try {
-      // Datos del conductor
-      const driverInfo = {
-        id: 'driver_001',
-        name: 'Carlos Mendoza',
-        car: 'Honda Civic - XYZ789',
-        rating: 4.7,
-        eta: '4 min',
-        phone: '+1-809-555-0123'
-      };
+      // NUEVO: Llamar al endpoint del backend para aceptar el viaje
+      const tripId = pendingRequest.id;
+      const driverId = 1; // ID de Menandro Matos
       
-      // Si estamos offline, guardar la acción para sincronizar después
-      if (isOffline) {
-        await OfflineService.saveOfflineAction({
-          type: 'ACCEPT_TRIP',
-          data: {
-            tripId: pendingRequest.id || Date.now().toString(),
-            driverInfo,
-            pendingRequest,
-            timestamp: new Date().toISOString()
-          }
-        });
-        
-        // Agregar a cola de sincronización inteligente con prioridad CRÍTICA
-        SmartSyncService.addToSyncQueue({
-          type: 'ACCEPT_TRIP',
-          tripId: pendingRequest.id || Date.now().toString(),
-          driverInfo,
-          pendingRequest,
-          timestamp: new Date().toISOString()
-        }, SmartSyncService.syncPriorities.CRITICAL);
-        
-        Alert.alert(
-          '📡 Viaje Aceptado Offline',
-          'El viaje se sincronizará cuando recuperes conexión',
-          [{ text: 'OK' }]
-        );
-      } else {
-        // Asignar conductor normalmente si hay conexión
-        await SharedStorage.assignDriver(driverInfo);
+      console.log(`✅ Aceptando viaje ${tripId}...`);
+      
+      const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/accept/${tripId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          driver_id: driverId
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        Alert.alert('Error', data.error || 'No se pudo aceptar el viaje. Puede que ya fue tomado.');
+        setShowRequestModal(false);
+        setPendingRequest(null);
+        return;
       }
+
+      console.log('✅ Viaje aceptado en el servidor:', data);
       
       // NUEVO: Actualizar estadísticas al aceptar
       setDriverStats(prev => {
@@ -467,10 +453,9 @@ const toggleDriverStatus = async () => {
       
       setCurrentTrip({
         ...pendingRequest,
-        phone: pendingRequest.phone || '+1-809-555-0199'  // Asegurar que siempre hay teléfono
+        phone: pendingRequest.phone || '+1-809-555-0199'
       });
       
-      // ============= NUEVA SECCIÓN: CONFIGURACIÓN DE PARADAS =============
       // Configurar las paradas del viaje
       const stops = {
         pickup: {
@@ -485,66 +470,87 @@ const toggleDriverStatus = async () => {
       };
       setTripStops(stops);
       setCurrentStopIndex(0);
-      // ============= FIN DE NUEVA SECCIÓN =============
       
       setDriverStatus('busy');
       setShowRequestModal(false);
       setPendingRequest(null);
-      setTripPhase(''); // AGREGADO: Resetear fase al aceptar
-      
-      const message = isOffline 
-        ? `📡 OFFLINE - Viaje aceptado: ${pendingRequest.user}`
-        : `¡Viaje Aceptado! Te diriges hacia ${pendingRequest.user}`;
+      setTripPhase('');
       
       // Cambiar automáticamente a la pestaña del mapa
       setActiveTab('map');
       
-      Alert.alert('Viaje Aceptado', message);
+      Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${pendingRequest.user}`);
       
     } catch (error) {
       console.error('❌ Error aceptando viaje:', error);
-      Alert.alert('Error', 'No se pudo aceptar el viaje');
+      Alert.alert('Error', 'No se pudo conectar con el servidor');
     }
   };
 
-  const rejectTrip = () => {
+  const rejectTrip = async () => {
     // Detener el timer cuando se rechaza el viaje
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
     
-    // NUEVO: Actualizar estadísticas al rechazar
-    setDriverStats(prev => {
-      const newRejected = prev.tripsRejected + 1;
-      const newAcceptanceRate = prev.tripsOffered > 0 
-        ? Math.round((prev.tripsAccepted / prev.tripsOffered) * 100)
-        : 0;
-      const newCancellationRate = prev.tripsOffered > 0
-        ? Math.round((newRejected / prev.tripsOffered) * 100)
-        : 0;
+    try {
+      // NUEVO: Llamar al endpoint del backend para rechazar el viaje
+      const tripId = pendingRequest?.id;
+      const driverId = 1; // ID de Menandro Matos
       
-      return {
-        ...prev,
-        tripsRejected: newRejected,
-        acceptanceRate: newAcceptanceRate,
-        cancellationRate: newCancellationRate
+      if (tripId) {
+        console.log(`❌ Rechazando viaje ${tripId}...`);
+        
+        const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/reject/${tripId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            driver_id: driverId
+          })
+        });
+
+        const data = await response.json();
+        console.log('📋 Respuesta de rechazo:', data);
+      }
+      
+      // NUEVO: Actualizar estadísticas al rechazar
+      setDriverStats(prev => {
+        const newRejected = prev.tripsRejected + 1;
+        const newAcceptanceRate = prev.tripsOffered > 0 
+          ? Math.round((prev.tripsAccepted / prev.tripsOffered) * 100)
+          : 0;
+        const newCancellationRate = prev.tripsOffered > 0
+          ? Math.round((newRejected / prev.tripsOffered) * 100)
+          : 0;
+        
+        return {
+          ...prev,
+          tripsRejected: newRejected,
+          acceptanceRate: newAcceptanceRate,
+          cancellationRate: newCancellationRate
+        };
+      });
+      
+      // Verificar si se deben aplicar penalizaciones
+      const updatedStats = {
+        ...driverStats,
+        tripsRejected: driverStats.tripsRejected + 1,
+        acceptanceRate: driverStats.tripsOffered > 0 
+          ? Math.round((driverStats.tripsAccepted / driverStats.tripsOffered) * 100)
+          : 0,
+        cancellationRate: driverStats.tripsOffered > 0
+          ? Math.round(((driverStats.tripsRejected + 1) / driverStats.tripsOffered) * 100)
+          : 0,
+        rating: 4.8
       };
-    });
-    
-    // Verificar si se deben aplicar penalizaciones
-    const updatedStats = {
-      ...driverStats,
-      tripsRejected: driverStats.tripsRejected + 1,
-      acceptanceRate: driverStats.tripsOffered > 0 
-        ? Math.round((driverStats.tripsAccepted / driverStats.tripsOffered) * 100)
-        : 0,
-      cancellationRate: driverStats.tripsOffered > 0
-        ? Math.round(((driverStats.tripsRejected + 1) / driverStats.tripsOffered) * 100)
-        : 0,
-      rating: 4.8 // Aquí podrías obtener el rating real del conductor
-    };
-    
-    PenaltyService.checkAndApplyPenalties(updatedStats);
+      
+      PenaltyService.checkAndApplyPenalties(updatedStats);
+      
+    } catch (error) {
+      console.error('❌ Error rechazando viaje:', error);
+    }
     
     setShowRequestModal(false);
     setPendingRequest(null);

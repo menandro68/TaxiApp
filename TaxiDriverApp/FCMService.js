@@ -95,9 +95,17 @@ class FCMService {
   handleForegroundMessage(remoteMessage) {
     const { notification, data } = remoteMessage;
     
-    if (data && data.type === 'trip_request') {
-      // Es una solicitud de viaje
-      console.log('🚗 Nueva solicitud de viaje recibida');
+    // NUEVO: Manejar solicitud de nuevo servicio
+    if (data && data.type === 'NEW_TRIP_REQUEST') {
+      console.log('🚕 Nueva solicitud de servicio recibida');
+      this.handleNewServiceRequest(data);
+    } else if (data && data.type === 'TRIP_ASSIGNED') {
+      // Viaje asignado (flujo antiguo)
+      console.log('🚗 Viaje asignado recibido');
+      this.handleTripAssigned(data);
+    } else if (data && data.type === 'trip_request') {
+      // Compatibilidad con formato anterior
+      console.log('🚗 Nueva solicitud de viaje recibida (formato antiguo)');
       this.handleTripRequest(data);
     } else if (notification) {
       // Mostrar alerta para otras notificaciones
@@ -112,29 +120,82 @@ class FCMService {
   handleNotificationTap(remoteMessage) {
     const { data } = remoteMessage;
     
-    if (data && data.type === 'trip_request') {
+    if (data && data.type === 'NEW_TRIP_REQUEST') {
+      console.log('🚕 Usuario tocó notificación de nuevo servicio');
+      this.handleNewServiceRequest(data);
+    } else if (data && data.type === 'trip_request') {
       console.log('🚗 Usuario tocó notificación de viaje');
       this.handleTripRequest(data);
     }
   }
 
-  // Manejar solicitud de viaje
+  // NUEVO: Manejar solicitud de nuevo servicio (sin asignar)
+  handleNewServiceRequest(data) {
+    try {
+      const tripData = {
+        id: data.tripId,
+        user: data.user,
+        phone: data.phone,
+        pickup: data.pickup,
+        destination: data.destination,
+        distance: data.distance,
+        estimatedPrice: parseInt(data.estimatedPrice) || 0,
+        paymentMethod: data.paymentMethod || 'Efectivo',
+        vehicleType: data.vehicleType || 'Estándar',
+        type: 'NEW_TRIP_REQUEST'
+      };
+
+      console.log('🚕 Procesando solicitud de servicio:', tripData);
+      
+      // Llamar al manejador global en App.js
+      if (global.handleNewTripRequest) {
+        global.handleNewTripRequest(tripData);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando solicitud de servicio:', error);
+    }
+  }
+
+  // Manejar viaje asignado (notificación informativa)
+  handleTripAssigned(data) {
+    try {
+      const tripData = {
+        id: data.tripId,
+        user: data.user,
+        phone: data.phone,
+        pickup: data.pickup,
+        destination: data.destination,
+        distance: data.distance,
+        type: 'TRIP_ASSIGNED'
+      };
+
+      console.log('🚗 Viaje asignado:', tripData);
+      
+      if (global.handleNewTripRequest) {
+        global.handleNewTripRequest(tripData);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error procesando viaje asignado:', error);
+    }
+  }
+
+  // Manejar solicitud de viaje (formato antiguo - compatibilidad)
   handleTripRequest(data) {
     try {
-      // Parsear datos del viaje
       const tripData = {
-        id: data.trip_id,
-        user: data.passenger_name,
-        pickup: data.pickup_address,
-        destination: data.destination_address,
-        estimatedPrice: parseInt(data.estimated_price),
-        estimatedTime: data.estimated_time
+        id: data.trip_id || data.tripId,
+        user: data.passenger_name || data.user,
+        pickup: data.pickup_address || data.pickup,
+        destination: data.destination_address || data.destination,
+        estimatedPrice: parseInt(data.estimated_price || data.estimatedPrice) || 0,
+        estimatedTime: data.estimated_time || data.estimatedTime,
+        type: 'TRIP_REQUEST'
       };
 
       console.log('🚗 Procesando solicitud de viaje:', tripData);
       
-      // Aquí puedes integrar con tu sistema existente
-      // Por ejemplo, llamar a una función global que maneje la solicitud
       if (global.handleNewTripRequest) {
         global.handleNewTripRequest(tripData);
       }
@@ -157,7 +218,7 @@ class FCMService {
         fcmToken: this.token
       });
 
-      const response = await fetch('http://192.168.137.1:3000/api/drivers/fcm-token', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/fcm-token', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json' 
@@ -181,6 +242,56 @@ class FCMService {
     }
   }
 
+  // Aceptar viaje
+  async acceptTrip(tripId, driverId) {
+    try {
+      console.log(`✅ Aceptando viaje ${tripId} por conductor ${driverId}`);
+      
+      const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/accept/${tripId}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          driver_id: driverId
+        })
+      });
+
+      const data = await response.json();
+      console.log('📋 Respuesta de aceptación:', data);
+      return data;
+
+    } catch (error) {
+      console.error('❌ Error aceptando viaje:', error);
+      throw error;
+    }
+  }
+
+  // Rechazar viaje
+  async rejectTrip(tripId, driverId) {
+    try {
+      console.log(`❌ Rechazando viaje ${tripId} por conductor ${driverId}`);
+      
+      const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/reject/${tripId}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          driver_id: driverId
+        })
+      });
+
+      const data = await response.json();
+      console.log('📋 Respuesta de rechazo:', data);
+      return data;
+
+    } catch (error) {
+      console.error('❌ Error rechazando viaje:', error);
+      throw error;
+    }
+  }
+
   // Simular notificación de prueba
   async testNotification() {
     Alert.alert(
@@ -201,14 +312,21 @@ class FCMService {
     const mockTripData = {
       id: 'test_' + Date.now(),
       user: 'Usuario de Prueba',
+      phone: '+1-809-555-0199',
       pickup: 'Sambil Santo Domingo',
       destination: 'Zona Colonial',
+      distance: '5.2',
       estimatedPrice: 180,
-      estimatedTime: '12 min'
+      paymentMethod: 'Efectivo',
+      vehicleType: 'Estándar',
+      type: 'NEW_TRIP_REQUEST'
     };
 
-    console.log('🎭 Simulando solicitud de viaje:', mockTripData);
-    this.handleTripRequest(mockTripData);
+    console.log('🎭 Simulando solicitud de servicio:', mockTripData);
+    
+    if (global.handleNewTripRequest) {
+      global.handleNewTripRequest(mockTripData);
+    }
   }
 
   // Obtener estado del servicio
