@@ -8,6 +8,16 @@ const socketIO = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
+// Inicializar Firebase Admin
+const admin = require('firebase-admin');
+const serviceAccount = require('./firebase-admin-key.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+console.log('🔥 Firebase Admin inicializado correctamente');
+
 // Importar base de datos
 const { db, pool, DatabaseService } = require('./config/database');
 
@@ -152,7 +162,3 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = { app, server, io };
-
-
-
-
