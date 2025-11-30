@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const MultipleDestinationsModal = ({ 
+const MultipleDestinationsModal = forwardRef(({ 
   visible,
   onClose,
   onConfirm,
@@ -23,12 +23,24 @@ const MultipleDestinationsModal = ({
   userLocation,
   vehicleType = 'economy',
   onPriceUpdate,
-  onSelectLocation  // NUEVO: Callback para abrir selector de ubicación
-}) => {
+  onSelectLocation
+}, ref) => {
   const [additionalStops, setAdditionalStops] = useState([]);
-  const [activeStopId, setActiveStopId] = useState(null); // ID del stop que está seleccionando ubicación
+  const [activeStopId, setActiveStopId] = useState(null);
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Exponer función para actualizar stop desde App.tsx
+  useImperativeHandle(ref, () => ({
+    updateStopAddress: (stopId, address) => {
+      console.log('📍 Actualizando stop:', stopId, 'con:', address);
+      setAdditionalStops(prev => 
+        prev.map(s => s.id === stopId ? { ...s, address } : s)
+      );
+    },
+    getActiveStopId: () => activeStopId,
+    getAdditionalStops: () => additionalStops
+  }));
 
   useEffect(() => {
     if (visible) {
@@ -89,25 +101,6 @@ const MultipleDestinationsModal = ({
   const removeStop = (id) => {
     setAdditionalStops(additionalStops.filter(s => s.id !== id));
   };
-
-  // Función para actualizar dirección de un stop (llamada desde App.tsx)
-  const updateStopAddress = (stopId, address) => {
-    setAdditionalStops(prev => 
-      prev.map(s => s.id === stopId ? { ...s, address } : s)
-    );
-  };
-
-  // Exponer función para que App.tsx pueda actualizar
-  useEffect(() => {
-    if (visible && window) {
-      window.updateMultipleDestinationStop = updateStopAddress;
-    }
-    return () => {
-      if (window) {
-        delete window.updateMultipleDestinationStop;
-      }
-    };
-  }, [visible, additionalStops]);
 
   const handleSelectLocation = (stopId) => {
     setActiveStopId(stopId);
@@ -262,13 +255,13 @@ const MultipleDestinationsModal = ({
                 </View>
                 <View style={styles.routeContent}>
                   <Text style={styles.routeLabel}>DESTINO {index + 2}</Text>
-                  {/* CAMBIADO: TouchableOpacity en lugar de TextInput */}
+                  {/* TouchableOpacity para abrir selector */}
                   <TouchableOpacity 
-                    style={styles.inputBox}
+                    style={[styles.inputBox, stop.address && styles.inputBoxFilled]}
                     onPress={() => handleSelectLocation(stop.id)}
                     activeOpacity={0.7}
                   >
-                    <Icon name="navigate" size={18} color="#007AFF" />
+                    <Icon name="navigate" size={18} color={stop.address ? "#4CAF50" : "#007AFF"} />
                     <Text 
                       style={[
                         styles.inputText, 
@@ -357,7 +350,7 @@ const MultipleDestinationsModal = ({
       </View>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -505,6 +498,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 2,
     borderColor: '#007AFF',
+  },
+  inputBoxFilled: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#F0FFF0',
   },
   inputText: {
     flex: 1,

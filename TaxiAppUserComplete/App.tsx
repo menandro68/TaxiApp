@@ -121,6 +121,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [mapPickerLocation, setMapPickerLocation] = useState(null);
   const [mapPickerAddress, setMapPickerAddress] = useState('');
   const [isGeocodingMapPicker, setIsGeocodingMapPicker] = useState(false);
+  const multiDestModalRef = useRef(null);
   const [activeMultiDestinationStopId, setActiveMultiDestinationStopId] = useState(null);
   const [mapPickerMode, setMapPickerMode] = useState('destination'); // 'origin' o 'destination'
   const [authForm, setAuthForm] = useState({
@@ -187,11 +188,18 @@ const DRAWER_WIDTH = screenWidth * 0.75;
         if (pendingAddress) {
           const favoriteAddress = JSON.parse(pendingAddress);
           console.log('📍 Dirección favorita recibida:', favoriteAddress);
-          
           // Limpiar inmediatamente para evitar duplicados
           await AsyncStorage.removeItem('pendingFavoriteAddress');
           
-          // Establecer como destino
+          // Si estamos editando un destino adicional del modal múltiples destinos
+          if (activeMultiDestinationStopId && multiDestModalRef.current) {
+            console.log('📍 Actualizando destino adicional con favorita:', activeMultiDestinationStopId);
+            multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, favoriteAddress.address);
+            setActiveMultiDestinationStopId(null);
+            return;
+          }
+          
+          // Establecer como destino principal (comportamiento original)
           setDestination(favoriteAddress.address);
           setSelectedDestination({
             name: favoriteAddress.name,
@@ -201,7 +209,6 @@ const DRAWER_WIDTH = screenWidth * 0.75;
               longitude: favoriteAddress.coordinates.lng
             } : null
           });
-          
           // Calcular ruta si tenemos coordenadas
           if (favoriteAddress.coordinates && userLocation) {
             const destLocation = {
@@ -215,11 +222,10 @@ const DRAWER_WIDTH = screenWidth * 0.75;
         console.error('Error leyendo dirección favorita:', error);
       }
     };
-    
     // Verificar cuando la pantalla obtiene foco
     const unsubscribe = navigation.addListener('focus', checkPendingFavoriteAddress);
     return unsubscribe;
-  }, [navigation, userLocation, selectedVehicleType]);
+  }, [navigation, userLocation, selectedVehicleType, activeMultiDestinationStopId]);
 
   // Verificar si el usuario ya vio el onboarding
   useEffect(() => {
@@ -3192,6 +3198,7 @@ const renderLoadingScreen = () => {
 
     {/* MODAL DE MÚLTIPLES DESTINOS */}
  <MultipleDestinationsModal
+   ref={multiDestModalRef}
   visible={showAddDestinationModal}
   onClose={() => setShowAddDestinationModal(false)}
   currentDestination={destination}
@@ -3384,13 +3391,26 @@ const renderLoadingScreen = () => {
             styles.mapPickerConfirmButton,
             (!mapPickerLocation || isGeocodingMapPicker) && styles.mapPickerButtonDisabled
           ]}
-     onPress={() => {
+onPress={() => {
   if (mapPickerLocation) {
+    const address = mapPickerAddress || `${mapPickerLocation.latitude.toFixed(4)}, ${mapPickerLocation.longitude.toFixed(4)}`;
+    
+    // Si estamos editando un destino adicional del modal múltiples destinos
+    if (activeMultiDestinationStopId && multiDestModalRef.current) {
+      console.log('📍 Actualizando destino adicional:', activeMultiDestinationStopId);
+      multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, address);
+      setActiveMultiDestinationStopId(null);
+      setShowMapPicker(false);
+      setMapPickerLocation(null);
+      setMapPickerAddress('');
+      return;
+    }
+    
     if (mapPickerMode === 'destination') {
       // Guardar como DESTINO
-      setDestination(mapPickerAddress || `${mapPickerLocation.latitude.toFixed(4)}, ${mapPickerLocation.longitude.toFixed(4)}`);
+      setDestination(address);
       setSelectedDestination({
-        name: mapPickerAddress,
+        name: address,
         location: {
           latitude: mapPickerLocation.latitude,
           longitude: mapPickerLocation.longitude,
