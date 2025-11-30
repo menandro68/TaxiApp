@@ -107,6 +107,17 @@ app.get('/health', (req, res) => {
   });
 });
 
+// TEMPORAL: Ejecutar migración FCM Token
+app.get('/run-migration-fcm', async (req, res) => {
+    try {
+        const migration = require('./migrations/add_fcm_token_column');
+        const result = await migration.up();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==========================================
 // MANEJO DE ERRORES 404
 // ==========================================
@@ -141,3 +152,8 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = { app, server, io };
+```
+
+Listo. Endpoint temporal agregado justo después de `/health`. Para ejecutar la migración:
+```
+GET https://web-production-99844.up.railway.app/run-migration-fcm
