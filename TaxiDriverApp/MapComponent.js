@@ -1,51 +1,88 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import Geolocation from '@react-native-community/geolocation';
 
-// IMPORTANTE: Reemplaza con tu API Key de Google
 const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
 
 const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
-  const [currentLocation, setCurrentLocation] = useState({
-    latitude: 18.4765,
-    longitude: -69.9173,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  });
-
+  const mapRef = useRef(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  
+  const [currentLocation, setCurrentLocation] = useState(null);
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
 
+  // Región por defecto - Santo Domingo
+  const santodomingo = {
+    latitude: 18.4861,
+    longitude: -69.9312,
+    latitudeDelta: 0.08,
+    longitudeDelta: 0.08,
+  };
+
+  // ✅ FORZAR zoom a Santo Domingo después de montar
+  useEffect(() => {
+    if (mapRef.current && !mapInitialized) {
+      setTimeout(() => {
+        mapRef.current.animateToRegion(santodomingo, 800);
+        setMapInitialized(true);
+        console.log('🗺️ Mapa inicializado en Santo Domingo');
+      }, 500);
+    }
+  }, [mapInitialized]);
+
+  // ✅ Obtener ubicación GPS real
   useEffect(() => {
     getCurrentLocation();
     
-    // Si hay un viaje activo, configurar origen y destino
-    if (currentTrip) {
+    // Actualizar ubicación cada 10 segundos
+    const interval = setInterval(() => {
+      getCurrentLocation();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ✅ Cuando cambia la ubicación, hacer zoom y notificar
+  useEffect(() => {
+    if (mapRef.current && currentLocation && mapInitialized) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        },
+        500
+      );
+    }
+  }, [currentLocation, mapInitialized]);
+
+  // ✅ Configurar viaje activo
+  useEffect(() => {
+    if (currentTrip && currentLocation) {
       setOrigin({
-        latitude: 18.4765,
-        longitude: -69.9173,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
       });
+      // TODO: Usar coordenadas reales del destino del viaje
       setDestination({
-        latitude: 18.4861,
-        longitude: -69.9404,
+        latitude: currentTrip.destinationLat || 18.4861,
+        longitude: currentTrip.destinationLng || -69.9404,
       });
     }
-  }, [currentTrip]);
+  }, [currentTrip, currentLocation]);
 
   const getCurrentLocation = () => {
     Geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        const newLocation = {
-          latitude,
-          longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
-        setCurrentLocation(newLocation);
+        console.log('📍 Ubicación GPS obtenida:', latitude, longitude);
+        
+        setCurrentLocation({ latitude, longitude });
         setOrigin({ latitude, longitude });
         
         if (onLocationUpdate) {
@@ -53,41 +90,58 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
         }
       },
       (error) => {
-        console.log('Error obteniendo ubicación:', error);
+        console.log('❌ Error obteniendo ubicación:', error.message);
+        // Usar ubicación por defecto si falla GPS
+        if (!currentLocation) {
+          setCurrentLocation({
+            latitude: santodomingo.latitude,
+            longitude: santodomingo.longitude,
+          });
+        }
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
   };
 
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        region={currentLocation}
+        initialRegion={santodomingo}
         showsUserLocation={true}
         showsMyLocationButton={true}
+        showsCompass={true}
+        showsScale={true}
+        mapType="standard"
+        scrollEnabled={true}
+        zoomEnabled={true}
+        pitchEnabled={true}
+        rotateEnabled={true}
       >
         {/* Marcador del conductor */}
-        {origin && (
+        {currentLocation && (
           <Marker
-            coordinate={origin}
+            coordinate={currentLocation}
             title="📍 Tu ubicación"
             description="Estás aquí"
+            pinColor="#007AFF"
           />
         )}
 
         {/* Marcador del destino */}
-        {destination && (
+        {destination && currentTrip && (
           <Marker
             coordinate={destination}
             title="🎯 Destino"
             description={currentTrip?.destination || "Destino del viaje"}
+            pinColor="#FF3B30"
           />
         )}
 
         {/* Ruta entre origen y destino */}
-        {origin && destination && GOOGLE_MAPS_APIKEY !== 'TU_API_KEY_AQUI' && (
+        {origin && destination && currentTrip && (
           <MapViewDirections
             origin={origin}
             destination={destination}
@@ -109,7 +163,7 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
       </MapView>
 
       {/* Panel de información de ruta */}
-      {routeInfo && (
+      {routeInfo && currentTrip && (
         <View style={styles.routeInfo}>
           <Text style={styles.routeText}>
             📏 Distancia: {routeInfo.distance.toFixed(1)} km
