@@ -137,6 +137,17 @@ app.get('/run-migration-fcm', async (req, res) => {
     }
 });
 
+// TEMPORAL: Ejecutar migración columnas ubicación
+app.get('/run-migration-location', async (req, res) => {
+    try {
+        const migration = require('./migrations/add_location_columns');
+        const result = await migration.up();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ==========================================
 // MANEJO DE ERRORES 404
 // ==========================================
