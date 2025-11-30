@@ -8,11 +8,11 @@ class PenaltyService {
     
     // Umbrales de penalización
     this.THRESHOLDS = {
-      MIN_ACCEPTANCE_RATE: 80,      // Mínimo 80% de aceptación
+      MIN_ACCEPTANCE_RATE: 50,      // Mínimo 80% de aceptación
       MAX_CANCELLATION_RATE: 10,    // Máximo 10% de cancelación
       MIN_RATING: 4.0,              // Mínimo 4.0 estrellas
       WARNING_STRIKES: 3,           // 3 advertencias antes de suspensión
-      TEMP_SUSPENSION_HOURS: 24,    // Suspensión de 24 horas
+      TEMP_SUSPENSION_HOURS: 2,    // Suspensión de 24 horas
     };
 
     // Tipos de penalización
