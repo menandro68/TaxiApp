@@ -190,4 +190,38 @@ router.get('/available', async (req, res) => {
     }
 });
 
+// ==========================================
+// REGISTRAR TOKEN FCM DEL CONDUCTOR
+// ==========================================
+router.post('/fcm-token', async (req, res) => {
+    try {
+        const { driverId, fcmToken } = req.body;
+        
+        if (!driverId || !fcmToken) {
+            return res.status(400).json({ error: 'driverId y fcmToken son requeridos' });
+        }
+        
+        console.log('📱 Registrando token FCM para conductor:', driverId);
+        
+        const result = await db.query(
+            'UPDATE drivers SET fcm_token = $1 WHERE id = $2 RETURNING id, name',
+            [fcmToken, driverId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        console.log(`✅ Token FCM registrado para conductor ${result.rows[0].name} (ID: ${driverId})`);
+        
+        res.json({
+            success: true,
+            message: 'Token FCM registrado correctamente'
+        });
+    } catch (error) {
+        console.error('Error guardando token FCM:', error);
+        res.status(500).json({ error: 'Error al guardar token FCM' });
+    }
+});
+
 module.exports = router;
