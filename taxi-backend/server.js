@@ -8,15 +8,24 @@ const socketIO = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
-// Inicializar Firebase Admin
+// Inicializar Firebase Admin con variables de entorno
 const admin = require('firebase-admin');
-const serviceAccount = require('./firebase-admin-key.json');
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+const firebaseConfig = {
+  type: 'service_account',
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  client_email: process.env.FIREBASE_CLIENT_EMAIL
+};
 
-console.log('🔥 Firebase Admin inicializado correctamente');
+if (firebaseConfig.project_id && firebaseConfig.private_key && firebaseConfig.client_email) {
+  admin.initializeApp({
+    credential: admin.credential.cert(firebaseConfig)
+  });
+  console.log('🔥 Firebase Admin inicializado correctamente');
+} else {
+  console.log('⚠️ Firebase Admin no configurado - faltan variables de entorno');
+}
 
 // Importar base de datos
 const { db, pool, DatabaseService } = require('./config/database');
