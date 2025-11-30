@@ -139,11 +139,11 @@ export default function DriverApp({ navigation }) {
       setShowRequestModal(true);
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
       
-      // 🔊 NUEVO: Reproducir voz "Nuevo Servicio"
+    // 🔊 NUEVO: Reproducir voz "Nuevo Servicio" 5 veces
       const Speech = require('react-native-tts').default;
       Speech.setDefaultLanguage('es-ES');
       Speech.setDefaultRate(0.5);
-      Speech.speak('Nuevo Servicio');
+      Speech.speak('Nuevo Servicio. Nuevo Servicio. Nuevo Servicio. Nuevo Servicio. Nuevo Servicio.');
     };
     // Solicitar permisos de ubicación
     requestLocationPermissions();
