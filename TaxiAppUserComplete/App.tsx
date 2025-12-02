@@ -2740,6 +2740,17 @@ const renderLoadingScreen = () => {
   </Text>
   <Icon name="search" size={20} color="#999" />
 </TouchableOpacity>
+
+   {/* Botón para viajes de terceros */}
+            <TouchableOpacity
+              style={styles.thirdPartyButton}
+              onPress={() => setShowThirdPartyModal(true)}
+            >
+              <Icon name="people-outline" size={20} color="#007AFF" />
+              <Text style={styles.thirdPartyButtonText}>
+                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : '¿Para quién es?'}
+              </Text>
+            </TouchableOpacity>
          
 
             <TouchableOpacity 
