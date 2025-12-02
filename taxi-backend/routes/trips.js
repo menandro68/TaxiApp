@@ -169,8 +169,10 @@ router.post('/accept/:tripId', async (req, res) => {
         const { tripId } = req.params;
         const { driver_id } = req.body;
 
+        console.log(`📥 Recibida solicitud de aceptación: viaje=${tripId}, conductor=${driver_id}`);
+
         if (!driver_id) {
-            return res.status(400).json({ error: 'driver_id requerido' });
+            return res.status(400).json({ error: 'driver_id requerido', success: false });
         }
 
         // Verificar que el viaje existe y está pendiente
@@ -180,9 +182,9 @@ router.post('/accept/:tripId', async (req, res) => {
         );
 
         if (tripCheck.rows.length === 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Viaje no disponible o ya fue tomado',
-                success: false 
+                success: false
             });
         }
 
@@ -192,67 +194,83 @@ router.post('/accept/:tripId', async (req, res) => {
             [driver_id, tripId]
         );
 
-        // Obtener info del conductor
-        const driverResult = await db.query(
-            `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, current_latitude, current_longitude
-             FROM drivers WHERE id = $1`,
-            [driver_id]
-        );
-        const driver = driverResult.rows[0];
-
-        // Obtener info del usuario para notificarle
         const trip = result.rows[0];
-        const userResult = await db.query(
-            `SELECT fcm_token, name FROM users WHERE id = $1`,
-            [trip.user_id]
-        );
-        const user = userResult.rows[0];
+        console.log(`✅ Viaje ${tripId} actualizado a status=assigned, driver_id=${driver_id}`);
 
-        // Notificar al usuario que un conductor aceptó
-        if (user && user.fcm_token) {
-            const admin = require('firebase-admin');
-            await admin.messaging().send({
-                notification: {
-                    title: '🚗 Conductor Asignado',
-                    body: `${driver.name} va en camino - ${driver.vehicle_model}`
-                },
-                data: {
-                    type: 'DRIVER_ASSIGNED',
-                    tripId: tripId.toString(),
-                    driverName: driver.name,
-                    driverPhone: driver.phone || '',
-                    vehicleModel: driver.vehicle_model || '',
-                    vehiclePlate: driver.vehicle_plate || ''
-                },
-                token: user.fcm_token
-            });
-            console.log(`✅ Usuario ${user.name} notificado del conductor asignado`);
+        // Obtener info del conductor
+        let driver = { id: driver_id, name: 'Conductor' };
+        try {
+            const driverResult = await db.query(
+                `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, current_latitude, current_longitude
+                 FROM drivers WHERE id = $1`,
+                [driver_id]
+            );
+            if (driverResult.rows.length > 0) {
+                driver = driverResult.rows[0];
+            }
+        } catch (driverError) {
+            console.error('⚠️ Error obteniendo info del conductor:', driverError.message);
+        }
+
+        // Intentar notificar al usuario (no bloquear si falla)
+        try {
+            const userResult = await db.query(
+                `SELECT fcm_token, name FROM users WHERE id = $1`,
+                [trip.user_id]
+            );
+            const user = userResult.rows[0];
+
+            if (user && user.fcm_token) {
+                const admin = require('firebase-admin');
+                await admin.messaging().send({
+                    notification: {
+                        title: '🚗 Conductor Asignado',
+                        body: `${driver.name} va en camino - ${driver.vehicle_model || 'Vehículo'}`
+                    },
+                    data: {
+                        type: 'DRIVER_ASSIGNED',
+                        tripId: tripId.toString(),
+                        driverName: driver.name || '',
+                        driverPhone: driver.phone || '',
+                        vehicleModel: driver.vehicle_model || '',
+                        vehiclePlate: driver.vehicle_plate || ''
+                    },
+                    token: user.fcm_token
+                });
+                console.log(`✅ Usuario ${user.name} notificado del conductor asignado`);
+            }
+        } catch (notifyError) {
+            console.error('⚠️ Error notificando al usuario (no crítico):', notifyError.message);
         }
 
         // Actualizar estado del conductor a "busy"
-        await db.query(
-            `UPDATE drivers SET status = 'busy' WHERE id = $1`,
-            [driver_id]
-        );
+        try {
+            await db.query(
+                `UPDATE drivers SET status = 'busy' WHERE id = $1`,
+                [driver_id]
+            );
+        } catch (updateError) {
+            console.error('⚠️ Error actualizando estado del conductor:', updateError.message);
+        }
 
-        console.log(`✅ Viaje ${tripId} aceptado por conductor ${driver.name}`);
+        console.log(`✅ Viaje ${tripId} aceptado exitosamente por conductor ${driver.name}`);
 
         res.json({
             success: true,
             message: 'Viaje aceptado exitosamente',
-            trip: result.rows[0],
+            trip: trip,
             driver: {
                 id: driver.id,
                 name: driver.name,
-                phone: driver.phone,
+                phone: driver.phone || '',
                 vehicle: {
-                    model: driver.vehicle_model,
-                    plate: driver.vehicle_plate
+                    model: driver.vehicle_model || '',
+                    plate: driver.vehicle_plate || ''
                 },
-                rating: driver.rating,
+                rating: driver.rating || 0,
                 location: {
-                    latitude: driver.current_latitude,
-                    longitude: driver.current_longitude
+                    latitude: driver.current_latitude || 0,
+                    longitude: driver.current_longitude || 0
                 }
             }
         });
@@ -466,4 +484,3 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
-// Redeploy fix 2025-12-01 00:31:47
