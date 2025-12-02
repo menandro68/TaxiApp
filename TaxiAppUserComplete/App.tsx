@@ -4152,7 +4152,7 @@ driverContainer: {
     paddingTop: screenWidth * 0.08,
     paddingHorizontal: screenWidth * 0.04,
     paddingBottom: screenWidth * 0.03,
-    width: '100%',
+    width: '50%',
   },
   // Estilos para botones de contacto
   contactButtonsContainer: {
