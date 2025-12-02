@@ -1,6 +1,7 @@
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import SecureStorage from './SecureStorage';
 
 class PushNotificationService {
   constructor() {
@@ -41,13 +42,13 @@ class PushNotificationService {
       // Guardar token en AsyncStorage
       await AsyncStorage.setItem('fcm_token', token);
       
-      // Intentar obtener userId guardado y enviar token al servidor
-      const userProfileStr = await AsyncStorage.getItem('user_profile');
-      if (userProfileStr) {
-        const userProfile = JSON.parse(userProfileStr);
-        if (userProfile.id) {
-          await this.sendTokenToServer(token, userProfile.id);
-        }
+      // Intentar obtener userId desde SecureStorage y enviar token al servidor
+      const userProfile = await SecureStorage.getUserProfile();
+      if (userProfile && userProfile.id) {
+        console.log('👤 Usuario encontrado:', userProfile.id, userProfile.name);
+        await this.sendTokenToServer(token, userProfile.id);
+      } else {
+        console.log('⚠️ No hay usuario logueado, token no enviado al servidor');
       }
       
       return token;
