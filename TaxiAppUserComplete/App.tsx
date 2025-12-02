@@ -4149,7 +4149,7 @@ driverContainer: {
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: screenWidth * 0.05,
+    paddingTop: screenWidth * 0.01,
     paddingHorizontal: screenWidth * 0.04,
     paddingBottom: screenWidth * 0.03,
     width: '100%',
