@@ -708,10 +708,9 @@ const initializeApp = async () => {
     }
   };
 
-  // NUEVA FUNCIÓN: Configurar handlers para notificaciones
-  const setupNotificationHandlers = () => {
+const setupNotificationHandlers = () => {
     // Handler para cuando se asigna un conductor
-    global.handleDriverAssigned = (driverData) => {
+    global.handleDriverAssigned = async (driverData) => {
       console.log('Conductor asignado via notificacion:', driverData);
       
       const mockDriverInfo = {
@@ -730,10 +729,17 @@ const initializeApp = async () => {
       setDriverInfo(mockDriverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
-      // Iniciar tracking
-      startDriverTracking(mockDriverInfo, userLocation);
+      // Obtener ubicación actual del usuario desde SharedStorage
+      const currentUserLocation = await SharedStorage.getUserLocation();
+      console.log('Ubicación del usuario para tracking:', currentUserLocation);
+      
+      // Iniciar tracking solo si tenemos la ubicación
+      if (currentUserLocation && currentUserLocation.latitude) {
+        startDriverTracking(mockDriverInfo, currentUserLocation);
+      } else {
+        console.log('⚠️ No hay ubicación del usuario, tracking omitido');
+      }
     };
-
     // Inicializar PushNotificationService
     // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');
