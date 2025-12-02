@@ -1,5 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 
 class PushNotificationService {
   constructor() {
@@ -40,9 +41,6 @@ class PushNotificationService {
       // Guardar token en AsyncStorage
       await AsyncStorage.setItem('fcm_token', token);
       
-      // Aquí enviarías el token al servidor
-      // await this.sendTokenToServer(token);
-      
       return token;
     } catch (error) {
       console.error('❌ Error obteniendo FCM token:', error);
@@ -52,11 +50,23 @@ class PushNotificationService {
   configureForegroundListener() {
     // Listener para notificaciones cuando app está abierta
     messaging().onMessage(async remoteMessage => {
-      console.log('📨 Notificación recibida (foreground):', remoteMessage);
+      console.log('📨 Notificación recibida (foreground):', JSON.stringify(remoteMessage, null, 2));
       
-      // Mostrar notificación al usuario
-      if (remoteMessage.data?.type === 'trip_assigned') {
-        this.handleTripAssigned(remoteMessage.data);
+      const { data, notification } = remoteMessage;
+      
+      // Manejar según el tipo de notificación
+      if (data?.type === 'DRIVER_ASSIGNED') {
+        console.log('🚗 Procesando DRIVER_ASSIGNED...');
+        this.handleDriverAssigned(data);
+      } else if (data?.type === 'trip_assigned') {
+        // Compatibilidad con formato antiguo
+        console.log('🚗 Procesando trip_assigned (legacy)...');
+        this.handleDriverAssigned(data);
+      } else {
+        // Mostrar notificación genérica
+        if (notification?.title) {
+          Alert.alert(notification.title, notification.body || '');
+        }
       }
     });
   }
@@ -64,30 +74,85 @@ class PushNotificationService {
   configureBackgroundListener() {
     // Listener para cuando app está en background
     messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('📨 Notificación recibida (background):', remoteMessage);
+      console.log('📨 Notificación recibida (background):', JSON.stringify(remoteMessage, null, 2));
+      
+      const { data } = remoteMessage;
+      
+      if (data?.type === 'DRIVER_ASSIGNED') {
+        // Guardar datos para procesarlos cuando la app vuelva al foreground
+        await AsyncStorage.setItem('pending_driver_assignment', JSON.stringify(data));
+        console.log('💾 Datos de conductor guardados para procesar después');
+      }
     });
   }
 
-  handleTripAssigned(data) {
-    // Manejar cuando se asigna un conductor
-    console.log('🚗 Conductor asignado:', data);
+  handleDriverAssigned(data) {
+    console.log('🚗 Conductor asignado - Data recibida:', data);
     
-    // Actualizar estado global o mostrar modal
+    // Mapear campos del backend al formato esperado por la app
+    const driverData = {
+      driverId: data.driverId || data.driver_id || 'unknown',
+      driverName: data.driverName || data.driver_name || 'Conductor',
+      driverPhone: data.driverPhone || data.driver_phone || '',
+      driverCar: data.vehicleModel ? `${data.vehicleModel} - ${data.vehiclePlate}` : 'Vehículo',
+      vehicleModel: data.vehicleModel || data.vehicle_model || '',
+      vehiclePlate: data.vehiclePlate || data.vehicle_plate || '',
+      driverRating: data.driverRating || data.driver_rating || '4.5',
+      tripId: data.tripId || data.trip_id || '',
+      eta: data.eta || '5 min',
+      driverLat: data.driverLat || data.driver_lat || null,
+      driverLng: data.driverLng || data.driver_lng || null,
+    };
+    
+    console.log('🚗 Datos del conductor formateados:', driverData);
+    
+    // Llamar al handler global si existe
     if (global.handleDriverAssigned) {
-      global.handleDriverAssigned(data);
+      console.log('✅ Llamando global.handleDriverAssigned...');
+      global.handleDriverAssigned(driverData);
+    } else {
+      console.warn('⚠️ global.handleDriverAssigned no está definido');
+      // Mostrar alerta como fallback
+      Alert.alert(
+        '🚗 Conductor Asignado',
+        `${driverData.driverName} viene en camino\n${driverData.driverCar}`,
+        [{ text: 'OK' }]
+      );
     }
   }
 
-  async sendTokenToServer(token) {
+  // Verificar si hay asignación pendiente (para cuando la app vuelve del background)
+  async checkPendingAssignment() {
     try {
-      // Aquí harías el POST al backend
-      console.log('📤 Enviando token al servidor:', token);
+      const pendingData = await AsyncStorage.getItem('pending_driver_assignment');
+      if (pendingData) {
+        console.log('📋 Procesando asignación pendiente...');
+        const data = JSON.parse(pendingData);
+        this.handleDriverAssigned(data);
+        await AsyncStorage.removeItem('pending_driver_assignment');
+      }
+    } catch (error) {
+      console.error('❌ Error verificando asignación pendiente:', error);
+    }
+  }
+
+  async sendTokenToServer(token, userId) {
+    try {
+      console.log('📤 Enviando token al servidor para usuario:', userId);
       
-      // const response = await fetch('YOUR_SERVER/api/fcm-token', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token, userType: 'user' })
-      // });
+      const response = await fetch('https://web-production-99844.up.railway.app/api/users/fcm-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          token, 
+          userId,
+          userType: 'user' 
+        })
+      });
+      
+      const result = await response.json();
+      console.log('✅ Token registrado en servidor:', result);
+      return result;
       
     } catch (error) {
       console.error('❌ Error enviando token:', error);
