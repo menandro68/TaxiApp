@@ -2784,15 +2784,7 @@ const renderLoadingScreen = () => {
               'Solicitar viaje'}
             </Text>
           </TouchableOpacity>
-          {/* Botón temporal para probar búsqueda de conductores */}
-          <TouchableOpacity 
-            style={[styles.requestButton, { backgroundColor: '#4A90E2', marginTop: 10 }]}
-            onPress={() => navigation.navigate('Home')}
-          >
-            <Text style={styles.requestButtonText}>
-              🔍 Probar Búsqueda de Conductores
-            </Text>
-          </TouchableOpacity>
+       
         </ScrollView>
       </View>
     );
