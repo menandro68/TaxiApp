@@ -4115,11 +4115,11 @@ statusIndicator: {
     padding: 20,
   },
 statusTitle: {
-    fontSize: screenWidth * 0.05,
-    fontWeight: 'bold',
-    marginTop: screenWidth * 0.05,
-    marginBottom: screenWidth * 0.02,
+    fontSize: screenWidth * 0.04,
+    fontWeight: '600',
+    marginBottom: screenWidth * 0.01,
     textAlign: 'center',
+    color: '#666',
   },
   statusText: {
     fontSize: 16,
@@ -4147,11 +4147,9 @@ statusTitle: {
   },
 driverContainer: {
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: screenWidth * 0.08,
-    paddingHorizontal: screenWidth * 0.0,
-    paddingBottom: screenWidth * 0.0,
+    paddingHorizontal: screenWidth * 0.04,
     width: '100%',
   },
   // Estilos para botones de contacto
@@ -4180,24 +4178,24 @@ contactButton: {
     fontWeight: 'bold',
     marginLeft: screenWidth * 0.015,
   },
-  driverName: {
-    fontSize: screenWidth * 0.06,
+driverName: {
+    fontSize: screenWidth * 0.055,
     fontWeight: 'bold',
-    marginBottom: screenWidth * 0.01,
+    marginBottom: screenWidth * 0.005,
     color: '#333',
     textAlign: 'center',
   },
-  driverDetails: {
-    fontSize: screenWidth * 0.04,
-    marginBottom: screenWidth * 0.01,
+driverDetails: {
+    fontSize: screenWidth * 0.035,
+    marginBottom: screenWidth * 0.005,
     color: '#666',
     textAlign: 'center',
   },
-  etaText: {
-    fontSize: screenWidth * 0.045,
+etaText: {
+    fontSize: screenWidth * 0.04,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: screenWidth * 0.04,
+    marginBottom: screenWidth * 0.02,
     textAlign: 'center',
   },
   rideActions: {
