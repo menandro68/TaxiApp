@@ -41,6 +41,15 @@ class PushNotificationService {
       // Guardar token en AsyncStorage
       await AsyncStorage.setItem('fcm_token', token);
       
+      // Intentar obtener userId guardado y enviar token al servidor
+      const userDataStr = await AsyncStorage.getItem('userData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        if (userData.id) {
+          await this.sendTokenToServer(token, userData.id);
+        }
+      }
+      
       return token;
     } catch (error) {
       console.error('❌ Error obteniendo FCM token:', error);
