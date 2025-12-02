@@ -4149,10 +4149,10 @@ driverContainer: {
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: screenWidth * 0.08,
+    paddingTop: screenWidth * 0.20,
     paddingHorizontal: screenWidth * 0.04,
     paddingBottom: screenWidth * 0.03,
-    width: '50%',
+    width: '100%',
   },
   // Estilos para botones de contacto
   contactButtonsContainer: {
