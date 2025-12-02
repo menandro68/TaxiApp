@@ -121,4 +121,38 @@ router.get('/', async (req, res) => {
     }
 });
 
+// REGISTRAR TOKEN FCM DEL USUARIO
+router.post('/fcm-token', async (req, res) => {
+    try {
+        const { userId, token } = req.body;
+        
+        if (!userId || !token) {
+            return res.status(400).json({ error: 'userId y token requeridos', success: false });
+        }
+        
+        // Verificar si la columna existe, si no, crearla
+        try {
+            await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT');
+        } catch (alterError) {
+            // Ignorar si ya existe
+        }
+        
+        // Actualizar token FCM del usuario
+        await db.query(
+            'UPDATE users SET fcm_token = $1 WHERE id = $2',
+            [token, userId]
+        );
+        
+        console.log(`✅ Token FCM registrado para usuario ${userId}`);
+        
+        res.json({
+            success: true,
+            message: 'Token FCM registrado exitosamente'
+        });
+    } catch (error) {
+        console.error('❌ Error registrando token FCM:', error);
+        res.status(500).json({ error: 'Error al registrar token', success: false });
+    }
+});
+
 module.exports = router;
