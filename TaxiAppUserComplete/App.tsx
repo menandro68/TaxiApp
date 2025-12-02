@@ -729,6 +729,10 @@ const setupNotificationHandlers = () => {
       setDriverInfo(mockDriverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
+      // Cerrar modal de búsqueda
+      setSearchModalVisible(false);
+      setIsSearchingDriver(false);
+      
       // Obtener ubicación actual del usuario desde SharedStorage
       const currentUserLocation = await SharedStorage.getUserLocation();
       console.log('Ubicación del usuario para tracking:', currentUserLocation);
@@ -740,6 +744,7 @@ const setupNotificationHandlers = () => {
         console.log('⚠️ No hay ubicación del usuario, tracking omitido');
       }
     };
+    
     // Inicializar PushNotificationService
     // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');
@@ -1471,6 +1476,10 @@ const searchForDriver = () => {
       setDriverInfo(driverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
+      
+
+       setDriverInfo(mockDriverInfo);
+      setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       // Cerrar el modal
       setSearchModalVisible(false);
       setIsSearchingDriver(false);
