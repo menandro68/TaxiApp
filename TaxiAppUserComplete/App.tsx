@@ -4145,11 +4145,13 @@ statusTitle: {
     fontSize: 16,
     fontWeight: 'bold',
   },
- driverContainer: {
+driverContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: screenWidth * 0.05,
+    paddingTop: screenWidth * 0.15,
+    paddingHorizontal: screenWidth * 0.05,
+    paddingBottom: screenWidth * 0.05,
     width: '100%',
   },
   // Estilos para botones de contacto
