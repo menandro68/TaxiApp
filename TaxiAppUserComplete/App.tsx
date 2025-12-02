@@ -2780,8 +2780,8 @@ const renderLoadingScreen = () => {
             <Text style={styles.requestButtonText}>
             {isCalculatingRoute ? 'Calculando...' : 
               !userLocation ? 'Selecciona ubicación' :
-               realTimePrice > 0 ? `Solicitar viaje • RD${realTimePrice}` :
-              'Solicitar viaje'}
+               realTimePrice > 0 ? `Solicitar Servicio • RD${realTimePrice}` :
+              'Solicitar Servicio'}
             </Text>
           </TouchableOpacity>
        
