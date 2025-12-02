@@ -4114,10 +4114,11 @@ statusIndicator: {
     alignItems: 'center',
     padding: 20,
   },
-  statusTitle: {
-    fontSize: 20,
+statusTitle: {
+    fontSize: screenWidth * 0.05,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginTop: screenWidth * 0.05,
+    marginBottom: screenWidth * 0.02,
     textAlign: 'center',
   },
   statusText: {
@@ -4161,20 +4162,19 @@ statusIndicator: {
     width: '100%',
     gap: screenWidth * 0.02,
   },
-  contactButton: {
+contactButton: {
     flexDirection: 'row',
     backgroundColor: '#007AFF',
-    paddingVertical: screenWidth * 0.03,
-    paddingHorizontal: screenWidth * 0.04,
-    borderRadius: screenWidth * 0.025,
+    paddingVertical: screenWidth * 0.025,
+    paddingHorizontal: screenWidth * 0.03,
+    borderRadius: screenWidth * 0.02,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: screenWidth * 0.25,
-    maxWidth: screenWidth * 0.3,
+    minWidth: screenWidth * 0.27,
   },
   contactButtonText: {
     color: '#fff',
-    fontSize: screenWidth * 0.035,
+    fontSize: screenWidth * 0.032,
     fontWeight: 'bold',
     marginLeft: screenWidth * 0.015,
   },
