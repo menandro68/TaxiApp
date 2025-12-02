@@ -170,9 +170,11 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   }, []); // Solo se ejecuta una vez al montar el componente
 
 
-  useEffect(() => {
+useEffect(() => {
     initializeApp();
     setupNotificationHandlers();
+    // Forzar envío de token FCM al iniciar
+    PushNotificationService.getToken();
     // Cleanup tracking al desmontar el componente
     return () => {
       DriverTrackingService.stopTracking();
