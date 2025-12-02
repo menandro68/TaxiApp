@@ -42,11 +42,11 @@ class PushNotificationService {
       await AsyncStorage.setItem('fcm_token', token);
       
       // Intentar obtener userId guardado y enviar token al servidor
-      const userDataStr = await AsyncStorage.getItem('userData');
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr);
-        if (userData.id) {
-          await this.sendTokenToServer(token, userData.id);
+      const userProfileStr = await AsyncStorage.getItem('user_profile');
+      if (userProfileStr) {
+        const userProfile = JSON.parse(userProfileStr);
+        if (userProfile.id) {
+          await this.sendTokenToServer(token, userProfile.id);
         }
       }
       
