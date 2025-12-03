@@ -1203,19 +1203,11 @@ const initializeLocationService = async () => {
       return;
     }
     const message = `Hola ${driverInfo.name}, soy tu pasajero. Estoy esperando mi viaje.`;
-    const whatsappUrl = `whatsapp://send?phone=1${phone}&text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(message)}`;
     
-    Linking.canOpenURL(whatsappUrl)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(whatsappUrl);
-        } else {
-          Alert.alert('Error', 'WhatsApp no está instalado en este dispositivo');
-        }
-      })
-      .catch(() => {
-        Alert.alert('Error', 'No se pudo abrir WhatsApp');
-      });
+    Linking.openURL(whatsappUrl).catch(() => {
+      Alert.alert('Error', 'No se pudo abrir WhatsApp');
+    });
   };
   // FUNCIÓN: Solicitar viaje usando API real
   const requestRide = async () => {
