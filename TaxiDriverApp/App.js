@@ -59,6 +59,7 @@ export default function DriverApp({ navigation }) {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [loggedDriver, setLoggedDriver] = useState(null);
   
   // Estados para métricas de desempeño
   const [driverStats, setDriverStats] = useState({
@@ -223,13 +224,14 @@ export default function DriverApp({ navigation }) {
           [
             { 
               text: 'OK', 
-              onPress: () => {
+          onPress: () => {
                 setShowLogin(false);
                 setLoginEmail('');
                 setLoginPassword('');
-                // Aquí puedes guardar el token y datos del conductor
+                // Guardar datos del conductor logueado
+                setLoggedDriver(data.driver);
                 console.log('Token:', data.token);
-                console.log('Driver:', data.driver);
+                console.log('Driver ID:', data.driver.id);
               }
             }
           ]
@@ -257,7 +259,7 @@ export default function DriverApp({ navigation }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          driverId: 1, // ID de Menandro Matos
+          driverId: loggedDriver?.id || 1,
           latitude: location.latitude,
           longitude: location.longitude,
           heading: 0,
@@ -349,7 +351,7 @@ const toggleDriverStatus = async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          driverId: 1, // ID del conductor (Menandro Matos)
+          driverId: loggedDriver?.id || 1,
           status: 'online',
           isOnline: true
         })
@@ -357,7 +359,7 @@ const toggleDriverStatus = async () => {
       
       if (response.ok) {
         setDriverStatus('online');
-        await fcmService.sendTokenToServer('1');
+        await fcmService.sendTokenToServer((loggedDriver?.id || 1).toString());
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
@@ -378,7 +380,7 @@ const toggleDriverStatus = async () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          driverId: 1,
+        driverId: loggedDriver?.id || 1,
           status: 'offline',
           isOnline: false
         })
@@ -412,7 +414,7 @@ const acceptTrip = async () => {
     try {
       // NUEVO: Llamar al endpoint del backend para aceptar el viaje
       const tripId = pendingRequest.id;
-      const driverId = 1; // ID de Menandro Matos
+      const driverId = loggedDriver?.id || 1;
       
       console.log(`✅ Aceptando viaje ${tripId}...`);
       console.log('📡 Enviando request al servidor...');
@@ -506,7 +508,7 @@ const acceptTrip = async () => {
     try {
       // NUEVO: Llamar al endpoint del backend para rechazar el viaje
       const tripId = pendingRequest?.id;
-      const driverId = 1; // ID de Menandro Matos
+      const driverId = loggedDriver?.id || 1;
       
       if (tripId) {
         console.log(`❌ Rechazando viaje ${tripId}...`);
