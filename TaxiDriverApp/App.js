@@ -401,7 +401,7 @@ const toggleDriverStatus = async () => {
   }
 };
 
-  const acceptTrip = async () => {
+const acceptTrip = async () => {
     if (!pendingRequest) return;
     
     // Detener el timer cuando se acepta el viaje
@@ -415,6 +415,7 @@ const toggleDriverStatus = async () => {
       const driverId = 1; // ID de Menandro Matos
       
       console.log(`✅ Aceptando viaje ${tripId}...`);
+      console.log('📡 Enviando request al servidor...');
       
       const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/accept/${tripId}`, {
         method: 'POST',
@@ -426,7 +427,11 @@ const toggleDriverStatus = async () => {
         })
       });
 
+      console.log('📥 Response recibido, status:', response.status);
+      
       const data = await response.json();
+      
+      console.log('📋 Data parseada:', data);
       
       if (!response.ok || !data.success) {
         Alert.alert('Error', data.error || 'No se pudo aceptar el viaje. Puede que ya fue tomado.');
@@ -1046,7 +1051,7 @@ const toggleDriverStatus = async () => {
                 <Text style={styles.requestText}>⏱️ Tiempo: {pendingRequest.estimatedTime}</Text>
                 <Text style={styles.requestText}>📱 Teléfono: {pendingRequest.phone || '+1-809-555-0199'}</Text>
                 <Text style={styles.requestText}>🚗 Vehículo: {pendingRequest.vehicleType || 'Confort'}</Text>
-                <Text style={styles.requestTextBig}>💳 Pago: {pendingRequest.paymentMethod || 'Efectivo'}</Text>
+               <Text style={styles.requestTextBig}>💳 Pago: {pendingRequest.paymentMethod === 'card' ? 'Tarjeta de Crédito' : 'Efectivo'}</Text>
                 
                 {/* NUEVA SECCIÓN: Verificación de Identidad */}
                 <View style={{
