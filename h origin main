@@ -1,0 +1,3 @@
+[33m0e0171e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix: Corregir indentación en MapPicker Modal - Resolver error 'Text strings must be rendered within a <Text> component'
+[33m247f008c[m[33m ([m[1;31morigin/main[m[33m)[m fix: Corregir indentación y espacios en blanco en Modal mapPicker para resolver error de Text strings
+[33mb38d8cdf[m fix: Mover TouchableOpacity del pin DENTRO de mapPickerContainer y corregir estructura JSX del Modal

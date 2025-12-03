@@ -27,6 +27,7 @@ import OfflineService from './OfflineService';
 import SmartSyncService from './SmartSyncService';
 import PenaltyService from './PenaltyService';
 import DashcamComponent from './DashcamComponent';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
@@ -73,7 +74,21 @@ export default function DriverApp({ navigation }) {
   
   const timerRef = useRef(null);
 
-  useEffect(() => {
+ useEffect(() => {
+    // Cargar conductor guardado
+    const loadSavedDriver = async () => {
+      try {
+        const savedDriver = await AsyncStorage.getItem('loggedDriver');
+        if (savedDriver) {
+          setLoggedDriver(JSON.parse(savedDriver));
+          console.log('✅ Conductor cargado desde almacenamiento');
+        }
+      } catch (error) {
+        console.error('Error cargando conductor:', error);
+      }
+    };
+    loadSavedDriver();
+    
     // Inicializar FCM cuando la app carga
     fcmService.initialize();
 
@@ -224,16 +239,17 @@ export default function DriverApp({ navigation }) {
           [
             { 
               text: 'OK', 
-          onPress: () => {
+       onPress: async () => {
                 setShowLogin(false);
                 setLoginEmail('');
                 setLoginPassword('');
                 // Guardar datos del conductor logueado
                 setLoggedDriver(data.driver);
+                // Guardar en AsyncStorage para persistir
+                await AsyncStorage.setItem('loggedDriver', JSON.stringify(data.driver));
                 console.log('Token:', data.token);
                 console.log('Driver ID:', data.driver.id);
               }
-            }
           ]
         );
       } else {
@@ -332,6 +348,18 @@ export default function DriverApp({ navigation }) {
 
 const toggleDriverStatus = async () => {
   if (driverStatus === 'offline') {
+    // Verificar si hay conductor logueado
+    if (!loggedDriver) {
+      Alert.alert(
+        '🔐 Iniciar Sesión',
+        'Debes iniciar sesión antes de conectarte',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Iniciar Sesión', onPress: () => setShowLogin(true) }
+        ]
+      );
+      return;
+    }
     try {
       // Verificar suspensión antes de conectarse
       const suspensionStatus = await PenaltyService.checkSuspensionStatus();
