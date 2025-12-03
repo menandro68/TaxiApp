@@ -143,10 +143,10 @@ class LocationFallbackService {
             location: null
           });
         },
-        {
-          enableHighAccuracy: false,  // Baja precisión = más rápido
-          timeout: 2000,              // 2 segundos máximo
-          maximumAge: 600000,         // Usar caché de hasta 10 minutos
+      {
+          enableHighAccuracy: true,   // Alta precisión GPS
+          timeout: 15000,             // 15 segundos máximo
+          maximumAge: 5000,           // Caché de solo 5 segundos
           distanceFilter: 0
         }
       );
