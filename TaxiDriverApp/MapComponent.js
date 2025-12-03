@@ -182,11 +182,15 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
             onPress={() => {
               const pickupLat = currentTrip.pickupLocation?.latitude || currentTrip.pickupLat;
               const pickupLng = currentTrip.pickupLocation?.longitude || currentTrip.pickupLng;
+              
               if (pickupLat && pickupLng) {
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${pickupLat},${pickupLng}&travelmode=driving`;
                 Linking.openURL(url);
+              } else if (currentTrip.pickup) {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentTrip.pickup)}&travelmode=driving`;
+                Linking.openURL(url);
               } else {
-                Alert.alert('Error', 'No hay coordenadas del pasajero disponibles');
+                Alert.alert('Error', 'No hay ubicación del pasajero disponible');
               }
             }}
           >
@@ -198,11 +202,15 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
             onPress={() => {
               const destLat = currentTrip.destinationLocation?.latitude || currentTrip.destinationLat;
               const destLng = currentTrip.destinationLocation?.longitude || currentTrip.destinationLng;
+              
               if (destLat && destLng) {
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
                 Linking.openURL(url);
+              } else if (currentTrip.destination) {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentTrip.destination)}&travelmode=driving`;
+                Linking.openURL(url);
               } else {
-                Alert.alert('Error', 'No hay coordenadas del destino disponibles');
+                Alert.alert('Error', 'No hay ubicación del destino disponible');
               }
             }}
           >
