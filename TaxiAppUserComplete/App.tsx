@@ -1195,20 +1195,28 @@ const initializeLocationService = async () => {
     }
   };
 
-  // FUNCIÓN: Chat con el conductor
+// FUNCIÓN: Chat con el conductor via WhatsApp
   const handleChatDriver = () => {
-    Alert.alert(
-      'Chat con el conductor',
-      `Iniciar chat con ${driverInfo.name}`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Abrir Chat', onPress: () => {
-          Alert.alert('Chat', 'Función de chat próximamente');
-        }}
-      ]
-    );
+    const phone = driverInfo?.phone?.replace(/[^0-9]/g, '') || '';
+    if (!phone) {
+      Alert.alert('Error', 'No hay número de teléfono disponible');
+      return;
+    }
+    const message = `Hola ${driverInfo.name}, soy tu pasajero. Estoy esperando mi viaje.`;
+    const whatsappUrl = `whatsapp://send?phone=1${phone}&text=${encodeURIComponent(message)}`;
+    
+    Linking.canOpenURL(whatsappUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(whatsappUrl);
+        } else {
+          Alert.alert('Error', 'WhatsApp no está instalado en este dispositivo');
+        }
+      })
+      .catch(() => {
+        Alert.alert('Error', 'No se pudo abrir WhatsApp');
+      });
   };
-
   // FUNCIÓN: Solicitar viaje usando API real
   const requestRide = async () => {
     if (!destination || (typeof destination === 'string' && !destination.trim())) {
