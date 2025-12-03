@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import Geolocation from '@react-native-community/geolocation';
@@ -179,14 +179,32 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
         <View style={styles.navigationButtons}>
           <TouchableOpacity 
             style={styles.navButton}
-            onPress={() => Alert.alert('Navegación', 'Iniciando navegación al pasajero')}
+            onPress={() => {
+              const pickupLat = currentTrip.pickupLocation?.latitude || currentTrip.pickupLat;
+              const pickupLng = currentTrip.pickupLocation?.longitude || currentTrip.pickupLng;
+              if (pickupLat && pickupLng) {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${pickupLat},${pickupLng}&travelmode=driving`;
+                Linking.openURL(url);
+              } else {
+                Alert.alert('Error', 'No hay coordenadas del pasajero disponibles');
+              }
+            }}
           >
             <Text style={styles.navButtonText}>👤 Al pasajero</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.navButton}
-            onPress={() => Alert.alert('Navegación', 'Iniciando navegación al destino')}
+            onPress={() => {
+              const destLat = currentTrip.destinationLocation?.latitude || currentTrip.destinationLat;
+              const destLng = currentTrip.destinationLocation?.longitude || currentTrip.destinationLng;
+              if (destLat && destLng) {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+                Linking.openURL(url);
+              } else {
+                Alert.alert('Error', 'No hay coordenadas del destino disponibles');
+              }
+            }}
           >
             <Text style={styles.navButtonText}>🎯 Al destino</Text>
           </TouchableOpacity>
