@@ -250,6 +250,7 @@ export default function DriverApp({ navigation }) {
                 console.log('Token:', data.token);
                 console.log('Driver ID:', data.driver.id);
               }
+            } 
           ]
         );
       } else {
