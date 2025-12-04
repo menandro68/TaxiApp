@@ -105,56 +105,50 @@ router.post('/create', async (req, res) => {
             });
         }
 
-        // ENVIAR NOTIFICACIÓN "NUEVO SERVICIO" AL CONDUCTOR MÁS CERCANO
-        const nearestDriver = driversWithDistance[0];
-        console.log(`📱 Enviando solicitud a: ${nearestDriver.name} (${nearestDriver.distance.toFixed(2)} km)`);
+        // ENVIAR NOTIFICACIÓN A TODOS LOS CONDUCTORES DISPONIBLES
+        const admin = require('firebase-admin');
+        const notifiedDrivers = [];
+        
+        for (const driver of driversWithDistance) {
+            if (driver.fcm_token) {
+                const message = {
+                    notification: {
+                        title: '🚕 Nuevo Servicio Disponible',
+                        body: `Pasajero: ${user.name || 'Usuario'} - ${driver.distance.toFixed(1)} km de ti`
+                    },
+                    data: {
+                        tripId: tripId.toString(),
+                        type: 'NEW_TRIP_REQUEST',
+                        user: user.name || 'Usuario',
+                        phone: user.phone || '',
+                        pickup: pickup_location,
+                        destination: destination,
+                        distance: driver.distance.toFixed(2),
+                        estimatedPrice: (estimated_price || 0).toString(),
+                        paymentMethod: payment_method || 'Efectivo',
+                        vehicleType: vehicle_type || 'Estándar'
+                    },
+                    token: driver.fcm_token
+                };
 
-        if (nearestDriver.fcm_token) {
-            const message = {
-                notification: {
-                    title: '🚕 Nuevo Servicio Disponible',
-                    body: `Pasajero: ${user.name || 'Usuario'} - ${nearestDriver.distance.toFixed(1)} km de ti`
-                },
-                data: {
-                    tripId: tripId.toString(),
-                    type: 'NEW_TRIP_REQUEST',
-                    user: user.name || 'Usuario',
-                    phone: user.phone || '',
-                    pickup: pickup_location,
-                    destination: destination,
-                    distance: nearestDriver.distance.toFixed(2),
-                    estimatedPrice: (estimated_price || 0).toString(),
-                    paymentMethod: payment_method || 'Efectivo',
-                    vehicleType: vehicle_type || 'Estándar'
-                },
-                token: nearestDriver.fcm_token
-            };
-
-            try {
-                const admin = require('firebase-admin');
-                await admin.messaging().send(message);
-                console.log(`✅ Solicitud enviada a ${nearestDriver.name}`);
-                
-                // Guardar qué conductor recibió la solicitud
-                await db.query(
-                    `UPDATE trips SET pending_driver_id = $1 WHERE id = $2`,
-                    [nearestDriver.id, tripId]
-                );
-            } catch (error) {
-                console.error('❌ Error enviando notificación FCM:', error);
+                try {
+                    await admin.messaging().send(message);
+                    console.log(`✅ Notificación enviada a ${driver.name} (${driver.distance.toFixed(2)} km)`);
+                    notifiedDrivers.push({ id: driver.id, name: driver.name, distance: driver.distance.toFixed(2) });
+                } catch (error) {
+                    console.error(`❌ Error enviando a ${driver.name}:`, error.message);
+                }
             }
         }
+
+        console.log(`📱 Total conductores notificados: ${notifiedDrivers.length}`);
 
         res.json({
             success: true,
             tripId: tripId,
-            message: 'Viaje creado, esperando respuesta del conductor',
+            message: `Viaje creado, ${notifiedDrivers.length} conductores notificados`,
             status: 'pending',
-            notifiedDriver: {
-                id: nearestDriver.id,
-                name: nearestDriver.name,
-                distance: nearestDriver.distance.toFixed(2)
-            }
+            notifiedDrivers: notifiedDrivers
         });
 
     } catch (error) {
