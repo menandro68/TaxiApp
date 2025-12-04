@@ -484,13 +484,25 @@ const acceptTrip = async () => {
         };
       });
       
-      // Verificar métricas después de aceptar
-      PenaltyService.checkAndApplyPenalties({
+    // Verificar métricas después de aceptar
+      const penaltyResult = await PenaltyService.checkAndApplyPenalties({
         ...driverStats,
         tripsAccepted: driverStats.tripsAccepted + 1,
         acceptanceRate: Math.round(((driverStats.tripsAccepted + 1) / driverStats.tripsOffered) * 100),
         rating: 4.8
       });
+      
+      // Resetear estadísticas después de evaluar bloque de 10
+      if (penaltyResult.resetStats || driverStats.tripsOffered === 10) {
+        setDriverStats({
+          tripsOffered: 0,
+          tripsAccepted: 0,
+          tripsRejected: 0,
+          tripsCancelled: 0,
+          acceptanceRate: 100,
+          cancellationRate: 0
+        });
+      }
       
       setCurrentTrip({
         ...pendingRequest,
@@ -587,7 +599,19 @@ const acceptTrip = async () => {
         rating: 4.8
       };
       
-      PenaltyService.checkAndApplyPenalties(updatedStats);
+    const penaltyResult = await PenaltyService.checkAndApplyPenalties(updatedStats);
+      
+      // Resetear estadísticas después de evaluar bloque de 10
+      if (penaltyResult.resetStats || updatedStats.tripsOffered === 10) {
+        setDriverStats({
+          tripsOffered: 0,
+          tripsAccepted: 0,
+          tripsRejected: 0,
+          tripsCancelled: 0,
+          acceptanceRate: 100,
+          cancellationRate: 0
+        });
+      }
       
     } catch (error) {
       console.error('❌ Error rechazando viaje:', error);

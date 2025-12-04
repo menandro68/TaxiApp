@@ -26,9 +26,14 @@ class PenaltyService {
   // Verificar y aplicar penalizaciones
   async checkAndApplyPenalties(driverStats) {
     try {
-      // Solo evaluar después de 10 viajes ofrecidos
+      // Evaluar solo cuando complete exactamente 10 viajes del bloque
       if (driverStats.tripsOffered < 10) {
-        return { success: true, penaltyApplied: false, message: 'Mínimo 10 viajes para evaluar' };
+        return { success: true, penaltyApplied: false, message: `Faltan ${10 - driverStats.tripsOffered} viajes para evaluar` };
+      }
+      
+      // Solo evaluar cuando llegue a exactamente 10
+      if (driverStats.tripsOffered !== 10) {
+        return { success: true, penaltyApplied: false, resetStats: true };
       }
       
       const violations = [];
