@@ -1790,37 +1790,44 @@ const handleMapPickerPress = async (event) => {
 const reverseGeocodeMapLocation = async (latitude, longitude) => {
   try {
     setIsGeocodingMapPicker(true);
-    
+
     console.log('🌐 Iniciando reverse geocoding:', { latitude, longitude });
-    
+
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-      {
-        headers: {
-          'User-Agent': 'TaxiApp/1.0.0'
-        }
-      }
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q&language=es`
     );
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
-    console.log('✅ Respuesta de geocoding:', data.address);
-    
-    const address = data.address?.road 
-      ? `${data.address.road}, ${data.address.city || data.address.town || 'República Dominicana'}`
-      : data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-    
+
+    console.log('✅ Respuesta de geocoding:', data.status);
+
+    let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const specificResult = data.results.find(r => 
+        r.types.includes('street_address') || 
+        r.types.includes('route') ||
+        r.types.includes('premise')
+      ) || data.results[0];
+
+      address = specificResult.formatted_address;
+      
+      if (address.length > 60) {
+        address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
+      }
+    }
+
     setMapPickerAddress(address);
     setMapPickerLocation({ latitude, longitude, address });
-    
+
     console.log('✅ Dirección establecida:', address);
-    
+
     return address;
-    
+
   } catch (error) {
     console.error('❌ Error en reverse geocoding:', {
       message: error.message,
@@ -1828,13 +1835,13 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
       longitude,
       timestamp: new Date().toISOString(),
     });
-    
+
     const fallbackAddress = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
     setMapPickerAddress(fallbackAddress);
     setMapPickerLocation({ latitude, longitude });
-    
+
     return fallbackAddress;
-    
+
   } finally {
     setIsGeocodingMapPicker(false);
   }

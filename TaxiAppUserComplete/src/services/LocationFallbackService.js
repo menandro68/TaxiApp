@@ -426,28 +426,30 @@ class LocationFallbackService {
     }
   }
 
-  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección
+  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección (Google API)
   static async getReverseGeocode(latitude, longitude) {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=18&addressdetails=1`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q&language=es`
       );
       const data = await response.json();
       
-      if (data.address) {
-        const address = data.address;
-        const street = address.road || address.pedestrian || '';
-        const number = address.house_number || '';
-        const neighborhood = address.neighbourhood || address.suburb || '';
-        const city = address.city || address.town || 'Santo Domingo';
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        // Buscar el resultado más específico
+        const specificResult = data.results.find(r => 
+          r.types.includes('street_address') || 
+          r.types.includes('route') ||
+          r.types.includes('premise')
+        ) || data.results[0];
+
+        let address = specificResult.formatted_address;
         
-        const fullAddress = [
-          street && number ? `${street} ${number}` : street,
-          neighborhood,
-          city
-        ].filter(Boolean).join(', ');
+        // Limpiar si es muy largo
+        if (address.length > 60) {
+          address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
+        }
         
-        return fullAddress || 'Ubicación desconocida';
+        return address;
       }
       return 'Ubicación desconocida';
     } catch (error) {
