@@ -63,28 +63,44 @@ class LocationPickerService {
     }
   }
 
-  // Geocoding inverso (coordenadas a dirección)
+  // Geocoding inverso (coordenadas a dirección) - MAPBOX API
   async reverseGeocode(latitude, longitude) {
     try {
-      // Simulación - en producción usar Google Geocoding API
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es&types=address,poi`
       );
-      
+
       if (!response.ok) throw new Error('Geocoding failed');
-      
+
       const data = await response.json();
-      
-      return {
-        formatted_address: data.display_name,
-        street: data.address?.road || '',
-        neighborhood: data.address?.neighbourhood || data.address?.suburb || '',
-        city: data.address?.city || data.address?.town || 'Santo Domingo',
-        country: data.address?.country || 'República Dominicana'
-      };
+
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        let address = feature.place_name;
+        
+        // Limpiar si es muy largo
+        if (address.length > 60) {
+          address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
+        }
+
+        // Extraer componentes
+        const context = feature.context || [];
+        const neighborhood = context.find(c => c.id.startsWith('neighborhood'))?.text || '';
+        const locality = context.find(c => c.id.startsWith('locality'))?.text || '';
+        const place = context.find(c => c.id.startsWith('place'))?.text || 'Santo Domingo';
+
+        return {
+          formatted_address: address,
+          street: feature.text || '',
+          neighborhood: neighborhood || locality,
+          city: place,
+          country: 'República Dominicana'
+        };
+      }
+
+      throw new Error('No results');
     } catch (error) {
       console.error('Reverse geocoding error:', error);
-      // Fallback
       return {
         formatted_address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
         street: 'Ubicación seleccionada',
@@ -95,23 +111,23 @@ class LocationPickerService {
     }
   }
 
-  // Buscar direcciones (geocoding)
+  // Buscar direcciones (geocoding) - MAPBOX API
   async searchAddress(query) {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}, Santo Domingo, República Dominicana&limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&country=DO&language=es&limit=5`
       );
-      
+
       if (!response.ok) throw new Error('Search failed');
-      
+
       const data = await response.json();
-      
-      return data.map(item => ({
-        place_id: item.place_id,
-        formatted_address: item.display_name,
-        latitude: parseFloat(item.lat),
-        longitude: parseFloat(item.lon),
-        type: item.type
+
+      return data.features.map(item => ({
+        place_id: item.id,
+        formatted_address: item.place_name,
+        latitude: item.center[1],
+        longitude: item.center[0],
+        type: item.place_type[0]
       }));
     } catch (error) {
       console.error('Address search error:', error);
