@@ -38,12 +38,12 @@ class PenaltyService {
       
       const violations = [];
       
-      // Verificar tasa de aceptación
+      // Verificar tasa de aceptación (siempre advertencia, nunca suspensión directa)
       if (driverStats.acceptanceRate < this.THRESHOLDS.MIN_ACCEPTANCE_RATE) {
         violations.push({
           type: 'LOW_ACCEPTANCE',
-          message: `Tasa de aceptación muy baja: ${driverStats.acceptanceRate}%`,
-          severity: this.calculateSeverity(driverStats.acceptanceRate, 80, 60, 40)
+          message: `Tasa de aceptación muy baja: ${driverStats.acceptanceRate}% (${driverStats.tripsAccepted} de 10 viajes aceptados)`,
+          severity: 'WARNING'
         });
       }
 
