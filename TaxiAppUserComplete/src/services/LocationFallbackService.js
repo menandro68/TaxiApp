@@ -426,23 +426,16 @@ class LocationFallbackService {
     }
   }
 
-  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección (Google API)
+  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección (Mapbox API)
   static async getReverseGeocode(latitude, longitude) {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q&language=es`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
       );
       const data = await response.json();
       
-      if (data.status === 'OK' && data.results && data.results.length > 0) {
-        // Buscar el resultado más específico
-        const specificResult = data.results.find(r => 
-          r.types.includes('street_address') || 
-          r.types.includes('route') ||
-          r.types.includes('premise')
-        ) || data.results[0];
-
-        let address = specificResult.formatted_address;
+      if (data.features && data.features.length > 0) {
+        let address = data.features[0].place_name;
         
         // Limpiar si es muy largo
         if (address.length > 60) {
