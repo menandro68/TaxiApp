@@ -157,7 +157,7 @@ class LocationFallbackService {
         },
         {
           enableHighAccuracy: true,   // Alta precision GPS
-          timeout: 30000,             // 30 segundos maximo para mejor precision
+          timeout: 10000,             // 10 segundos por intento (3 intentos = 30s max)
           maximumAge: 0,              // SIN CACHE - siempre ubicacion fresca
           distanceFilter: 0
         }
@@ -192,15 +192,15 @@ class LocationFallbackService {
           };
         }
         
-        // Si es baja precision y no es el ultimo intento, esperar y reintentar
-        if (gpsCheck.reason === 'low_accuracy' && attempt < MAX_RETRIES) {
+        // Si es baja precision o timeout y no es el ultimo intento, reintentar
+        if ((gpsCheck.reason === 'low_accuracy' || gpsCheck.reason === 'timeout') && attempt < MAX_RETRIES) {
           console.log('Esperando 2s antes de reintentar...');
           await new Promise(resolve => setTimeout(resolve, 2000));
           continue;
         }
         
-        // Si es otro error, no reintentar
-        if (gpsCheck.reason !== 'low_accuracy') {
+        // Si es error de permisos, no reintentar
+        if (gpsCheck.reason === 'permission_denied') {
           break;
         }
       }
