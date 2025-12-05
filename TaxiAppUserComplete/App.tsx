@@ -744,6 +744,12 @@ const setupNotificationHandlers = () => {
 // NUEVA FUNCIÓN: Inicializar servicio de ubicación con fallback mejorado
 const initializeLocationService = async () => {
   try {
+    // Si ya tenemos ubicación GPS, no sobrescribir
+    if (userLocation && userLocation.source === 'gps') {
+      console.log('✅ Ya tenemos ubicación GPS, no sobrescribir');
+      return;
+    }
+    
     setIsLoadingLocation(true);
     console.log('Inicializando servicio de ubicacion...');
 
