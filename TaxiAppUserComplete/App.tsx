@@ -892,10 +892,9 @@ const initializeLocationService = async () => {
         setRideStatus(currentStatus);
         setTripRequest(currentTripRequest);
         setDriverInfo(currentDriverInfo);
-        if (currentUserLocation) {
-          setUserLocation(currentUserLocation);
-          setLocationSource(currentUserLocation.source || 'restored');
-        }
+     // NO restaurar ubicación del storage - siempre usar GPS fresco
+        // La ubicación se obtiene de initializeLocationService()
+        console.log('📍 Ubicación del storage ignorada, esperando GPS fresco');
         console.log('Estado del usuario restaurado:', currentStatus);
 
         // Si hay un conductor asignado, iniciar tracking
