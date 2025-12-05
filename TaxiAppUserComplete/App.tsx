@@ -382,15 +382,7 @@ const initializeApp = async () => {
     console.log('Inicializando TaxiApp Usuario...');
     setIsLoading(true);
 
-    // 1. Establecer ubicación por defecto INMEDIATAMENTE
-    setUserLocation({
-      latitude: 18.4861,
-      longitude: -69.9312,
-      address: 'Santo Domingo Este, República Dominicana',
-      source: 'default'
-    });
-
-    // 2. Obtener GPS en segundo plano (no bloquea)
+// 1. Obtener ubicación con geocoding (esto actualizará la dirección correctamente)
     initializeLocationService();
   
   // 2. Verificar si el usuario está autenticado
@@ -754,47 +746,67 @@ const initializeLocationService = async () => {
   try {
     setIsLoadingLocation(true);
     console.log('Inicializando servicio de ubicacion...');
-    
+
+    // Coordenadas por defecto
+    const defaultLat = 18.4861;
+    const defaultLng = -69.9312;
+
+    // Función helper para obtener dirección via Mapbox
+    const getAddressFromCoords = async (lat, lng) => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
+        );
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          let address = data.features[0].place_name;
+          if (address.length > 60) {
+            address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
+          }
+          return address;
+        }
+      } catch (e) {
+        console.error('Error en geocoding:', e);
+      }
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    };
+
     // 1. Primero solicitar permisos
     const permissionGranted = await requestLocationPermissions();
-    
+
     if (permissionGranted) {
       // 2. Intentar obtener ubicación con fallback automático
       const locationResult = await LocationFallbackService.getLocationForUser({
         showUserPrompt: false,
         timeout: 20000
       });
-      
+
       if (locationResult.success && locationResult.location) {
         // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
-        
+
         console.log('✅ Ubicación obtenida:', locationResult.location.source);
         console.log('📍 Coordenadas:', {
           lat: locationResult.location.latitude,
           lng: locationResult.location.longitude
         });
-        
-        if (locationResult.warning) {
-          // Mostrar warning pero no bloquear la app
-        
-        }
+
       } else {
-        // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK
-        console.log('⚠️ Fallo obteniendo ubicación GPS, usando fallback...');
-        
+        // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK CON GEOCODING
+        console.log('⚠️ Fallo obteniendo ubicación GPS, usando fallback con geocoding...');
+
+        const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
         const fallbackLocation = {
-          latitude: 18.4861,
-          longitude: -69.9312,
-          address: 'Santo Domingo Este, República Dominicana',
+          latitude: defaultLat,
+          longitude: defaultLng,
+          address: fallbackAddress,
           source: 'fallback'
         };
-        
+
         setUserLocation(fallbackLocation);
         setLocationSource('fallback');
-        
-        // Mostrar modal para que el usuario pueda seleccionar ubicación manual
+
         setTimeout(() => {
           Alert.alert(
             'Ubicación no disponible',
@@ -807,42 +819,56 @@ const initializeLocationService = async () => {
         }, 500);
       }
     } else {
-      // SIN PERMISOS - USAR FALLBACK DIRECTAMENTE
-      console.log('⚠️ Sin permisos de ubicación, usando ubicación por defecto');
-      
+      // SIN PERMISOS - USAR FALLBACK CON GEOCODING
+      console.log('⚠️ Sin permisos de ubicación, usando fallback con geocoding');
+
+      const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
       const defaultLocation = {
-        latitude: 18.4861,
-        longitude: -69.9312,
-        address: 'Santo Domingo Este, República Dominicana',
+        latitude: defaultLat,
+        longitude: defaultLng,
+        address: defaultAddress,
         source: 'default'
       };
-      
+
       setUserLocation(defaultLocation);
       setLocationSource('default');
       setLocationPermissionStatus('denied');
-      
-      // Mostrar modal para que seleccione ubicación
+
       setTimeout(() => {
         setShowLocationModal(true);
       }, 500);
     }
-    
+
   } catch (error) {
     console.error('❌ Error inicializando ubicación:', error);
+
+    // ÚLTIMO RECURSO: Emergency fallback con geocoding
+    const emergencyLat = 18.4861;
+    const emergencyLng = -69.9312;
     
-    // ÚLTIMO RECURSO: Emergency fallback
+    let emergencyAddress = `${emergencyLat.toFixed(4)}, ${emergencyLng.toFixed(4)}`;
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${emergencyLng},${emergencyLat}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
+      );
+      const data = await response.json();
+      if (data.features && data.features.length > 0) {
+        emergencyAddress = data.features[0].place_name;
+      }
+    } catch (e) {}
+
     const emergencyLocation = {
-      latitude: 18.4861,
-      longitude: -69.9312,
-      address: 'Santo Domingo Este, República Dominicana',
+      latitude: emergencyLat,
+      longitude: emergencyLng,
+      address: emergencyAddress,
       source: 'emergency_fallback'
     };
-    
+
     setUserLocation(emergencyLocation);
     setLocationSource('emergency_fallback');
-    
+
     console.log('🆘 Usando ubicación de emergencia:', emergencyLocation);
-    
+
   } finally {
     setIsLoadingLocation(false);
   }
