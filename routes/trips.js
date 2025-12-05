@@ -6,19 +6,29 @@ const db = require('../config/database');
 
 // CREAR NUEVO VIAJE
 router.post('/create', async (req, res) => {
-  const { user_id, pickup_location, destination } = req.body;
+  const { user_id, pickup_location, destination, pickup_coords, destination_coords, estimated_price, vehicle_type, payment_method } = req.body;
   
-  const query = `INSERT INTO trips (user_id, pickup_location, destination, status)  
-                 VALUES (?, ?, ?, 'pending')`;
+  // Extraer coordenadas
+  const pickupLat = pickup_coords?.latitude || null;
+  const pickupLng = pickup_coords?.longitude || null;
+  const destLat = destination_coords?.latitude || null;
+  const destLng = destination_coords?.longitude || null;
   
-  db.run(query, [user_id, pickup_location, destination], async function(err) {
+  console.log('📍 Coordenadas recibidas:', { pickupLat, pickupLng, destLat, destLng });
+  
+  const query = `INSERT INTO trips (user_id, pickup_location, destination, status, price, pickup_lat, pickup_lng, destination_lat, destination_lng)  
+                 VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)`;
+  
+  db.run(query, [user_id, pickup_location, destination, estimated_price || 0, pickupLat, pickupLng, destLat, destLng], async function(err) {
     if (err) {
+      console.error('❌ Error creando viaje:', err);
       return res.status(500).json({ error: 'Error al crear viaje' });
     }
     
     const tripId = this.lastID;
+    console.log('✅ Viaje creado con ID:', tripId);
     
-    // NUEVO: Obtener tokens FCM de conductores disponibles
+    // Obtener tokens FCM de conductores disponibles
     db.all(`SELECT fcm_token FROM drivers WHERE status = 'available' AND fcm_token IS NOT NULL`, [], async (err, drivers) => {
       if (err) {
         console.error('Error obteniendo tokens FCM:', err);
@@ -38,6 +48,11 @@ router.post('/create', async (req, res) => {
               phone: user?.phone || '',
               pickup: pickup_location,
               destination: destination,
+              pickupLat: pickupLat ? pickupLat.toString() : '',
+              pickupLng: pickupLng ? pickupLng.toString() : '',
+              destinationLat: destLat ? destLat.toString() : '',
+              destinationLng: destLng ? destLng.toString() : '',
+              estimatedPrice: (estimated_price || 0).toString(),
               type: 'NEW_TRIP_REQUEST'
             },
             tokens: tokens
@@ -145,7 +160,7 @@ router.get('/history/:userId', (req, res) => {
 
 // OBTENER TODOS LOS VIAJES
 router.get('/', (req, res) => {
- const query = `SELECT id, user_id, driver_id, pickup_location, destination, status, price, created_at FROM trips ORDER BY created_at DESC LIMIT 100`;
+  const query = `SELECT id, user_id, driver_id, pickup_location, destination, status, price, pickup_lat, pickup_lng, destination_lat, destination_lng, created_at FROM trips ORDER BY created_at DESC LIMIT 100`;
   
   db.all(query, [], (err, trips) => {
     if (err) {
