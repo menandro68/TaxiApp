@@ -78,6 +78,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showDrawer, setShowDrawer] = useState(false);
   const [showPickupSelector, setShowPickupSelector] = useState(false);
   const [pickupLocation, setPickupLocation] = useState(null);
+  const gpsObtainedRef = useRef(false);
 
   const Stack = createStackNavigator();
 
@@ -744,9 +745,9 @@ const setupNotificationHandlers = () => {
 // NUEVA FUNCIÓN: Inicializar servicio de ubicación con fallback mejorado
 const initializeLocationService = async () => {
   try {
-    // Si ya tenemos ubicación GPS, no sobrescribir
-    if (userLocation && userLocation.source === 'gps') {
-      console.log('✅ Ya tenemos ubicación GPS, no sobrescribir');
+    // Si ya obtuvimos ubicación GPS, no continuar
+    if (gpsObtainedRef.current) {
+      console.log('✅ Ya obtuvimos ubicación GPS, ignorando llamada duplicada');
       return;
     }
     
@@ -994,7 +995,7 @@ const initializeLocationService = async () => {
   };
 
 
-  // NUEVA FUNCIÓN: Reintentar obtener GPS
+// NUEVA FUNCIÓN: Reintentar obtener GPS
   const retryGPSLocation = async () => {
     try {
       setIsLoadingLocation(true);
@@ -1006,15 +1007,22 @@ const initializeLocationService = async () => {
       });
       
       if (locationResult.success && locationResult.location) {
+        // ✅ Marcar que ya obtuvimos ubicación si es GPS
+        if (locationResult.location.source === 'gps') {
+          gpsObtainedRef.current = true;
+        }
+        
+        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
+        setUserLocation(locationResult.location);
         await handleLocationSelected(locationResult.location);
         
-       if (locationResult.location.source === 'gps') {
-  Alert.alert(
-    '¡Éxito!', 
-    'Ubicación GPS obtenida correctamente',
-    [{ text: 'OK', onPress: () => setPickupLocationConfirmed(true) }]
-  );
-  } else {
+        if (locationResult.location.source === 'gps') {
+          Alert.alert(
+            '¡Éxito!', 
+            'Ubicación GPS obtenida correctamente',
+            [{ text: 'OK', onPress: () => setPickupLocationConfirmed(true) }]
+          );
+        } else {
           Alert.alert(
             'GPS no disponible', 
             'Se usó ubicación aproximada. ' + (locationResult.warning || '')
