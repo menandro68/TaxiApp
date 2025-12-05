@@ -173,14 +173,19 @@ class LocationFallbackService {
         };
       }
       
-      // Si GPS no está disponible, usar fallback
-      console.log('⚠️ GPS no disponible, usando ubicación por defecto');
+      // Si GPS no está disponible, usar fallback CON GEOCODING
+      console.log('⚠️ GPS no disponible, usando ubicación por defecto con geocoding');
       console.log('Razón:', gpsCheck.reason, '-', gpsCheck.message);
+      
+      // Obtener dirección real de las coordenadas por defecto
+      const fallbackAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
       
       return {
         success: true,
         location: {
-          ...DEFAULT_LOCATION,
+          latitude: DEFAULT_LOCATION.latitude,
+          longitude: DEFAULT_LOCATION.longitude,
+          address: fallbackAddress,
           source: 'fallback',
           fallbackReason: gpsCheck.reason
         },
@@ -190,10 +195,15 @@ class LocationFallbackService {
     } catch (error) {
       console.error('❌ Error en getCurrentLocationWithFallback:', error);
       
+      // Último recurso con geocoding
+      const emergencyAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
+      
       return {
-        success: true, // Siempre devolver success con fallback
+        success: true,
         location: {
-          ...DEFAULT_LOCATION,
+          latitude: DEFAULT_LOCATION.latitude,
+          longitude: DEFAULT_LOCATION.longitude,
+          address: emergencyAddress,
           source: 'fallback',
           fallbackReason: 'error'
         },
@@ -414,10 +424,15 @@ class LocationFallbackService {
     } catch (error) {
       console.error('❌ Error en getLocationForUser:', error);
       
+      // Usar geocoding incluso en error
+      const errorAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
+      
       return {
         success: true,
         location: {
-          ...DEFAULT_LOCATION,
+          latitude: DEFAULT_LOCATION.latitude,
+          longitude: DEFAULT_LOCATION.longitude,
+          address: errorAddress,
           source: 'error_fallback'
         },
         error: error.message,
