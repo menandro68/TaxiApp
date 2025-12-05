@@ -103,7 +103,19 @@ class LocationFallbackService {
       
       Geolocation.getCurrentPosition(
         (position) => {
-          console.log('✅ GPS disponible y funcionando');
+          // Validar precisión mínima (20 metros)
+          if (position.coords.accuracy > 50) {
+            console.log('⚠️ GPS con baja precisión:', position.coords.accuracy, 'm - reintentando...');
+            resolve({
+              available: false,
+              reason: 'low_accuracy',
+              message: `Precisión insuficiente: ${Math.round(position.coords.accuracy)}m`,
+              location: null
+            });
+            return;
+          }
+          
+          console.log('✅ GPS disponible y funcionando - Precisión:', position.coords.accuracy, 'm');
           resolve({
             available: true,
             reason: 'success',
@@ -145,8 +157,8 @@ class LocationFallbackService {
         },
       {
           enableHighAccuracy: true,   // Alta precisión GPS
-          timeout: 15000,             // 15 segundos máximo
-          maximumAge: 5000,           // Caché de solo 5 segundos
+          timeout: 30000,             // 30 segundos máximo para mejor precisión
+          maximumAge: 0,              // SIN CACHÉ - siempre ubicación fresca
           distanceFilter: 0
         }
       );
