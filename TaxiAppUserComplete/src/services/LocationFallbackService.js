@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+﻿import { Alert } from 'react-native';
 import PermissionService from './PermissionService';
 import Geolocation from '@react-native-community/geolocation';
 
@@ -7,7 +7,7 @@ const POPULAR_LOCATIONS = [
   {
     id: 'megacentro',
     name: 'Megacentro',
-    address: 'Av. San Vicente de Paúl, Santo Domingo Este',
+    address: 'Av. San Vicente de Paul, Santo Domingo Este',
     latitude: 18.4861,
     longitude: -69.9312,
     category: 'shopping'
@@ -23,7 +23,7 @@ const POPULAR_LOCATIONS = [
   {
     id: 'plaza_cultura',
     name: 'Plaza de la Cultura',
-    address: 'Ave. Máximo Gómez, Santo Domingo',
+    address: 'Ave. Maximo Gomez, Santo Domingo',
     latitude: 18.4685,
     longitude: -69.9020,
     category: 'landmark'
@@ -38,8 +38,8 @@ const POPULAR_LOCATIONS = [
   },
   {
     id: 'aeropuerto',
-    name: 'Aeropuerto Las Américas',
-    address: 'Autopista Las Américas, Punta Caucedo',
+    name: 'Aeropuerto Las Americas',
+    address: 'Autopista Las Americas, Punta Caucedo',
     latitude: 18.4297,
     longitude: -69.6689,
     category: 'transport'
@@ -70,20 +70,20 @@ const POPULAR_LOCATIONS = [
   }
 ];
 
-// Ubicación por defecto para Santo Domingo Este
+// Ubicacion por defecto para Santo Domingo Este
 const DEFAULT_LOCATION = {
   latitude: 18.4861,
   longitude: -69.9312,
-  address: 'Santo Domingo Este, República Dominicana',
+  address: 'Santo Domingo Este, Republica Dominicana',
   accuracy: 'fallback'
 };
 
 class LocationFallbackService {
   
-  // ✅ VERIFICAR SI GPS ESTÁ DISPONIBLE Y HABILITADO
+  // VERIFICAR SI GPS ESTA DISPONIBLE Y HABILITADO
   static async checkGPSAvailability() {
     return new Promise(async (resolve) => {
-      console.log('📍 Verificando disponibilidad del GPS...');
+      console.log('Verificando disponibilidad del GPS...');
 
       // Primero verificar y solicitar permisos
       const permissionResult = await PermissionService.requestLocationPermission();
@@ -92,30 +92,30 @@ class LocationFallbackService {
         resolve({
           available: false,
           reason: 'permission_denied',
-          message: 'Permisos de ubicación no concedidos',
+          message: 'Permisos de ubicacion no concedidos',
           location: null
         });
         return;
       }
 
-      // Obtener ubicación con caché agresivo (máximo 2-3 segundos)
-      console.log('📍 Obteniendo ubicación con caché agresivo...');
+      // Obtener ubicacion fresca
+      console.log('Obteniendo ubicacion GPS...');
       
       Geolocation.getCurrentPosition(
         (position) => {
-          // Validar precisión mínima (20 metros)
+          // Validar precision minima (50 metros)
           if (position.coords.accuracy > 50) {
-            console.log('⚠️ GPS con baja precisión:', position.coords.accuracy, 'm - reintentando...');
+            console.log('GPS con baja precision:', position.coords.accuracy, 'm - reintentando...');
             resolve({
               available: false,
               reason: 'low_accuracy',
-              message: `Precisión insuficiente: ${Math.round(position.coords.accuracy)}m`,
+              message: `Precision insuficiente: ${Math.round(position.coords.accuracy)}m`,
               location: null
             });
             return;
           }
           
-          console.log('✅ GPS disponible y funcionando - Precisión:', position.coords.accuracy, 'm');
+          console.log('GPS disponible y funcionando - Precision:', position.coords.accuracy, 'm');
           resolve({
             available: true,
             reason: 'success',
@@ -128,7 +128,7 @@ class LocationFallbackService {
           });
         },
         (error) => {
-          console.log('❌ GPS falló:', error.message);
+          console.log('GPS fallo:', error.message);
           
           let reason = 'unknown_error';
           let message = 'Error desconocido';
@@ -136,11 +136,11 @@ class LocationFallbackService {
           switch (error.code) {
             case 1:
               reason = 'permission_denied';
-              message = 'Permisos de ubicación denegados';
+              message = 'Permisos de ubicacion denegados';
               break;
             case 2:
               reason = 'position_unavailable';
-              message = 'Ubicación no disponible';
+              message = 'Ubicacion no disponible';
               break;
             case 3:
               reason = 'timeout';
@@ -155,41 +155,61 @@ class LocationFallbackService {
             location: null
           });
         },
-      {
-          enableHighAccuracy: true,   // Alta precisión GPS
-          timeout: 30000,             // 30 segundos máximo para mejor precisión
-          maximumAge: 0,              // SIN CACHÉ - siempre ubicación fresca
+        {
+          enableHighAccuracy: true,   // Alta precision GPS
+          timeout: 30000,             // 30 segundos maximo para mejor precision
+          maximumAge: 0,              // SIN CACHE - siempre ubicacion fresca
           distanceFilter: 0
         }
       );
     });
   }
 
-  // ✅ OBTENER UBICACIÓN CON FALLBACK AUTOMÁTICO
+  // OBTENER UBICACION CON FALLBACK AUTOMATICO
   static async getCurrentLocationWithFallback() {
     try {
-      console.log('🔍 Obteniendo ubicación con fallback...');
+      console.log('Obteniendo ubicacion con fallback...');
       
-      // Primero intentar GPS real
-      const gpsCheck = await this.checkGPSAvailability();
+      // Reintentar GPS hasta 3 veces si hay baja precision
+      const MAX_RETRIES = 3;
+      let lastGpsCheck = null;
       
-      if (gpsCheck.available) {
-        console.log('✅ Usando ubicación GPS real');
-        return {
-          success: true,
-          location: {
-            ...gpsCheck.location,
-            address: await this.getReverseGeocode(gpsCheck.location.latitude, gpsCheck.location.longitude),
-            source: 'gps'
-          }
-        };
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        console.log('Intento GPS ' + attempt + '/' + MAX_RETRIES + '...');
+        
+        const gpsCheck = await this.checkGPSAvailability();
+        lastGpsCheck = gpsCheck;
+        
+        if (gpsCheck.available) {
+          console.log('Usando ubicacion GPS real');
+          return {
+            success: true,
+            location: {
+              ...gpsCheck.location,
+              address: await this.getReverseGeocode(gpsCheck.location.latitude, gpsCheck.location.longitude),
+              source: 'gps'
+            }
+          };
+        }
+        
+        // Si es baja precision y no es el ultimo intento, esperar y reintentar
+        if (gpsCheck.reason === 'low_accuracy' && attempt < MAX_RETRIES) {
+          console.log('Esperando 2s antes de reintentar...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        
+        // Si es otro error, no reintentar
+        if (gpsCheck.reason !== 'low_accuracy') {
+          break;
+        }
       }
+
+      // Despues de reintentos, usar fallback
+      console.log('GPS no disponible despues de reintentos, usando fallback');
+      console.log('Razon:', lastGpsCheck.reason, '-', lastGpsCheck.message);
       
-      // Si GPS no está disponible, usar fallback CON GEOCODING
-      console.log('⚠️ GPS no disponible, usando ubicación por defecto con geocoding');
-      console.log('Razón:', gpsCheck.reason, '-', gpsCheck.message);
-      
-      // Obtener dirección real de las coordenadas por defecto
+      // Obtener direccion real de las coordenadas por defecto
       const fallbackAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
       
       return {
@@ -199,15 +219,15 @@ class LocationFallbackService {
           longitude: DEFAULT_LOCATION.longitude,
           address: fallbackAddress,
           source: 'fallback',
-          fallbackReason: gpsCheck.reason
+          fallbackReason: lastGpsCheck.reason
         },
-        warning: `No se pudo obtener tu ubicación exacta: ${gpsCheck.message}`
+        warning: `No se pudo obtener tu ubicacion exacta: ${lastGpsCheck.message}`
       };
       
     } catch (error) {
-      console.error('❌ Error en getCurrentLocationWithFallback:', error);
+      console.error('Error en getCurrentLocationWithFallback:', error);
       
-      // Último recurso con geocoding
+      // Ultimo recurso con geocoding
       const emergencyAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
       
       return {
@@ -219,12 +239,12 @@ class LocationFallbackService {
           source: 'fallback',
           fallbackReason: 'error'
         },
-        warning: 'Error obteniendo ubicación, usando ubicación por defecto'
+        warning: 'Error obteniendo ubicacion, usando ubicacion por defecto'
       };
     }
   }
 
-  // ✅ OBTENER LISTA DE UBICACIONES POPULARES
+  // OBTENER LISTA DE UBICACIONES POPULARES
   static getPopularLocations() {
     return POPULAR_LOCATIONS.map(location => ({
       ...location,
@@ -232,14 +252,14 @@ class LocationFallbackService {
     }));
   }
 
-  // ✅ FILTRAR UBICACIONES POR CATEGORÍA
+  // FILTRAR UBICACIONES POR CATEGORIA
   static getLocationsByCategory(category) {
     return POPULAR_LOCATIONS.filter(location => 
       location.category === category
     );
   }
 
-  // ✅ BUSCAR UBICACIÓN POR NOMBRE
+  // BUSCAR UBICACION POR NOMBRE
   static searchLocationByName(query) {
     const searchTerm = query.toLowerCase().trim();
     
@@ -249,16 +269,16 @@ class LocationFallbackService {
     );
   }
 
-  // ✅ MOSTRAR OPCIONES DE FALLBACK AL USUARIO
+  // MOSTRAR OPCIONES DE FALLBACK AL USUARIO
   static showLocationFallbackOptions(onLocationSelected) {
     Alert.alert(
-      '🔍 Seleccionar ubicación',
-      'No se pudo obtener tu ubicación exacta. ¿Qué te gustaría hacer?',
+      'Seleccionar ubicacion',
+      'No se pudo obtener tu ubicacion exacta. Que te gustaria hacer?',
       [
         {
-          text: 'Usar ubicación por defecto',
+          text: 'Usar ubicacion por defecto',
           onPress: () => {
-            console.log('👤 Usuario seleccionó ubicación por defecto');
+            console.log('Usuario selecciono ubicacion por defecto');
             onLocationSelected({
               ...DEFAULT_LOCATION,
               source: 'user_selected_default'
@@ -268,7 +288,7 @@ class LocationFallbackService {
         {
           text: 'Elegir en el mapa',
           onPress: () => {
-            console.log('🗺️ Usuario quiere elegir en el mapa');
+            console.log('Usuario quiere elegir en el mapa');
             onLocationSelected({
               action: 'choose_on_map'
             });
@@ -277,7 +297,7 @@ class LocationFallbackService {
         {
           text: 'Ubicaciones populares',
           onPress: () => {
-            console.log('🏢 Usuario quiere ver ubicaciones populares');
+            console.log('Usuario quiere ver ubicaciones populares');
             onLocationSelected({
               action: 'show_popular_locations'
             });
@@ -286,7 +306,7 @@ class LocationFallbackService {
         {
           text: 'Reintentar GPS',
           onPress: () => {
-            console.log('🔄 Usuario quiere reintentar GPS');
+            console.log('Usuario quiere reintentar GPS');
             onLocationSelected({
               action: 'retry_gps'
             });
@@ -297,7 +317,7 @@ class LocationFallbackService {
     );
   }
 
-  // ✅ VALIDAR COORDENADAS
+  // VALIDAR COORDENADAS
   static validateCoordinates(latitude, longitude) {
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
@@ -305,7 +325,7 @@ class LocationFallbackService {
     const isValidLat = lat >= -90 && lat <= 90;
     const isValidLng = lng >= -180 && lng <= 180;
     
-    // Verificar que esté en República Dominicana (aproximadamente)
+    // Verificar que este en Republica Dominicana (aproximadamente)
     const isInDR = lat >= 17.5 && lat <= 20.0 && lng >= -72.0 && lng <= -68.0;
     
     return {
@@ -315,9 +335,9 @@ class LocationFallbackService {
     };
   }
 
-  // ✅ FORMATEAR DIRECCIÓN PARA MOSTRAR
+  // FORMATEAR DIRECCION PARA MOSTRAR
   static formatAddressForDisplay(location) {
-    if (!location) return 'Ubicación no disponible';
+    if (!location) return 'Ubicacion no disponible';
     
     if (location.address) {
       return location.address;
@@ -327,10 +347,10 @@ class LocationFallbackService {
       return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
     }
     
-    return 'Ubicación desconocida';
+    return 'Ubicacion desconocida';
   }
 
-  // ✅ CALCULAR DISTANCIA ENTRE DOS PUNTOS (Haversine)
+  // CALCULAR DISTANCIA ENTRE DOS PUNTOS (Haversine)
   static calculateDistance(point1, point2) {
     const R = 6371; // Radio de la Tierra en km
     const dLat = this.deg2rad(point2.latitude - point1.latitude);
@@ -351,10 +371,10 @@ class LocationFallbackService {
     return deg * (Math.PI/180);
   }
 
-  // ✅ ENCONTRAR UBICACIÓN POPULAR MÁS CERCANA
+  // ENCONTRAR UBICACION POPULAR MAS CERCANA
   static findNearestPopularLocation(userLocation) {
     if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
-      return POPULAR_LOCATIONS[0]; // Retornar la primera si no hay ubicación
+      return POPULAR_LOCATIONS[0]; // Retornar la primera si no hay ubicacion
     }
     
     let nearest = POPULAR_LOCATIONS[0];
@@ -375,9 +395,9 @@ class LocationFallbackService {
     };
   }
 
-  // ✅ OBTENER ESTADÍSTICAS DE USO DE FALLBACK
+  // OBTENER ESTADISTICAS DE USO DE FALLBACK
   static getFallbackStats() {
-    // En una implementación real, esto podría venir de analytics
+    // En una implementacion real, esto podria venir de analytics
     return {
       gpsSuccessRate: 85,
       fallbackUsageRate: 15,
@@ -387,7 +407,7 @@ class LocationFallbackService {
     };
   }
 
-  // ✅ FUNCIÓN PRINCIPAL PARA INTEGRAR EN LA APP
+  // FUNCION PRINCIPAL PARA INTEGRAR EN LA APP
   static async getLocationForUser(options = {}) {
     const {
       showUserPrompt = true,
@@ -396,45 +416,45 @@ class LocationFallbackService {
     } = options;
     
     try {
-      console.log('🚀 Iniciando obtención de ubicación para usuario...');
+      console.log('Iniciando obtencion de ubicacion para usuario...');
       
-      // 1. Intentar obtener ubicación GPS
+      // 1. Intentar obtener ubicacion GPS
       const locationResult = await this.getCurrentLocationWithFallback();
       
       if (locationResult.success && locationResult.location.source === 'gps') {
-        // GPS funcionó perfectamente
+        // GPS funciono perfectamente
         return locationResult;
       }
       
-      // 2. GPS no funcionó, manejar fallback
+      // 2. GPS no funciono, manejar fallback
       if (showUserPrompt) {
         return new Promise((resolve) => {
           this.showLocationFallbackOptions((selection) => {
             if (selection.action) {
-              // Usuario quiere hacer algo específico
+              // Usuario quiere hacer algo especifico
               resolve({
                 success: true,
                 location: null,
                 action: selection.action,
-                message: 'Usuario requiere acción adicional'
+                message: 'Usuario requiere accion adicional'
               });
             } else {
-              // Usuario seleccionó una ubicación
+              // Usuario selecciono una ubicacion
               resolve({
                 success: true,
                 location: selection,
-                message: 'Ubicación seleccionada por el usuario'
+                message: 'Ubicacion seleccionada por el usuario'
               });
             }
           });
         });
       } else {
-        // Usar fallback automático sin preguntar
+        // Usar fallback automatico sin preguntar
         return locationResult;
       }
       
     } catch (error) {
-      console.error('❌ Error en getLocationForUser:', error);
+      console.error('Error en getLocationForUser:', error);
       
       // Usar geocoding incluso en error
       const errorAddress = await this.getReverseGeocode(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude);
@@ -448,12 +468,12 @@ class LocationFallbackService {
           source: 'error_fallback'
         },
         error: error.message,
-        warning: 'Error obteniendo ubicación, usando ubicación por defecto'
+        warning: 'Error obteniendo ubicacion, usando ubicacion por defecto'
       };
     }
   }
 
-  // ✅ REVERSE GEOCODING - Convertir coordenadas a dirección (Mapbox API)
+  // REVERSE GEOCODING - Convertir coordenadas a direccion (Mapbox API)
   static async getReverseGeocode(latitude, longitude) {
     try {
       const response = await fetch(
@@ -466,15 +486,15 @@ class LocationFallbackService {
         
         // Limpiar si es muy largo
         if (address.length > 60) {
-          address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
+          address = address.replace(', Republica Dominicana', '').replace(', Dominican Republic', '');
         }
         
         return address;
       }
-      return 'Ubicación desconocida';
+      return 'Ubicacion desconocida';
     } catch (error) {
       console.error('Error reverse geocoding:', error);
-      return 'Ubicación desconocida';
+      return 'Ubicacion desconocida';
     }
   }
 }
