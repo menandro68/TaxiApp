@@ -10,7 +10,7 @@ import Geolocation from '@react-native-community/geolocation';
 const AddressCache = {
   // Configuración
   CONFIG: {
-    CACHE_DURATION_MS: 10 * 60 * 1000,  // 10 minutos de validez
+    CACHE_DURATION_MS: 30 * 60 * 1000,  // 10 minutos de validez
     MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros mínimo para actualizar
     COORDINATE_PRECISION: 3,             // 3 decimales (~100m de grid)
     STORAGE_KEY: 'address_cache_v2'      // Clave para AsyncStorage
