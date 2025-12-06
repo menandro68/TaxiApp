@@ -34,8 +34,8 @@ const AddressCache = {
         // Limpiar si expiró
         if (age > this.CONFIG.CACHE_DURATION_MS) {
           console.log('?? Caché: Expirado, limpiando...');
-          this._cache = null;
-          await AsyncStorage.removeItem(this.CONFIG.STORAGE_KEY);
+          // this._cache = null; // COMENTADO - conservar para fallback
+          // await AsyncStorage.removeItem(this.CONFIG.STORAGE_KEY); // COMENTADO
         }
       } else {
         console.log('?? Caché: No hay caché en storage');
