@@ -778,6 +778,16 @@ const initializeLocationService = async () => {
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     };
 
+    // ? PASO 0: Intentar carga INSTANTÁNEA desde caché (< 100ms)
+    const cachedLocation = await LocationFallbackService.getInstantCachedLocation();
+    if (cachedLocation && cachedLocation.success) {
+      console.log('? Mostrando ubicación cacheada INMEDIATAMENTE');
+      setUserLocation(cachedLocation.location);
+      setLocationSource('cached_instant');
+      setIsLoadingLocation(false);
+      console.log('?? Actualizando GPS en background...');
+    }
+
     // 1. Primero solicitar permisos
     const permissionGranted = await requestLocationPermissions();
 
