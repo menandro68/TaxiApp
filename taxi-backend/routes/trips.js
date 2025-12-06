@@ -413,11 +413,42 @@ router.put('/status/:tripId', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Viaje no encontrado' });
         }
+
+        const trip = result.rows[0];
+
+        // NOTIFICAR AL USUARIO CUANDO EL CONDUCTOR LLEGA
+        if (status === 'arrived') {
+            try {
+                const userResult = await db.query(
+                    `SELECT fcm_token, name FROM users WHERE id = $1`,
+                    [trip.user_id]
+                );
+                const user = userResult.rows[0];
+
+                if (user && user.fcm_token) {
+                    const admin = require('firebase-admin');
+                    await admin.messaging().send({
+                        notification: {
+                            title: '🚗 ¡Tu conductor llegó!',
+                            body: 'Tu conductor está esperándote en el punto de recogida'
+                        },
+                        data: {
+                            type: 'DRIVER_ARRIVED',
+                            tripId: tripId.toString()
+                        },
+                        token: user.fcm_token
+                    });
+                    console.log(`✅ Usuario ${user.name} notificado: conductor llegó`);
+                }
+            } catch (notifyError) {
+                console.error('⚠️ Error notificando llegada:', notifyError.message);
+            }
+        }
         
         res.json({
             success: true,
             message: `Estado actualizado a: ${status}`,
-            trip: result.rows[0]
+            trip: trip
         });
     } catch (error) {
         console.error('Error actualizando estado:', error);
