@@ -126,7 +126,9 @@ router.post('/create', async (req, res) => {
                         distance: driver.distance.toFixed(2),
                         estimatedPrice: (estimated_price || 0).toString(),
                         paymentMethod: payment_method || 'Efectivo',
-                        vehicleType: vehicle_type || 'Estándar'
+                        vehicleType: vehicle_type || 'Estándar',
+                        pickupLat: pickup_coords.latitude.toString(),
+                        pickupLng: pickup_coords.longitude.toString()
                     },
                     token: driver.fcm_token
                 };
@@ -279,7 +281,7 @@ router.post('/accept/:tripId', async (req, res) => {
 router.post('/reject/:tripId', async (req, res) => {
     try {
         const { tripId } = req.params;
-        const { driver_id } = req.body;
+        const { driver_id, pickupLat, pickupLng } = req.body;
 
         console.log(`❌ Conductor ${driver_id} rechazó viaje ${tripId}`);
 
@@ -330,7 +332,9 @@ router.post('/reject/:tripId', async (req, res) => {
                         phone: user.phone || '',
                         pickup: trip.pickup_location,
                         destination: trip.destination,
-                        estimatedPrice: (trip.price || 0).toString()
+                        estimatedPrice: (trip.price || 0).toString(),
+                        pickupLat: pickupLat || '',
+                        pickupLng: pickupLng || ''
                     },
                     token: nextDriver.fcm_token
                 });
