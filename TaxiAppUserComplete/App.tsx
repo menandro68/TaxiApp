@@ -742,6 +742,7 @@ const setupNotificationHandlers = () => {
     // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');
   };
+
 // NUEVA FUNCIÓN: Inicializar servicio de ubicación con fallback mejorado
 const initializeLocationService = async () => {
   try {
@@ -758,9 +759,13 @@ const initializeLocationService = async () => {
     const defaultLat = 18.4861;
     const defaultLng = -69.9312;
 
+    // Variable para guardar ubicación cacheada válida
+    let validCachedLocation = null;
+
     // Función helper para obtener dirección via Mapbox
     const getAddressFromCoords = async (lat, lng) => {
       try {
+        console.log(`🗺️ Consultando Mapbox para: ${lat}, ${lng}`);
         const response = await fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
         );
@@ -770,6 +775,7 @@ const initializeLocationService = async () => {
           if (address.length > 60) {
             address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
           }
+          console.log(`🗺️ Dirección obtenida: ${address}`);
           return address;
         }
       } catch (e) {
@@ -778,14 +784,15 @@ const initializeLocationService = async () => {
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     };
 
-    // ? PASO 0: Intentar carga INSTANT�NEA desde cach� (< 100ms)
+    // 🚀 PASO 0: Intentar carga INSTANTÁNEA desde caché (< 100ms)
     const cachedLocation = await LocationFallbackService.getInstantCachedLocation();
-    if (cachedLocation && cachedLocation.success) {
-      console.log('? Mostrando ubicaci�n cacheada INMEDIATAMENTE');
+    if (cachedLocation && cachedLocation.success && cachedLocation.location) {
+      console.log('⚡ Mostrando ubicación cacheada INMEDIATAMENTE');
+      validCachedLocation = cachedLocation.location;
       setUserLocation(cachedLocation.location);
       setLocationSource('cached_instant');
       setIsLoadingLocation(false);
-      console.log('?? Actualizando GPS en background...');
+      console.log('🔄 Actualizando GPS en background...');
     }
 
     // 1. Primero solicitar permisos
@@ -799,9 +806,10 @@ const initializeLocationService = async () => {
       });
 
       if (locationResult.success && locationResult.location) {
-        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
+        // ✅ UBICACIÓN GPS OBTENIDA CORRECTAMENTE
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
+        gpsObtainedRef.current = true;
 
         console.log('✅ Ubicación obtenida:', locationResult.location.source);
         console.log('📍 Coordenadas:', {
@@ -810,50 +818,74 @@ const initializeLocationService = async () => {
         });
 
       } else {
-        // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK CON GEOCODING
-        console.log('⚠️ Fallo obteniendo ubicación GPS, usando fallback con geocoding...');
+        // ❌ FALLO OBTENIENDO GPS - VERIFICAR SI TENEMOS CACHÉ VÁLIDO
+        console.log('⚠️ Fallo obteniendo ubicación GPS...');
 
-        const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
-        const fallbackLocation = {
-          latitude: defaultLat,
-          longitude: defaultLng,
-          address: fallbackAddress,
-          source: 'fallback'
-        };
+        if (validCachedLocation && validCachedLocation.latitude && validCachedLocation.longitude) {
+          // ✅ MANTENER UBICACIÓN CACHEADA - NO SOBREESCRIBIR
+          console.log('✅ Manteniendo ubicación cacheada válida:', {
+            lat: validCachedLocation.latitude,
+            lng: validCachedLocation.longitude,
+            address: validCachedLocation.address
+          });
+          // La ubicación ya está establecida del caché, no hacer nada más
+          
+        } else {
+          // ❌ NO HAY CACHÉ - USAR FALLBACK CON GEOCODING
+          console.log('⚠️ Sin caché válido, usando fallback con geocoding...');
 
-        setUserLocation(fallbackLocation);
-        setLocationSource('fallback');
+          const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
+          const fallbackLocation = {
+            latitude: defaultLat,
+            longitude: defaultLng,
+            address: fallbackAddress,
+            source: 'fallback'
+          };
 
-        setTimeout(() => {
-          Alert.alert(
-            'Ubicación no disponible',
-            'No se pudo obtener tu ubicación GPS. Estamos usando ubicación por defecto.',
-            [
-              { text: 'Usar esta', style: 'cancel' },
-              { text: 'Seleccionar otra', onPress: () => setShowLocationModal(true) }
-            ]
-          );
-        }, 500);
+          setUserLocation(fallbackLocation);
+          setLocationSource('fallback');
+
+          setTimeout(() => {
+            Alert.alert(
+              'Ubicación no disponible',
+              'No se pudo obtener tu ubicación GPS. Estamos usando ubicación por defecto.',
+              [
+                { text: 'Usar esta', style: 'cancel' },
+                { text: 'Seleccionar otra', onPress: () => setShowLocationModal(true) }
+              ]
+            );
+          }, 500);
+        }
       }
     } else {
-      // SIN PERMISOS - USAR FALLBACK CON GEOCODING
-      console.log('⚠️ Sin permisos de ubicación, usando fallback con geocoding');
+      // SIN PERMISOS - VERIFICAR SI TENEMOS CACHÉ VÁLIDO
+      console.log('⚠️ Sin permisos de ubicación...');
 
-      const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
-      const defaultLocation = {
-        latitude: defaultLat,
-        longitude: defaultLng,
-        address: defaultAddress,
-        source: 'default'
-      };
+      if (validCachedLocation && validCachedLocation.latitude && validCachedLocation.longitude) {
+        // ✅ MANTENER UBICACIÓN CACHEADA
+        console.log('✅ Sin permisos pero tenemos caché válido, manteniéndolo');
+        setLocationPermissionStatus('denied');
+        
+      } else {
+        // ❌ NO HAY CACHÉ - USAR FALLBACK
+        console.log('⚠️ Sin permisos y sin caché, usando fallback con geocoding');
 
-      setUserLocation(defaultLocation);
-      setLocationSource('default');
-      setLocationPermissionStatus('denied');
+        const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
+        const defaultLocation = {
+          latitude: defaultLat,
+          longitude: defaultLng,
+          address: defaultAddress,
+          source: 'default'
+        };
 
-      setTimeout(() => {
-        setShowLocationModal(true);
-      }, 500);
+        setUserLocation(defaultLocation);
+        setLocationSource('default');
+        setLocationPermissionStatus('denied');
+
+        setTimeout(() => {
+          setShowLocationModal(true);
+        }, 500);
+      }
     }
 
   } catch (error) {
@@ -890,164 +922,6 @@ const initializeLocationService = async () => {
     setIsLoadingLocation(false);
   }
 };
-
-  const loadUserState = async () => {
-    try {
-      const currentStatus = await SharedStorage.getTripStatus();
-      const currentTripRequest = await SharedStorage.getTripRequest();
-      const currentDriverInfo = await SharedStorage.getDriverInfo();
-      const currentUserLocation = await SharedStorage.getUserLocation();
-
-      if (currentStatus !== TRIP_STATES.IDLE) {
-        setRideStatus(currentStatus);
-        setTripRequest(currentTripRequest);
-        setDriverInfo(currentDriverInfo);
-     // NO restaurar ubicación del storage - siempre usar GPS fresco
-        // La ubicación se obtiene de initializeLocationService()
-        console.log('📍 Ubicación del storage ignorada, esperando GPS fresco');
-        console.log('Estado del usuario restaurado:', currentStatus);
-
-        // Si hay un conductor asignado, iniciar tracking
-        if (currentStatus === TRIP_STATES.DRIVER_ASSIGNED && currentDriverInfo) {
-          startDriverTracking(currentDriverInfo, currentUserLocation);
-        }
-      }
-    } catch (error) {
-      console.error('Error cargando estado del usuario:', error);
-    }
-  };
-
-  // FUNCIÓN MEJORADA: Solicitar permisos de ubicación
-  const requestLocationPermissions = async () => {
-    try {
-      console.log('Solicitando permisos de ubicacion...');
-      setLocationPermissionStatus('requesting');
-      
-      const fine = await request(
-        Platform.OS === 'android'
-          ? PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION
-          : PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-      );
-      
-      console.log('Resultado de permisos:', fine);
-      
-      if (fine === RESULTS.GRANTED) {
-        console.log('Permisos de ubicacion concedidos');
-        setLocationPermissionStatus('granted');
-        return true;
-      } else if (fine === RESULTS.DENIED) {
-        console.log('Permisos de ubicacion denegados');
-        setLocationPermissionStatus('denied');
-        return false;
-      } else if (fine === RESULTS.BLOCKED) {
-        console.log('Permisos de ubicacion bloqueados');
-        setLocationPermissionStatus('blocked');
-        return false;
-      } else {
-        console.log('Estado de permiso desconocido:', fine);
-        setLocationPermissionStatus('unknown');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error solicitando permisos:', error);
-      setLocationPermissionStatus('error');
-      return false;
-    }
-  };
-
-  // NUEVA FUNCIÓN: Manejar selección de ubicación manual
-  const handleLocationSelected = async (location) => {
-    try {
-      console.log('Nueva ubicacion seleccionada:', location);
-      
-      // Validar coordenadas
-      const validation = LocationFallbackService.validateCoordinates(
-        location.latitude, 
-        location.longitude
-      );
-      
-      if (!validation.valid) {
-        Alert.alert('Error', 'Las coordenadas seleccionadas no son válidas');
-        return;
-      }
-      
-      if (!validation.inDominicanRepublic) {
-        Alert.alert(
-          'Ubicación fuera de servicio',
-          'TaxiApp actualmente solo opera en República Dominicana'
-        );
-        return;
-      }
-      
-      // Actualizar ubicación del usuario
-      const newLocation = {
-        ...location,
-        source: location.source || 'manual'
-      };
-      
-      setUserLocation(newLocation);
-      setLocationSource(newLocation.source);
-      // Guardar ubicación de forma segura
-      await SecureStorage.saveLocation(newLocation);
-      await SharedStorage.saveUserLocation(newLocation); // Mantener para compatibilidad
-      
-      // Cerrar modales
-      setShowLocationModal(false);
-      setShowPopularLocations(false);
-      
-      console.log('Ubicacion actualizada exitosamente');
-      
-    } catch (error) {
-      console.error('Error actualizando ubicacion:', error);
-      Alert.alert('Error', 'No se pudo actualizar la ubicación');
-    }
-  };
-
-
-// NUEVA FUNCIÓN: Reintentar obtener GPS
-  const retryGPSLocation = async () => {
-    try {
-      setIsLoadingLocation(true);
-      console.log('Reintentando obtener ubicacion GPS...');
-      
-      const locationResult = await LocationFallbackService.getLocationForUser({
-        showUserPrompt: false,
-        timeout: 10000
-      });
-      
-      if (locationResult.success && locationResult.location) {
-        // ✅ Marcar que ya obtuvimos ubicación si es GPS
-        if (locationResult.location.source === 'gps') {
-          gpsObtainedRef.current = true;
-        }
-        
-        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
-        setUserLocation(locationResult.location);
-        await handleLocationSelected(locationResult.location);
-        
-        if (locationResult.location.source === 'gps') {
-          Alert.alert(
-            '¡Éxito!', 
-            'Ubicación GPS obtenida correctamente',
-            [{ text: 'OK', onPress: () => setPickupLocationConfirmed(true) }]
-          );
-        } else {
-          Alert.alert(
-            'GPS no disponible', 
-            'Se usó ubicación aproximada. ' + (locationResult.warning || '')
-          );
-        }
-      } else {
-        Alert.alert('Error', 'No se pudo obtener la ubicación');
-      }
-      
-    } catch (error) {
-      console.error('Error reintentando GPS:', error);
-      Alert.alert('Error', 'Error al reintentar GPS');
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  };
 
   // FUNCIÓN: Calcular ruta y precio usando API real
   const calculateRouteAndPrice = async (origin, destination, vehicleType = 'economy') => {
