@@ -798,7 +798,19 @@ const initializeLocationService = async () => {
         timeout: 20000
       });
 
-      if (locationResult.success && locationResult.location) {
+     if (locationResult.success && locationResult.location) {
+        // Si es fallback, verificar si ya tenemos ubicación GPS guardada
+        if (locationResult.location.source === 'fallback') {
+          const savedLocation = await SharedStorage.getUserLocation();
+          if (savedLocation && savedLocation.latitude && savedLocation.source === 'gps') {
+            console.log('✅ Ignorando fallback, usando ubicación GPS guardada:', savedLocation.address);
+            setUserLocation(savedLocation);
+            setLocationSource('gps');
+            setIsLoadingLocation(false);
+            return;
+          }
+        }
+        
         // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
