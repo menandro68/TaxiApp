@@ -4,14 +4,14 @@ import PermissionService from './PermissionService';
 import Geolocation from '@react-native-community/geolocation';
 
 // ====================================================================
-// SISTEMA DE CACH… DE DIRECCIONES PERSISTENTE
+// SISTEMA DE CACH√â DE DIRECCIONES PERSISTENTE
 // Soluciona el problema de direcciones inconsistentes (Calle 2 vs Calle 4)
 // ====================================================================
 const AddressCache = {
-  // ConfiguraciÛn
+  // Configuraci√≥n
   CONFIG: {
-    CACHE_DURATION_MS: 30 * 60 * 1000,  // 10 minutos de validez
-    MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros mÌnimo para actualizar
+    CACHE_DURATION_MS: 30 * 60 * 1000,  // 30 minutos de validez
+    MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros m√≠nimo para actualizar
     COORDINATE_PRECISION: 3,             // 3 decimales (~100m de grid)
     STORAGE_KEY: 'address_cache_v2'      // Clave para AsyncStorage
   },
@@ -19,8 +19,9 @@ const AddressCache = {
   // Estado interno
   _cache: null,
   _initialized: false,
+  _shownToUser: null,  // Coordenadas mostradas al usuario para comparaci√≥n
   
-  // Inicializar cachÈ desde storage (llamar antes de usar)
+  // Inicializar cach√© desde storage (llamar antes de usar)
   async initialize() {
     if (this._initialized) return;
     
@@ -29,19 +30,19 @@ const AddressCache = {
       if (stored) {
         this._cache = JSON.parse(stored);
         const age = Date.now() - this._cache.timestamp;
-        console.log('?? CachÈ: Cargado desde storage (edad:', Math.round(age/1000), 's)');
+        console.log('üìç Cach√©: Cargado desde storage (edad:', Math.round(age/1000), 's)');
         
-        // Limpiar si expirÛ
+        // Limpiar si expir√≥
         if (age > this.CONFIG.CACHE_DURATION_MS) {
-          console.log('?? CachÈ: Expirado, limpiando...');
+          console.log('üìç Cach√©: Expirado, limpiando...');
           // this._cache = null; // COMENTADO - conservar para fallback
           // await AsyncStorage.removeItem(this.CONFIG.STORAGE_KEY); // COMENTADO
         }
       } else {
-        console.log('?? CachÈ: No hay cachÈ en storage');
+        console.log('üìç Cach√©: No hay cach√© en storage');
       }
     } catch (error) {
-      console.log('?? CachÈ: Error al cargar:', error.message);
+      console.log('üìç Cach√©: Error al cargar:', error.message);
       this._cache = null;
     }
     
@@ -70,43 +71,54 @@ const AddressCache = {
     return R * c;
   },
   
-  // Verificar si el cachÈ es v·lido
+  // Verificar si el cach√© es v√°lido
   isValid(currentLat, currentLng) {
     if (!this._cache) {
-      console.log('?? CachÈ: No hay cachÈ previo');
+      console.log('üìç Cach√©: No hay cach√© previo');
       return false;
     }
     
     const age = Date.now() - this._cache.timestamp;
+    
+    // IMPORTANTE: Si hay coords mostradas al usuario, comparar contra esas
+    let refLat = this._cache.latitude;
+    let refLng = this._cache.longitude;
+    
+    if (this._shownToUser) {
+      refLat = this._shownToUser.latitude;
+      refLng = this._shownToUser.longitude;
+      console.log('üìç Usando coords mostradas como referencia:', refLat.toFixed(4), refLng.toFixed(4));
+    }
+    
     const distance = this.calculateDistance(
       currentLat, currentLng,
-      this._cache.latitude, this._cache.longitude
+      refLat, refLng
     );
     
-    // V·lido si: menos de 10 min Y menos de 100m de distancia
+    // V√°lido si: menos de 30 min Y menos de 100m de distancia
     const isTimeValid = age < this.CONFIG.CACHE_DURATION_MS;
     const isDistanceValid = distance < this.CONFIG.MIN_DISTANCE_FOR_UPDATE;
     
     if (!isTimeValid) {
-      console.log('?? CachÈ: Expirado (edad:', Math.round(age/1000), 's)');
+      console.log('üìç Cach√©: Expirado (edad:', Math.round(age/1000), 's)');
       return false;
     }
     
     if (!isDistanceValid) {
-      console.log('?? CachÈ: Movimiento detectado (', Math.round(distance), 'm)');
+      console.log('üìç Cach√©: Movimiento detectado (', Math.round(distance), 'm) - FORZANDO nuevo geocoding');
       return false;
     }
     
-    console.log('?? CachÈ: V·lido (dist:', Math.round(distance), 'm, edad:', Math.round(age/1000), 's)');
+    console.log('üìç Cach√©: V√°lido (dist:', Math.round(distance), 'm, edad:', Math.round(age/1000), 's)');
     return true;
   },
   
-  // Obtener direcciÛn cacheada
+  // Obtener direcci√≥n cacheada
   get() {
     return this._cache ? this._cache.address : null;
   },
   
-  // Guardar nueva direcciÛn (con persistencia)
+  // Guardar nueva direcci√≥n (con persistencia)
   async set(lat, lng, address) {
     this._cache = {
       latitude: lat,
@@ -121,21 +133,22 @@ const AddressCache = {
         this.CONFIG.STORAGE_KEY, 
         JSON.stringify(this._cache)
       );
-      console.log('?? CachÈ: Guardado y persistido -', address.substring(0, 40) + '...');
+      console.log('üìç Cach√©: Guardado y persistido -', address.substring(0, 40) + '...');
     } catch (error) {
-      console.log('?? CachÈ: Error al persistir:', error.message);
+      console.log('üìç Cach√©: Error al persistir:', error.message);
     }
   },
   
-  // Limpiar cachÈ
+  // Limpiar cach√©
   async clear() {
     this._cache = null;
     this._initialized = false;
+    this._shownToUser = null;
     try {
       await AsyncStorage.removeItem(this.CONFIG.STORAGE_KEY);
-      console.log('?? CachÈ: Limpiado');
+      console.log('üìç Cach√©: Limpiado');
     } catch (error) {
-      console.log('?? CachÈ: Error al limpiar:', error.message);
+      console.log('üìç Cach√©: Error al limpiar:', error.message);
     }
   }
 };
@@ -321,27 +334,27 @@ class LocationFallbackService {
         if (gpsCheck.available) {
           console.log('Usando ubicacion GPS real');
           
-          // ====== SISTEMA ROBUSTO DE DIRECCIONES CON CACH… PERSISTENTE ======
+          // ====== SISTEMA ROBUSTO DE DIRECCIONES CON CACH√â PERSISTENTE ======
           const { latitude, longitude } = gpsCheck.location;
           
-          // Paso 0: Inicializar cachÈ desde storage (si no est· inicializado)
+          // Paso 0: Inicializar cach√© desde storage (si no est√° inicializado)
           await AddressCache.initialize();
           
           // Paso 1: Redondear coordenadas para consistencia (~100m grid)
           const rounded = AddressCache.roundCoordinates(latitude, longitude);
-          console.log('?? Coordenadas originales:', latitude.toFixed(6), longitude.toFixed(6));
-          console.log('?? Coordenadas redondeadas:', rounded.latitude, rounded.longitude);
+          console.log('üìç Coordenadas originales:', latitude.toFixed(6), longitude.toFixed(6));
+          console.log('üìç Coordenadas redondeadas:', rounded.latitude, rounded.longitude);
           
-          // Paso 2: Verificar si tenemos cachÈ v·lido
+          // Paso 2: Verificar si tenemos cach√© v√°lido
           let address;
           if (AddressCache.isValid(latitude, longitude)) {
-            // Usar direcciÛn cacheada
+            // Usar direcci√≥n cacheada
             address = AddressCache.get();
-            console.log('?? Usando direcciÛn cacheada:', address.substring(0, 30) + '...');
+            console.log('üìç Usando direcci√≥n cacheada:', address.substring(0, 30) + '...');
           } else {
-            // Obtener nueva direcciÛn con coordenadas redondeadas
+            // Obtener nueva direcci√≥n con coordenadas redondeadas
             address = await this.getReverseGeocodeOptimized(rounded.latitude, rounded.longitude);
-            // Guardar en cachÈ (persistente)
+            // Guardar en cach√© (persistente)
             await AddressCache.set(latitude, longitude, address);
           }
           
@@ -637,22 +650,22 @@ class LocationFallbackService {
   }
 
   // ====================================================================
-  // REVERSE GEOCODING OPTIMIZADO - Mapbox con par·metros especÌficos
+  // REVERSE GEOCODING OPTIMIZADO - Mapbox con par√°metros espec√≠ficos
   // ====================================================================
   static async getReverseGeocodeOptimized(latitude, longitude) {
     try {
-      // Construir URL con par·metros optimizados para direcciones especÌficas
+      // Construir URL con par√°metros optimizados para direcciones espec√≠ficas
       const params = new URLSearchParams({
         access_token: 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q',
         language: 'es',
-        types: 'address,poi',           // Priorizar direcciones y puntos de interÈs
+        types: 'address,poi',           // Priorizar direcciones y puntos de inter√©s
         limit: 1,                        // Solo necesitamos el mejor resultado
-        country: 'DO'                    // Limitar a Rep˙blica Dominicana
+        country: 'DO'                    // Limitar a Rep√∫blica Dominicana
       });
 
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?${params}`;
       
-      console.log('?? Consultando Mapbox para:', latitude.toFixed(4), longitude.toFixed(4));
+      console.log('üìç Consultando Mapbox para:', latitude.toFixed(4), longitude.toFixed(4));
       
       const response = await fetch(url);
       const data = await response.json();
@@ -661,7 +674,7 @@ class LocationFallbackService {
         const feature = data.features[0];
         let address = feature.place_name;
 
-        // Extraer componentes de la direcciÛn para formato m·s limpio
+        // Extraer componentes de la direcci√≥n para formato m√°s limpio
         const context = feature.context || [];
         const streetName = feature.text || '';
         const streetNumber = feature.address || '';
@@ -679,7 +692,7 @@ class LocationFallbackService {
           }
         });
 
-        // Construir direcciÛn optimizada
+        // Construir direcci√≥n optimizada
         if (streetName) {
           let optimizedAddress = streetName;
           if (streetNumber) {
@@ -692,27 +705,27 @@ class LocationFallbackService {
             optimizedAddress += `, ${region}`;
           }
           
-          // Agregar paÌs si no est· muy largo
+          // Agregar pa√≠s si no est√° muy largo
           if (optimizedAddress.length < 50) {
-            optimizedAddress += ', Rep˙blica Dominicana';
+            optimizedAddress += ', Rep√∫blica Dominicana';
           }
           
           address = optimizedAddress;
         } else {
-          // Limpiar direcciÛn por defecto si es muy larga
+          // Limpiar direcci√≥n por defecto si es muy larga
           if (address.length > 60) {
             address = address
               .replace(', Republica Dominicana', '')
               .replace(', Dominican Republic', '')
-              .replace(', Rep˙blica Dominicana', '');
+              .replace(', Rep√∫blica Dominicana', '');
           }
         }
 
-        console.log('?? DirecciÛn obtenida:', address);
+        console.log('üìç Direcci√≥n obtenida:', address);
         return address;
       }
       
-      console.log('?? Sin resultados de Mapbox');
+      console.log('üìç Sin resultados de Mapbox');
       return 'Ubicacion desconocida';
       
     } catch (error) {
@@ -721,30 +734,36 @@ class LocationFallbackService {
     }
   }
 
-  // Mantener funciÛn anterior para compatibilidad
+  // Mantener funci√≥n anterior para compatibilidad
   static async getReverseGeocode(latitude, longitude) {
     return this.getReverseGeocodeOptimized(latitude, longitude);
   }
 
   // ====================================================================
-  // CARGA INSTANT¡NEA - Para UI inmediata mientras GPS carga en background
+  // CARGA INSTANT√ÅNEA - Para UI inmediata mientras GPS carga en background
   // ====================================================================
   
-  // Obtener ubicaciÛn cacheada instant·neamente (sin esperar GPS)
+  // Obtener ubicaci√≥n cacheada instant√°neamente (sin esperar GPS)
   static async getInstantCachedLocation() {
     try {
-      console.log('? Intentando carga instant·nea desde cachÈ...');
+      console.log('‚ö° Intentando carga instant√°nea desde cach√©...');
       
-      // Inicializar cachÈ desde AsyncStorage
+      // Inicializar cach√© desde AsyncStorage
       await AddressCache.initialize();
       
-      // Si hay cachÈ (sin verificar distancia porque no tenemos GPS a˙n)
+      // Si hay cach√© (sin verificar distancia porque no tenemos GPS a√∫n)
       if (AddressCache._cache && AddressCache._cache.address) {
         const age = Date.now() - AddressCache._cache.timestamp;
         
-        // Solo usar si tiene menos de 10 minutos
+        // Solo usar si tiene menos de 30 minutos
         if (age < AddressCache.CONFIG.CACHE_DURATION_MS) {
-          console.log('? CachÈ instant·neo disponible (edad:', Math.round(age/1000), 's)');
+          console.log('‚ö° Cach√© instant√°neo disponible (edad:', Math.round(age/1000), 's)');
+          
+          // Guardar que estas coords se mostraron al usuario
+          AddressCache._shownToUser = {
+            latitude: AddressCache._cache.latitude,
+            longitude: AddressCache._cache.longitude
+          };
           
           return {
             success: true,
@@ -758,29 +777,29 @@ class LocationFallbackService {
             cacheAge: Math.round(age / 1000)
           };
         } else {
-          console.log('? CachÈ expirado, necesita GPS fresco');
+          console.log('‚ö° Cach√© expirado, necesita GPS fresco');
         }
       } else {
-        console.log('? No hay cachÈ disponible');
+        console.log('‚ö° No hay cach√© disponible');
       }
       
       return null;
     } catch (error) {
-      console.log('? Error en carga instant·nea:', error.message);
+      console.log('‚ö° Error en carga instant√°nea:', error.message);
       return null;
     }
   }
 
   // ====================================================================
-  // UTILIDADES DE CACH… - Para uso externo si es necesario
+  // UTILIDADES DE CACH√â - Para uso externo si es necesario
   // ====================================================================
   
-  // Limpiar cachÈ de direcciones (˙til al cerrar sesiÛn o cambiar de zona)
+  // Limpiar cach√© de direcciones (√∫til al cerrar sesi√≥n o cambiar de zona)
   static async clearAddressCache() {
     await AddressCache.clear();
   }
 
-  // Obtener estado del cachÈ (para debugging)
+  // Obtener estado del cach√© (para debugging)
   static getAddressCacheStatus() {
     return {
       hasCache: AddressCache._cache !== null,
@@ -792,7 +811,8 @@ class LocationFallbackService {
       cacheAge: AddressCache._cache && AddressCache._cache.timestamp
         ? Math.round((Date.now() - AddressCache._cache.timestamp) / 1000) + 's'
         : null,
-      initialized: AddressCache._initialized
+      initialized: AddressCache._initialized,
+      shownToUser: AddressCache._shownToUser
     };
   }
 }
