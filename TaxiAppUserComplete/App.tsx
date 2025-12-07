@@ -813,12 +813,14 @@ const initializeLocationService = async () => {
         // ❌ FALLO OBTENIENDO UBICACIÓN - VERIFICAR SI HAY CACHÉ VÁLIDO
         console.log('⚠️ Fallo obteniendo ubicación GPS...');
         
-        // Si ya tenemos ubicación cacheada válida, mantenerla
-        if (cachedLocation && cachedLocation.success && cachedLocation.location) {
-          console.log('✅ Manteniendo ubicación cacheada válida:', cachedLocation.location.address);
-          return; // NO sobreescribir
+    // Verificar si ya hay ubicación guardada en storage
+        const savedLocation = await SharedStorage.getUserLocation();
+        if (savedLocation && savedLocation.latitude && savedLocation.longitude) {
+          console.log('✅ Usando ubicación guardada en storage:', savedLocation.address);
+          setUserLocation(savedLocation);
+          setLocationSource(savedLocation.source || 'storage');
+          return; // NO sobreescribir con fallback
         }
-        
         // Sin caché válido - usar fallback
         console.log('⚠️ Sin caché válido, usando fallback...');
         const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
