@@ -142,7 +142,9 @@ class FCMService {
         estimatedPrice: parseInt(data.estimatedPrice) || 0,
         paymentMethod: data.paymentMethod || 'Efectivo',
         vehicleType: data.vehicleType || 'Estándar',
-        type: 'NEW_TRIP_REQUEST'
+        type: 'NEW_TRIP_REQUEST',
+        pickupLat: parseFloat(data.pickupLat) || null,
+        pickupLng: parseFloat(data.pickupLng) || null
       };
 
       console.log('🚕 Procesando solicitud de servicio:', tripData);

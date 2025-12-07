@@ -174,23 +174,36 @@ export default function DriverApp({ navigation }) {
     };
   }, []);
 
-  // NUEVO: useEffect para verificar automáticamente la llegada al destino
-  useEffect(() => {
-    // Obtener ubicación inicial cuando el viaje está activo
-    if (currentTrip && tripPhase === 'started') {
-      // getCurrentLocation(); // Comentado temporalmente
+ // useEffect para verificar automáticamente la llegada al PICKUP y al DESTINO
+useEffect(() => {
+  const interval = setInterval(() => {
+    // Verificar llegada al PUNTO DE RECOGIDA (cuando tripPhase está vacío)
+    if (currentTrip && tripPhase === '' && userLocation) {
+      const pickupLat = currentTrip.pickupLat;
+      const pickupLng = currentTrip.pickupLng;
+      
+      if (pickupLat && pickupLng) {
+        const distance = getDistance(
+          { latitude: userLocation.latitude, longitude: userLocation.longitude },
+          { latitude: pickupLat, longitude: pickupLng }
+        );
+        
+        console.log(`📍 Distancia al pickup: ${distance.toFixed(0)} metros`);
+        
+        // Si está a menos de 50 metros del punto de recogida
+        if (distance < 50) {
+          console.log('✅ Llegada al punto de recogida detectada automáticamente');
+          handleArrivedAtPickup();
+        }
+      }
     }
     
-    const interval = setInterval(() => {
-      // Actualizar ubicación y verificar llegada
-      if (currentTrip && tripPhase === 'started') {
-        // getCurrentLocation(); // Comentado temporalmente
-      }
-      checkAutoCompleteTrip();
-    }, 5000); // Verificar cada 5 segundos
+    // Verificar llegada al DESTINO (cuando tripPhase es 'started')
+    checkAutoCompleteTrip();
+  }, 5000); // Verificar cada 5 segundos
 
-    return () => clearInterval(interval);
-  }, [currentTrip, userLocation, tripPhase]);
+  return () => clearInterval(interval);
+}, [currentTrip, userLocation, tripPhase]);
 
   const requestLocationPermissions = async () => {
     try {
@@ -207,6 +220,28 @@ export default function DriverApp({ navigation }) {
       console.error('❌ Error solicitando permisos:', error);
     }
   };
+
+  // NUEVA FUNCIÓN: Manejar llegada automática al punto de recogida
+const handleArrivedAtPickup = async () => {
+  if (!currentTrip || tripPhase !== '') return;
+  
+  try {
+    const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'arrived' })
+    });
+    const data = await response.json();
+    if (data.success) {
+      setTripPhase('arrived');
+      Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida. El pasajero ha sido notificado.');
+    }
+  } catch (error) {
+    console.error('Error notificando llegada:', error);
+    setTripPhase('arrived');
+    Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida.');
+  }
+};
 
   // NUEVA FUNCIÓN: Manejar Login
   const handleLogin = async () => {
@@ -755,17 +790,31 @@ const acceptTrip = async () => {
           <Text style={styles.tripText}>Precio: RD${currentTrip.estimatedPrice}</Text>
           
           {/* BOTONES SEGÚN LA FASE DEL VIAJE */}
-          {tripPhase === '' && (
-            <TouchableOpacity 
-              style={[styles.completeButton, { backgroundColor: '#f59e0b' }]} 
-              onPress={() => {
-                setTripPhase('arrived');
-                Alert.alert('✅ Llegada Confirmada', 'Esperando que el pasajero suba al vehículo');
-              }}
-            >
-              <Text style={styles.buttonText}>📍 Ya Llegué</Text>
-            </TouchableOpacity>
-          )}
+      {tripPhase === '' && (
+  <TouchableOpacity 
+    style={[styles.completeButton, { backgroundColor: '#f59e0b' }]} 
+    onPress={async () => {
+      try {
+        const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'arrived' })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setTripPhase('arrived');
+          Alert.alert('✅ Llegada Confirmada', 'El pasajero ha sido notificado');
+        }
+      } catch (error) {
+        console.error('Error notificando llegada:', error);
+        setTripPhase('arrived');
+        Alert.alert('✅ Llegada Confirmada', 'Esperando que el pasajero suba al vehículo');
+      }
+    }}
+  >
+    <Text style={styles.buttonText}>📍 Ya Llegué</Text>
+  </TouchableOpacity>
+)}
           
           {tripPhase === 'arrived' && (
             <TouchableOpacity 
