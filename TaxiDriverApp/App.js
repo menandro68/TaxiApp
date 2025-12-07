@@ -16,6 +16,7 @@ import {
   BackHandler,
 } from 'react-native';
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
+import BackgroundService from 'react-native-background-actions';
 import ApiService from './src/services/ApiService';
 import fcmService from './FCMService';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
@@ -28,6 +29,7 @@ import SmartSyncService from './SmartSyncService';
 import PenaltyService from './PenaltyService';
 import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Geolocation from '@react-native-community/geolocation';
 
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
@@ -170,6 +172,7 @@ export default function DriverApp({ navigation }) {
         clearInterval(timerRef.current);
       }
       stopLocationTracking(); // Detener tracking al desmontar
+      stopBackgroundTracking(); // Detener background tracking al desmontar
       unsubscribe(); // Limpiar listener de conexión
     };
   }, []);
@@ -221,6 +224,104 @@ useEffect(() => {
     }
   };
 
+// Configuración para Background Service
+const backgroundOptions = {
+  taskName: 'LocationTracking',
+  taskTitle: 'TaxiApp Conductor',
+  taskDesc: 'Navegando hacia el pasajero...',
+  taskIcon: {
+    name: 'ic_launcher',
+    type: 'mipmap',
+  },
+  color: '#3b82f6',
+  linkingURI: 'taxidriverapp://',
+};
+
+// Tarea de background para verificar llegada
+const backgroundTask = async (taskData) => {
+  const { pickupLat, pickupLng, tripId } = taskData;
+  
+  while (BackgroundService.isRunning()) {
+    try {
+      // Obtener ubicación actual
+      const position = await new Promise((resolve, reject) => {
+        Geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 5000,
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+      console.log(`📍 Background: ${latitude}, ${longitude}`);
+
+      // Calcular distancia al pickup
+      const R = 6371e3;
+      const φ1 = latitude * Math.PI / 180;
+      const φ2 = pickupLat * Math.PI / 180;
+      const Δφ = (pickupLat - latitude) * Math.PI / 180;
+      const Δλ = (pickupLng - longitude) * Math.PI / 180;
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+
+      console.log(`📍 Distancia al pickup: ${distance.toFixed(0)} metros`);
+
+      // Si está a menos de 50 metros
+      if (distance < 50) {
+        console.log('✅ Llegada detectada en background!');
+        
+        // Notificar al backend
+        await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'arrived' })
+        });
+
+        // Detener el servicio
+        await BackgroundService.stop();
+        break;
+      }
+    } catch (error) {
+      console.error('Error en background task:', error);
+    }
+
+    // Esperar 5 segundos antes de la siguiente verificación
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+};
+
+// Iniciar tracking en background
+const startBackgroundTracking = async (tripId, pickupLat, pickupLng) => {
+  try {
+    if (BackgroundService.isRunning()) {
+      await BackgroundService.stop();
+    }
+    
+    await BackgroundService.start(backgroundTask, {
+      ...backgroundOptions,
+      parameters: { tripId, pickupLat, pickupLng },
+    });
+    console.log('✅ Background tracking iniciado');
+  } catch (error) {
+    console.error('Error iniciando background tracking:', error);
+  }
+};
+
+// Detener tracking en background
+const stopBackgroundTracking = async () => {
+  try {
+    if (BackgroundService.isRunning()) {
+      await BackgroundService.stop();
+      console.log('⏹️ Background tracking detenido');
+    }
+  } catch (error) {
+    console.error('Error deteniendo background tracking:', error);
+  }
+};
+
   // NUEVA FUNCIÓN: Manejar llegada automática al punto de recogida
 const handleArrivedAtPickup = async () => {
   if (!currentTrip || tripPhase !== '') return;
@@ -234,11 +335,13 @@ const handleArrivedAtPickup = async () => {
     const data = await response.json();
     if (data.success) {
       setTripPhase('arrived');
+      await stopBackgroundTracking(); // Detener background tracking al llegar
       Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida. El pasajero ha sido notificado.');
     }
   } catch (error) {
     console.error('Error notificando llegada:', error);
     setTripPhase('arrived');
+    await stopBackgroundTracking(); // Detener background tracking al llegar
     Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida.');
   }
 };
@@ -595,7 +698,9 @@ const acceptTrip = async () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            driver_id: driverId
+            driver_id: driverId,
+            pickupLat: pendingRequest?.pickupLat || '',
+            pickupLng: pendingRequest?.pickupLng || ''
           })
         });
 
@@ -676,6 +781,7 @@ const acceptTrip = async () => {
       setDriverStatus('online');
       setTripPhase(''); // Resetear la fase del viaje
       setUserLocation(null); // Limpiar ubicación
+      await stopBackgroundTracking(); // Detener background tracking
       
       Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}`);
       
@@ -803,11 +909,13 @@ const acceptTrip = async () => {
         const data = await response.json();
         if (data.success) {
           setTripPhase('arrived');
+          await stopBackgroundTracking(); // Detener background tracking
           Alert.alert('✅ Llegada Confirmada', 'El pasajero ha sido notificado');
         }
       } catch (error) {
         console.error('Error notificando llegada:', error);
         setTripPhase('arrived');
+        await stopBackgroundTracking(); // Detener background tracking
         Alert.alert('✅ Llegada Confirmada', 'Esperando que el pasajero suba al vehículo');
       }
     }}
@@ -892,6 +1000,7 @@ const acceptTrip = async () => {
       <MapComponent 
         currentTrip={currentTrip} 
         tripPhase={tripPhase}
+        onStartBackgroundTracking={startBackgroundTracking}
         onLocationUpdate={(location) => {
           console.log('📍 Ubicación actualizada:', location);
           setUserLocation(location); // NUEVO: Capturar ubicación del usuario
