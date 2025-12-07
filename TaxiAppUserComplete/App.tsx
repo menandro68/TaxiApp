@@ -809,10 +809,18 @@ const initializeLocationService = async () => {
           lng: locationResult.location.longitude
         });
 
-      } else {
-        // ❌ FALLO OBTENIENDO UBICACIÓN - USAR FALLBACK CON GEOCODING
-        console.log('⚠️ Fallo obteniendo ubicación GPS, usando fallback con geocoding...');
-
+   } else {
+        // ❌ FALLO OBTENIENDO UBICACIÓN - VERIFICAR SI HAY CACHÉ VÁLIDO
+        console.log('⚠️ Fallo obteniendo ubicación GPS...');
+        
+        // Si ya tenemos ubicación cacheada válida, mantenerla
+        if (cachedLocation && cachedLocation.success && cachedLocation.location) {
+          console.log('✅ Manteniendo ubicación cacheada válida:', cachedLocation.location.address);
+          return; // NO sobreescribir
+        }
+        
+        // Sin caché válido - usar fallback
+        console.log('⚠️ Sin caché válido, usando fallback...');
         const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
         const fallbackLocation = {
           latitude: defaultLat,
