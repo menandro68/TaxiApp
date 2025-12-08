@@ -43,7 +43,9 @@
         </activity>
 
         <!-- ✅ Servicio para Background Location -->
-        <service android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask" />
+        <service 
+            android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
+            android:foregroundServiceType="location" />
         
     </application>
 </manifest>
