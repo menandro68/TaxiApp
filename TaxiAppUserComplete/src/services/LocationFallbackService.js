@@ -13,7 +13,8 @@ const AddressCache = {
     CACHE_DURATION_MS: 30 * 60 * 1000,  // 30 minutos de validez
     MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros mínimo para actualizar
     COORDINATE_PRECISION: 3,             // 3 decimales (~100m de grid)
-    STORAGE_KEY: 'address_cache_v2'      // Clave para AsyncStorage
+    STORAGE_KEY: 'address_cache_v2',     // Clave para AsyncStorage
+    INSTANT_CACHE_MAX_AGE: 60 * 1000   // 60 segundos para cache instantaneo (sin GPS)
   },
   
   // Estado interno
@@ -755,8 +756,8 @@ class LocationFallbackService {
       if (AddressCache._cache && AddressCache._cache.address) {
         const age = Date.now() - AddressCache._cache.timestamp;
         
-        // Solo usar si tiene menos de 30 minutos
-        if (age < AddressCache.CONFIG.CACHE_DURATION_MS) {
+        // Solo usar si tiene menos de 60 segundos (cache instantaneo)
+        if (age < AddressCache.CONFIG.INSTANT_CACHE_MAX_AGE) {
           console.log('⚡ Caché instantáneo disponible (edad:', Math.round(age/1000), 's)');
           
           // Guardar que estas coords se mostraron al usuario
