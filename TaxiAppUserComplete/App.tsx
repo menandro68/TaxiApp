@@ -802,7 +802,7 @@ const initializeLocationService = async () => {
         // Si es fallback, verificar si ya tenemos ubicación GPS guardada
         if (locationResult.location.source === 'fallback') {
           const savedLocation = await SharedStorage.getUserLocation();
-          if (savedLocation && savedLocation.latitude && savedLocation.source === 'gps') {
+         if (savedLocation && savedLocation.latitude && savedLocation.source !== 'fallback') {
             console.log('✅ Ignorando fallback, usando ubicación GPS guardada:', savedLocation.address);
             setUserLocation(savedLocation);
             setLocationSource('gps');
