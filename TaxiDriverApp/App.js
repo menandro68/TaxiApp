@@ -239,7 +239,8 @@ const backgroundOptions = {
 
 // Tarea de background para verificar llegada
 const backgroundTask = async (taskData) => {
-  const { pickupLat, pickupLng, tripId } = taskData;
+  console.log('🔍 taskData recibido:', JSON.stringify(taskData));
+  const { pickupLat, pickupLng, tripId } = taskData.parameters || taskData;
   
   while (BackgroundService.isRunning()) {
     try {
