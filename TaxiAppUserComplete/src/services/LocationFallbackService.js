@@ -233,7 +233,7 @@ const DEFAULT_LOCATION = {
 class LocationFallbackService {
 
   // VERIFICAR SI GPS ESTA DISPONIBLE Y HABILITADO
-  static async checkGPSAvailability() {
+  static async checkGPSAvailability(highAccuracy = true) {
     return new Promise(async (resolve) => {
       console.log('Verificando disponibilidad del GPS...');
 
@@ -308,7 +308,7 @@ class LocationFallbackService {
           });
         },
     {
-          enableHighAccuracy: true,   // Alta precision GPS
+          enableHighAccuracy: highAccuracy,   // true=GPS, false=WiFi/red
           timeout: 3000,              // 3 segundos máximo
           maximumAge: 30000,          // Usar ubicación del OS si tiene menos de 30 segundos
           distanceFilter: 0
@@ -329,7 +329,9 @@ class LocationFallbackService {
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         console.log('Intento GPS ' + attempt + '/' + MAX_RETRIES + '...');
 
-        const gpsCheck = await this.checkGPSAvailability();
+        const useHighAccuracy = attempt === 1; // Solo primer intento usa GPS puro
+        console.log(useHighAccuracy ? '??? Usando GPS alta precisi�n' : '?? Usando WiFi/red celular');
+        const gpsCheck = await this.checkGPSAvailability(useHighAccuracy);
         lastGpsCheck = gpsCheck;
 
         if (gpsCheck.available) {
