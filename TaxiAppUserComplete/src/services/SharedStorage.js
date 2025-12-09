@@ -114,10 +114,11 @@ const SharedStorage = {
         return null;
       }
       console.log('📍 Ubicación del usuario obtenida (edad:', Math.round(age/1000), 's):', data);
+      return data;
     } else {
-      console.log('📍 Ubicación del usuario obtenida (sin timestamp):', data);
+      console.log('📍 Ubicación sin timestamp - ignorando (datos viejos)');
+      return null;  // <-- CAMBIO: retornar null si no hay timestamp
     }
-    return data;
   },
 
   clearUserLocation: async () => {
