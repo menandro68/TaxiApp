@@ -256,7 +256,8 @@ class LocationFallbackService {
       Geolocation.getCurrentPosition(
         (position) => {
           // Validar precision minima (50 metros)
-          if (position.coords.accuracy > 50) {
+          const maxAccuracy = highAccuracy ? 50 : 150; // GPS=50m, WiFi=150m
+          if (position.coords.accuracy > maxAccuracy) {
             console.log('GPS con baja precision:', position.coords.accuracy, 'm - reintentando...');
             resolve({
               available: false,
