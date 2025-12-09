@@ -307,10 +307,10 @@ class LocationFallbackService {
             location: null
           });
         },
-        {
+    {
           enableHighAccuracy: true,   // Alta precision GPS
-          timeout: 10000,             // 10 segundos por intento (3 intentos = 30s max)
-          maximumAge: 0,              // SIN CACHE - siempre ubicacion fresca
+          timeout: 3000,              // 3 segundos máximo
+          maximumAge: 30000,          // Usar ubicación del OS si tiene menos de 30 segundos
           distanceFilter: 0
         }
       );
