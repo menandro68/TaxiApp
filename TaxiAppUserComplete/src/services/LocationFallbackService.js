@@ -310,7 +310,7 @@ class LocationFallbackService {
         },
     {
           enableHighAccuracy: highAccuracy,   // true=GPS, false=WiFi/red
-          timeout: 3000,              // 3 segundos máximo
+          timeout: 2000,              // 3 segundos máximo
           maximumAge: 30000,          // Usar ubicación del OS si tiene menos de 30 segundos
           distanceFilter: 0
         }
@@ -375,7 +375,7 @@ class LocationFallbackService {
         // Si es baja precision o timeout y no es el ultimo intento, reintentar
         if ((gpsCheck.reason === 'low_accuracy' || gpsCheck.reason === 'timeout') && attempt < MAX_RETRIES) {
           console.log('Esperando 2s antes de reintentar...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 0));
           continue;
         }
         
