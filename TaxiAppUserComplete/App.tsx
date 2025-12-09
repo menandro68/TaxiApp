@@ -812,13 +812,8 @@ const initializeLocationService = async () => {
             // NO usar fallback genérico - exigir GPS real
             console.log('❌ GPS falló y no hay caché válido - requiere GPS real');
             setIsLoadingLocation(false);
-            Alert.alert(
-              'GPS Requerido',
-              'No se pudo obtener tu ubicación actual. Por favor activa el GPS y reintenta.',
-              [
-                { text: 'Reintentar', onPress: () => initializeLocationService() }
-              ]
-            );
+          // Reintentar automáticamente sin mostrar alerta
+            setTimeout(() => initializeLocationService(), 3000);
             return; // NO usar fallback genérico
           }
         }
