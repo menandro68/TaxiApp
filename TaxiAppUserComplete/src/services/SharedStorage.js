@@ -100,13 +100,23 @@ const SharedStorage = {
   },
 
   saveUserLocation: async (location) => {
-    await storeData(STORAGE_KEYS.USER_LOCATION, location);
-    console.log('📍 Ubicación del usuario guardada:', location);
+    const locationWithTimestamp = { ...location, timestamp: Date.now() };
+    await storeData(STORAGE_KEYS.USER_LOCATION, locationWithTimestamp);
+    console.log('📍 Ubicación del usuario guardada:', locationWithTimestamp);
   },
 
   getUserLocation: async () => {
     const data = await getData(STORAGE_KEYS.USER_LOCATION);
-    console.log('📍 Ubicación del usuario obtenida:', data);
+    if (data && data.timestamp) {
+      const age = Date.now() - data.timestamp;
+      if (age > 60 * 1000) { // 60 segundos
+        console.log('📍 Ubicación expirada (edad:', Math.round(age/1000), 's) - ignorando');
+        return null;
+      }
+      console.log('📍 Ubicación del usuario obtenida (edad:', Math.round(age/1000), 's):', data);
+    } else {
+      console.log('📍 Ubicación del usuario obtenida (sin timestamp):', data);
+    }
     return data;
   },
 
