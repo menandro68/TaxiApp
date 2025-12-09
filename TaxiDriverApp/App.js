@@ -52,6 +52,7 @@ export default function DriverApp({ navigation }) {
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [tripPhase, setTripPhase] = useState(''); // AGREGADO: '', 'arrived', 'started'
+  const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada después de presionar 'Al pasajero'
   const [showDashcam, setShowDashcam] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [tripStops, setTripStops] = useState(null);
@@ -181,7 +182,7 @@ export default function DriverApp({ navigation }) {
 useEffect(() => {
   const interval = setInterval(() => {
     // Verificar llegada al PUNTO DE RECOGIDA (cuando tripPhase estÃ¡ vacÃ­o)
-    if (currentTrip && tripPhase === '' && userLocation) {
+    if (currentTrip && tripPhase === '' && userLocation && isNavigatingToPickup) {
       const pickupLat = currentTrip.pickupLat;
       const pickupLng = currentTrip.pickupLng;
       
@@ -306,7 +307,8 @@ const startBackgroundTracking = async (tripId, pickupLat, pickupLng) => {
       ...backgroundOptions,
       parameters: { tripId, pickupLat, pickupLng },
     });
-    console.log('âœ… Background tracking iniciado');
+    setIsNavigatingToPickup(true); // ACTIVAR detección de llegada
+    console.log('? Background tracking iniciado');
   } catch (error) {
     console.error('Error iniciando background tracking:', error);
   }
@@ -782,6 +784,7 @@ const acceptTrip = async () => {
       setCurrentTrip(null);
       setDriverStatus('online');
       setTripPhase(''); // Resetear la fase del viaje
+      setIsNavigatingToPickup(false); // RESETEAR flag de navegación
       setUserLocation(null); // Limpiar ubicaciÃ³n
       await stopBackgroundTracking(); // Detener background tracking
       
