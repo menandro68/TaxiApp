@@ -800,7 +800,7 @@ const initializeLocationService = async () => {
 
      if (locationResult.success && locationResult.location) {
         // Si es fallback, verificar si ya tenemos ubicación GPS guardada
-        if (locationResult.location.source === 'fallback') {
+      if (locationResult.location.source === 'fallback') {
           const savedLocation = await SharedStorage.getUserLocation();
          if (savedLocation && savedLocation.latitude && savedLocation.source !== 'fallback') {
             console.log('✅ Ignorando fallback, usando ubicación GPS guardada:', savedLocation.address);
@@ -808,6 +808,18 @@ const initializeLocationService = async () => {
             setLocationSource('gps');
             setIsLoadingLocation(false);
             return;
+          } else {
+            // NO usar fallback genérico - exigir GPS real
+            console.log('❌ GPS falló y no hay caché válido - requiere GPS real');
+            setIsLoadingLocation(false);
+            Alert.alert(
+              'GPS Requerido',
+              'No se pudo obtener tu ubicación actual. Por favor activa el GPS y reintenta.',
+              [
+                { text: 'Reintentar', onPress: () => initializeLocationService() }
+              ]
+            );
+            return; // NO usar fallback genérico
           }
         }
         
