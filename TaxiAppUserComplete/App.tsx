@@ -1960,13 +1960,13 @@ const renderVehicleSelector = () => {
            selectedVehicleType === 'xl' ? 'ðŸš' : 'ðŸï¸'}
         </Text>
         <View style={styles.vehicleSelectorInfo}>
-          <Text style={styles.vehicleSelectorLabel}>Tipo de vehÃ­culo</Text>
+          <Text style={styles.vehicleSelectorLabel}>Tipo de vehiculo</Text>
           <Text style={styles.vehicleSelectorValue}>
-            {selectedVehicleType === 'economy' ? 'EconÃ³mico' : 
+            {selectedVehicleType === 'economy' ? 'Economico' : 
              selectedVehicleType === 'comfort' ? 'Confort' : 
              selectedVehicleType === 'premium' ? 'Premium' : 
              selectedVehicleType === 'xl' ? 'XL (6-7 personas)' : 
-             selectedVehicleType === 'moto' ? 'Moto rÃ¡pida' : 'EconÃ³mico'}
+             selectedVehicleType === 'moto' ? 'Moto Rapido' : 'Economico'}
             - RD${estimatedPrice || '---'}
           </Text>
         </View>
@@ -2152,22 +2152,22 @@ const renderLoadingScreen = () => {
         <View style={styles.locationOptionContent}>
           <Text style={styles.locationOptionTitle}>Direcciones Favoritas</Text>
           <Text style={styles.locationOptionDescription}>
-            MÃ¡s precisa para calcular rutas y precios
+            Mas precisa para calcular rutas y precios
           </Text>
         </View>
         {isLoadingLocation && <ActivityIndicator size="small" />}
       </TouchableOpacity>
 
-      {/* OpciÃ³n 2: Agregar direcciÃ³n */}
+      {/* OpciÃ³n 2: Agregar direccion */}
       <TouchableOpacity 
         style={styles.locationOption}
         onPress={() => setShowDestinationSelectorForAdd(true)}
       >
         <Text style={styles.locationOptionIcon}>âž•</Text>
         <View style={styles.locationOptionContent}>
-          <Text style={styles.locationOptionTitle}>Agregar direcciÃ³n</Text>
+          <Text style={styles.locationOptionTitle}>Agregar direccion</Text>
           <Text style={styles.locationOptionDescription}>
-            Ingresa una direcciÃ³n personalizada
+            Ingresa una direccion personalizada
           </Text>
         </View>
       </TouchableOpacity>
@@ -2184,7 +2184,7 @@ const renderLoadingScreen = () => {
   <View style={styles.locationOptionContent}>
     <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
     <Text style={styles.locationOptionDescription}>
-      Selecciona una ubicaciÃ³n en el mapa
+      Selecciona una ubicacion en el mapa
     </Text>
   </View>
 </TouchableOpacity>
@@ -2633,8 +2633,8 @@ const renderLoadingScreen = () => {
           </TouchableOpacity>
           
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.title}>ðŸš– TaxiApp Usuario</Text>
-            <Text style={styles.subtitle}>Tu viaje seguro y rÃ¡pido</Text>
+            <Text style={styles.title}>TaxiApp Usuario</Text>
+            <Text style={styles.subtitle}>Tu viaje seguro y rapido</Text>
           </View>
           
           <View style={styles.headerSpacer} />
@@ -2795,7 +2795,7 @@ const renderLoadingScreen = () => {
     styles.destinationInputText,
     !destination && styles.destinationInputPlaceholder
   ]}>
-    {destination || "Â¿A dÃ³nde quieres ir?"}
+    {destination || "A donde quieres ir?"}
   </Text>
   <Icon name="search" size={20} color="#999" />
 </TouchableOpacity>
@@ -2807,7 +2807,7 @@ const renderLoadingScreen = () => {
             >
               <Icon name="people-outline" size={20} color="#007AFF" />
               <Text style={styles.thirdPartyButtonText}>
-                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Â¿Para quiÃ©n es?'}
+                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Para quien es?'}
               </Text>
             </TouchableOpacity>
          
