@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   Dimensions,
+  Text,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
@@ -216,8 +217,12 @@ const MapComponent = ({
             }}
             title={driverInfo?.name || 'Conductor'}
             description={driverInfo?.car || 'En camino'}
-            pinColor="green"
-          />
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.carMarker}>
+              <Text style={styles.carEmoji}>🚗</Text>
+            </View>
+          </Marker>
         )}
 
         {/* Marcador del Conductor - Modo Normal (verde standard) */}
@@ -312,6 +317,22 @@ const styles = StyleSheet.create({
     height: 18,
     backgroundColor: '#fff',
     borderRadius: 5,
+  },
+  carMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  carEmoji: {
+    fontSize: 24,
   },
 });
 
