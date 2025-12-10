@@ -25,7 +25,7 @@ const MapComponent = ({
   // Variables para detectar tap
   const touchStartData = useRef({ x: 0, y: 0, time: 0, count: 0 });
 
-  // RegiÃ³n por defecto - Santo Domingo
+  // Región por defecto - Santo Domingo
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
@@ -33,7 +33,7 @@ const MapComponent = ({
     longitudeDelta: 0.08,
   };
 
-  // âœ… FORZAR zoom a Santo Domingo despuÃ©s de montar (solo si NO es tracking)
+  // ✅ FORZAR zoom a Santo Domingo después de montar (solo si NO es tracking)
   useEffect(() => {
     if (mapRef.current && !mapInitialized && !trackingMode) {
       setTimeout(() => {
@@ -46,7 +46,7 @@ const MapComponent = ({
     }
   }, [mapInitialized, trackingMode]);
 
-  // âœ… Hacer zoom automÃ¡tico a la ubicaciÃ³n del usuario cuando cambia (solo si NO es tracking)
+  // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia (solo si NO es tracking)
   useEffect(() => {
     if (mapRef.current && userLocation && mapInitialized && !trackingMode) {
       const newRegion = {
@@ -60,7 +60,7 @@ const MapComponent = ({
     }
   }, [userLocation, mapInitialized, trackingMode]);
 
-  // âœ… TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
+  // ✅ TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
   useEffect(() => {
     if (trackingMode && mapRef.current && driverLocation && userLocation) {
       const coordinates = [
@@ -69,7 +69,7 @@ const MapComponent = ({
       ];
       
       mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+        edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
         animated: true
       });
     }
@@ -80,12 +80,12 @@ const MapComponent = ({
     longitude: userLocation?.longitude || -69.9312,
   };
 
-  // âœ… Guardar regiÃ³n actual cuando el mapa se mueve
+  // ✅ Guardar región actual cuando el mapa se mueve
   const handleRegionChangeComplete = (region) => {
     setCurrentRegion(region);
   };
 
-  // âœ… Detectar inicio de toque
+  // ✅ Detectar inicio de toque
   const handleTouchStart = (evt) => {
     if (!interactive) return;
     
@@ -98,13 +98,13 @@ const MapComponent = ({
     };
   };
 
-  // âœ… Detectar fin de toque y procesar tap
+  // ✅ Detectar fin de toque y procesar tap
   const handleTouchEnd = async (evt) => {
     if (!interactive || !onMapPress) return;
     
     const { x, y, time, count } = touchStartData.current;
     
-    // Si hubo mÃ¡s de un dedo, NO es tap (es zoom)
+    // Si hubo más de un dedo, NO es tap (es zoom)
     if (count > 1) {
       return;
     }
@@ -117,13 +117,13 @@ const MapComponent = ({
     
     // Es TAP si: 1 dedo, poco movimiento, poco tiempo
     if (dx < 15 && dy < 15 && elapsed < 300) {
-      console.log('ðŸ”´ TAP DETECTADO!');
+      console.log('🔴 TAP DETECTADO!');
       
       // Calcular locationX/Y relativo al mapa
       const locationX = evt.nativeEvent.locationX;
       const locationY = evt.nativeEvent.locationY;
       
-      console.log('ðŸŸ¡ Procesando tap en:', locationX, locationY);
+      console.log('🟡 Procesando tap en:', locationX, locationY);
       
       // Usar coordinateForPoint del MapView
       if (mapRef.current) {
@@ -134,16 +134,16 @@ const MapComponent = ({
           });
           
           if (coordinate && coordinate.latitude && coordinate.longitude) {
-            console.log('ðŸ”´ PIN ROJO - Coordenadas precisas:', coordinate);
+            console.log('🔴 PIN ROJO - Coordenadas precisas:', coordinate);
             onMapPress(coordinate);
             return;
           }
         } catch (error) {
-          console.log('âš ï¸ coordinateForPoint fallÃ³:', error.message);
+          console.log('⚠️ coordinateForPoint falló:', error.message);
         }
       }
       
-      // Fallback: cÃ¡lculo manual
+      // Fallback: cálculo manual
       const region = currentRegion || santodomingo;
       const mapWidth = SCREEN_WIDTH;
       const mapHeight = SCREEN_HEIGHT * 0.55;
@@ -152,7 +152,7 @@ const MapComponent = ({
       const lat = region.latitude - (locationY / mapHeight - 0.5) * region.latitudeDelta;
       
       const coordinate = { latitude: lat, longitude: lng };
-      console.log('ðŸ”´ PIN ROJO - Coordenadas calculadas:', coordinate);
+      console.log('🔴 PIN ROJO - Coordenadas calculadas:', coordinate);
       onMapPress(coordinate);
     }
   };
@@ -188,46 +188,36 @@ const MapComponent = ({
         {!trackingMode && (
           <Marker
             coordinate={defaultUserLocation}
-            title="Mi ubicaciÃ³n"
-            description={userLocation?.address || "Tu ubicaciÃ³n actual"}
+            title="Mi ubicación"
+            description={userLocation?.address || "Tu ubicación actual"}
             pinColor="#007AFF"
           />
         )}
 
-        {/* Marcador del Usuario - Modo Tracking (punto azul personalizado) */}
+        {/* Marcador del Usuario - Modo Tracking */}
         {trackingMode && userLocation && (
           <Marker
             coordinate={{
               latitude: userLocation.latitude,
               longitude: userLocation.longitude,
             }}
-            title="ðŸ“ Punto de recogida"
-            description={userLocation.address || "Tu ubicaciÃ³n"}
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
-            <View style={styles.userMarker}>
-              <View style={styles.userMarkerInner} />
-            </View>
-          </Marker>
+            title="Punto de recogida"
+            description={userLocation.address || "Tu ubicacion"}
+            pinColor="blue"
+          />
         )}
 
-        {/* Marcador del Conductor - Modo Tracking (carro verde) */}
+        {/* Marcador del Conductor - Modo Tracking */}
         {trackingMode && driverLocation && (
           <Marker
             coordinate={{
               latitude: driverLocation.latitude,
               longitude: driverLocation.longitude
             }}
-            title={`ðŸš— ${driverInfo?.name || 'Conductor'}`}
+            title={driverInfo?.name || 'Conductor'}
             description={driverInfo?.car || 'En camino'}
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
-            <View style={styles.driverMarker}>
-              <View style={styles.driverMarkerIcon}>
-                <View style={styles.carIcon} />
-              </View>
-            </View>
-          </Marker>
+            pinColor="green"
+          />
         )}
 
         {/* Marcador del Conductor - Modo Normal (verde standard) */}
@@ -243,7 +233,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* LÃ­nea de ruta entre conductor y usuario (solo tracking) */}
+        {/* Línea de ruta entre conductor y usuario (solo tracking) */}
         {trackingMode && driverLocation && userLocation && (
           <Polyline
             coordinates={[
@@ -263,7 +253,7 @@ const MapComponent = ({
               latitude: destination.latitude,
               longitude: destination.longitude,
             }}
-            title="ðŸŽ¯ Destino"
+            title="🎯 Destino"
             description={destination.address || "Destino del viaje"}
             pinColor="#FF3B30"
           />
