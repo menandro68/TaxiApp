@@ -4132,10 +4132,11 @@ statusIndicator: {
   },
   // ESTILOS PARA MAPA DE TRACKING
 trackingMapContainer: {
-    height: 280,
-    borderRadius: 10,
+    height: 200,
+    borderRadius: 0,
     overflow: 'hidden',
-    marginVertical: 10,
+    marginVertical: 5,
+    marginHorizontal: -10,
   },
   trackingInfoCompact: {
     flexDirection: 'row',
