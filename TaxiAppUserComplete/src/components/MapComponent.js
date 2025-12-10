@@ -196,33 +196,31 @@ const MapComponent = ({
         )}
 
         {/* Marcador del Usuario - Modo Tracking */}
-        {trackingMode && userLocation && (
+        {trackingMode && userLocation && userLocation.latitude && userLocation.longitude && (
           <Marker
             coordinate={{
-              latitude: userLocation.latitude,
-              longitude: userLocation.longitude,
+              latitude: Number(userLocation.latitude),
+              longitude: Number(userLocation.longitude),
             }}
-            title="Punto de recogida"
-            description={userLocation.address || "Tu ubicacion"}
+            title="📍 Tu ubicación"
+            description={userLocation.address || "Punto de recogida"}
             pinColor="blue"
+            onPress={() => console.log('🔵 Marker USUARIO tocado')}
           />
         )}
 
         {/* Marcador del Conductor - Modo Tracking */}
-        {trackingMode && driverLocation && (
+        {trackingMode && driverLocation && driverLocation.latitude && driverLocation.longitude && (
           <Marker
             coordinate={{
-              latitude: driverLocation.latitude,
-              longitude: driverLocation.longitude
+              latitude: Number(driverLocation.latitude),
+              longitude: Number(driverLocation.longitude)
             }}
-            title={driverInfo?.name || 'Conductor'}
+            title={driverInfo?.name || '🚗 Conductor'}
             description={driverInfo?.car || 'En camino'}
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
-            <View style={styles.carMarker}>
-              <Text style={styles.carEmoji}>🚗</Text>
-            </View>
-          </Marker>
+            pinColor="green"
+            onPress={() => console.log('🟢 Marker CONDUCTOR tocado')}
+          />
         )}
 
         {/* Marcador del Conductor - Modo Normal (verde standard) */}
