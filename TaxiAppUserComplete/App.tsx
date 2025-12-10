@@ -196,7 +196,7 @@ useEffect(() => {
           
           // Si estamos editando un destino adicional del modal mÃºltiples destinos
           if (activeMultiDestinationStopId && multiDestModalRef.current) {
-            console.log('ðŸ“ Actualizando destino adicional con favorita:', activeMultiDestinationStopId);
+            console.log(' Actualizando destino adicional con favorita:', activeMultiDestinationStopId);
             multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, favoriteAddress.address);
             setActiveMultiDestinationStopId(null);
             return;
@@ -1980,7 +1980,7 @@ const renderVehicleSelector = () => {
 const renderLoadingScreen = () => {
   return (
     <View style={styles.loadingScreen}>
-      <Text style={styles.loadingTitle}>ðŸš– TaxiApp</Text>
+      <Text style={styles.loadingTitle}>TaxiApp</Text>
       <ActivityIndicator size="large" color="#007AFF" style={styles.loadingSpinner} />
       <Text style={styles.loadingText}>Inicializando...</Text>
     </View>
@@ -2003,7 +2003,7 @@ const renderLoadingScreen = () => {
                   <Text style={styles.priceLarge}>RD$ {realTimePrice || estimatedPrice || 520}</Text>
                   <View style={styles.priceFactors}>
                     <Text style={styles.priceFactorText}>
-                      ðŸ“ {routeInfo?.distance?.text || '7.0 km'} â€¢ â± {routeInfo?.duration?.text || '14 min'}
+                       {routeInfo?.distance?.text || '7.0 km'} â€¢ â± {routeInfo?.duration?.text || '14 min'}
                     </Text>
                     {priceDetails?.surge && (
                       <Text style={styles.surgeText}>¡ 1.5x</Text>
@@ -2124,7 +2124,7 @@ const renderLoadingScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.locationModal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>ðŸ“ Seleccionar ubicacion</Text>
+              <Text style={styles.modalTitle}> Seleccionar ubicacion</Text>
               <TouchableOpacity 
                 onPress={() => setShowLocationModal(false)}
                 style={styles.modalCloseButton}
@@ -2180,7 +2180,7 @@ const renderLoadingScreen = () => {
     setTimeout(() => setShowMapPicker(true), 300);
   }}
 >
-  <Text style={styles.locationOptionIcon}>ðŸ—ºï¸</Text>
+  <Text style={styles.locationOptionIcon}></Text>
   <View style={styles.locationOptionContent}>
     <Text style={styles.locationOptionTitle}>Fijar en el mapa</Text>
     <Text style={styles.locationOptionDescription}>
@@ -2193,7 +2193,7 @@ const renderLoadingScreen = () => {
               {/* InformaciÃ³n sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
                 <View style={styles.permissionInfo}>
-                  <Text style={styles.permissionInfoTitle}>ðŸ’¡ Consejo</Text>
+                  <Text style={styles.permissionInfoTitle}> Consejo</Text>
                   <Text style={styles.permissionInfoText}>
                     Para obtener tu ubicacion exacta, permite el acceso a la ubicacion en la configuraciÃ³n de la app.
                   </Text>
@@ -2657,7 +2657,7 @@ const renderLoadingScreen = () => {
   if (rideStatus === TRIP_STATES.REQUESTING_RIDE) {
     return (
         <View style={styles.statusContainer}>
-          <Text style={styles.statusTitle}>ðŸ” Buscando conductor...</Text>
+          <Text style={styles.statusTitle}> Buscando conductor...</Text>
           <Text style={styles.statusText}>Por favor espera un momento</Text>
           {estimatedPrice > 0 && (
             <Text style={styles.priceText}>Precio estimado: RD${estimatedPrice}</Text>
@@ -2725,7 +2725,7 @@ const renderLoadingScreen = () => {
     if (rideStatus === TRIP_STATES.IN_RIDE && driverInfo) {
       return (
         <View style={styles.driverContainer}>
-          <Text style={styles.statusTitle}>ðŸš™ Viaje en progreso</Text>
+          <Text style={styles.statusTitle}>Viaje en progreso</Text>
        
           {/* BOTÃ“N DE PÃNICO */}
           <EmergencyButton
