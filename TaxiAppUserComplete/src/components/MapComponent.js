@@ -1,20 +1,23 @@
+$mapComponentContent = @'
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MapComponent = ({ 
   userLocation, 
+  driverLocation,
   driverInfo, 
   destination, 
   showDriverLocation = false, 
   onMapPress = null, 
-  interactive = false 
+  interactive = false,
+  trackingMode = false
 }) => {
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
@@ -31,20 +34,22 @@ const MapComponent = ({
     longitudeDelta: 0.08,
   };
 
-  // ✅ FORZAR zoom a Santo Domingo después de montar
+  // ✅ FORZAR zoom a Santo Domingo después de montar (solo si NO es tracking)
   useEffect(() => {
-    if (mapRef.current && !mapInitialized) {
+    if (mapRef.current && !mapInitialized && !trackingMode) {
       setTimeout(() => {
         mapRef.current.animateToRegion(santodomingo, 800);
         setCurrentRegion(santodomingo);
         setMapInitialized(true);
       }, 500);
+    } else if (trackingMode) {
+      setMapInitialized(true);
     }
-  }, [mapInitialized]);
+  }, [mapInitialized, trackingMode]);
 
-  // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia
+  // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia (solo si NO es tracking)
   useEffect(() => {
-    if (mapRef.current && userLocation && mapInitialized) {
+    if (mapRef.current && userLocation && mapInitialized && !trackingMode) {
       const newRegion = {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
@@ -54,7 +59,22 @@ const MapComponent = ({
       mapRef.current.animateToRegion(newRegion, 500);
       setCurrentRegion(newRegion);
     }
-  }, [userLocation, mapInitialized]);
+  }, [userLocation, mapInitialized, trackingMode]);
+
+  // ✅ TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
+  useEffect(() => {
+    if (trackingMode && mapRef.current && driverLocation && userLocation) {
+      const coordinates = [
+        { latitude: userLocation.latitude, longitude: userLocation.longitude },
+        { latitude: driverLocation.latitude, longitude: driverLocation.longitude }
+      ];
+      
+      mapRef.current.fitToCoordinates(coordinates, {
+        edgePadding: { top: 100, right: 100, bottom: 100, left: 100 },
+        animated: true
+      });
+    }
+  }, [driverLocation, trackingMode, userLocation]);
 
   const defaultUserLocation = {
     latitude: userLocation?.latitude || 18.4861,
@@ -149,11 +169,14 @@ const MapComponent = ({
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={santodomingo}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
+        showsUserLocation={!trackingMode}
+        showsMyLocationButton={!trackingMode}
         showsCompass={true}
         showsScale={true}
+        showsBuildings={true}
         mapType="standard"
+        minZoomLevel={10}
+        maxZoomLevel={18}
         scrollEnabled={true}
         zoomEnabled={true}
         pitchEnabled={true}
@@ -162,29 +185,54 @@ const MapComponent = ({
         loadingEnabled={true}
         onRegionChangeComplete={handleRegionChangeComplete}
       >
-        {/* Marcador azul - ubicación del usuario */}
-        <Marker
-          coordinate={defaultUserLocation}
-          title="Mi ubicación"
-          description={userLocation?.address || "Tu ubicación actual"}
-          pinColor="#007AFF"
-        />
-
-        {/* Marcador rojo - destino seleccionado */}
-        {destination && destination.latitude && destination.longitude && (
+        {/* Marcador del Usuario - Modo Normal (azul standard) */}
+        {!trackingMode && (
           <Marker
-            coordinate={{
-              latitude: destination.latitude,
-              longitude: destination.longitude,
-            }}
-            title="Destino"
-            description={destination.address || "Destino del viaje"}
-            pinColor="#FF3B30"
+            coordinate={defaultUserLocation}
+            title="Mi ubicación"
+            description={userLocation?.address || "Tu ubicación actual"}
+            pinColor="#007AFF"
           />
         )}
 
-        {/* Marcador verde - conductor */}
-        {showDriverLocation && driverInfo && driverInfo.currentLocation && (
+        {/* Marcador del Usuario - Modo Tracking (punto azul personalizado) */}
+        {trackingMode && userLocation && (
+          <Marker
+            coordinate={{
+              latitude: userLocation.latitude,
+              longitude: userLocation.longitude,
+            }}
+            title="📍 Punto de recogida"
+            description={userLocation.address || "Tu ubicación"}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.userMarker}>
+              <View style={styles.userMarkerInner} />
+            </View>
+          </Marker>
+        )}
+
+        {/* Marcador del Conductor - Modo Tracking (carro verde) */}
+        {trackingMode && driverLocation && (
+          <Marker
+            coordinate={{
+              latitude: driverLocation.latitude,
+              longitude: driverLocation.longitude
+            }}
+            title={`🚗 ${driverInfo?.name || 'Conductor'}`}
+            description={driverInfo?.car || 'En camino'}
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View style={styles.driverMarker}>
+              <View style={styles.driverMarkerIcon}>
+                <View style={styles.carIcon} />
+              </View>
+            </View>
+          </Marker>
+        )}
+
+        {/* Marcador del Conductor - Modo Normal (verde standard) */}
+        {!trackingMode && showDriverLocation && driverInfo && driverInfo.currentLocation && (
           <Marker
             coordinate={{
               latitude: driverInfo.currentLocation.latitude,
@@ -193,6 +241,32 @@ const MapComponent = ({
             title="Conductor"
             description={driverInfo.name}
             pinColor="#34C759"
+          />
+        )}
+
+        {/* Línea de ruta entre conductor y usuario (solo tracking) */}
+        {trackingMode && driverLocation && userLocation && (
+          <Polyline
+            coordinates={[
+              { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
+              { latitude: userLocation.latitude, longitude: userLocation.longitude }
+            ]}
+            strokeColor="#007AFF"
+            strokeWidth={4}
+            lineDashPattern={[10, 5]}
+          />
+        )}
+
+        {/* Marcador rojo - destino seleccionado */}
+        {destination && destination.latitude && destination.longitude && (
+          <Marker
+            coordinate={{
+              latitude: destination.latitude,
+              longitude: destination.longitude,
+            }}
+            title="🎯 Destino"
+            description={destination.address || "Destino del viaje"}
+            pinColor="#FF3B30"
           />
         )}
       </MapView>
@@ -206,6 +280,49 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  // Marcador del usuario (punto azul) - Tracking Mode
+  userMarker: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 122, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+  },
+  userMarkerInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#007AFF',
+  },
+  // Marcador del conductor (carro) - Tracking Mode
+  driverMarker: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  driverMarkerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  carIcon: {
+    width: 26,
+    height: 18,
+    backgroundColor: '#fff',
+    borderRadius: 5,
   },
 });
 
