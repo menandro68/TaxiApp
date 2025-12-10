@@ -4073,19 +4073,19 @@ const styles = StyleSheet.create({
   },
 
   // ESTILOS PARA TRACKING DEL CONDUCTOR
-  trackingContainer: {
+trackingContainer: {
     backgroundColor: '#f0f8ff',
-    padding: 15,
+    padding: 10,
     borderRadius: 10,
-    marginVertical: 15,
+    marginVertical: 8,
     borderWidth: 1,
     borderColor: '#007AFF',
   },
-  trackingTitle: {
-    fontSize: 16,
+trackingTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: 12,
+    marginBottom: 6,
     textAlign: 'center',
   },
   trackingInfoRow: {
@@ -4200,11 +4200,11 @@ statusTitle: {
     textAlign: 'center',
     color: '#666',
   },
-  priceText: {
-    fontSize: 18,
+priceText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: 20,
+    marginBottom: 5,
   },
   cancelButton: {
     backgroundColor: '#FF3B30',
@@ -4227,24 +4227,24 @@ driverContainer: {
     width: '100%',
   },
   // Estilos para botones de contacto
-  contactButtonsContainer: {
+contactButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    marginVertical: screenWidth * 0.03,
+    marginVertical: screenWidth * 0.015,
     paddingHorizontal: screenWidth * 0.02,
     width: '100%',
-    gap: screenWidth * 0.02,
+    gap: screenWidth * 0.015,
   },
 contactButton: {
     flexDirection: 'row',
     backgroundColor: '#007AFF',
-    paddingVertical: screenWidth * 0.025,
-    paddingHorizontal: screenWidth * 0.03,
+    paddingVertical: screenWidth * 0.018,
+    paddingHorizontal: screenWidth * 0.025,
     borderRadius: screenWidth * 0.02,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: screenWidth * 0.27,
+    minWidth: screenWidth * 0.25,
   },
   contactButtonText: {
     color: '#fff',
