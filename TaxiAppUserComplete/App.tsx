@@ -4220,9 +4220,10 @@ statusTitle: {
   },
 driverContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: screenWidth * 0.04,
+    paddingTop: screenWidth * 0.02,
     width: '100%',
   },
   // Estilos para botones de contacto
@@ -4271,12 +4272,13 @@ etaText: {
     marginBottom: screenWidth * 0.01,
     textAlign: 'center',
   },
-  rideActions: {
+rideActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 10,
+    marginBottom: 15,
   },
   startButton: {
     backgroundColor: '#34C759',
