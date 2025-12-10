@@ -4131,8 +4131,8 @@ statusIndicator: {
     marginRight: 8,
   },
   // ESTILOS PARA MAPA DE TRACKING
-  trackingMapContainer: {
-    height: 200,
+trackingMapContainer: {
+    height: 280,
     borderRadius: 10,
     overflow: 'hidden',
     marginVertical: 10,
@@ -4188,11 +4188,11 @@ statusIndicator: {
     padding: 20,
   },
 statusTitle: {
-    fontSize: screenWidth * 0.04,
+    fontSize: screenWidth * 0.028,
     fontWeight: '600',
-    marginBottom: screenWidth * 0.01,
-    textAlign: 'center',
     color: '#666',
+    marginBottom: screenWidth * 0.005,
+    textAlign: 'center',
   },
   statusText: {
     fontSize: 16,
@@ -4252,23 +4252,23 @@ contactButton: {
     marginLeft: screenWidth * 0.015,
   },
 driverName: {
-    fontSize: screenWidth * 0.055,
+    fontSize: screenWidth * 0.04,
     fontWeight: 'bold',
-    marginBottom: screenWidth * 0.005,
+    marginBottom: screenWidth * 0.003,
     color: '#333',
     textAlign: 'center',
   },
 driverDetails: {
-    fontSize: screenWidth * 0.035,
-    marginBottom: screenWidth * 0.005,
+    fontSize: screenWidth * 0.025,
+    marginBottom: screenWidth * 0.003,
     color: '#666',
     textAlign: 'center',
   },
 etaText: {
-    fontSize: screenWidth * 0.04,
+    fontSize: screenWidth * 0.028,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: screenWidth * 0.02,
+    marginBottom: screenWidth * 0.01,
     textAlign: 'center',
   },
   rideActions: {
