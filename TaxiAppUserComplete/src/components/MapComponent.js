@@ -19,6 +19,8 @@ const MapComponent = ({
   interactive = false,
   trackingMode = false
 }) => {
+  // DEBUG
+  console.log('🗺️ MapComponent destination:', destination);
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(null);

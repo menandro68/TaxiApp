@@ -3399,16 +3399,16 @@ const renderLoadingScreen = () => {
 
       <View style={styles.mapPickerContainer}>
         {/* MapComponent - CON INTERACTIVIDAD COMPLETA */}
-          <MapComponent 
+    <MapComponent
       userLocation={{
         latitude: 18.4861,
         longitude: -69.9312,
-        address: 'Santo Domingo, RepÃºblica Dominicana'
+        address: 'Santo Domingo, República Dominicana'
       }}
+      destination={mapPickerLocation}
       interactive={true}
       onMapPress={handleMapPickerPress}
     />
-        
         {/* Pin visual en el centro */}
       {/* Pin visual en el centro - NO BLOQUEA TAPS */}
         <View style={styles.mapPickerPin} pointerEvents="none">
