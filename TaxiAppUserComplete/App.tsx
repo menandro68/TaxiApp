@@ -2177,7 +2177,21 @@ const renderLoadingScreen = () => {
   style={styles.locationOption}
   onPress={() => {
     setShowLocationModal(false);
-    setTimeout(() => setShowMapPicker(true), 300);
+    setTimeout(() => {
+  // Inicializar pin rojo con ubicación actual o Santo Domingo
+  const initialLocation = userLocation && userLocation.latitude ? {
+    latitude: userLocation.latitude,
+    longitude: userLocation.longitude,
+    address: userLocation.address || 'Ubicación actual'
+  } : {
+    latitude: 18.4861,
+    longitude: -69.9312,
+    address: 'Santo Domingo, República Dominicana'
+  };
+  setMapPickerLocation(initialLocation);
+  setMapPickerAddress(initialLocation.address);
+  setShowMapPicker(true);
+}, 300);
   }}
 >
   <Text style={styles.locationOptionIcon}></Text>
