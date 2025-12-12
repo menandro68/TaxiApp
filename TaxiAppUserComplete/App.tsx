@@ -1,4 +1,4 @@
-﻿import 'react-native-get-random-values';
+import 'react-native-get-random-values';
 import PushNotificationService from './src/services/PushNotificationService';
 import SecureStorage from './src/services/SecureStorage';
 import AnalyticsService from './src/services/analytics';
@@ -65,7 +65,7 @@ import LocationFallbackService, { POPULAR_LOCATIONS } from './src/services/Locat
 import ApiService from './src/services/ApiService';
 import UserProfile from './src/screens/UserProfile';
 
-// ConfiguraciÃ³n del drawer
+// Configuración del drawer
 const { width: screenWidth } = Dimensions.get('window');
 const DRAWER_WIDTH = screenWidth * 0.75;
 
@@ -82,7 +82,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
 
   const Stack = createStackNavigator();
 
-  // Agregar despuÃ©s de todos los useState
+  // Agregar después de todos los useState
 
 
   const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
@@ -174,7 +174,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
 useEffect(() => {
     initializeApp();
     setupNotificationHandlers();
-    // Forzar envÃ­o de token FCM al iniciar
+    // Forzar envío de token FCM al iniciar
     PushNotificationService.getToken();
     // Cleanup tracking al desmontar el componente
     return () => {
@@ -183,7 +183,7 @@ useEffect(() => {
   }, []);
 
 
-// Recibir direcciÃ³n favorita seleccionada desde AsyncStorage
+// Recibir dirección favorita seleccionada desde AsyncStorage
   useEffect(() => {
     const checkPendingFavoriteAddress = async () => {
       try {
@@ -194,7 +194,7 @@ useEffect(() => {
           // Limpiar inmediatamente para evitar duplicados
           await AsyncStorage.removeItem('pendingFavoriteAddress');
           
-          // Si estamos editando un destino adicional del modal mÃºltiples destinos
+          // Si estamos editando un destino adicional del modal múltiples destinos
           if (activeMultiDestinationStopId && multiDestModalRef.current) {
             console.log(' Actualizando destino adicional con favorita:', activeMultiDestinationStopId);
             multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, favoriteAddress.address);
@@ -222,7 +222,7 @@ useEffect(() => {
           }
         }
       } catch (error) {
-        console.error('Error leyendo direcciÃ³n favorita:', error);
+        console.error('Error leyendo dirección favorita:', error);
       }
     };
     // Verificar cuando la pantalla obtiene foco
@@ -276,14 +276,14 @@ useEffect(() => {
     console.log('Nuevo estado drawer:', !isDrawerOpen);
   };
 
-  // AGREGAR ESTA FUNCIÃ“N QUE FALTA:
+  // AGREGAR ESTA FUNCIÓN QUE FALTA:
   const closeDrawer = () => {
     if (isDrawerOpen) {
       toggleDrawer();
     }
   };
 
-  // FUNCIÃ“N ACTUALIZADA: Manejar opciones del menÃº
+  // FUNCIÓN ACTUALIZADA: Manejar opciones del menú
   const handleMenuOption = (option) => {
     closeDrawer();
     
@@ -383,10 +383,10 @@ const initializeApp = async () => {
     console.log('Inicializando TaxiApp Usuario...');
     setIsLoading(true);
 
-// 1. Obtener ubicacion con geocoding (esto actualizarÃ¡ la direcciÃ³n correctamente)
+// 1. Obtener ubicacion con geocoding (esto actualizará la dirección correctamente)
     initializeLocationService();
   
-  // 2. Verificar si el usuario estÃ¡ autenticado
+  // 2. Verificar si el usuario está autenticado
   const authToken = await SharedStorage.getAuthToken();
   if (authToken) {
     try {
@@ -396,7 +396,7 @@ const initializeApp = async () => {
         setIsAuthenticated(true);
         console.log('Usuario autenticado (local):', localUser.name);
         
-        // Continuar con la inicializaciÃ³n normal
+        // Continuar con la inicialización normal
         await loadUserState();
         await initializeUserProfile();
       } else {
@@ -424,20 +424,20 @@ const initializeApp = async () => {
     setIsAuthenticated(false);
     setShowAuthModal(true);
   } finally {
-    setIsLoading(false);  //  CAMBIO 2: Mover aquÃ­ al FINAL (en finally)
+    setIsLoading(false);  //  CAMBIO 2: Mover aquí al FINAL (en finally)
   }
 };
 
   // FUNCIONES DE AUTENTICACION
 
-  // Funciones de validaciÃ³n
+  // Funciones de validación
   const validateEmail = (email) => {
     if (!email) {
       setInputErrors(prev => ({...prev, email: 'El email es requerido'}));
       return false;
     }
     if (!ValidationUtils.isValidEmail(email)) {
-      setInputErrors(prev => ({...prev, email: 'Email invÃ¡lido'}));
+      setInputErrors(prev => ({...prev, email: 'Email inválido'}));
       return false;
     }
     setInputErrors(prev => ({...prev, email: ''}));
@@ -447,11 +447,11 @@ const initializeApp = async () => {
   const validatePassword = (password) => {
     const validation = ValidationUtils.isValidPassword(password);
     if (!password) {
-      setInputErrors(prev => ({...prev, password: 'La contraseÃ±a es requerida'}));
+      setInputErrors(prev => ({...prev, password: 'La contraseña es requerida'}));
       return false;
     }
     if (!validation.isValid) {
-      setInputErrors(prev => ({...prev, password: 'MÃ­nimo 6 caracteres'}));
+      setInputErrors(prev => ({...prev, password: 'Mínimo 6 caracteres'}));
       return false;
     }
     setPasswordStrength(validation.strength);
@@ -465,7 +465,7 @@ const initializeApp = async () => {
       return false;
     }
     if (!ValidationUtils.isValidName(name)) {
-      setInputErrors(prev => ({...prev, name: 'Nombre invÃ¡lido (solo letras)'}));
+      setInputErrors(prev => ({...prev, name: 'Nombre inválido (solo letras)'}));
       return false;
     }
     setInputErrors(prev => ({...prev, name: ''}));
@@ -474,18 +474,18 @@ const initializeApp = async () => {
 
   const validatePhone = (phone) => {
     if (!phone) {
-      setInputErrors(prev => ({...prev, phone: 'El telÃ©fono es requerido'}));
+      setInputErrors(prev => ({...prev, phone: 'El teléfono es requerido'}));
       return false;
     }
     if (!ValidationUtils.isValidPhone(phone)) {
-      setInputErrors(prev => ({...prev, phone: 'TelÃ©fono invÃ¡lido (809/829/849)'}));
+      setInputErrors(prev => ({...prev, phone: 'Teléfono inválido (809/829/849)'}));
       return false;
     }
     setInputErrors(prev => ({...prev, phone: ''}));
     return true;
   };
 
-  // FunciÃ³n para manejar login
+  // Función para manejar login
   const handleLogin = async () => {
     try {
       // Validar campos antes de enviar
@@ -525,7 +525,7 @@ const initializeApp = async () => {
           name: loginResponse.user.name
         });
         
-        Alert.alert('Â¡Bienvenido!', `Hola ${loginResponse.user.name}`);
+        Alert.alert('¡Bienvenido!', `Hola ${loginResponse.user.name}`);
         
         // Limpiar errores
         setInputErrors({
@@ -535,7 +535,7 @@ const initializeApp = async () => {
           phone: ''
         });
         
-        // Continuar con la inicializaciÃ³n de la app
+        // Continuar con la inicialización de la app
         await loadUserState();
         await initializeUserProfile();
         await initializeLocationService();
@@ -546,13 +546,13 @@ const initializeApp = async () => {
       
     } catch (error) {
       console.error('Error en login:', error);
-      Alert.alert('Error', 'No se pudo conectar con el servidor. IntÃ©ntalo de nuevo.');
+      Alert.alert('Error', 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // FunciÃ³n para manejar registro
+  // Función para manejar registro
   const handleRegister = async () => {
     try {
       setIsLoading(true);
@@ -598,7 +598,7 @@ const initializeApp = async () => {
           user_type: 'passenger',
           name: registerResponse.user.name
         });
-        Alert.alert('Â¡Registro exitoso!', `Bienvenido a TaxiApp, ${registerResponse.user.name}`);
+        Alert.alert('¡Registro exitoso!', `Bienvenido a TaxiApp, ${registerResponse.user.name}`);
         
         // Limpiar errores
         setInputErrors({
@@ -609,7 +609,7 @@ const initializeApp = async () => {
         });
         setPasswordStrength('');
         
-        // Continuar con la inicializaciÃ³n de la app
+        // Continuar con la inicialización de la app
         await loadUserState();
         await initializeUserProfile();
         await initializeLocationService();
@@ -620,21 +620,21 @@ const initializeApp = async () => {
       
     } catch (error) {
       console.error('Error en registro:', error);
-      Alert.alert('Error', 'No se pudo conectar con el servidor. IntÃ©ntalo de nuevo.');
+      Alert.alert('Error', 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // FunciÃ³n para logout
+  // Función para logout
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar sesiÃ³n',
-      'Â¿EstÃ¡s seguro que deseas cerrar sesiÃ³n?',
+      'Cerrar sesión',
+      '¿Estás seguro que deseas cerrar sesión?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Cerrar sesiÃ³n',
+          text: 'Cerrar sesión',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -661,7 +661,7 @@ const initializeApp = async () => {
     );
   };
 
-  // FUNCIÃ“N: Limpiar formulario de autenticaciÃ³n
+  // FUNCIÓN: Limpiar formulario de autenticación
   const resetAuthForm = () => {
     setAuthForm({
       email: '',
@@ -709,7 +709,7 @@ const setupNotificationHandlers = () => {
       const mockDriverInfo = {
         id: driverData.driverId || 'driver_001',
         name: driverData.driverName || 'Conductor',
-        car: driverData.driverCar || 'VehÃ­culo',
+        car: driverData.driverCar || 'Vehículo',
         rating: parseFloat(driverData.driverRating) || 4.5,
         eta: driverData.eta || '5 min',
         phone: driverData.driverPhone || '+1-809-555-0123',
@@ -722,27 +722,27 @@ const setupNotificationHandlers = () => {
       setDriverInfo(mockDriverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
-      // Cerrar modal de bÃºsqueda
+      // Cerrar modal de búsqueda
       setSearchModalVisible(false);
       setIsSearchingDriver(false);
       
       // Obtener ubicacion actual del usuario desde SharedStorage
       const currentUserLocation = await SharedStorage.getUserLocation();
-      console.log('UbicaciÃ³n del usuario para tracking:', currentUserLocation);
+      console.log('Ubicación del usuario para tracking:', currentUserLocation);
       
       // Iniciar tracking solo si tenemos la ubicacion
       if (currentUserLocation && currentUserLocation.latitude) {
         startDriverTracking(mockDriverInfo, currentUserLocation);
       } else {
-        console.log(' ï¸ No hay ubicacion del usuario, tracking omitido');
+        console.log('�️ No hay ubicacion del usuario, tracking omitido');
       }
     };
     
     // Inicializar PushNotificationService
-    // Ya se inicializa automÃ¡ticamente al importar
+    // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');
   };
-// NUEVA FUNCIÃ“N: Inicializar servicio de ubicacion con fallback mejorado
+// NUEVA FUNCIÓN: Inicializar servicio de ubicacion con fallback mejorado
 const initializeLocationService = async () => {
   try {
     // Si ya obtuvimos ubicacion GPS, no continuar
@@ -758,7 +758,7 @@ const initializeLocationService = async () => {
     const defaultLat = 18.4861;
     const defaultLng = -69.9312;
 
-    // FunciÃ³n helper para obtener direcciÃ³n via Mapbox
+    // Función helper para obtener dirección via Mapbox
     const getAddressFromCoords = async (lat, lng) => {
       try {
         const response = await fetch(
@@ -768,7 +768,7 @@ const initializeLocationService = async () => {
         if (data.features && data.features.length > 0) {
           let address = data.features[0].place_name;
           if (address.length > 60) {
-            address = address.replace(', RepÃºblica Dominicana', '').replace(', Dominican Republic', '');
+            address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
           }
           return address;
         }
@@ -778,10 +778,10 @@ const initializeLocationService = async () => {
       return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     };
 
-    // ? PASO 0: Intentar carga INSTANTï¿½NEA desde cachï¿½ (< 100ms)
+    // ? PASO 0: Intentar carga INSTANT�NEA desde cach� (< 100ms)
     const cachedLocation = await LocationFallbackService.getInstantCachedLocation();
     if (cachedLocation && cachedLocation.success) {
-      console.log('? Mostrando ubicaciï¿½n cacheada INMEDIATAMENTE');
+      console.log('? Mostrando ubicaci�n cacheada INMEDIATAMENTE');
       setUserLocation(cachedLocation.location);
       setLocationSource('cached_instant');
       setIsLoadingLocation(false);
@@ -792,7 +792,7 @@ const initializeLocationService = async () => {
     const permissionGranted = await requestLocationPermissions();
 
     if (permissionGranted) {
-      // 2. Intentar obtener ubicacion con fallback automÃ¡tico
+      // 2. Intentar obtener ubicacion con fallback automático
       const locationResult = await LocationFallbackService.getLocationForUser({
         showUserPrompt: false,
         timeout: 20000
@@ -809,16 +809,16 @@ const initializeLocationService = async () => {
             setIsLoadingLocation(false);
             return;
           } else {
-            // NO usar fallback genÃ©rico - exigir GPS real
-            console.log(' GPS fallÃ³ y no hay cache valido - requiere GPS real');
+            // NO usar fallback genérico - exigir GPS real
+            console.log(' GPS falló y no hay cache valido - requiere GPS real');
             setIsLoadingLocation(false);
-          // Reintentar automÃ¡ticamente sin mostrar alerta
+          // Reintentar automáticamente sin mostrar alerta
             setTimeout(() => initializeLocationService(), 3000);
-            return; // NO usar fallback genÃ©rico
+            return; // NO usar fallback genérico
           }
         }
         
-        // âœ… UBICACIÃ“N OBTENIDA CORRECTAMENTE
+        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
 
@@ -829,18 +829,18 @@ const initializeLocationService = async () => {
         });
 
    } else {
-        //  FALLO OBTENIENDO UBICACIÃ“N - VERIFICAR SI HAY CACHÃ‰ VÃLIDO
+        //  FALLO OBTENIENDO UBICACIÓN - VERIFICAR SI HAY CACHÉ VÁLIDO
         console.log('Fallo obteniendo ubicacion GPS...');
         
     // Verificar si ya hay ubicacion guardada en storage
         const savedLocation = await SharedStorage.getUserLocation();
         if (savedLocation && savedLocation.latitude && savedLocation.longitude) {
-          console.log('âœ… Usando ubicacion guardada en storage:', savedLocation.address);
+          console.log('✅ Usando ubicacion guardada en storage:', savedLocation.address);
           setUserLocation(savedLocation);
           setLocationSource(savedLocation.source || 'storage');
           return; // NO sobreescribir con fallback
         }
-        // Sin cache vÃ¡lido - usar fallback
+        // Sin cache válido - usar fallback
         console.log('Sin valido, usando fallback...');
         const fallbackAddress = await getAddressFromCoords(defaultLat, defaultLng);
         const fallbackLocation = {
@@ -855,7 +855,7 @@ const initializeLocationService = async () => {
 
         setTimeout(() => {
           Alert.alert(
-            'UbicaciÃ³n no disponible',
+            'Ubicación no disponible',
             'No se pudo obtener tu ubicacion GPS. Estamos usando ubicacion por defecto.',
             [
               { text: 'Usar esta', style: 'cancel' },
@@ -866,7 +866,7 @@ const initializeLocationService = async () => {
       }
     } else {
       // SIN PERMISOS - USAR FALLBACK CON GEOCODING
-      console.log('âš ï¸ Sin permisos de ubicacion, usando fallback con geocoding');
+      console.log('⚠️ Sin permisos de ubicacion, usando fallback con geocoding');
 
       const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
       const defaultLocation = {
@@ -886,9 +886,9 @@ const initializeLocationService = async () => {
     }
 
   } catch (error) {
-    console.error('âŒ Error inicializando ubicacion:', error);
+    console.error('❌ Error inicializando ubicacion:', error);
 
-    // ÃšLTIMO RECURSO: Emergency fallback con geocoding
+    // ÚLTIMO RECURSO: Emergency fallback con geocoding
     const emergencyLat = 18.4861;
     const emergencyLng = -69.9312;
     
@@ -946,7 +946,7 @@ const initializeLocationService = async () => {
     }
   };
 
-  // FUNCIÃ“N MEJORADA: Solicitar permisos de ubicacion
+  // FUNCIÓN MEJORADA: Solicitar permisos de ubicacion
   const requestLocationPermissions = async () => {
     try {
       console.log('Solicitando permisos de ubicacion...');
@@ -984,7 +984,7 @@ const initializeLocationService = async () => {
     }
   };
 
-  // NUEVA FUNCIÃ“N: Manejar selecciÃ³n de ubicacion manual
+  // NUEVA FUNCIÓN: Manejar selección de ubicacion manual
   const handleLocationSelected = async (location) => {
     try {
       console.log('Nueva ubicacion seleccionada:', location);
@@ -996,14 +996,14 @@ const initializeLocationService = async () => {
       );
       
       if (!validation.valid) {
-        Alert.alert('Error', 'Las coordenadas seleccionadas no son vÃ¡lidas');
+        Alert.alert('Error', 'Las coordenadas seleccionadas no son válidas');
         return;
       }
       
       if (!validation.inDominicanRepublic) {
         Alert.alert(
-          'UbicaciÃ³n fuera de servicio',
-          'TaxiApp actualmente solo opera en RepÃºblica Dominicana'
+          'Ubicación fuera de servicio',
+          'TaxiApp actualmente solo opera en República Dominicana'
         );
         return;
       }
@@ -1033,7 +1033,7 @@ const initializeLocationService = async () => {
   };
 
 
-// NUEVA FUNCIÃ“N: Reintentar obtener GPS
+// NUEVA FUNCIÓN: Reintentar obtener GPS
   const retryGPSLocation = async () => {
     try {
       setIsLoadingLocation(true);
@@ -1045,25 +1045,25 @@ const initializeLocationService = async () => {
       });
       
       if (locationResult.success && locationResult.location) {
-        // âœ… Marcar que ya obtuvimos ubicacion si es GPS
+        // ✅ Marcar que ya obtuvimos ubicacion si es GPS
         if (locationResult.location.source === 'gps') {
           gpsObtainedRef.current = true;
         }
         
-        // âœ… UBICACIÃ“N OBTENIDA CORRECTAMENTE
+        // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
         setUserLocation(locationResult.location);
         await handleLocationSelected(locationResult.location);
         
         if (locationResult.location.source === 'gps') {
           Alert.alert(
-            'Â¡Ã‰xito!', 
-            'UbicaciÃ³n GPS obtenida correctamente',
+            '¡Éxito!', 
+            'Ubicación GPS obtenida correctamente',
             [{ text: 'OK', onPress: () => setPickupLocationConfirmed(true) }]
           );
         } else {
           Alert.alert(
             'GPS no disponible', 
-            'Se usÃ³ ubicacion aproximada. ' + (locationResult.warning || '')
+            'Se usó ubicacion aproximada. ' + (locationResult.warning || '')
           );
         }
       } else {
@@ -1078,13 +1078,13 @@ const initializeLocationService = async () => {
     }
   };
 
-  // FUNCIÃ“N: Calcular ruta y precio usando API real
+  // FUNCIÓN: Calcular ruta y precio usando API real
   const calculateRouteAndPrice = async (origin, destination, vehicleType = 'economy') => {
     try {
       setIsCalculatingRoute(true);
       console.log('Calculando ruta y precio con API real...', { origin, destination, vehicleType });
 
-      // Primero obtener estimaciÃ³n rÃ¡pida del API
+      // Primero obtener estimación rápida del API
       const priceEstimate = await ApiService.estimatePrice(origin, destination, vehicleType);
       if (priceEstimate) {
         setEstimatedPrice(priceEstimate.estimated_price);
@@ -1108,7 +1108,7 @@ const initializeLocationService = async () => {
     } catch (error) {
       console.error('Error con API real, usando fallback:', error);
       
-      // Si falla el API real, usar estimaciÃ³n local como fallback
+      // Si falla el API real, usar estimación local como fallback
       const fallbackEstimate = RouteService.estimateQuickPrice(origin, destination, vehicleType);
       if (fallbackEstimate) {
         setEstimatedPrice(fallbackEstimate.pricing.finalPrice);
@@ -1116,8 +1116,8 @@ const initializeLocationService = async () => {
       }
       
       Alert.alert(
-        'ConexiÃ³n limitada',
-        'Usando estimaciÃ³n aproximada. Los precios se actualizarÃ¡n al conectarse al servidor.',
+        'Conexión limitada',
+        'Usando estimación aproximada. Los precios se actualizarán al conectarse al servidor.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -1125,7 +1125,7 @@ const initializeLocationService = async () => {
     }
   };
 
-  // FUNCIÃ“N: Manejar selecciÃ³n de destino
+  // FUNCIÓN: Manejar selección de destino
   const handleDestinationSelected = async (place) => {
     try {
       console.log('Destino seleccionado:', place);
@@ -1137,7 +1137,7 @@ const initializeLocationService = async () => {
         await calculateRouteAndPrice(userLocation, place.location, selectedVehicleType);
       } else {
         Alert.alert(
-          'UbicaciÃ³n no disponible',
+          'Ubicación no disponible',
           'Selecciona tu ubicacion de origen primero',
           [
             { text: 'Seleccionar ubicacion', onPress: () => setShowLocationModal(true) }
@@ -1150,13 +1150,13 @@ const initializeLocationService = async () => {
     }
   };
 
-  // FUNCIÃ“N: Cambiar tipo de vehÃ­culo
+  // FUNCIÓN: Cambiar tipo de vehículo
   const handleVehicleTypeChange = async (vehicleType) => {
     try {
       setSelectedVehicleType(vehicleType);
       
       if (selectedDestination && userLocation) {
-        // Mostrar estimador con el nuevo tipo de vehÃ­culo
+        // Mostrar estimador con el nuevo tipo de vehículo
         setShowPriceEstimator(false);
         setTimeout(() => {
           setShowPriceEstimator(true);
@@ -1169,7 +1169,7 @@ const initializeLocationService = async () => {
     }
   };
 
-  // NUEVA FUNCIÃ“N: Iniciar tracking del conductor
+  // NUEVA FUNCIÓN: Iniciar tracking del conductor
   const startDriverTracking = async (driver, userLoc) => {
     try {
       console.log('Iniciando tracking del conductor:', driver.name);
@@ -1210,11 +1210,11 @@ const initializeLocationService = async () => {
           setTrackingProgress(100);
           
           Alert.alert(
-            'Â¡Conductor ha llegado!',
-            `${driverInfo.name} estÃ¡ en tu ubicacion. Tiempo total: ${arrivalInfo.totalTime} min`,
+            '¡Conductor ha llegado!',
+            `${driverInfo.name} está en tu ubicacion. Tiempo total: ${arrivalInfo.totalTime} min`,
             [
               {
-                text: 'Subir al vehÃ­culo',
+                text: 'Subir al vehículo',
                 onPress: () => startRide()
               }
             ]
@@ -1246,7 +1246,7 @@ const initializeLocationService = async () => {
     }
   };
 
-  // NUEVA FUNCIÃ“N: Detener tracking del conductor
+  // NUEVA FUNCIÓN: Detener tracking del conductor
   const stopDriverTracking = () => {
     console.log('Deteniendo tracking del conductor');
     
@@ -1258,7 +1258,7 @@ const initializeLocationService = async () => {
     setDriverLocation(null);
   };
 
-  // FUNCIÃ“N: Llamar al conductor
+  // FUNCIÓN: Llamar al conductor
   const handleCallDriver = () => {
     if (driverInfo && driverInfo.phone) {
       const phoneNumber = driverInfo.phone;
@@ -1269,15 +1269,15 @@ const initializeLocationService = async () => {
         Alert.alert('Error', 'No se pudo realizar la llamada');
       });
     } else {
-      Alert.alert('Error', 'No hay nÃºmero de telÃ©fono disponible');
+      Alert.alert('Error', 'No hay número de teléfono disponible');
     }
   };
 
-// FUNCIÃ“N: Chat con el conductor via WhatsApp
+// FUNCIÓN: Chat con el conductor via WhatsApp
   const handleChatDriver = () => {
     const phone = driverInfo?.phone?.replace(/[^0-9]/g, '') || '';
     if (!phone) {
-      Alert.alert('Error', 'No hay nÃºmero de telÃ©fono disponible');
+      Alert.alert('Error', 'No hay número de teléfono disponible');
       return;
     }
     const message = `Hola ${driverInfo.name}, soy tu pasajero. Estoy esperando mi viaje.`;
@@ -1287,7 +1287,7 @@ const initializeLocationService = async () => {
       Alert.alert('Error', 'No se pudo abrir WhatsApp');
     });
   };
-  // FUNCIÃ“N: Solicitar viaje usando API real
+  // FUNCIÓN: Solicitar viaje usando API real
   const requestRide = async () => {
     if (!destination || (typeof destination === 'string' && !destination.trim())) {
       Alert.alert('Error', 'Por favor ingresa un destino');
@@ -1296,7 +1296,7 @@ const initializeLocationService = async () => {
 
     if (!userLocation) {
       Alert.alert(
-        'UbicaciÃ³n requerida',
+        'Ubicación requerida',
         'Necesitamos tu ubicacion para solicitar el viaje',
         [
           { text: 'Seleccionar ubicacion', onPress: () => setShowLocationModal(true) }
@@ -1305,18 +1305,18 @@ const initializeLocationService = async () => {
       return;
     }
 
-    // NUEVA LÃNEA: Mostrar modal de mÃ©todos de pago
+    // NUEVA LÍNEA: Mostrar modal de métodos de pago
     setShowPaymentModal(true);
-    return; // Detener aquÃ­ y continuar cuando el usuario seleccione mÃ©todo de pago
+    return; // Detener aquí y continuar cuando el usuario seleccione método de pago
   };
 
 const processRideRequest = async () => {
   setShowPaymentModal(false);
   
-  // âœ… GUARDAR UBICACIÃ“N INMEDIATAMENTE ANTES DE CUALQUIER CAMBIO DE ESTADO
+  // ✅ GUARDAR UBICACIÓN INMEDIATAMENTE ANTES DE CUALQUIER CAMBIO DE ESTADO
   if (userLocation) {
     await SharedStorage.saveUserLocation(userLocation);
-    console.log('âœ… UbicaciÃ³n guardada en SharedStorage:', userLocation);
+    console.log('✅ Ubicación guardada en SharedStorage:', userLocation);
   }
 
   if (!estimatedPrice && !routeInfo) {
@@ -1384,21 +1384,21 @@ const sendTripRequestToBackend = async (tripData) => {
     console.log('URL:', `${getBackendUrl()}/trips/create`);
 
     // DEBUG: User ID
-    console.log('Ÿ” DEBUG: Enviando user_id =', tripData.userId);
-    console.log('Ÿ” DEBUG: tipo =', typeof tripData.userId);
+    console.log('��� DEBUG: Enviando user_id =', tripData.userId);
+    console.log('��� DEBUG: tipo =', typeof tripData.userId);
     
     // DEBUG: Coordenadas
-    console.log('Ÿ” DEBUG: origin.latitude =', tripData.origin.latitude);
-    console.log('Ÿ” DEBUG: origin.longitude =', tripData.origin.longitude);
+    console.log('��� DEBUG: origin.latitude =', tripData.origin.latitude);
+    console.log('��� DEBUG: origin.longitude =', tripData.origin.longitude);
     
-    // DEBUG: Precio ANTES de transformaciÃ³n
-    console.log('Ÿ” DEBUG: Precio ANTES =', tripData.price);
-    console.log('Ÿ” DEBUG: Â¿Es NaN?', isNaN(tripData.price));
+    // DEBUG: Precio ANTES de transformación
+    console.log('��� DEBUG: Precio ANTES =', tripData.price);
+    console.log('��� DEBUG: ¿Es NaN?', isNaN(tripData.price));
     
     // Transformar precio
     const finalEstimatedPrice = isNaN(tripData.price) ? 150 : tripData.price;
-    console.log('Ÿ” DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
-    console.log('Ÿ” DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
+    console.log('��� DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
+    console.log('��� DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
     
     // Construir JSON
     const requestBody = {
@@ -1414,8 +1414,8 @@ const sendTripRequestToBackend = async (tripData) => {
       }
     };
     
-    // DEBUG: JSON completo que se envÃ­a
-    console.log('Ÿ” DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
+    // DEBUG: JSON completo que se envía
+    console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
     
     const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
@@ -1426,20 +1426,20 @@ const sendTripRequestToBackend = async (tripData) => {
       body: JSON.stringify(requestBody)
     });
 
-    console.log('âœ… Response recibido:', response.status);
+    console.log('✅ Response recibido:', response.status);
     
     if (!response.ok) {
       // DEBUG: Intentar leer el error del servidor
       const errorText = await response.text();
-      console.log('Ÿ”´ Respuesta del servidor:', errorText);
+      console.log('��� Respuesta del servidor:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('âœ… Datos parseados:', data);
+    console.log('✅ Datos parseados:', data);
     
     if (data.success) {
-      console.log('âœ… Viaje creado:', data.tripId);
+      console.log('✅ Viaje creado:', data.tripId);
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
      setSearchModalVisible(true);
@@ -1448,15 +1448,15 @@ const sendTripRequestToBackend = async (tripData) => {
     }
     
   } catch (error) {
-    console.error('âŒ Error completo:', error);
+    console.error('❌ Error completo:', error);
     console.error('Mensaje:', error.message);
     console.error('Stack:', error.stack);
     
-    Alert.alert('Error de conexiÃ³n', error.message || 'No se pudo conectar');
+    Alert.alert('Error de conexión', error.message || 'No se pudo conectar');
     fallbackRequestRide();
   }
 };
-  // FunciÃ³n de fallback si falla el API (SOLO UNA VEZ)
+  // Función de fallback si falla el API (SOLO UNA VEZ)
   const fallbackRequestRide = async () => {
     try {
       const mockDestination = selectedDestination
@@ -1490,7 +1490,7 @@ const sendTripRequestToBackend = async (tripData) => {
         status: 'searching',
         requestTime: new Date().toISOString(),
       };
-      // FRAGMENTO CORREGIDO (no es el cÃ³digo completo)
+      // FRAGMENTO CORREGIDO (no es el código completo)
       await SharedStorage.startRideRequest(
         userLocation,
         mockDestination,
@@ -1510,35 +1510,35 @@ const sendTripRequestToBackend = async (tripData) => {
     }
   };
 
-  // FunciÃ³n para buscar conductor
+  // Función para buscar conductor
 const searchForDriver = () => {
-  // SIEMPRE usar bÃºsqueda real
+  // SIEMPRE usar búsqueda real
   searchAvailableDrivers();
 };
-  // FUNCIÃ“N MEJORADA: Buscar conductores con radio incremental
+  // FUNCIÓN MEJORADA: Buscar conductores con radio incremental
   const searchAvailableDrivers = async () => {
     try {
       console.log('Iniciando busqueda incremental de conductores...');
       
-      // Mostrar el modal de bÃºsqueda
+      // Mostrar el modal de búsqueda
       setSearchModalVisible(true);
       setIsSearchingDriver(true);
       setSearchProgress(null);
       setSearchAttempts(0);
       
-      // El modal manejarÃ¡ la bÃºsqueda y llamarÃ¡ a handleDriverFound cuando encuentre un conductor
+      // El modal manejará la búsqueda y llamará a handleDriverFound cuando encuentre un conductor
       
     } catch (error) {
       console.error('Error en busqueda de conductores:', error);
       setSearchModalVisible(false);
-      Alert.alert('Error', 'No se pudo iniciar la bÃºsqueda de conductores');
+      Alert.alert('Error', 'No se pudo iniciar la búsqueda de conductores');
     }
   };
 
-  // Nueva funciÃ³n para manejar cuando se encuentra un conductor
+  // Nueva función para manejar cuando se encuentra un conductor
   const handleDriverFound = async (selectedDriver) => {
     try {
-      // Formatear informaciÃ³n del conductor
+      // Formatear información del conductor
       const driverInfo = {
         id: selectedDriver.id,
         name: selectedDriver.name,
@@ -1592,7 +1592,7 @@ const searchForDriver = () => {
         setDriverInfo(mockDriverInfo);
         setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
         
-        Alert.alert('Â¡Conductor encontrado!', `${mockDriverInfo.name} llegarÃ¡ en ${mockDriverInfo.eta}`);
+        Alert.alert('¡Conductor encontrado!', `${mockDriverInfo.name} llegará en ${mockDriverInfo.eta}`);
         
         // INICIAR TRACKING DEL CONDUCTOR
         await startDriverTracking(mockDriverInfo, userLocation);
@@ -1605,16 +1605,16 @@ const searchForDriver = () => {
   };
 
   const cancelRide = () => {
-    Alert.alert('Cancelar viaje', 'Â¿EstÃ¡s seguro que deseas cancelar?', [
+    Alert.alert('Cancelar viaje', '¿Estás seguro que deseas cancelar?', [
       { text: 'No', style: 'cancel' },
       {
-        text: 'SÃ­',
+        text: 'Sí',
         onPress: async () => {
           try {
             // DETENER TRACKING AL CANCELAR
             stopDriverTracking();
             
-            // Registrar cancelaciÃ³n en analytics
+            // Registrar cancelación en analytics
             AnalyticsService.logRideCancel('user_cancelled', rideStatus);
 
             await SharedStorage.cancelRide('Cancelado por el usuario');
@@ -1627,7 +1627,7 @@ const searchForDriver = () => {
     ]);
   };
 
-  // FUNCIÃ“N PRINCIPAL ACTUALIZADA CON BLOQUEO
+  // FUNCIÓN PRINCIPAL ACTUALIZADA CON BLOQUEO
   const completeRide = async () => {
     try {
       // DETENER TRACKING AL COMPLETAR
@@ -1665,8 +1665,8 @@ const searchForDriver = () => {
       
       // ACTUALIZADO: Preguntar si desea calificar o bloquear
       Alert.alert(
-        'Â¡Viaje completado!',
-        'Â¿QuÃ© deseas hacer?',
+        '¡Viaje completado!',
+        '¿Qué deseas hacer?',
         [
           {
             text: 'Nada',
@@ -1714,7 +1714,7 @@ const searchForDriver = () => {
             onPress: async () => {
               Alert.alert(
                 'Bloquear Conductor',
-                `Â¿EstÃ¡s seguro de que quieres bloquear a ${driverInfo?.name}?\n\nNo volverÃ¡ a ser asignado para tus viajes.`,
+                `¿Estás seguro de que quieres bloquear a ${driverInfo?.name}?\n\nNo volverá a ser asignado para tus viajes.`,
                 [
                   { text: 'Cancelar', style: 'cancel' },
                   {
@@ -1729,7 +1729,7 @@ const searchForDriver = () => {
                         });
                         Alert.alert(
                           'Conductor Bloqueado',
-                          `${driverInfo.name} no serÃ¡ asignado en futuros viajes.`,
+                          `${driverInfo.name} no será asignado en futuros viajes.`,
                           [{ text: 'OK' }]
                         );
                       }
@@ -1764,7 +1764,7 @@ const searchForDriver = () => {
     await SharedStorage.startRide();
     setRideStatus(TRIP_STATES.IN_RIDE);
 
-    // Iniciar compartir ubicacion automÃ¡ticamente
+    // Iniciar compartir ubicacion automáticamente
     await ShareLocationService.startSharing(
       {
         id: tripRequest?.id,
@@ -1776,30 +1776,30 @@ const searchForDriver = () => {
       userLocation
     );
      
-    Alert.alert('Â¡Viaje iniciado!', 'Disfruta tu viaje');
+    Alert.alert('¡Viaje iniciado!', 'Disfruta tu viaje');
   } catch (error) {
     console.error('Error iniciando viaje:', error);
   }
 };
 
 /**
- * âœ… HANDLER ROBUSTO PARA MAP PICKER
+ * ✅ HANDLER ROBUSTO PARA MAP PICKER
  */
 const handleMapPickerPress = async (event) => {
   try {
  const { latitude, longitude } = event;
 
-    console.log('Ÿ” DEBUG: handleMapPickerPress iniciado', {
+    console.log('��� DEBUG: handleMapPickerPress iniciado', {
       latitude: latitude.toFixed(6),
       longitude: longitude.toFixed(6),
       timestamp: new Date().toISOString(),
     });
 
     if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-      console.error('âŒ Coordenadas invÃ¡lidas:', { latitude, longitude });
+      console.error('❌ Coordenadas inválidas:', { latitude, longitude });
       Alert.alert(
         'Error',
-        'Las coordenadas no son vÃ¡lidas. Por favor intenta de nuevo.'
+        'Las coordenadas no son válidas. Por favor intenta de nuevo.'
       );
       return;
     }
@@ -1807,31 +1807,31 @@ const handleMapPickerPress = async (event) => {
     const validation = LocationFallbackService.validateCoordinates(latitude, longitude);
     
     if (!validation.valid) {
-      console.error('âŒ Coordenadas fuera de rango:', { latitude, longitude });
+      console.error('❌ Coordenadas fuera de rango:', { latitude, longitude });
       Alert.alert(
-        'UbicaciÃ³n no vÃ¡lida',
-        validation.message || 'Las coordenadas estÃ¡n fuera de rango vÃ¡lido.'
+        'Ubicación no válida',
+        validation.message || 'Las coordenadas están fuera de rango válido.'
       );
       return;
     }
 
     if (!validation.inDominicanRepublic) {
-      console.warn('âš ï¸ UbicaciÃ³n fuera de RepÃºblica Dominicana:', { latitude, longitude });
+      console.warn('⚠️ Ubicación fuera de República Dominicana:', { latitude, longitude });
       Alert.alert(
         'Fuera de servicio',
-        'TaxiApp actualmente solo opera en RepÃºblica Dominicana.\n\nPor favor selecciona una ubicacion dentro del paÃ­s.'
+        'TaxiApp actualmente solo opera en República Dominicana.\n\nPor favor selecciona una ubicacion dentro del país.'
       );
       return;
     }
 
-    console.log('âœ… Coordenadas vÃ¡lidas. Actualizando estado...');
+    console.log('✅ Coordenadas válidas. Actualizando estado...');
     
     setMapPickerLocation({
       latitude,
       longitude
     });
 
-    console.log('Ÿ”„ Iniciando geocoding inverso...');
+    console.log('��� Iniciando geocoding inverso...');
     
     try {
       await Promise.race([
@@ -1841,15 +1841,15 @@ const handleMapPickerPress = async (event) => {
         )
       ]);
       
-      console.log('âœ… Geocoding completado exitosamente');
+      console.log('✅ Geocoding completado exitosamente');
       
     } catch (geocodingError) {
-      console.warn('âš ï¸ Error en geocoding:', geocodingError.message);
+      console.warn('⚠️ Error en geocoding:', geocodingError.message);
       setMapPickerAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
     }
 
   } catch (error) {
-    console.error('âŒ Error CRÃTICO en handleMapPickerPress:', {
+    console.error('❌ Error CRÍTICO en handleMapPickerPress:', {
       message: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString(),
@@ -1866,7 +1866,7 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
   try {
     setIsGeocodingMapPicker(true);
 
-    console.log('ŸŒ Iniciando reverse geocoding:', { latitude, longitude });
+    console.log('��� Iniciando reverse geocoding:', { latitude, longitude });
 
     const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
@@ -1887,7 +1887,7 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
       
       // Limpiar si es muy largo
       if (address.length > 60) {
-        address = address.replace(', RepÃºblica Dominicana', '').replace(', Dominican Republic', '');
+        address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
       }
     }
 
@@ -1955,7 +1955,7 @@ const renderVehicleSelector = () => {
       <View style={styles.vehicleSelectorContent}>
         <Text style={styles.vehicleSelectorIcon}>
           {selectedVehicleType === 'economy' ? '' : 
-           selectedVehicleType === 'comfort' ? '™' : 
+           selectedVehicleType === 'comfort' ? '�' : 
            selectedVehicleType === 'premium' ? '' : 
            selectedVehicleType === 'xl' ? '' : ''}
         </Text>
@@ -1987,7 +1987,7 @@ const renderLoadingScreen = () => {
   );
 };
 
-  // COMPONENTE: InformaciÃ³n de ruta con precio en tiempo real
+  // COMPONENTE: Información de ruta con precio en tiempo real
   const renderRouteInfo = () => {
     if (!routeInfo && !isCalculatingRoute && !showPriceEstimator) return null;
 
@@ -2003,10 +2003,10 @@ const renderLoadingScreen = () => {
                   <Text style={styles.priceLarge}>RD$ {realTimePrice || estimatedPrice || 520}</Text>
                   <View style={styles.priceFactors}>
                     <Text style={styles.priceFactorText}>
-                       {routeInfo?.distance?.text || '7.0 km'} â€¢ â± {routeInfo?.duration?.text || '14 min'}
+                       {routeInfo?.distance?.text || '7.0 km'} • ⏱ {routeInfo?.duration?.text || '14 min'}
                     </Text>
                     {priceDetails?.surge && (
-                      <Text style={styles.surgeText}>¡ 1.5x</Text>
+                      <Text style={styles.surgeText}>� 1.5x</Text>
                     )}
                   </View>
                 </View>
@@ -2016,7 +2016,7 @@ const renderLoadingScreen = () => {
   {!showPriceEstimator && routeInfo && (
               <View style={styles.routeDetailsCompact}>
                 <Text style={styles.routeDetailCompact}>
-                  📍 {routeInfo.distance.text} • ⏱️ {routeInfo.duration.text} • 💰 RD${routeInfo.pricing.final_price}
+                  ?? {routeInfo.distance.text} � ?? {routeInfo.duration.text} � ?? RD${routeInfo.pricing.final_price}
                 </Text>
               </View>
             )}
@@ -2031,7 +2031,7 @@ const renderLoadingScreen = () => {
     if (!trackingActive || !driverInfo) return null;
     return (
       <View style={styles.trackingContainer}>
-        <Text style={styles.trackingTitle}>🚗 Seguimiento en tiempo real</Text>
+        <Text style={styles.trackingTitle}>?? Seguimiento en tiempo real</Text>
         {/* MAPA DE TRACKING */}
         <View style={styles.trackingMapContainer}>
           <MapComponent
@@ -2062,13 +2062,13 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // NUEVO COMPONENTE: Estado de ubicación y fallback
+  // NUEVO COMPONENTE: Estado de ubicaci�n y fallback
   const renderLocationStatus = () => {
     if (isLoadingLocation) {
       return (
         <View style={styles.locationStatusContainer}>
           <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.locationStatusText}>Obteniendo ubicación...</Text>
+          <Text style={styles.locationStatusText}>Obteniendo ubicaci�n...</Text>
         </View>
       );
     }
@@ -2076,43 +2076,43 @@ const renderLoadingScreen = () => {
     if (!userLocation) {
       return (
         <View style={styles.locationStatusContainer}>
-          <Text style={styles.locationStatusIcon}>📍</Text>
-          <Text style={styles.locationStatusTitle}>Ubicación requerida</Text>
+          <Text style={styles.locationStatusIcon}>??</Text>
+          <Text style={styles.locationStatusTitle}>Ubicaci�n requerida</Text>
           <Text style={styles.locationStatusMessage}>
-            Necesitamos tu ubicación para calcular rutas y precios
+            Necesitamos tu ubicaci�n para calcular rutas y precios
           </Text>
           <TouchableOpacity 
             style={styles.selectLocationButton} 
             onPress={() => setShowLocationModal(true)}
           >
-            <Text style={styles.selectLocationButtonText}>Seleccionar ubicación</Text>
+            <Text style={styles.selectLocationButtonText}>Seleccionar ubicaci�n</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
-    // Mostrar informaciÃ³n de la ubicacion actual
+    // Mostrar información de la ubicacion actual
     const getLocationSourceInfo = () => {
       switch (locationSource) {
         case 'gps':
-          return { icon: '', text: 'UbicaciÃ³n GPS', color: '#34C759' };
+          return { icon: '', text: 'Ubicación GPS', color: '#34C759' };
         case 'fallback':
-          return { icon: '', text: 'UbicaciÃ³n aproximada', color: '#FF9500' };
+          return { icon: '', text: 'Ubicación aproximada', color: '#FF9500' };
         case 'manual':
           return { icon: '', text: 'Seleccionada manualmente', color: '#007AFF' };
         case 'popular':
-          return { icon: '', text: 'UbicaciÃ³n popular', color: '#007AFF' };
+          return { icon: '', text: 'Ubicación popular', color: '#007AFF' };
         default:
-          return { icon: '', text: 'UbicaciÃ³n desconocida', color: '#666' };
+          return { icon: '', text: 'Ubicación desconocida', color: '#666' };
       }
     };
 
     const sourceInfo = getLocationSourceInfo();
 
-    return null; // NOTA: HabÃ­a un error de sintaxis aquÃ­, corregido
+    return null; // NOTA: Había un error de sintaxis aquí, corregido
   };
 
-  // NUEVO COMPONENTE: Modal de selecciÃ³n de ubicacion
+  // NUEVO COMPONENTE: Modal de selección de ubicacion
   const renderLocationModal = () => {
     return (
       <Modal
@@ -2134,7 +2134,7 @@ const renderLoadingScreen = () => {
             </View>
 
           <ScrollView style={styles.modalContent}>
-      {/* OpciÃ³n 1: Direcciones Favoritas */}
+      {/* Opción 1: Direcciones Favoritas */}
    <TouchableOpacity 
   style={styles.locationOption}
   onPress={() => {
@@ -2158,7 +2158,7 @@ const renderLoadingScreen = () => {
         {isLoadingLocation && <ActivityIndicator size="small" />}
       </TouchableOpacity>
 
-      {/* OpciÃ³n 2: Agregar direccion */}
+      {/* Opción 2: Agregar direccion */}
       <TouchableOpacity 
         style={styles.locationOption}
         onPress={() => setShowDestinationSelectorForAdd(true)}
@@ -2171,27 +2171,32 @@ const renderLoadingScreen = () => {
           </Text>
         </View>
       </TouchableOpacity>
-
-      {/* OpciÃ³n 3: Fijar en el mapa */}
-    <TouchableOpacity 
+{/* Opci�n 3: Fijar en el mapa */}
+<TouchableOpacity 
   style={styles.locationOption}
   onPress={() => {
     setShowLocationModal(false);
     setTimeout(() => {
-  // Inicializar pin rojo con ubicación actual o Santo Domingo
-  const initialLocation = userLocation && userLocation.latitude ? {
-    latitude: userLocation.latitude,
-    longitude: userLocation.longitude,
-    address: userLocation.address || 'Ubicación actual'
-  } : {
-    latitude: 18.4861,
-    longitude: -69.9312,
-    address: 'Santo Domingo, República Dominicana'
-  };
-  setMapPickerLocation(initialLocation);
-  setMapPickerAddress(initialLocation.address);
-  setShowMapPicker(true);
-}, 300);
+      // DEBUG
+      console.log('?? userLocation al abrir picker:', userLocation);
+      
+      // Inicializar pin rojo con ubicaci�n actual o Santo Domingo
+      const initialLocation = userLocation && userLocation.latitude ? {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        address: userLocation.address || 'Ubicaci�n actual'
+      } : {
+        latitude: 18.4861,
+        longitude: -69.9312,
+        address: 'Santo Domingo, Rep�blica Dominicana'
+      };
+      
+      console.log('?? initialLocation:', initialLocation);
+      
+      setMapPickerLocation(initialLocation);
+      setMapPickerAddress(initialLocation.address);
+      setShowMapPicker(true);
+    }, 300);
   }}
 >
   <Text style={styles.locationOptionIcon}></Text>
@@ -2204,12 +2209,12 @@ const renderLoadingScreen = () => {
 </TouchableOpacity>
 
 
-              {/* InformaciÃ³n sobre permisos */}
+              {/* Información sobre permisos */}
               {locationPermissionStatus !== 'granted' && (
                 <View style={styles.permissionInfo}>
                   <Text style={styles.permissionInfoTitle}> Consejo</Text>
                   <Text style={styles.permissionInfoText}>
-                    Para obtener tu ubicacion exacta, permite el acceso a la ubicacion en la configuraciÃ³n de la app.
+                    Para obtener tu ubicacion exacta, permite el acceso a la ubicacion en la configuración de la app.
                   </Text>
                   <TouchableOpacity 
                     style={styles.permissionRetryButton}
@@ -2225,12 +2230,12 @@ const renderLoadingScreen = () => {
      <Icon name="information-circle" size={20} color="#007AFF" />
      <Text style={modalStyles.infoText}>
       Cada parada adicional agrega RD$50 al precio base.
-      El conductor seguirÃ¡ el orden de las paradas.
+      El conductor seguirá el orden de las paradas.
      </Text>
     </View>
        )}
             </ScrollView>
-            {/* Botones de acciÃ³n - COMENTARIO DENTRO DE JSX */}
+            {/* Botones de acción - COMENTARIO DENTRO DE JSX */}
             <View style={modalStyles.footer}>
               <TouchableOpacity 
                 style={modalStyles.cancelButton}
@@ -2496,7 +2501,7 @@ const renderLoadingScreen = () => {
   const renderDrawerMenu = () => {
     return (
       <>
-        {/* Overlay oscuro cuando el drawer estÃ¡ abierto */}
+        {/* Overlay oscuro cuando el drawer está abierto */}
         {isDrawerOpen && (
           <TouchableWithoutFeedback onPress={closeDrawer}>
             <Animated.View 
@@ -2538,7 +2543,7 @@ const renderLoadingScreen = () => {
             <Text style={styles.drawerUserEmail}>usuario@taxiapp.com</Text>
           </View>
 
-          {/* Opciones del menÃº */}
+          {/* Opciones del menú */}
           <ScrollView style={styles.drawerContent}>
             <TouchableOpacity 
               style={styles.drawerItem}
@@ -2570,7 +2575,7 @@ const renderLoadingScreen = () => {
               onPress={() => handleMenuOption('payments')}
             >
               <Icon name="card-outline" size={24} color="#333" />
-              <Text style={styles.drawerItemText}>MÃ©todos de Pago</Text>
+              <Text style={styles.drawerItemText}>Métodos de Pago</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -2612,7 +2617,7 @@ const renderLoadingScreen = () => {
               onPress={() => handleMenuOption('settings')}
             >
               <Icon name="settings-outline" size={24} color="#333" />
-              <Text style={styles.drawerItemText}>ConfiguraciÃ³n</Text>
+              <Text style={styles.drawerItemText}>Configuración</Text>
             </TouchableOpacity>
 
             <View style={styles.drawerDivider} />
@@ -2623,7 +2628,7 @@ const renderLoadingScreen = () => {
             >
               <Icon name="log-out-outline" size={24} color="#FF3B30" />
               <Text style={[styles.drawerItemText, styles.logoutText]}>
-                Cerrar SesiÃ³n
+                Cerrar Sesión
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -2637,7 +2642,7 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // COMPONENTE MODIFICADO: Header con menÃº hamburguesa
+  // COMPONENTE MODIFICADO: Header con menú hamburguesa
   const renderAuthenticatedHeader = () => {
     return (
       <View style={styles.authenticatedHeader}>
@@ -2658,7 +2663,7 @@ const renderLoadingScreen = () => {
   };
 
   const renderContent = () => {
-  // âœ… VALIDACIÃ“N CORRECTA: Si NO hay ubicacion, espera
+  // ✅ VALIDACIÓN CORRECTA: Si NO hay ubicacion, espera
   if (!userLocation) {
     return (
       <View style={styles.loadingContainer}>
@@ -2677,7 +2682,7 @@ const renderLoadingScreen = () => {
             <Text style={styles.priceText}>Precio estimado: RD${estimatedPrice}</Text>
           )}
           <TouchableOpacity style={styles.cancelButton} onPress={cancelRide}>
-            <Text style={styles.cancelButtonText}>Cancelar bÃºsqueda</Text>
+            <Text style={styles.cancelButtonText}>Cancelar búsqueda</Text>
           </TouchableOpacity>
         </View>
       );
@@ -2690,7 +2695,7 @@ const renderLoadingScreen = () => {
           <Text style={styles.driverName}>{driverInfo.name}</Text>
           <Text style={styles.driverDetails}>{driverInfo.car}</Text>
           <Text style={styles.driverDetails}> {driverInfo.rating}</Text>
-          <Text style={styles.etaText}>LlegarÃ¡ en: {driverETA || driverInfo.eta}</Text>
+          <Text style={styles.etaText}>Llegará en: {driverETA || driverInfo.eta}</Text>
           {estimatedPrice > 0 && (
             <Text style={styles.priceText}>Precio: RD${estimatedPrice}</Text>
           )}
@@ -2721,7 +2726,7 @@ const renderLoadingScreen = () => {
             </TouchableOpacity>
           </View>
           
-          {/* MOSTRAR INFORMACIÃ“N DE TRACKING */}
+          {/* MOSTRAR INFORMACIÓN DE TRACKING */}
           {renderDriverTracking()}
           
           <View style={styles.rideActions}>
@@ -2741,7 +2746,7 @@ const renderLoadingScreen = () => {
         <View style={styles.driverContainer}>
           <Text style={styles.statusTitle}>Viaje en progreso</Text>
        
-          {/* BOTÃ“N DE PÃNICO */}
+          {/* BOTÓN DE PÁNICO */}
           <EmergencyButton
             tripData={{
               userName: 'Usuario',
@@ -2758,7 +2763,7 @@ const renderLoadingScreen = () => {
           
           <Text style={styles.driverName}>{driverInfo.name}</Text>
           <Text style={styles.driverDetails}>{driverInfo.car}</Text>
-          <Text style={styles.statusText}>DirÃ­gete a tu destino</Text>
+          <Text style={styles.statusText}>Dirígete a tu destino</Text>
           <TouchableOpacity style={styles.completeButton} onPress={completeRide}>
             <Text style={styles.completeButtonText}>Completar viaje</Text>
           </TouchableOpacity>
@@ -2773,7 +2778,7 @@ const renderLoadingScreen = () => {
         userLocation={userLocation || { 
          latitude: 18.4861, 
          longitude: -69.9312,
-         address: 'Santo Domingo Este, RepÃºblica Dominicana'
+         address: 'Santo Domingo Este, República Dominicana'
         }} 
      />
         </View>
@@ -2814,7 +2819,7 @@ const renderLoadingScreen = () => {
   <Icon name="search" size={20} color="#999" />
 </TouchableOpacity>
 
-   {/* BotÃ³n para viajes de terceros */}
+   {/* Botón para viajes de terceros */}
             <TouchableOpacity
               style={styles.thirdPartyButton}
               onPress={() => setShowThirdPartyModal(true)}
@@ -2855,7 +2860,7 @@ const renderLoadingScreen = () => {
             <Text style={styles.requestButtonText}>
             {isCalculatingRoute ? 'Calculando...' : 
               !userLocation ? 'Selecciona ubicacion' :
-               realTimePrice > 0 ? `Solicitar Servicio €¢ RD${realTimePrice}` :
+               realTimePrice > 0 ? `Solicitar Servicio �� RD${realTimePrice}` :
               'Solicitar Servicio'}
             </Text>
           </TouchableOpacity>
@@ -2865,7 +2870,7 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // FunciÃ³n para renderizar modal de autenticaciÃ³n
+  // Función para renderizar modal de autenticación
   const renderAuthModal = () => {
     return (
       <Modal
@@ -2877,9 +2882,9 @@ const renderLoadingScreen = () => {
         <View style={styles.authModalOverlay}>
           <View style={styles.authModal}>
             <View style={styles.authHeader}>
-              <Text style={styles.authTitle}>– TaxiApp</Text>
+              <Text style={styles.authTitle}>� TaxiApp</Text>
               <Text style={styles.authSubtitle}>
-                {authMode === 'login' ? 'Iniciar SesiÃ³n' : 'Crear Cuenta'}
+                {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
               </Text>
             </View>
 
@@ -2929,7 +2934,7 @@ const renderLoadingScreen = () => {
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>ContraseÃ±a</Text>
+                <Text style={styles.inputLabel}>Contraseña</Text>
                 <TextInput
                   style={[
                     styles.authInput,
@@ -2940,7 +2945,7 @@ const renderLoadingScreen = () => {
                     setAuthForm(prev => ({...prev, password: text}));
                     validatePassword(text);
                   }}
-                  placeholder="MÃ­nimo 6 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                   secureTextEntry
                   autoComplete="password"
                 />
@@ -2955,7 +2960,7 @@ const renderLoadingScreen = () => {
                     passwordStrength === 'strong' && styles.passwordStrong
                   ]}>
                     <Text style={styles.passwordStrengthText}>
-                      {passwordStrength === 'weak' ? 'DÃ©bil' :
+                      {passwordStrength === 'weak' ? 'Débil' :
                        passwordStrength === 'medium' ? 'Media' : 'Fuerte'}
                     </Text>
                   </View>
@@ -2964,7 +2969,7 @@ const renderLoadingScreen = () => {
 
               {authMode === 'register' && (
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>TelÃ©fono</Text>
+                  <Text style={styles.inputLabel}>Teléfono</Text>
                   <TextInput
                     style={[
                       styles.authInput,
@@ -2997,14 +3002,14 @@ const renderLoadingScreen = () => {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.authButtonText}>
-                    {authMode === 'login' ? 'Iniciar SesiÃ³n' : 'Crear Cuenta'}
+                    {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
                   </Text>
                 )}
               </TouchableOpacity>
 
               <View style={styles.authSwitchContainer}>
                 <Text style={styles.authSwitchText}>
-                  {authMode === 'login' ? 'Â¿No tienes cuenta?' : 'Â¿Ya tienes cuenta?'}
+                  {authMode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -3013,7 +3018,7 @@ const renderLoadingScreen = () => {
                   }}
                 >
                   <Text style={styles.authSwitchLink}>
-                    {authMode === 'login' ? 'Crear cuenta' : 'Iniciar sesiÃ³n'}
+                    {authMode === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -3023,7 +3028,7 @@ const renderLoadingScreen = () => {
                   style={{alignItems: 'center', marginTop: 15}}
                   onPress={() => setShowForgotPassword(true)}
                 >
-                  <Text style={styles.authSwitchLink}>Â¿Olvidaste tu contraseÃ±a?</Text>
+                  <Text style={styles.authSwitchLink}>¿Olvidaste tu contraseña?</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -3033,7 +3038,7 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // FunciÃ³n para renderizar modal de ubicaciones populares
+  // Función para renderizar modal de ubicaciones populares
   const renderPopularLocationsModal = () => {
     return (
       <Modal
@@ -3080,20 +3085,20 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // Mostrar pantalla de carga si estÃ¡ inicializando
+  // Mostrar pantalla de carga si está inicializando
   if (isLoading) {
     return renderLoadingScreen();
   }
 
-  // Mostrar modal de autenticaciÃ³n si no estÃ¡ autenticado
+  // Mostrar modal de autenticación si no está autenticado
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
         <View style={styles.unauthenticatedContainer}>
           <Text style={styles.unauthenticatedTitle}> TaxiApp</Text>
-          <Text style={styles.unauthenticatedSubtitle}>Tu aplicaciÃ³n de transporte</Text>
+          <Text style={styles.unauthenticatedSubtitle}>Tu aplicación de transporte</Text>
           <Text style={styles.unauthenticatedMessage}>
-            Inicia sesiÃ³n para continuar
+            Inicia sesión para continuar
           </Text>
         </View>
         {renderAuthModal()}
@@ -3142,7 +3147,7 @@ const renderLoadingScreen = () => {
           currentLocation={userLocation}
         />
         
-        {/* Modal de bÃºsqueda de conductores */}
+        {/* Modal de búsqueda de conductores */}
       {searchModalVisible && (
   <DriverSearchModal
     visible={true}
@@ -3151,9 +3156,9 @@ const renderLoadingScreen = () => {
     userLocation={userLocation}
   />
       )}
-        {/* Modal de bÃºsqueda de conductores */}
+        {/* Modal de búsqueda de conductores */}
       
-        {/* MODAL DE MÃ‰TODOS DE PAGO */}
+        {/* MODAL DE MÉTODOS DE PAGO */}
         {showPaymentModal && (
           <Modal
             visible={showPaymentModal}
@@ -3163,9 +3168,9 @@ const renderLoadingScreen = () => {
           >
             <View style={styles.modalOverlay}>
               <View style={[styles.modalContent, { height: 350 }]}>
-                <Text style={styles.modalTitle}>Selecciona mÃ©todo de pago</Text>
+                <Text style={styles.modalTitle}>Selecciona método de pago</Text>
                 
-                {/* BotÃ³n de Efectivo */}
+                {/* Botón de Efectivo */}
                 <TouchableOpacity
                   style={[
                     styles.paymentMethodButton,
@@ -3183,7 +3188,7 @@ const renderLoadingScreen = () => {
                   )}
                 </TouchableOpacity>
 
-                {/* BotÃ³n de Tarjeta */}
+                {/* Botón de Tarjeta */}
                 <TouchableOpacity
                   style={[
                     styles.paymentMethodButton,
@@ -3193,15 +3198,15 @@ const renderLoadingScreen = () => {
                 >
                   <Text style={styles.paymentMethodIcon}></Text>
                   <View style={styles.paymentMethodInfo}>
-                    <Text style={styles.paymentMethodTitle}>Tarjeta de CrÃ©dito</Text>
-                    <Text style={styles.paymentMethodSubtitle}>Pago automÃ¡tico seguro</Text>
+                    <Text style={styles.paymentMethodTitle}>Tarjeta de Crédito</Text>
+                    <Text style={styles.paymentMethodSubtitle}>Pago automático seguro</Text>
                   </View>
                   {selectedPaymentMethod === 'card' && (
                     <Text style={styles.checkmark}></Text>
                   )}
                 </TouchableOpacity>
 
-                {/* Botones de acciÃ³n */}
+                {/* Botones de acción */}
                 <View style={styles.modalButtonContainer}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
@@ -3222,7 +3227,7 @@ const renderLoadingScreen = () => {
           </Modal>
         )}
 
-        {/* NUEVO: Modal de calificaciÃ³n post-viaje */}
+        {/* NUEVO: Modal de calificación post-viaje */}
         <RatingSystem
           visible={showRatingModal}
           onClose={() => {
@@ -3233,7 +3238,7 @@ const renderLoadingScreen = () => {
           driverInfo={driverInfo}
           onSubmit={async (ratingData) => {
             console.log('Calificacion enviada:', ratingData);
-            Alert.alert('Â¡Gracias!', 'Tu calificaciÃ³n ha sido guardada');
+            Alert.alert('¡Gracias!', 'Tu calificación ha sido guardada');
             setShowRatingModal(false);
             setPendingRatingTrip(null);
           }}
@@ -3280,7 +3285,7 @@ const renderLoadingScreen = () => {
     {/* NUEVO: Drawer Menu */}
     {renderDrawerMenu()}
 
-    {/* MODAL DE MÃšLTIPLES DESTINOS */}
+    {/* MODAL DE MÚLTIPLES DESTINOS */}
  <MultipleDestinationsModal
    ref={multiDestModalRef}
   visible={showAddDestinationModal}
@@ -3296,16 +3301,16 @@ const renderLoadingScreen = () => {
     console.log('Destinos confirmados:', destinationsData);
   }}
   onSelectLocation={(stopId) => {
-    // Guardar el stopId para saber cuÃ¡l destino estamos editando
+    // Guardar el stopId para saber cuál destino estamos editando
     setActiveMultiDestinationStopId(stopId);
-    // Abrir el modal de selecciÃ³n de ubicacion
+    // Abrir el modal de selección de ubicacion
     setShowLocationModal(true);
   }}
 />
 
       </View>
       
-      {/* Modal de recuperaciÃ³n de contraseÃ±a */}
+      {/* Modal de recuperación de contraseña */}
       <Modal
         visible={showForgotPassword}
         transparent={true}
@@ -3316,12 +3321,12 @@ const renderLoadingScreen = () => {
           onBack={() => setShowForgotPassword(false)}
           onSuccess={() => {
             setShowForgotPassword(false);
-            Alert.alert('Ã‰xito', 'ContraseÃ±a actualizada');
+            Alert.alert('Éxito', 'Contraseña actualizada');
           }}
         />
       </Modal>
 
-      {/* Modal de Compartir UbicaciÃ³n */}
+      {/* Modal de Compartir Ubicación */}
       <ShareLocationModal
         visible={showShareLocation}
         onClose={() => setShowShareLocation(false)}
@@ -3351,7 +3356,7 @@ const renderLoadingScreen = () => {
         }}
       />
 
-      {/* Modal del selector de vehÃ­culos */}
+      {/* Modal del selector de vehículos */}
       <VehicleSelector
         visible={showVehicleSelector}
         onClose={() => setShowVehicleSelector(false)}
@@ -3385,13 +3390,13 @@ const renderLoadingScreen = () => {
     if (rideData.isForOther) {
       Alert.alert(
         'Viaje para tercero confirmado',
-        `El conductor contactarÃ¡ a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}`
+        `El conductor contactará a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}`
     );
     }
   }}
 />
 {/* MAP PICKER MODAL - DENTRO DEL COMPONENTE */}
-{showMapPicker && (
+{showMapPicker && (console.log("?? RENDER mapPickerLocation:", mapPickerLocation), true) && (
   <Modal
     visible={showMapPicker}
     transparent={true}
@@ -3417,7 +3422,7 @@ const renderLoadingScreen = () => {
       userLocation={{
         latitude: 18.4861,
         longitude: -69.9312,
-        address: 'Santo Domingo, República Dominicana'
+        address: 'Santo Domingo, Rep�blica Dominicana'
       }}
       destination={mapPickerLocation}
       interactive={true}
@@ -3430,15 +3435,15 @@ const renderLoadingScreen = () => {
       </View>
       </View>
 
-      {/* InformaciÃ³n y acciones */}
+      {/* Información y acciones */}
       <View style={styles.mapPickerInfo}>
         <View style={styles.mapPickerInfoContent}>
-          <Text style={styles.mapPickerInfoLabel}>UbicaciÃ³n seleccionada:</Text>
+          <Text style={styles.mapPickerInfoLabel}>Ubicación seleccionada:</Text>
           
           {isGeocodingMapPicker ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#007AFF" />
-              <Text style={styles.loadingText}>Obteniendo direcciÃ³n...</Text>
+              <Text style={styles.loadingText}>Obteniendo dirección...</Text>
             </View>
           ) : (
             <View>
@@ -3456,7 +3461,7 @@ const renderLoadingScreen = () => {
         </View>
       </View>
 
-      {/* Botones de acciÃ³n */}
+      {/* Botones de acción */}
       <View style={styles.mapPickerActions}>
         <TouchableOpacity 
           style={[styles.mapPickerButton, styles.mapPickerCancelButton]}
@@ -3479,7 +3484,7 @@ onPress={() => {
   if (mapPickerLocation) {
     const address = mapPickerAddress || `${mapPickerLocation.latitude.toFixed(4)}, ${mapPickerLocation.longitude.toFixed(4)}`;
     
-    // Si estamos editando un destino adicional del modal mÃºltiples destinos
+    // Si estamos editando un destino adicional del modal múltiples destinos
     if (activeMultiDestinationStopId && multiDestModalRef.current) {
       console.log('Actualizando destino adicional:', activeMultiDestinationStopId);
       multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, address);
@@ -3661,7 +3666,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   
-  // ESTILOS PARA BOTÃ“N DE CALCULADORA DE TARIFAS
+  // ESTILOS PARA BOTÓN DE CALCULADORA DE TARIFAS
   fareCalculatorButtonIcon: {
     fontSize: 20,
     marginRight: 8,
@@ -3672,7 +3677,7 @@ const styles = StyleSheet.create({
     color: '#FF9800',
   },
   
-  // ESTILOS PARA ESTADO DE UBICACIÃ“N
+  // ESTILOS PARA ESTADO DE UBICACIÓN
   locationStatusContainer: {
     backgroundColor: '#f8f9fa',
     padding: 8,  // Reduce de lo que tengas (probablemente 15)
@@ -3728,7 +3733,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ESTILOS PARA EL MODAL DE MÃ‰TODOS DE PAGO
+  // ESTILOS PARA EL MODAL DE MÉTODOS DE PAGO
   paymentMethodButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3933,7 +3938,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  // ESTILOS PARA INFORMACIÃ“N DE RUTA
+  // ESTILOS PARA INFORMACIÓN DE RUTA
   routeInfoContainer: {
     marginBottom: 15,
   },
@@ -3943,7 +3948,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
   },
-  // Estilos compactos para informaciÃ³n de ruta
+  // Estilos compactos para información de ruta
   routeInfoCompact: {
     backgroundColor: '#f8f9fa',
     padding: 8,
@@ -4002,7 +4007,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
   },  
-  // ESTILOS PARA SELECTOR DE VEHÃCULO
+  // ESTILOS PARA SELECTOR DE VEHÍCULO
   vehicleSelectorContainer: {
     marginBottom: 20,
   },
@@ -4320,7 +4325,7 @@ rideActions: {
     fontWeight: 'bold',
   },
 
-  // ESTILOS PARA AUTENTICACIÃ“N
+  // ESTILOS PARA AUTENTICACIÓN
   loadingScreen: {
     flex: 1,
     justifyContent: 'center',
@@ -4356,7 +4361,7 @@ rideActions: {
     alignItems: 'center',
   },
   
-  // NUEVOS ESTILOS PARA MENÃš HAMBURGUESA
+  // NUEVOS ESTILOS PARA MENÚ HAMBURGUESA
   menuButton: {
     padding: 5,
   },
@@ -4365,7 +4370,7 @@ rideActions: {
     alignItems: 'center',
   },
   headerSpacer: {
-    width: 40, // Para balancear el espacio del menÃº hamburguesa
+    width: 40, // Para balancear el espacio del menú hamburguesa
   },
 
   // Estilos del Drawer
@@ -4434,7 +4439,7 @@ rideActions: {
     marginVertical: 10,
   },
   
-  // ESTILOS PARA EL BOTÃ“N ATRÃS
+  // ESTILOS PARA EL BOTÓN ATRÁS
   backItem: {
     backgroundColor: '#f0f8ff',
     borderBottomWidth: 1,
@@ -4486,7 +4491,7 @@ rideActions: {
     textAlign: 'center',
   },
 
-  // Modal de autenticaciÃ³n
+  // Modal de autenticación
   authModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -4519,7 +4524,7 @@ rideActions: {
     padding: 30,
   },
 
-  // Inputs de autenticaciÃ³n
+  // Inputs de autenticación
   inputContainer: {
     marginBottom: 20,
   },
@@ -4749,7 +4754,7 @@ mapPickerButtonDisabled: {
 // Componente principal de la app
 const MainApp = App;
 
-// Componente con navegaciÃ³n
+// Componente con navegación
 const AppWithNavigation = (props) => {
   return <MainApp {...props} />;
 };

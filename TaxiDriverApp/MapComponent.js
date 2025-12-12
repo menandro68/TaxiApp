@@ -6,7 +6,7 @@ import Geolocation from '@react-native-community/geolocation';
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
 
-const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
+const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking }) => {
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   
@@ -179,11 +179,17 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate }) => {
         <View style={styles.navigationButtons}>
           <TouchableOpacity 
             style={styles.navButton}
-            onPress={() => {
+            onPress={async () => {
               const pickupLat = currentTrip.pickupLocation?.latitude || currentTrip.pickupLat;
               const pickupLng = currentTrip.pickupLocation?.longitude || currentTrip.pickupLng;
               
               if (pickupLat && pickupLng) {
+                // INICIAR BACKGROUND TRACKING ANTES DE ABRIR GOOGLE MAPS
+                if (onStartBackgroundTracking) {
+                  console.log('🚀 Iniciando background tracking hacia pickup:', pickupLat, pickupLng);
+                  onStartBackgroundTracking(currentTrip.id, parseFloat(pickupLat), parseFloat(pickupLng));
+                }
+                
                 // Abrir Google Maps para navegar al pasajero
                 const url = `https://www.google.com/maps/dir/?api=1&destination=${pickupLat},${pickupLng}&travelmode=driving`;
                 Linking.openURL(url);

@@ -1,0 +1,15 @@
+[33m00ae110a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m revert: restaurar MapComponent.js anterior
+[33me025b121[m fix: MapComponent robusto con zoom correcto para tracking
+[33mf6c8f24b[m fix: corregir MapComponent.js - remover codigo PowerShell
+[33mea9a1ded[m feat: mapa de tracking en tiempo real para seguimiento del conductor
+[33m2a5df649[m fix: prevenir notificación prematura de llegada - agregar flag isNavigatingToPickup
+[33mab5d3269[m Fix: 2s GPS timeout, instant retry for faster location
+[33mdedc816e[m Fix: Accept 150m accuracy for WiFi/network location
+[33m2ebbf557[m Fix: Fallback to WiFi/network on GPS retry attempts
+[33md3f4f284[m Fix: Remove GPS alert, auto-retry every 3s
+[33m46d15697[m Fix: Fast GPS with 3s timeout and 30s OS cache
+[33mf39153f5[m Fix: Reject generic fallback, always require real GPS
+[33m2e81e466[m Fix: Return null for location without timestamp
+[33md42d9025[m Fix: Add 60s expiration to SharedStorage.getUserLocation
+[33mbdebd7c5[m Fix: Reduce instant cache to 60s to prevent stale location
+[33ma54c3906[m Fix: Add foregroundServiceType=location for Android 14+ background service

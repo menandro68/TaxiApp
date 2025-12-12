@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,10 +20,11 @@ const MapComponent = ({
   trackingMode = false
 }) => {
   // DEBUG
-  console.log('🗺️ MapComponent destination:', destination);
+ console.log('🗺️ MapComponent [interactive=' + interactive + '] destination:', destination);
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
   
   // Variables para detectar tap
   const touchStartData = useRef({ x: 0, y: 0, time: 0, count: 0 });
@@ -36,22 +37,22 @@ const MapComponent = ({
     longitudeDelta: 0.08,
   };
 
-  // ✅ FORZAR zoom a Santo Domingo después de montar (solo si NO es tracking)
+  // 🗺️ FORZAR zoom a Santo Domingo después de montar (solo si NO es tracking NI interactive)
   useEffect(() => {
-    if (mapRef.current && !mapInitialized && !trackingMode) {
+    if (mapRef.current && !mapInitialized && !trackingMode && !interactive) {
       setTimeout(() => {
         mapRef.current.animateToRegion(santodomingo, 800);
         setCurrentRegion(santodomingo);
         setMapInitialized(true);
       }, 500);
-    } else if (trackingMode) {
+    } else if (trackingMode || interactive) {
       setMapInitialized(true);
     }
-  }, [mapInitialized, trackingMode]);
+  }, [mapInitialized, trackingMode, interactive]);
 
-  // ✅ Hacer zoom automático a la ubicación del usuario cuando cambia (solo si NO es tracking)
+  // 📍 Hacer zoom automático a la ubicación del usuario cuando cambia (solo si NO es tracking NI interactive)
   useEffect(() => {
-    if (mapRef.current && userLocation && mapInitialized && !trackingMode) {
+    if (mapRef.current && userLocation && mapInitialized && !trackingMode && !interactive) {
       const newRegion = {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
@@ -61,9 +62,46 @@ const MapComponent = ({
       mapRef.current.animateToRegion(newRegion, 500);
       setCurrentRegion(newRegion);
     }
-  }, [userLocation, mapInitialized, trackingMode]);
+  }, [userLocation, mapInitialized, trackingMode, interactive]);
 
-  // ✅ TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
+  // 📍 Centrar mapa en destination cuando esta en modo interactivo (picker)
+  useEffect(() => {
+    if (interactive && destination && destination.latitude && destination.longitude) {
+      console.log("🎯 PICKER ABIERTO - Forzando centrado en:", destination.latitude, destination.longitude);
+      
+      // Múltiples intentos para asegurar que funcione
+      const timer1 = setTimeout(() => {
+        if (mapRef.current) {
+          console.log("🎯 Intento 1 - animateToRegion");
+          mapRef.current.animateToRegion({
+            latitude: Number(destination.latitude),
+            longitude: Number(destination.longitude),
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }, 300);
+        }
+      }, 500);
+
+      const timer2 = setTimeout(() => {
+        if (mapRef.current) {
+          console.log("🎯 Intento 2 - animateToRegion");
+          mapRef.current.animateToRegion({
+            latitude: Number(destination.latitude),
+            longitude: Number(destination.longitude),
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }, 300);
+        }
+      }, 1500);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }
+  }, [interactive, destination]);
+
+  // 🚗 TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
   useEffect(() => {
     if (trackingMode && mapRef.current && driverLocation && userLocation) {
       const coordinates = [
@@ -83,12 +121,12 @@ const MapComponent = ({
     longitude: userLocation?.longitude || -69.9312,
   };
 
-  // ✅ Guardar región actual cuando el mapa se mueve
+  // 📍 Guardar región actual cuando el mapa se mueve
   const handleRegionChangeComplete = (region) => {
     setCurrentRegion(region);
   };
 
-  // ✅ Detectar inicio de toque
+  // 👆 Detectar inicio de toque
   const handleTouchStart = (evt) => {
     if (!interactive) return;
     
@@ -101,7 +139,7 @@ const MapComponent = ({
     };
   };
 
-  // ✅ Detectar fin de toque y procesar tap
+  // 👆 Detectar fin de toque y procesar tap
   const handleTouchEnd = async (evt) => {
     if (!interactive || !onMapPress) return;
     
@@ -120,13 +158,13 @@ const MapComponent = ({
     
     // Es TAP si: 1 dedo, poco movimiento, poco tiempo
     if (dx < 15 && dy < 15 && elapsed < 300) {
-      console.log('🔴 TAP DETECTADO!');
+      console.log('👆 TAP DETECTADO!');
       
       // Calcular locationX/Y relativo al mapa
       const locationX = evt.nativeEvent.locationX;
       const locationY = evt.nativeEvent.locationY;
       
-      console.log('🟡 Procesando tap en:', locationX, locationY);
+      console.log('📍 Procesando tap en:', locationX, locationY);
       
       // Usar coordinateForPoint del MapView
       if (mapRef.current) {
@@ -137,7 +175,7 @@ const MapComponent = ({
           });
           
           if (coordinate && coordinate.latitude && coordinate.longitude) {
-            console.log('🔴 PIN ROJO - Coordenadas precisas:', coordinate);
+            console.log('📍 PIN ROJO - Coordenadas precisas:', coordinate);
             onMapPress(coordinate);
             return;
           }
@@ -155,7 +193,7 @@ const MapComponent = ({
       const lat = region.latitude - (locationY / mapHeight - 0.5) * region.latitudeDelta;
       
       const coordinate = { latitude: lat, longitude: lng };
-      console.log('🔴 PIN ROJO - Coordenadas calculadas:', coordinate);
+      console.log('📍 PIN ROJO - Coordenadas calculadas:', coordinate);
       onMapPress(coordinate);
     }
   };
@@ -185,10 +223,18 @@ const MapComponent = ({
         rotateEnabled={true}
         moveOnMarkerPress={false}
         loadingEnabled={true}
+        onMapReady={() => setMapReady(true)}
         onRegionChangeComplete={handleRegionChangeComplete}
+        onPress={interactive ? (event) => {
+          const { latitude, longitude } = event.nativeEvent.coordinate;
+          console.log('🔴 PIN ROJO - Tap en mapa:', latitude, longitude);
+          if (onMapPress) {
+            onMapPress({ latitude, longitude });
+          }
+        } : undefined}
       >
         {/* Marcador del Usuario - Modo Normal (azul standard) */}
-        {!trackingMode && (
+        {!trackingMode && !interactive && (
           <Marker
             coordinate={defaultUserLocation}
             title="Mi ubicación"
@@ -207,7 +253,7 @@ const MapComponent = ({
             title="📍 Tu ubicación"
             description={userLocation.address || "Punto de recogida"}
             pinColor="blue"
-            onPress={() => console.log('🔵 Marker USUARIO tocado')}
+            onPress={() => console.log('📍 Marker USUARIO tocado')}
           />
         )}
 
@@ -221,7 +267,7 @@ const MapComponent = ({
             title={driverInfo?.name || '🚗 Conductor'}
             description={driverInfo?.car || 'En camino'}
             pinColor="green"
-            onPress={() => console.log('🟢 Marker CONDUCTOR tocado')}
+            onPress={() => console.log('🚗 Marker CONDUCTOR tocado')}
           />
         )}
 
@@ -250,20 +296,15 @@ const MapComponent = ({
             lineDashPattern={[10, 5]}
           />
         )}
-
-        {/* Marcador rojo - destino seleccionado */}
-        {destination && destination.latitude && destination.longitude && (
-          <Marker
-            coordinate={{
-              latitude: destination.latitude,
-              longitude: destination.longitude,
-            }}
-            title="🎯 Destino"
-            description={destination.address || "Destino del viaje"}
-            pinColor="#FF3B30"
-          />
-        )}
       </MapView>
+
+      {/* PIN ROJO FIJO EN EL CENTRO - Solo en modo interactive */}
+      {interactive && (
+        <View style={styles.centerPinContainer} pointerEvents="none">
+          <View style={styles.centerPin} />
+          <View style={styles.centerPinShadow} />
+        </View>
+      )}
     </View>
   );
 };
@@ -333,6 +374,32 @@ const styles = StyleSheet.create({
   },
   carEmoji: {
     fontSize: 24,
+  },
+  centerPinContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerPin: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF0000',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    zIndex: 999,
+  },
+  centerPinShadow: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    marginTop: 22,
   },
 });
 
