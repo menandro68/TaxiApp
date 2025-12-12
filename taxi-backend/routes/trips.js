@@ -163,7 +163,7 @@ router.post('/create', async (req, res) => {
 router.post('/accept/:tripId', async (req, res) => {
     try {
         const { tripId } = req.params;
-        const { driver_id } = req.body;
+        const { driver_id, driverLat, driverLng } = req.body;
 
         console.log(`📥 Recibida solicitud de aceptación: viaje=${tripId}, conductor=${driver_id}`);
 
@@ -229,7 +229,9 @@ router.post('/accept/:tripId', async (req, res) => {
                         driverName: driver.name || '',
                         driverPhone: driver.phone || '',
                         vehicleModel: driver.vehicle_model || '',
-                        vehiclePlate: driver.vehicle_plate || ''
+                        vehiclePlate: driver.vehicle_plate || '',
+                        driverLat: (driverLat || driver.current_latitude || '').toString(),
+                        driverLng: (driverLng || driver.current_longitude || '').toString()
                     },
                     token: user.fcm_token
                 });
