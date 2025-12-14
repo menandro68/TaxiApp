@@ -1,17 +1,16 @@
-import RouteService from './RouteService';
+import ApiService from './ApiService';
 
 // ============================================
-// SERVICIO DE TRACKING DEL CONDUCTOR
+// SERVICIO DE TRACKING DEL CONDUCTOR - UBICACIÓN REAL
 // ============================================
 
 class DriverTrackingService {
   
-  // Variables estÃ¡ticas para el tracking
+  // Variables estáticas para el tracking
   static trackingInterval = null;
-  static currentRoute = null;
-  static currentStep = 0;
-  static totalSteps = 0;
   static isTracking = false;
+  static driverId = null;
+  static lastLocation = null;
   static callbacks = {
     onLocationUpdate: null,
     onArrival: null,
@@ -19,223 +18,182 @@ class DriverTrackingService {
   };
 
   // ============================================
-  // INICIAR TRACKING DEL CONDUCTOR
+  // INICIAR TRACKING CON UBICACIÓN REAL
   // ============================================
   
-  static async startTracking(driverLocation, destinationLocation, callbacks = {}) {
+  static async startTracking(driverId, userLocation, callbacks = {}) {
     try {
-      console.log('ðŸš— Iniciando tracking del conductor...', {
-        driver: driverLocation,
-        destination: destinationLocation
-      });
+      console.log('🚗 Iniciando tracking REAL del conductor:', driverId);
 
-      // Guardar callbacks
+      // Guardar datos
+      this.driverId = driverId;
       this.callbacks = { ...this.callbacks, ...callbacks };
-
-      // Obtener ruta del conductor al pasajero/destino
-      const route = await RouteService.getRoute(driverLocation, destinationLocation);
-      
-      if (!route || !route.polyline) {
-        throw new Error('No se pudo obtener la ruta del conductor');
-      }
-
-      // Decodificar polyline para obtener puntos de la ruta
-      const routePoints = RouteService.decodePolyline(route.polyline);
-      
-      if (routePoints.length === 0) {
-        throw new Error('No se pudieron decodificar los puntos de la ruta');
-      }
-
-      // Configurar tracking
-      this.currentRoute = routePoints;
-      this.currentStep = 0;
-      this.totalSteps = routePoints.length;
       this.isTracking = true;
+      this.lastLocation = null;
 
-      console.log('âœ… Ruta configurada para tracking:', {
-        totalPoints: this.totalSteps,
-        distance: route.distance.text,
-        duration: route.duration.text
-      });
+      // Obtener ubicación inicial
+      await this.fetchDriverLocation();
 
-      // Iniciar movimiento simulado
-      this.startMovementSimulation();
+      // Iniciar polling cada 3 segundos
+      this.startLocationPolling(userLocation);
 
       return {
         success: true,
-        route,
-        totalSteps: this.totalSteps,
-        estimatedDuration: route.duration.seconds
+        message: 'Tracking real iniciado'
       };
 
     } catch (error) {
-      console.error('âŒ Error iniciando tracking:', error);
-      
-      // Fallback: simular movimiento directo
-      this.startDirectMovement(driverLocation, destinationLocation);
-      
+      console.error('❌ Error iniciando tracking real:', error);
       return {
         success: false,
-        error: error.message,
-        fallback: true
+        error: error.message
       };
     }
   }
 
   // ============================================
-  // SIMULACIÃ“N DE MOVIMIENTO A LO LARGO DE LA RUTA
+  // POLLING DE UBICACIÓN REAL
   // ============================================
   
-  static startMovementSimulation() {
+  static startLocationPolling(userLocation) {
     // Limpiar interval anterior si existe
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
     }
 
-    // Velocidad de movimiento (cada 2 segundos)
-    const updateInterval = 2000;
-    
-    // Calcular puntos por segundo basado en la duraciÃ³n estimada
-    const pointsPerUpdate = Math.max(1, Math.floor(this.totalSteps / 30)); // Aproximadamente 30 actualizaciones para completar el viaje
+    const POLL_INTERVAL = 3000; // 3 segundos
 
-    this.trackingInterval = setInterval(() => {
-      if (!this.isTracking || this.currentStep >= this.totalSteps) {
+    this.trackingInterval = setInterval(async () => {
+      if (!this.isTracking) {
         this.stopTracking();
         return;
       }
 
-      // Obtener posiciÃ³n actual
-      const currentPosition = this.currentRoute[this.currentStep];
-      
-      // Calcular progreso
-      const progress = (this.currentStep / this.totalSteps) * 100;
-      const remainingSteps = this.totalSteps - this.currentStep;
-      const estimatedTimeRemaining = Math.ceil((remainingSteps / pointsPerUpdate) * (updateInterval / 1000 / 60)); // En minutos
+      await this.fetchDriverLocation(userLocation);
 
-      // Crear informaciÃ³n del conductor
-      const driverUpdate = {
-        location: {
-          latitude: currentPosition.latitude,
-          longitude: currentPosition.longitude
-        },
-        progress: progress,
-        remainingSteps: remainingSteps,
-        estimatedTimeRemaining: estimatedTimeRemaining,
-        currentStep: this.currentStep,
-        totalSteps: this.totalSteps,
-        isMoving: true,
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('ðŸ“ Actualizando posiciÃ³n del conductor:', {
-        step: this.currentStep,
-        progress: `${progress.toFixed(1)}%`,
-        eta: `${estimatedTimeRemaining} min`,
-        location: currentPosition
-      });
-
-      // Ejecutar callback de actualizaciÃ³n de ubicaciÃ³n
-      if (this.callbacks.onLocationUpdate) {
-        this.callbacks.onLocationUpdate(driverUpdate);
-      }
-
-      // Ejecutar callback de progreso de ruta
-      if (this.callbacks.onRouteProgress) {
-        this.callbacks.onRouteProgress({
-          progress: progress,
-          currentStep: this.currentStep,
-          totalSteps: this.totalSteps,
-          estimatedTimeRemaining: estimatedTimeRemaining
-        });
-      }
-
-      // Avanzar en la ruta
-      this.currentStep += pointsPerUpdate;
-
-      // Verificar si llegÃ³ al destino
-      if (this.currentStep >= this.totalSteps - 1) {
-        console.log('ðŸŽ¯ Â¡Conductor ha llegado al destino!');
-        
-        // Ejecutar callback de llegada
-        if (this.callbacks.onArrival) {
-          this.callbacks.onArrival({
-            finalLocation: this.currentRoute[this.totalSteps - 1],
-            totalTime: Math.ceil((this.totalSteps * updateInterval) / 1000 / 60),
-            completedSteps: this.totalSteps
-          });
-        }
-
-        this.stopTracking();
-      }
-
-    }, updateInterval);
+    }, POLL_INTERVAL);
   }
 
   // ============================================
-  // MOVIMIENTO DIRECTO (FALLBACK)
+  // OBTENER UBICACIÓN DEL CONDUCTOR DESDE BACKEND
   // ============================================
   
-  static startDirectMovement(startLocation, endLocation) {
-    console.log('ðŸ”„ Iniciando movimiento directo (fallback)');
-    
-    // Crear puntos intermedios para movimiento suave
-    const steps = 20; // 20 pasos para llegar al destino
-    const latStep = (endLocation.latitude - startLocation.latitude) / steps;
-    const lngStep = (endLocation.longitude - startLocation.longitude) / steps;
-    
-    let currentStep = 0;
-    
-    this.trackingInterval = setInterval(() => {
-      if (currentStep >= steps) {
-        this.stopTracking();
-        
-        if (this.callbacks.onArrival) {
-          this.callbacks.onArrival({
-            finalLocation: endLocation,
-            totalTime: Math.ceil((steps * 3000) / 1000 / 60), // 3 segundos por paso
-            completedSteps: steps
-          });
-        }
-        return;
+  static async fetchDriverLocation(userLocation = null) {
+    try {
+      if (!this.driverId) {
+        console.log('⚠️ No hay driverId configurado');
+        return null;
       }
 
-      const currentLocation = {
-        latitude: startLocation.latitude + (latStep * currentStep),
-        longitude: startLocation.longitude + (lngStep * currentStep)
+      const response = await fetch(
+        `https://web-production-99844.up.railway.app/api/drivers/${this.driverId}/location`
+      );
+      
+      const data = await response.json();
+
+      if (!data.success || !data.latitude || !data.longitude) {
+        console.log('⚠️ Ubicación del conductor no disponible');
+        return null;
+      }
+
+      const driverLocation = {
+        latitude: parseFloat(data.latitude),
+        longitude: parseFloat(data.longitude)
       };
 
-      const progress = (currentStep / steps) * 100;
-      const estimatedTimeRemaining = Math.ceil((steps - currentStep) * 3 / 60); // 3 segundos por paso
+      console.log('📍 Ubicación REAL del conductor:', driverLocation);
 
+      // Calcular distancia al usuario si tenemos su ubicación
+      let distance = null;
+      let estimatedTimeRemaining = null;
+      
+      if (userLocation?.latitude && userLocation?.longitude) {
+        distance = this.calculateDistance(
+          driverLocation.latitude,
+          driverLocation.longitude,
+          userLocation.latitude,
+          userLocation.longitude
+        );
+        
+        // Estimar tiempo: ~2 min por km en ciudad
+        estimatedTimeRemaining = Math.max(1, Math.ceil(distance * 2));
+        
+        console.log(`📏 Distancia al usuario: ${distance.toFixed(2)} km, ETA: ${estimatedTimeRemaining} min`);
+
+        // Verificar si llegó (menos de 50 metros)
+        if (distance < 0.05) {
+          console.log('🎯 ¡Conductor ha llegado!');
+          
+          if (this.callbacks.onArrival) {
+            this.callbacks.onArrival({
+              finalLocation: driverLocation,
+              timestamp: new Date().toISOString()
+            });
+          }
+          
+          this.stopTracking();
+          return driverLocation;
+        }
+      }
+
+      // Crear objeto de actualización
       const driverUpdate = {
-        location: currentLocation,
-        progress: progress,
-        remainingSteps: steps - currentStep,
+        location: driverLocation,
+        distance: distance,
         estimatedTimeRemaining: estimatedTimeRemaining,
-        currentStep: currentStep,
-        totalSteps: steps,
-        isMoving: true,
+        isMoving: this.hasLocationChanged(driverLocation),
         timestamp: new Date().toISOString(),
-        fallbackMode: true
+        realLocation: true
       };
 
-      console.log('ðŸ“ Movimiento directo - Paso:', currentStep, 'Progreso:', `${progress.toFixed(1)}%`);
+      // Guardar última ubicación
+      this.lastLocation = driverLocation;
 
+      // Ejecutar callback de actualización
       if (this.callbacks.onLocationUpdate) {
         this.callbacks.onLocationUpdate(driverUpdate);
       }
 
-      if (this.callbacks.onRouteProgress) {
-        this.callbacks.onRouteProgress({
-          progress: progress,
-          currentStep: currentStep,
-          totalSteps: steps,
-          estimatedTimeRemaining: estimatedTimeRemaining
-        });
-      }
+      return driverLocation;
 
-      currentStep++;
-    }, 3000); // Cada 3 segundos
+    } catch (error) {
+      console.error('❌ Error obteniendo ubicación del conductor:', error);
+      return null;
+    }
+  }
+
+  // ============================================
+  // VERIFICAR SI LA UBICACIÓN CAMBIÓ
+  // ============================================
+  
+  static hasLocationChanged(newLocation) {
+    if (!this.lastLocation) return true;
+    
+    const threshold = 0.0001; // ~11 metros
+    const latDiff = Math.abs(newLocation.latitude - this.lastLocation.latitude);
+    const lngDiff = Math.abs(newLocation.longitude - this.lastLocation.longitude);
+    
+    return latDiff > threshold || lngDiff > threshold;
+  }
+
+  // ============================================
+  // CALCULAR DISTANCIA (HAVERSINE)
+  // ============================================
+  
+  static calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  static toRad(deg) {
+    return deg * (Math.PI / 180);
   }
 
   // ============================================
@@ -243,42 +201,15 @@ class DriverTrackingService {
   // ============================================
   
   static stopTracking() {
-    console.log('ðŸ›‘ Deteniendo tracking del conductor');
+    console.log('🛑 Deteniendo tracking del conductor');
     
     this.isTracking = false;
+    this.driverId = null;
+    this.lastLocation = null;
     
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
       this.trackingInterval = null;
-    }
-
-    // Reset variables
-    this.currentRoute = null;
-    this.currentStep = 0;
-    this.totalSteps = 0;
-  }
-
-  // ============================================
-  // PAUSAR/REANUDAR TRACKING
-  // ============================================
-  
-  static pauseTracking() {
-    console.log('â¸ï¸ Pausando tracking del conductor');
-    
-    if (this.trackingInterval) {
-      clearInterval(this.trackingInterval);
-      this.trackingInterval = null;
-    }
-    
-    this.isTracking = false;
-  }
-
-  static resumeTracking() {
-    console.log('â–¶ï¸ Reanudando tracking del conductor');
-    
-    if (this.currentRoute && this.currentStep < this.totalSteps) {
-      this.isTracking = true;
-      this.startMovementSimulation();
     }
   }
 
@@ -289,99 +220,29 @@ class DriverTrackingService {
   static getCurrentState() {
     return {
       isTracking: this.isTracking,
-      currentStep: this.currentStep,
-      totalSteps: this.totalSteps,
-      progress: this.totalSteps > 0 ? (this.currentStep / this.totalSteps) * 100 : 0,
-      currentLocation: this.currentRoute && this.currentStep < this.totalSteps 
-        ? this.currentRoute[this.currentStep] 
-        : null,
-      hasRoute: this.currentRoute !== null
+      driverId: this.driverId,
+      lastLocation: this.lastLocation
     };
   }
 
   // ============================================
-  // SIMULAR DIFERENTES VELOCIDADES
+  // COMPATIBILIDAD CON CÓDIGO EXISTENTE
   // ============================================
   
-  static setTrackingSpeed(speed = 'normal') {
-    const speeds = {
-      slow: 4000,    // 4 segundos por actualizaciÃ³n
-      normal: 2000,  // 2 segundos por actualizaciÃ³n  
-      fast: 1000,    // 1 segundo por actualizaciÃ³n
-      veryfast: 500  // 0.5 segundos por actualizaciÃ³n
-    };
-
-    const interval = speeds[speed] || speeds.normal;
-    
-    if (this.isTracking && this.trackingInterval) {
-      this.stopTracking();
-      setTimeout(() => {
-        this.startMovementSimulation();
-      }, 100);
+  static pauseTracking() {
+    console.log('⏸️ Pausando tracking');
+    if (this.trackingInterval) {
+      clearInterval(this.trackingInterval);
+      this.trackingInterval = null;
     }
-
-    console.log(`ðŸŽï¸ Velocidad de tracking configurada a: ${speed} (${interval}ms)`);
   }
 
-  // ============================================
-  // CALCULAR ETA DINÃMICO
-  // ============================================
-  
-  static calculateDynamicETA() {
-    if (!this.isTracking || !this.currentRoute) {
-      return null;
+  static resumeTracking(userLocation) {
+    console.log('▶️ Reanudando tracking');
+    if (this.isTracking && this.driverId) {
+      this.startLocationPolling(userLocation);
     }
-
-    const remainingSteps = this.totalSteps - this.currentStep;
-    const averageStepTime = 2; // segundos por paso
-    const estimatedSeconds = remainingSteps * averageStepTime;
-    const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
-
-    return {
-      seconds: estimatedSeconds,
-      minutes: estimatedMinutes,
-      text: estimatedMinutes === 1 ? '1 min' : `${estimatedMinutes} min`,
-      remainingSteps: remainingSteps,
-      completionPercentage: (this.currentStep / this.totalSteps) * 100
-    };
-  }
-
-  // ============================================
-  // SIMULAR EVENTOS DEL CONDUCTOR
-  // ============================================
-  
-  static simulateDriverEvents() {
-    // Simular eventos aleatorios durante el viaje
-    const events = [
-      'conductor_started',
-      'conductor_pickup_area',
-      'conductor_waiting',
-      'conductor_arrived'
-    ];
-
-    // Simular evento aleatorio cada 30-60 segundos
-    const randomDelay = Math.random() * 30000 + 30000;
-    
-    setTimeout(() => {
-      if (this.isTracking) {
-        const randomEvent = events[Math.floor(Math.random() * events.length)];
-        console.log('ðŸŽ­ Evento del conductor simulado:', randomEvent);
-        
-        // AquÃ­ podrÃ­as ejecutar callbacks especÃ­ficos para cada evento
-        if (this.callbacks.onDriverEvent) {
-          this.callbacks.onDriverEvent({
-            event: randomEvent,
-            timestamp: new Date().toISOString(),
-            currentLocation: this.currentRoute ? this.currentRoute[this.currentStep] : null
-          });
-        }
-      }
-    }, randomDelay);
   }
 }
-
-// ============================================
-// EXPORTACIÃ“N
-// ============================================
 
 export default DriverTrackingService;

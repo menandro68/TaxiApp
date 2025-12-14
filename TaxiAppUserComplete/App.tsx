@@ -734,7 +734,7 @@ const setupNotificationHandlers = () => {
       if (currentUserLocation && currentUserLocation.latitude) {
         startDriverTracking(mockDriverInfo, currentUserLocation);
       } else {
-        console.log('†Ô∏è No hay ubicacion del usuario, tracking omitido');
+        console.log('ÔøΩÔ∏è No hay ubicacion del usuario, tracking omitido');
       }
     };
     
@@ -1169,49 +1169,56 @@ const initializeLocationService = async () => {
     }
   };
 
-  // NUEVA FUNCI√ìN: Iniciar tracking del conductor
-  const startDriverTracking = async (driver, userLoc) => {
+const startDriverTracking = async (driver, userLoc) => {
     try {
-      console.log('Iniciando tracking del conductor:', driver.name);
-      
-      const driverStartLocation = driver.currentLocation || {
-        latitude: 18.4800,
-        longitude: -69.9200,
-      };
+      console.log('üöó Iniciando tracking REAL del conductor:', driver.name);
+      console.log('üÜî Driver ID:', driver.id);
 
-      setDriverLocation(driverStartLocation);
+      // Obtener el driverId - puede venir como string o n√∫mero
+      const driverId = driver.id || driver.driverId;
+      
+      if (!driverId || driverId === 'unknown') {
+        console.log('‚ö†Ô∏è No hay driverId v√°lido, usando ID 3 por defecto');
+      }
+
+      // Usar el ID num√©rico del conductor
+      const numericDriverId = parseInt(driverId) || 3;
+
       setTrackingActive(true);
       setIsDriverMoving(true);
 
-      // Configurar callbacks para el tracking
+      // Configurar callbacks para el tracking REAL
       const trackingCallbacks = {
         onLocationUpdate: (driverUpdate) => {
-          console.log('Actualizacion de ubicacion del conductor:', driverUpdate);
-          
+          console.log('üìç Ubicaci√≥n REAL del conductor:', driverUpdate);
+
           setDriverLocation(driverUpdate.location);
-          setTrackingProgress(driverUpdate.progress);
-          setDriverETA(`${driverUpdate.estimatedTimeRemaining} min`);
-          setIsDriverMoving(driverUpdate.isMoving);
           
-          // Actualizar info del conductor con nueva ubicacion
+          // El nuevo servicio calcula ETA basado en distancia real
+          if (driverUpdate.estimatedTimeRemaining) {
+            setDriverETA(`${driverUpdate.estimatedTimeRemaining} min`);
+          }
+          
+          setIsDriverMoving(driverUpdate.isMoving);
+
+          // Actualizar info del conductor con nueva ubicaci√≥n
           setDriverInfo(prevInfo => ({
             ...prevInfo,
             currentLocation: driverUpdate.location,
-            eta: `${driverUpdate.estimatedTimeRemaining} min`
+            eta: driverUpdate.estimatedTimeRemaining ? `${driverUpdate.estimatedTimeRemaining} min` : prevInfo?.eta
           }));
         },
-        
+
         onArrival: (arrivalInfo) => {
-          console.log('Conductor ha llegado!', arrivalInfo);
-          
+          console.log('üéØ ¬°Conductor ha llegado!', arrivalInfo);
+
           setIsDriverMoving(false);
           setTrackingActive(false);
           setDriverETA('Ha llegado');
-          setTrackingProgress(100);
-          
+
           Alert.alert(
             '¬°Conductor ha llegado!',
-            `${driverInfo.name} est√° en tu ubicacion. Tiempo total: ${arrivalInfo.totalTime} min`,
+            `${driver.name} est√° en tu ubicaci√≥n.`,
             [
               {
                 text: 'Subir al veh√≠culo',
@@ -1219,33 +1226,27 @@ const initializeLocationService = async () => {
               }
             ]
           );
-        },
-        
-        onRouteProgress: (progressInfo) => {
-          console.log('Progreso de ruta:', progressInfo);
-          setTrackingProgress(progressInfo.progress);
         }
       };
 
-      // Iniciar el tracking
+      // Iniciar el tracking con ubicaci√≥n REAL
       const trackingResult = await DriverTrackingService.startTracking(
-        driverStartLocation,
+        numericDriverId,
         userLoc,
         trackingCallbacks
       );
 
       if (trackingResult.success) {
-        console.log('Tracking iniciado exitosamente');
+        console.log('‚úÖ Tracking REAL iniciado exitosamente');
       } else {
-        console.log('Tracking iniciado en modo fallback');
+        console.log('‚ùå Error iniciando tracking:', trackingResult.error);
       }
 
     } catch (error) {
-      console.error('Error iniciando tracking del conductor:', error);
+      console.error('‚ùå Error iniciando tracking del conductor:', error);
       Alert.alert('Error', 'No se pudo iniciar el seguimiento del conductor');
     }
   };
-
   // NUEVA FUNCI√ìN: Detener tracking del conductor
   const stopDriverTracking = () => {
     console.log('Deteniendo tracking del conductor');
@@ -1384,21 +1385,21 @@ const sendTripRequestToBackend = async (tripData) => {
     console.log('URL:', `${getBackendUrl()}/trips/create`);
 
     // DEBUG: User ID
-    console.log('üîç DEBUG: Enviando user_id =', tripData.userId);
-    console.log('üîç DEBUG: tipo =', typeof tripData.userId);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: Enviando user_id =', tripData.userId);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: tipo =', typeof tripData.userId);
     
     // DEBUG: Coordenadas
-    console.log('üîç DEBUG: origin.latitude =', tripData.origin.latitude);
-    console.log('üîç DEBUG: origin.longitude =', tripData.origin.longitude);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: origin.latitude =', tripData.origin.latitude);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: origin.longitude =', tripData.origin.longitude);
     
     // DEBUG: Precio ANTES de transformaci√≥n
-    console.log('üîç DEBUG: Precio ANTES =', tripData.price);
-    console.log('üîç DEBUG: ¬øEs NaN?', isNaN(tripData.price));
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: Precio ANTES =', tripData.price);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: ¬øEs NaN?', isNaN(tripData.price));
     
     // Transformar precio
     const finalEstimatedPrice = isNaN(tripData.price) ? 150 : tripData.price;
-    console.log('üîç DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
-    console.log('üîç DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
     
     // Construir JSON
     const requestBody = {
@@ -1415,7 +1416,7 @@ const sendTripRequestToBackend = async (tripData) => {
     };
     
     // DEBUG: JSON completo que se env√≠a
-    console.log('üîç DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
     
     const response = await fetch(`${getBackendUrl()}/trips/create`, {
       method: 'POST',
@@ -1431,7 +1432,7 @@ const sendTripRequestToBackend = async (tripData) => {
     if (!response.ok) {
       // DEBUG: Intentar leer el error del servidor
       const errorText = await response.text();
-      console.log('üî¥ Respuesta del servidor:', errorText);
+      console.log('ÔøΩÔøΩÔøΩ Respuesta del servidor:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
@@ -1789,7 +1790,7 @@ const handleMapPickerPress = async (event) => {
   try {
  const { latitude, longitude } = event;
 
-    console.log('üîç DEBUG: handleMapPickerPress iniciado', {
+    console.log('ÔøΩÔøΩÔøΩ DEBUG: handleMapPickerPress iniciado', {
       latitude: latitude.toFixed(6),
       longitude: longitude.toFixed(6),
       timestamp: new Date().toISOString(),
@@ -1831,7 +1832,7 @@ const handleMapPickerPress = async (event) => {
       longitude
     });
 
-    console.log('üîÑ Iniciando geocoding inverso...');
+    console.log('ÔøΩÔøΩÔøΩ Iniciando geocoding inverso...');
     
     try {
       await Promise.race([
@@ -1866,7 +1867,7 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
   try {
     setIsGeocodingMapPicker(true);
 
-    console.log('üåê Iniciando reverse geocoding:', { latitude, longitude });
+    console.log('ÔøΩÔøΩÔøΩ Iniciando reverse geocoding:', { latitude, longitude });
 
     const response = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
@@ -1955,7 +1956,7 @@ const renderVehicleSelector = () => {
       <View style={styles.vehicleSelectorContent}>
         <Text style={styles.vehicleSelectorIcon}>
           {selectedVehicleType === 'economy' ? '' : 
-           selectedVehicleType === 'comfort' ? 'ô' : 
+           selectedVehicleType === 'comfort' ? 'ÔøΩ' : 
            selectedVehicleType === 'premium' ? '' : 
            selectedVehicleType === 'xl' ? '' : ''}
         </Text>
@@ -2006,7 +2007,7 @@ const renderLoadingScreen = () => {
                        {routeInfo?.distance?.text || '7.0 km'} ‚Ä¢ ‚è± {routeInfo?.duration?.text || '14 min'}
                     </Text>
                     {priceDetails?.surge && (
-                      <Text style={styles.surgeText}>° 1.5x</Text>
+                      <Text style={styles.surgeText}>ÔøΩ 1.5x</Text>
                     )}
                   </View>
                 </View>
@@ -2016,7 +2017,7 @@ const renderLoadingScreen = () => {
   {!showPriceEstimator && routeInfo && (
               <View style={styles.routeDetailsCompact}>
                 <Text style={styles.routeDetailCompact}>
-                  ?? {routeInfo.distance.text} ï ?? {routeInfo.duration.text} ï ?? RD${routeInfo.pricing.final_price}
+                  ?? {routeInfo.distance.text} ÔøΩ ?? {routeInfo.duration.text} ÔøΩ ?? RD${routeInfo.pricing.final_price}
                 </Text>
               </View>
             )}
@@ -2062,13 +2063,13 @@ const renderLoadingScreen = () => {
     );
   };
 
-  // NUEVO COMPONENTE: Estado de ubicaciÛn y fallback
+  // NUEVO COMPONENTE: Estado de ubicaciÔøΩn y fallback
   const renderLocationStatus = () => {
     if (isLoadingLocation) {
       return (
         <View style={styles.locationStatusContainer}>
           <ActivityIndicator size="small" color="#007AFF" />
-          <Text style={styles.locationStatusText}>Obteniendo ubicaciÛn...</Text>
+          <Text style={styles.locationStatusText}>Obteniendo ubicaciÔøΩn...</Text>
         </View>
       );
     }
@@ -2077,15 +2078,15 @@ const renderLoadingScreen = () => {
       return (
         <View style={styles.locationStatusContainer}>
           <Text style={styles.locationStatusIcon}>??</Text>
-          <Text style={styles.locationStatusTitle}>UbicaciÛn requerida</Text>
+          <Text style={styles.locationStatusTitle}>UbicaciÔøΩn requerida</Text>
           <Text style={styles.locationStatusMessage}>
-            Necesitamos tu ubicaciÛn para calcular rutas y precios
+            Necesitamos tu ubicaciÔøΩn para calcular rutas y precios
           </Text>
           <TouchableOpacity 
             style={styles.selectLocationButton} 
             onPress={() => setShowLocationModal(true)}
           >
-            <Text style={styles.selectLocationButtonText}>Seleccionar ubicaciÛn</Text>
+            <Text style={styles.selectLocationButtonText}>Seleccionar ubicaciÔøΩn</Text>
           </TouchableOpacity>
         </View>
       );
@@ -2171,7 +2172,7 @@ const renderLoadingScreen = () => {
           </Text>
         </View>
       </TouchableOpacity>
-{/* OpciÛn 3: Fijar en el mapa */}
+{/* OpciÔøΩn 3: Fijar en el mapa */}
 <TouchableOpacity 
   style={styles.locationOption}
   onPress={() => {
@@ -2180,15 +2181,15 @@ const renderLoadingScreen = () => {
       // DEBUG
       console.log('?? userLocation al abrir picker:', userLocation);
       
-      // Inicializar pin rojo con ubicaciÛn actual o Santo Domingo
+      // Inicializar pin rojo con ubicaciÔøΩn actual o Santo Domingo
       const initialLocation = userLocation && userLocation.latitude ? {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        address: userLocation.address || 'UbicaciÛn actual'
+        address: userLocation.address || 'UbicaciÔøΩn actual'
       } : {
         latitude: 18.4861,
         longitude: -69.9312,
-        address: 'Santo Domingo, Rep˙blica Dominicana'
+        address: 'Santo Domingo, RepÔøΩblica Dominicana'
       };
       
       console.log('?? initialLocation:', initialLocation);
@@ -2860,7 +2861,7 @@ const renderLoadingScreen = () => {
             <Text style={styles.requestButtonText}>
             {isCalculatingRoute ? 'Calculando...' : 
               !userLocation ? 'Selecciona ubicacion' :
-               realTimePrice > 0 ? `Solicitar Servicio Ä¢ RD${realTimePrice}` :
+               realTimePrice > 0 ? `Solicitar Servicio ÔøΩÔøΩ RD${realTimePrice}` :
               'Solicitar Servicio'}
             </Text>
           </TouchableOpacity>
@@ -2882,7 +2883,7 @@ const renderLoadingScreen = () => {
         <View style={styles.authModalOverlay}>
           <View style={styles.authModal}>
             <View style={styles.authHeader}>
-              <Text style={styles.authTitle}>ñ TaxiApp</Text>
+              <Text style={styles.authTitle}>ÔøΩ TaxiApp</Text>
               <Text style={styles.authSubtitle}>
                 {authMode === 'login' ? 'Iniciar Sesi√≥n' : 'Crear Cuenta'}
               </Text>
@@ -3422,7 +3423,7 @@ const renderLoadingScreen = () => {
       userLocation={{
         latitude: 18.4861,
         longitude: -69.9312,
-        address: 'Santo Domingo, Rep˙blica Dominicana'
+        address: 'Santo Domingo, RepÔøΩblica Dominicana'
       }}
       destination={mapPickerLocation}
       interactive={true}
