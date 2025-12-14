@@ -52,7 +52,7 @@ export default function DriverApp({ navigation }) {
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [tripPhase, setTripPhase] = useState(''); // AGREGADO: '', 'arrived', 'started'
-  const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
+  const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
   const [showDashcam, setShowDashcam] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [tripStops, setTripStops] = useState(null);
@@ -307,7 +307,7 @@ const startBackgroundTracking = async (tripId, pickupLat, pickupLng) => {
       ...backgroundOptions,
       parameters: { tripId, pickupLat, pickupLng },
     });
-    setIsNavigatingToPickup(true); // ACTIVAR detecci�n de llegada
+    setIsNavigatingToPickup(true); // ACTIVAR detecci�n de llegada
     console.log('? Background tracking iniciado');
   } catch (error) {
     console.error('Error iniciando background tracking:', error);
@@ -407,53 +407,73 @@ const handleArrivedAtPickup = async () => {
     }
   };
 
-  // NUEVA FUNCIÓN: Enviar ubicación al backend
+// NUEVA FUNCIÓN: Enviar ubicación al backend
   const sendLocationToBackend = async (location) => {
-    if (!location || driverStatus === 'offline') return;
+    if (!location) return;
     
     try {
+      console.log('📤 Enviando ubicación al backend:', location.latitude, location.longitude);
       const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/location', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          driverId: loggedDriver?.id || 1,
+          driverId: loggedDriver?.id || 3,
           latitude: location.latitude,
           longitude: location.longitude,
           heading: 0,
           speed: 0,
           accuracy: 10,
-          status: driverStatus === 'busy' ? 'busy' : 'online'
+          status: 'online'
         })
       });
       
       if (response.ok) {
-        console.log('📍 Ubicación enviada al backend');
+        console.log('✅ Ubicación enviada al backend');
+      } else {
+        console.log('❌ Error respuesta backend:', response.status);
       }
     } catch (error) {
-      console.error('Error enviando ubicación:', error);
+      console.error('❌ Error enviando ubicación:', error);
     }
   };
 
-  // NUEVA FUNCIÓN: Iniciar tracking de ubicación
+// NUEVA FUNCIÓN: Iniciar tracking de ubicación
   const startLocationTracking = () => {
     // Limpiar intervalo anterior si existe
     if (locationInterval) {
       clearInterval(locationInterval);
     }
-    
+
+    // Función para obtener y enviar ubicación
+    const getAndSendLocation = () => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          console.log('📍 GPS obtenido:', location.latitude, location.longitude);
+          setUserLocation(location);
+          sendLocationToBackend(location);
+        },
+        (error) => {
+          console.log('❌ Error GPS:', error.message);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+
+    // Enviar ubicación inmediatamente
+    getAndSendLocation();
+
     // Enviar ubicación cada 10 segundos
-    const interval = setInterval(() => {
-      if (userLocation && driverStatus !== 'offline') {
-        sendLocationToBackend(userLocation);
-      }
-    }, 10000); // 10 segundos
+    const interval = setInterval(getAndSendLocation, 10000);
     
     setLocationInterval(interval);
     console.log('✅ Tracking de ubicación iniciado');
   };
-
   // NUEVA FUNCIÓN: Detener tracking de ubicación
   const stopLocationTracking = () => {
     if (locationInterval) {
@@ -595,8 +615,10 @@ const acceptTrip = async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          driver_id: driverId
+     body: JSON.stringify({
+          driver_id: driverId,
+          driverLat: userLocation?.latitude || null,
+          driverLng: userLocation?.longitude || null
         })
       });
 
@@ -784,7 +806,7 @@ const acceptTrip = async () => {
       setCurrentTrip(null);
       setDriverStatus('online');
       setTripPhase(''); // Resetear la fase del viaje
-      setIsNavigatingToPickup(false); // RESETEAR flag de navegaci�n
+      setIsNavigatingToPickup(false); // RESETEAR flag de navegaci�n
       setUserLocation(null); // Limpiar ubicación
       await stopBackgroundTracking(); // Detener background tracking
       
