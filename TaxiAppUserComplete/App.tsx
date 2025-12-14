@@ -2036,7 +2036,7 @@ const renderLoadingScreen = () => {
         {/* MAPA DE TRACKING */}
         <View style={styles.trackingMapContainer}>
           <MapComponent
-            userLocation={userLocation}
+            userLocation={tripRequest?.origin || userLocation}
             driverLocation={driverLocation}
             driverInfo={driverInfo}
             destination={selectedDestination}
