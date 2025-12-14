@@ -151,4 +151,65 @@ router.put('/status', (req, res) => {
   });
 });
 
+// ============================================
+// ACTUALIZAR UBICACIÓN DEL CONDUCTOR
+// ============================================
+router.put('/location', (req, res) => {
+  const { driverId, latitude, longitude } = req.body;
+  
+  if (!driverId || latitude === undefined || longitude === undefined) {
+    return res.status(400).json({ error: 'driverId, latitude y longitude son requeridos' });
+  }
+  
+  const query = `UPDATE drivers SET latitude = ?, longitude = ?, location_updated_at = datetime('now') WHERE id = ?`;
+  
+  db.run(query, [latitude, longitude, driverId], function(err) {
+    if (err) {
+      console.error('❌ Error actualizando ubicación:', err);
+      return res.status(500).json({ error: 'Error actualizando ubicación del conductor' });
+    }
+    
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Conductor no encontrado' });
+    }
+    
+    console.log(`📍 Ubicación del conductor ${driverId} actualizada: ${latitude}, ${longitude}`);
+    
+    res.json({
+      success: true,
+      message: 'Ubicación actualizada',
+      location: { latitude, longitude }
+    });
+  });
+});
+
+// ============================================
+// OBTENER UBICACIÓN DEL CONDUCTOR
+// ============================================
+router.get('/:id/location', (req, res) => {
+  const { id } = req.params;
+  
+  const query = `SELECT id, name, latitude, longitude, location_updated_at FROM drivers WHERE id = ?`;
+  
+  db.get(query, [id], (err, driver) => {
+    if (err) {
+      console.error('❌ Error obteniendo ubicación:', err);
+      return res.status(500).json({ error: 'Error obteniendo ubicación del conductor' });
+    }
+    
+    if (!driver) {
+      return res.status(404).json({ error: 'Conductor no encontrado' });
+    }
+    
+    res.json({
+      success: true,
+      driverId: driver.id,
+      name: driver.name,
+      latitude: driver.latitude,
+      longitude: driver.longitude,
+      updatedAt: driver.location_updated_at
+    });
+  });
+});
+
 module.exports = router;
