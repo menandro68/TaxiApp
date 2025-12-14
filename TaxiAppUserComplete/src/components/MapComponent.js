@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -19,17 +19,23 @@ const MapComponent = ({
   interactive = false,
   trackingMode = false
 }) => {
-  // DEBUG
- console.log('🗺️ MapComponent [interactive=' + interactive + '] destination:', destination);
+  console.log('🗺️ MapComponent [interactive=' + interactive + '] destination:', destination);
+  if (trackingMode) {
+    console.log('🔴 userLocation:', userLocation?.latitude, userLocation?.longitude);
+    console.log('🟢 driverLocation:', driverLocation?.latitude, driverLocation?.longitude);
+  }
+  
   const mapRef = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(null);
   const [mapReady, setMapReady] = useState(false);
   
-  // Variables para detectar tap
+  // Posiciones de pantalla para overlay
+  const [userScreenPos, setUserScreenPos] = useState(null);
+  const [driverScreenPos, setDriverScreenPos] = useState(null);
+  
   const touchStartData = useRef({ x: 0, y: 0, time: 0, count: 0 });
 
-  // Región por defecto - Santo Domingo
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
@@ -37,7 +43,31 @@ const MapComponent = ({
     longitudeDelta: 0.08,
   };
 
-  // 🗺️ FORZAR zoom a Santo Domingo después de montar (solo si NO es tracking NI interactive)
+  // Convertir coordenadas a posición de pantalla
+  const updateScreenPositions = async () => {
+    if (!mapRef.current || !trackingMode) return;
+    
+    try {
+      if (userLocation?.latitude && userLocation?.longitude) {
+        const userPoint = await mapRef.current.pointForCoordinate({
+          latitude: Number(userLocation.latitude),
+          longitude: Number(userLocation.longitude),
+        });
+        setUserScreenPos(userPoint);
+      }
+      
+      if (driverLocation?.latitude && driverLocation?.longitude) {
+        const driverPoint = await mapRef.current.pointForCoordinate({
+          latitude: Number(driverLocation.latitude),
+          longitude: Number(driverLocation.longitude),
+        });
+        setDriverScreenPos(driverPoint);
+      }
+    } catch (e) {
+      console.log('Error calculando posiciones:', e);
+    }
+  };
+
   useEffect(() => {
     if (mapRef.current && !mapInitialized && !trackingMode && !interactive) {
       setTimeout(() => {
@@ -50,7 +80,6 @@ const MapComponent = ({
     }
   }, [mapInitialized, trackingMode, interactive]);
 
-  // 📍 Hacer zoom automático a la ubicación del usuario cuando cambia (solo si NO es tracking NI interactive)
   useEffect(() => {
     if (mapRef.current && userLocation && mapInitialized && !trackingMode && !interactive) {
       const newRegion = {
@@ -64,15 +93,10 @@ const MapComponent = ({
     }
   }, [userLocation, mapInitialized, trackingMode, interactive]);
 
-  // 📍 Centrar mapa en destination cuando esta en modo interactivo (picker)
   useEffect(() => {
     if (interactive && destination && destination.latitude && destination.longitude) {
-      console.log("🎯 PICKER ABIERTO - Forzando centrado en:", destination.latitude, destination.longitude);
-      
-      // Múltiples intentos para asegurar que funcione
       const timer1 = setTimeout(() => {
         if (mapRef.current) {
-          console.log("🎯 Intento 1 - animateToRegion");
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
             longitude: Number(destination.longitude),
@@ -84,7 +108,6 @@ const MapComponent = ({
 
       const timer2 = setTimeout(() => {
         if (mapRef.current) {
-          console.log("🎯 Intento 2 - animateToRegion");
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
             longitude: Number(destination.longitude),
@@ -101,18 +124,31 @@ const MapComponent = ({
     }
   }, [interactive, destination]);
 
-  // 🚗 TRACKING MODE: Ajustar mapa para mostrar conductor y usuario
   useEffect(() => {
-    if (trackingMode && mapRef.current && driverLocation && userLocation) {
-      const coordinates = [
-        { latitude: userLocation.latitude, longitude: userLocation.longitude },
-        { latitude: driverLocation.latitude, longitude: driverLocation.longitude }
-      ];
-      
-      mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
-        animated: true
-      });
+    if (trackingMode && mapRef.current) {
+      if (driverLocation && driverLocation.latitude && userLocation && userLocation.latitude) {
+        console.log('🚗 Centrando en conductor:', driverLocation.latitude, driverLocation.longitude);
+        
+        const coordinates = [
+          { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
+          { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
+        ];
+        
+        mapRef.current.fitToCoordinates(coordinates, {
+          edgePadding: { top: 100, right: 50, bottom: 100, left: 50 },
+          animated: true
+        });
+        
+        // Actualizar posiciones después de animar
+        setTimeout(updateScreenPositions, 500);
+      } else if (userLocation) {
+        mapRef.current.animateToRegion({
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        }, 300);
+      }
     }
   }, [driverLocation, trackingMode, userLocation]);
 
@@ -121,15 +157,15 @@ const MapComponent = ({
     longitude: userLocation?.longitude || -69.9312,
   };
 
-  // 📍 Guardar región actual cuando el mapa se mueve
   const handleRegionChangeComplete = (region) => {
     setCurrentRegion(region);
+    if (trackingMode) {
+      updateScreenPositions();
+    }
   };
 
-  // 👆 Detectar inicio de toque
   const handleTouchStart = (evt) => {
     if (!interactive) return;
-    
     const touches = evt.nativeEvent.touches;
     touchStartData.current = {
       x: touches[0]?.pageX || 0,
@@ -139,16 +175,10 @@ const MapComponent = ({
     };
   };
 
-  // 👆 Detectar fin de toque y procesar tap
   const handleTouchEnd = async (evt) => {
     if (!interactive || !onMapPress) return;
-    
     const { x, y, time, count } = touchStartData.current;
-    
-    // Si hubo más de un dedo, NO es tap (es zoom)
-    if (count > 1) {
-      return;
-    }
+    if (count > 1) return;
     
     const endX = evt.nativeEvent.pageX;
     const endY = evt.nativeEvent.pageY;
@@ -156,45 +186,26 @@ const MapComponent = ({
     const dx = Math.abs(endX - x);
     const dy = Math.abs(endY - y);
     
-    // Es TAP si: 1 dedo, poco movimiento, poco tiempo
     if (dx < 15 && dy < 15 && elapsed < 300) {
-      console.log('👆 TAP DETECTADO!');
-      
-      // Calcular locationX/Y relativo al mapa
       const locationX = evt.nativeEvent.locationX;
       const locationY = evt.nativeEvent.locationY;
       
-      console.log('📍 Procesando tap en:', locationX, locationY);
-      
-      // Usar coordinateForPoint del MapView
       if (mapRef.current) {
         try {
-          const coordinate = await mapRef.current.coordinateForPoint({
-            x: locationX,
-            y: locationY,
-          });
-          
+          const coordinate = await mapRef.current.coordinateForPoint({ x: locationX, y: locationY });
           if (coordinate && coordinate.latitude && coordinate.longitude) {
-            console.log('📍 PIN ROJO - Coordenadas precisas:', coordinate);
             onMapPress(coordinate);
             return;
           }
-        } catch (error) {
-          console.log('⚠️ coordinateForPoint falló:', error.message);
-        }
+        } catch (error) {}
       }
       
-      // Fallback: cálculo manual
       const region = currentRegion || santodomingo;
       const mapWidth = SCREEN_WIDTH;
       const mapHeight = SCREEN_HEIGHT * 0.55;
-      
       const lng = region.longitude + (locationX / mapWidth - 0.5) * region.longitudeDelta;
       const lat = region.latitude - (locationY / mapHeight - 0.5) * region.latitudeDelta;
-      
-      const coordinate = { latitude: lat, longitude: lng };
-      console.log('📍 PIN ROJO - Coordenadas calculadas:', coordinate);
-      onMapPress(coordinate);
+      onMapPress({ latitude: lat, longitude: lng });
     }
   };
 
@@ -223,17 +234,17 @@ const MapComponent = ({
         rotateEnabled={true}
         moveOnMarkerPress={false}
         loadingEnabled={true}
-        onMapReady={() => setMapReady(true)}
+        onMapReady={() => {
+          setMapReady(true);
+          setTimeout(updateScreenPositions, 500);
+        }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPress={interactive ? (event) => {
           const { latitude, longitude } = event.nativeEvent.coordinate;
-          console.log('🔴 PIN ROJO - Tap en mapa:', latitude, longitude);
-          if (onMapPress) {
-            onMapPress({ latitude, longitude });
-          }
+          if (onMapPress) onMapPress({ latitude, longitude });
         } : undefined}
       >
-        {/* Marcador del Usuario - Modo Normal (azul standard) */}
+        {/* Marcador del Usuario - Modo Normal */}
         {!trackingMode && !interactive && (
           <Marker
             coordinate={defaultUserLocation}
@@ -243,35 +254,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* Marcador del Usuario - Modo Tracking */}
-        {trackingMode && userLocation && userLocation.latitude && userLocation.longitude && (
-          <Marker
-            coordinate={{
-              latitude: Number(userLocation.latitude),
-              longitude: Number(userLocation.longitude),
-            }}
-            title="📍 Tu ubicación"
-            description={userLocation.address || "Punto de recogida"}
-            pinColor="blue"
-            onPress={() => console.log('📍 Marker USUARIO tocado')}
-          />
-        )}
-
-        {/* Marcador del Conductor - Modo Tracking */}
-        {trackingMode && driverLocation && driverLocation.latitude && driverLocation.longitude && (
-          <Marker
-            coordinate={{
-              latitude: Number(driverLocation.latitude),
-              longitude: Number(driverLocation.longitude)
-            }}
-            title={driverInfo?.name || '🚗 Conductor'}
-            description={driverInfo?.car || 'En camino'}
-            pinColor="green"
-            onPress={() => console.log('🚗 Marker CONDUCTOR tocado')}
-          />
-        )}
-
-        {/* Marcador del Conductor - Modo Normal (verde standard) */}
+        {/* Marcador del Conductor - Modo Normal */}
         {!trackingMode && showDriverLocation && driverInfo && driverInfo.currentLocation && (
           <Marker
             coordinate={{
@@ -288,8 +271,8 @@ const MapComponent = ({
         {trackingMode && driverLocation && userLocation && (
           <Polyline
             coordinates={[
-              { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
-              { latitude: userLocation.latitude, longitude: userLocation.longitude }
+              { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
+              { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
             ]}
             strokeColor="#007AFF"
             strokeWidth={4}
@@ -298,7 +281,35 @@ const MapComponent = ({
         )}
       </MapView>
 
-      {/* PIN ROJO FIJO EN EL CENTRO - Solo en modo interactive */}
+      {/* 🔴 OVERLAY: Marcador Usuario - Tracking Mode */}
+      {trackingMode && userScreenPos && (
+        <View 
+          style={[
+            styles.overlayMarker, 
+            { left: userScreenPos.x - 12, top: userScreenPos.y - 12 }
+          ]} 
+          pointerEvents="none"
+        >
+          <View style={styles.userDot} />
+        </View>
+      )}
+
+      {/* 🟢 OVERLAY: Marcador Conductor - Tracking Mode */}
+      {trackingMode && driverScreenPos && (
+        <View 
+          style={[
+            styles.overlayMarker, 
+            { left: driverScreenPos.x - 14, top: driverScreenPos.y - 14 }
+          ]} 
+          pointerEvents="none"
+        >
+          <View style={styles.driverDot}>
+            <Text style={styles.carEmoji}>🚗</Text>
+          </View>
+        </View>
+      )}
+
+      {/* PIN FIJO EN EL CENTRO - Solo modo picker */}
       {interactive && (
         <View style={styles.centerPinContainer} pointerEvents="none">
           <View style={styles.centerPin} />
@@ -316,64 +327,32 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  // Marcador del usuario (punto azul) - Tracking Mode
-  userMarker: {
+  overlayMarker: {
+    position: 'absolute',
+    zIndex: 999,
+  },
+  userDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF0000',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    elevation: 5,
+  },
+  driverDot: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0, 122, 255, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-  },
-  userMarkerInner: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#007AFF',
-  },
-  // Marcador del conductor (carro) - Tracking Mode
-  driverMarker: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  driverMarkerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     backgroundColor: '#34C759',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  carIcon: {
-    width: 26,
-    height: 18,
-    backgroundColor: '#fff',
-    borderRadius: 5,
-  },
-  carMarker: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
     elevation: 5,
   },
   carEmoji: {
-    fontSize: 24,
+    fontSize: 14,
   },
   centerPinContainer: {
     position: 'absolute',
