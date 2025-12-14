@@ -260,4 +260,36 @@ router.post('/location', async (req, res) => {
     }
 });
 
+// ============================================
+// OBTENER UBICACIÓN DEL CONDUCTOR
+// ============================================
+router.get('/:id/location', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await db.query(
+            `SELECT id, name, current_latitude as latitude, current_longitude as longitude 
+             FROM drivers WHERE id = $1`,
+            [id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        
+        const driver = result.rows[0];
+        
+        res.json({
+            success: true,
+            driverId: driver.id,
+            name: driver.name,
+            latitude: driver.latitude,
+            longitude: driver.longitude
+        });
+    } catch (error) {
+        console.error('Error obteniendo ubicación:', error);
+        res.status(500).json({ error: 'Error obteniendo ubicación' });
+    }
+});
+
 module.exports = router;
