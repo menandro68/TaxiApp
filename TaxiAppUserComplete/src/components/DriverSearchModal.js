@@ -124,7 +124,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
       <View style={styles.searchInfo}>
         <Icon name="location" size={16} color="#666" />
         <Text style={styles.searchInfoText}>
-          Radio de búsqueda: {searchProgress.radius} km
+         Radio de búsqueda: {searchProgress.radius < 1 ? `${searchProgress.radius * 1000}m` : `${searchProgress.radius}km`}
         </Text>
       </View>
 

@@ -3154,7 +3154,7 @@ const renderLoadingScreen = () => {
     visible={true}
     onClose={() => setSearchModalVisible(false)}
     onDriverFound={handleDriverFound}
-    userLocation={userLocation}
+  userLocation={tripRequest?.origin || userLocation}
   />
       )}
         {/* Modal de búsqueda de conductores */}

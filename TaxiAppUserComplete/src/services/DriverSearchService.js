@@ -4,7 +4,7 @@ import { getBackendUrl } from '../config/config';
 
 class DriverSearchService {
   constructor() {
-    this.searchRadii = [3, 5, 8, 12, 20]; // Radios en km: 3km, 5km, 8km, 12km, 20km
+    this.searchRadii = [0.5, 1, 1.5, 2.5, 3]; // Radios: 500m, 1km, 1.5km, 2.5km, 3km // Radios en km: 3km, 5km, 8km, 12km, 20km
     this.maxAttempts = 5;
     this.searchDelay = 2000; // 2 segundos entre búsquedas
   }
@@ -40,7 +40,7 @@ class DriverSearchService {
           attempt: attempt + 1,
           totalAttempts: this.maxAttempts,
           radius,
-          message: `Buscando en ${radius}km...`
+          message: radius < 1 ? `Buscando en ${radius * 1000}m...` : `Buscando en ${radius}km...`
         });
       }
 
