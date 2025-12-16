@@ -30,6 +30,7 @@ import PenaltyService from './PenaltyService';
 import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
+import Sound from 'react-native-sound';
 
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
@@ -159,10 +160,23 @@ export default function DriverApp({ navigation }) {
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
       
     // 🔊 NUEVO: Reproducir voz "Nuevo Servicio" 5 veces
-      const Speech = require('react-native-tts').default;
-      Speech.setDefaultLanguage('es-ES');
-      Speech.setDefaultRate(0.5);
-      Speech.speak('Nuevo Servicio. Nuevo Servicio. Nuevo Servicio. Nuevo Servicio. Nuevo Servicio.');
+Sound.setCategory('Playback');
+      const moneySound = new Sound('money_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
+        if (!error) {
+          let playCount = 0;
+          const playSound = () => {
+            if (playCount < 7) {
+              playCount++;
+              moneySound.play((success) => {
+                if (success) {
+                  playSound();
+                }
+              });
+            }
+          };
+          playSound();
+        }
+      });
     };
     // Solicitar permisos de ubicación
     requestLocationPermissions();
