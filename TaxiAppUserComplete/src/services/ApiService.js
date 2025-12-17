@@ -15,6 +15,8 @@ import { getBackendUrl } from '../config/config.js';
    console.log('🔴 [ApiService] Backend URL:', backendUrl);
     this.BASE_URL = backendUrl;
    console.log('🔴 [ApiService] BASE_URL:', this.BASE_URL);
+    this.remoteConfig = null;
+    this.loadRemoteConfig();
     this.token = null;
     this.refreshToken = null;
     this.isRefreshing = false;
@@ -26,6 +28,18 @@ import { getBackendUrl } from '../config/config.js';
     
     // Inicializar token al crear la instancia
     this.initializeTokens();
+    
+    // Configuración por defecto (fallback)
+    this.DEFAULT_CONFIG = {
+      api_url: 'https://web-production-99844.up.railway.app/api',
+      socket_url: 'wss://web-production-99844.up.railway.app',
+      version: '1.0.0',
+      features: {
+        push_notifications: true,
+        real_time_tracking: true,
+        surge_pricing: true
+      }
+    };
   }
 
   // ========================================
@@ -582,6 +596,58 @@ import { getBackendUrl } from '../config/config.js';
       console.error('Error en batch request:', error);
       throw error;
     }
+  }
+
+  // ========================================
+  // CONFIGURACIÓN REMOTA
+  // ========================================
+
+  async loadRemoteConfig() {
+    const MAX_RETRIES = 3;
+    
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`📡 Cargando configuración remota (intento ${attempt}/${MAX_RETRIES})...`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('https://web-production-99844.up.railway.app/api/config', {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          this.remoteConfig = await response.json();
+          await AsyncStorage.setItem('remote_config_cache', JSON.stringify(this.remoteConfig));
+          console.log('✅ Configuración remota cargada:', this.remoteConfig);
+          return;
+        }
+      } catch (error) {
+        console.log(`⚠️ Intento ${attempt} falló:`, error.message);
+        
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+        }
+      }
+    }
+    
+    // Intentar cargar desde cache
+    try {
+      const cached = await AsyncStorage.getItem('remote_config_cache');
+      if (cached) {
+        this.remoteConfig = JSON.parse(cached);
+        console.log('📦 Usando configuración desde cache');
+        return;
+      }
+    } catch (cacheError) {
+      console.log('⚠️ Error leyendo cache:', cacheError);
+    }
+    
+    // Último recurso: fallback
+    this.remoteConfig = this.DEFAULT_CONFIG;
+    console.log('🔧 Usando configuración por defecto (fallback)');
   }
 }
 
