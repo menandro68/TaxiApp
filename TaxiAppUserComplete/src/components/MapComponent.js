@@ -26,77 +26,133 @@ const MapComponent = ({
   }
   
   const mapRef = useRef(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
   const [currentRegion, setCurrentRegion] = useState(null);
-  const [mapReady, setMapReady] = useState(false);
-  
-  // Posiciones de pantalla para overlay
-  const [userScreenPos, setUserScreenPos] = useState(null);
-  const [driverScreenPos, setDriverScreenPos] = useState(null);
-  
   const touchStartData = useRef({ x: 0, y: 0, time: 0, count: 0 });
+  
+  // Estados para overlay markers (solución Legacy Architecture)
+  const [userMarkerPos, setUserMarkerPos] = useState(null);
+  const [driverMarkerPos, setDriverMarkerPos] = useState(null);
+  const [mapLayout, setMapLayout] = useState({ width: SCREEN_WIDTH, height: 300 });
 
+  // ✅ REGIÓN SANTO DOMINGO - SIEMPRE (deltas 0.15 que FUNCIONABAN)
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
-    latitudeDelta: 0.08,
-    longitudeDelta: 0.08,
+    latitudeDelta: 0.15,
+    longitudeDelta: 0.15,
   };
 
-  // Convertir coordenadas a posición de pantalla
-  const updateScreenPositions = async () => {
-    if (!mapRef.current || !trackingMode) return;
+  // Función para convertir coordenadas a posición de pantalla
+  const coordToPixel = (coord, region, layout) => {
+    if (!coord || !region || !layout) return null;
     
-    try {
-      if (userLocation?.latitude && userLocation?.longitude) {
-        const userPoint = await mapRef.current.pointForCoordinate({
-          latitude: Number(userLocation.latitude),
-          longitude: Number(userLocation.longitude),
-        });
-        setUserScreenPos(userPoint);
-      }
-      
-      if (driverLocation?.latitude && driverLocation?.longitude) {
-        const driverPoint = await mapRef.current.pointForCoordinate({
-          latitude: Number(driverLocation.latitude),
-          longitude: Number(driverLocation.longitude),
-        });
-        setDriverScreenPos(driverPoint);
-      }
-    } catch (e) {
-      console.log('Error calculando posiciones:', e);
+    const { latitude, longitude } = coord;
+    const { width, height } = layout;
+    
+    // Calcular posición relativa
+    const x = ((longitude - region.longitude) / region.longitudeDelta + 0.5) * width;
+    const y = ((region.latitude - latitude) / region.latitudeDelta + 0.5) * height;
+    
+    // Solo retornar si está dentro del viewport
+    if (x >= -20 && x <= width + 20 && y >= -20 && y <= height + 20) {
+      return { x, y };
     }
+    return null;
   };
 
+  // Actualizar posiciones de overlay markers cuando cambia la región o ubicaciones
   useEffect(() => {
-    if (mapRef.current && !mapInitialized && !trackingMode && !interactive) {
-      setTimeout(() => {
-        mapRef.current.animateToRegion(santodomingo, 800);
-        setCurrentRegion(santodomingo);
-        setMapInitialized(true);
-      }, 500);
-    } else if (trackingMode || interactive) {
-      setMapInitialized(true);
-    }
-  }, [mapInitialized, trackingMode, interactive]);
-
-  useEffect(() => {
-    if (mapRef.current && userLocation && mapInitialized && !trackingMode && !interactive) {
-      const newRegion = {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
+    console.log('🎯 OVERLAY useEffect - trackingMode:', trackingMode, 'currentRegion:', !!currentRegion);
+    
+    if (!trackingMode) return;
+    
+    // Usar región actual o calcular una basada en las ubicaciones
+    let region = currentRegion;
+    if (!region && userLocation?.latitude) {
+      region = {
+        latitude: Number(userLocation.latitude),
+        longitude: Number(userLocation.longitude),
         latitudeDelta: 0.08,
         longitudeDelta: 0.08,
       };
-      mapRef.current.animateToRegion(newRegion, 500);
-      setCurrentRegion(newRegion);
     }
-  }, [userLocation, mapInitialized, trackingMode, interactive]);
+    
+    if (!region) {
+      console.log('🎯 OVERLAY - No hay región disponible');
+      return;
+    }
+    
+    console.log('🎯 OVERLAY - Región:', region.latitude, region.longitude, 'Delta:', region.latitudeDelta);
+    console.log('🎯 OVERLAY - mapLayout:', mapLayout.width, 'x', mapLayout.height);
+    
+    if (userLocation?.latitude) {
+      const pos = coordToPixel(
+        { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) },
+        region,
+        mapLayout
+      );
+      console.log('🔴 OVERLAY userMarkerPos:', pos);
+      setUserMarkerPos(pos);
+    }
+    
+    if (driverLocation?.latitude) {
+      const pos = coordToPixel(
+        { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
+        region,
+        mapLayout
+      );
+      console.log('🟢 OVERLAY driverMarkerPos:', pos);
+      setDriverMarkerPos(pos);
+    }
+  }, [trackingMode, currentRegion, userLocation, driverLocation, mapLayout]);
 
+  // ✅ SOLUCIÓN: useEffect con setTimeout DIRECTO - NO depende de onMapReady
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        console.log('📍 FORZANDO animación a Santo Domingo (500ms después de montar)');
+        mapRef.current.animateToRegion(santodomingo, 800);
+        setCurrentRegion(santodomingo);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ✅ Segundo intento después de 1.5s (backup)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current && !trackingMode && !interactive) {
+        console.log('📍 Backup: Segundo animateToRegion a Santo Domingo');
+        mapRef.current.animateToRegion(santodomingo, 500);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [trackingMode, interactive]);
+
+  // ✅ Animar a userLocation cuando esté disponible
+  useEffect(() => {
+    if (mapRef.current && userLocation && userLocation.latitude && !trackingMode && !interactive) {
+      const timer = setTimeout(() => {
+        const newRegion = {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        };
+        console.log('📍 Animando a ubicación del usuario:', userLocation.latitude, userLocation.longitude);
+        mapRef.current.animateToRegion(newRegion, 500);
+        setCurrentRegion(newRegion);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [userLocation, trackingMode, interactive]);
+
+  // ✅ Modo interactive: animar al destino
   useEffect(() => {
     if (interactive && destination && destination.latitude && destination.longitude) {
       const timer1 = setTimeout(() => {
         if (mapRef.current) {
+          console.log('📍 Animando a destino (interactive):', destination.latitude, destination.longitude);
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
             longitude: Number(destination.longitude),
@@ -124,31 +180,43 @@ const MapComponent = ({
     }
   }, [interactive, destination]);
 
+  // ✅ Modo tracking: centrar entre conductor y usuario
   useEffect(() => {
     if (trackingMode && mapRef.current) {
-      if (driverLocation && driverLocation.latitude && userLocation && userLocation.latitude) {
-        console.log('🚗 Centrando en conductor:', driverLocation.latitude, driverLocation.longitude);
-        
-        const coordinates = [
-          { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
-          { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
-        ];
-        
-        mapRef.current.fitToCoordinates(coordinates, {
-          edgePadding: { top: 100, right: 50, bottom: 100, left: 50 },
-          animated: true
-        });
-        
-        // Actualizar posiciones después de animar
-        setTimeout(updateScreenPositions, 500);
-      } else if (userLocation) {
-        mapRef.current.animateToRegion({
-          latitude: userLocation.latitude,
-          longitude: userLocation.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        }, 300);
-      }
+      const timer = setTimeout(() => {
+        if (driverLocation && driverLocation.latitude && userLocation && userLocation.latitude) {
+          console.log('🚗 Centrando entre conductor y usuario');
+          
+          const midLat = (Number(driverLocation.latitude) + Number(userLocation.latitude)) / 2;
+          const midLng = (Number(driverLocation.longitude) + Number(userLocation.longitude)) / 2;
+          
+          const newRegion = {
+            latitude: midLat,
+            longitude: midLng,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          };
+          
+          mapRef.current.animateToRegion(newRegion, 300);
+          setCurrentRegion(newRegion);  // ✅ Actualizar estado para overlays
+        } else if (userLocation && userLocation.latitude) {
+          console.log('📍 Centrando en usuario (tracking):', userLocation.latitude, userLocation.longitude);
+          const newRegion = {
+            latitude: Number(userLocation.latitude),
+            longitude: Number(userLocation.longitude),
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          };
+          mapRef.current.animateToRegion(newRegion, 300);
+          setCurrentRegion(newRegion);  // ✅ Actualizar estado para overlays
+        } else {
+          // Fallback a Santo Domingo si no hay ubicaciones
+          console.log('📍 Tracking: Fallback a Santo Domingo');
+          mapRef.current.animateToRegion(santodomingo, 300);
+          setCurrentRegion(santodomingo);
+        }
+      }, 800);
+      return () => clearTimeout(timer);
     }
   }, [driverLocation, trackingMode, userLocation]);
 
@@ -159,9 +227,6 @@ const MapComponent = ({
 
   const handleRegionChangeComplete = (region) => {
     setCurrentRegion(region);
-    if (trackingMode) {
-      updateScreenPositions();
-    }
   };
 
   const handleTouchStart = (evt) => {
@@ -209,11 +274,26 @@ const MapComponent = ({
     }
   };
 
+  // Debug para tracking
+  if (trackingMode) {
+    console.log('🔍 DEBUG MARKERS:');
+    console.log('  - trackingMode:', trackingMode);
+    console.log('  - userLocation válido:', !!(userLocation && userLocation.latitude));
+    console.log('  - driverLocation válido:', !!(driverLocation && driverLocation.latitude));
+    console.log('  - userMarkerPos:', userMarkerPos);
+    console.log('  - driverMarkerPos:', driverMarkerPos);
+    console.log('  - currentRegion:', currentRegion ? 'SET' : 'NULL');
+  }
+
   return (
     <View 
       style={styles.container}
       onTouchStart={interactive ? handleTouchStart : undefined}
       onTouchEnd={interactive ? handleTouchEnd : undefined}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setMapLayout({ width, height });
+      }}
     >
       <MapView
         ref={mapRef}
@@ -234,10 +314,6 @@ const MapComponent = ({
         rotateEnabled={true}
         moveOnMarkerPress={false}
         loadingEnabled={true}
-        onMapReady={() => {
-          setMapReady(true);
-          setTimeout(updateScreenPositions, 500);
-        }}
         onRegionChangeComplete={handleRegionChangeComplete}
         onPress={interactive ? (event) => {
           const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -267,8 +343,32 @@ const MapComponent = ({
           />
         )}
 
+        {/* 🔴 MARKER: Punto de recogida - Tracking Mode */}
+        {trackingMode && userLocation && userLocation.latitude && (
+          <Marker
+            coordinate={{
+              latitude: Number(userLocation.latitude),
+              longitude: Number(userLocation.longitude),
+            }}
+            title="Punto de recogida"
+            pinColor="red"
+          />
+        )}
+
+        {/* 🟢 MARKER: Conductor - Tracking Mode */}
+        {trackingMode && driverLocation && driverLocation.latitude && (
+          <Marker
+            coordinate={{
+              latitude: Number(driverLocation.latitude),
+              longitude: Number(driverLocation.longitude),
+            }}
+            title="Conductor"
+            pinColor="green"
+          />
+        )}
+
         {/* Línea de ruta entre conductor y usuario (solo tracking) */}
-        {trackingMode && driverLocation && userLocation && (
+        {trackingMode && driverLocation && userLocation && driverLocation.latitude && userLocation.latitude && (
           <Polyline
             coordinates={[
               { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
@@ -281,30 +381,36 @@ const MapComponent = ({
         )}
       </MapView>
 
-      {/* 🔴 OVERLAY: Marcador Usuario - Tracking Mode */}
-      {trackingMode && userScreenPos && (
+      {/* 🟢 CONDUCTOR - CARRITO */}
+      {trackingMode && driverMarkerPos && (
         <View 
           style={[
-            styles.overlayMarker, 
-            { left: userScreenPos.x - 12, top: userScreenPos.y - 12 }
+            styles.overlayMarker,
+            { 
+              left: driverMarkerPos.x - 16,
+              top: driverMarkerPos.y - 16,
+            }
           ]} 
           pointerEvents="none"
         >
-          <View style={styles.userDot} />
+          <Text style={styles.carEmoji}>🚗</Text>
         </View>
       )}
 
-      {/* 🟢 OVERLAY: Marcador Conductor - Tracking Mode */}
-      {trackingMode && driverScreenPos && (
+      {/* 🔴 USUARIO DESPUÉS (encima) */}
+      {trackingMode && userMarkerPos && (
         <View 
           style={[
-            styles.overlayMarker, 
-            { left: driverScreenPos.x - 14, top: driverScreenPos.y - 14 }
+            styles.overlayMarker,
+            { 
+              left: userMarkerPos.x - 12,
+              top: userMarkerPos.y - 12,
+            }
           ]} 
           pointerEvents="none"
         >
-          <View style={styles.driverDot}>
-            <Text style={styles.carEmoji}>🚗</Text>
+          <View style={styles.userMarker}>
+            <View style={styles.userMarkerInner} />
           </View>
         </View>
       )}
@@ -326,33 +432,6 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-  },
-  overlayMarker: {
-    position: 'absolute',
-    zIndex: 999,
-  },
-  userDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FF0000',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    elevation: 5,
-  },
-  driverDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#34C759',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
-  carEmoji: {
-    fontSize: 14,
   },
   centerPinContainer: {
     position: 'absolute',
@@ -379,6 +458,59 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'rgba(0,0,0,0.3)',
     marginTop: 22,
+  },
+  // Estilos para overlay markers (Legacy Architecture fix) - MÁS PEQUEÑOS
+  overlayMarker: {
+    position: 'absolute',
+    zIndex: 1000,
+  },
+  userMarker: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF0000',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 15,
+  },
+  userMarkerInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  driverMarker: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#00AA00',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 10,
+  },
+  carIcon: {
+    width: 12,
+    height: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 2,
+  },
+  carEmoji: {
+    fontSize: 24,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });
 
