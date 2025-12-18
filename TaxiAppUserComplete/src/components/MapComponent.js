@@ -387,8 +387,8 @@ const MapComponent = ({
           style={[
             styles.overlayMarker,
             { 
-              left: driverMarkerPos.x - 16,
-              top: driverMarkerPos.y - 16,
+              left: driverMarkerPos.x - 10,
+              top: driverMarkerPos.y - 10,
             }
           ]} 
           pointerEvents="none"
@@ -403,8 +403,8 @@ const MapComponent = ({
           style={[
             styles.overlayMarker,
             { 
-              left: userMarkerPos.x - 12,
-              top: userMarkerPos.y - 12,
+              left: userMarkerPos.x - 8,
+              top: userMarkerPos.y - 8,
             }
           ]} 
           pointerEvents="none"
@@ -465,9 +465,9 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   userMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
     backgroundColor: '#FF0000',
     borderWidth: 2,
     borderColor: '#FFFFFF',
@@ -480,9 +480,9 @@ const styles = StyleSheet.create({
     elevation: 15,
   },
   userMarkerInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#FFFFFF',
   },
   driverMarker: {
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   carEmoji: {
-    fontSize: 24,
+    fontSize: 17,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
