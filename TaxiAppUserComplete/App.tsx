@@ -3384,15 +3384,24 @@ const renderLoadingScreen = () => {
 <ThirdPartyRide
   visible={showThirdPartyModal}
   onClose={() => setShowThirdPartyModal(false)}
-  onConfirm={(rideData) => {
+onConfirm={(rideData) => {
+    // Generar clave automática para viaje de tercero
+  const generateTripCode = () => {
+      return Math.floor(1000 + Math.random() * 9000).toString();
+    };
+    
+    if (rideData.isForOther) {
+      const tripCode = generateTripCode();
+      rideData.tripCode = tripCode;
+    }
+    
     setThirdPartyInfo(rideData);
     setShowThirdPartyModal(false);
-    
     if (rideData.isForOther) {
       Alert.alert(
         'Viaje para tercero confirmado',
-        `El conductor contactará a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}`
-    );
+        `El conductor contactará a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}\n\n🔑 Clave del viaje: ${rideData.tripCode}\n\nComparta esta clave con el pasajero para identificar el viaje.`
+      );
     }
   }}
 />
