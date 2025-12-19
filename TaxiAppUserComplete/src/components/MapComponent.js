@@ -426,6 +426,33 @@ const MapComponent = ({
         </View>
       )}
 
+      {/* 📍 LÍNEA DE RUTA - Overlay CORREGIDO */}
+      {trackingMode && userMarkerPos && driverMarkerPos && (() => {
+        const dx = userMarkerPos.x - driverMarkerPos.x;
+        const dy = userMarkerPos.y - driverMarkerPos.y;
+        const lineLength = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const centerX = (driverMarkerPos.x + userMarkerPos.x) / 2;
+        const centerY = (driverMarkerPos.y + userMarkerPos.y) / 2;
+        
+        return (
+          <View 
+            style={{
+              position: 'absolute',
+              left: centerX - lineLength / 2,
+              top: centerY - 2,
+              width: lineLength,
+              height: 4,
+              backgroundColor: '#4285F4',
+              borderRadius: 2,
+              zIndex: 998,
+              transform: [{ rotate: `${angle}deg` }],
+            }}
+            pointerEvents="none"
+          />
+        );
+      })()}
+
       {/* PIN FIJO EN EL CENTRO - Solo modo picker */}
       {interactive && (
         <View style={styles.centerPinContainer} pointerEvents="none">
@@ -522,6 +549,10 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+  },
+  routeLine: {
+    position: 'absolute',
+    zIndex: 999,
   },
 });
 
