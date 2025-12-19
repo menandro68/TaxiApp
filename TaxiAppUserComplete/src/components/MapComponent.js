@@ -369,15 +369,26 @@ const MapComponent = ({
 
         {/* Línea de ruta entre conductor y usuario (solo tracking) */}
         {trackingMode && driverLocation && userLocation && driverLocation.latitude && userLocation.latitude && (
-          <Polyline
-            coordinates={[
-              { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
-              { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
-            ]}
-            strokeColor="#007AFF"
-            strokeWidth={4}
-            lineDashPattern={[10, 5]}
-          />
+          <>
+            {/* Sombra de la línea */}
+            <Polyline
+              coordinates={[
+                { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
+                { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
+              ]}
+              strokeColor="rgba(0,0,0,0.3)"
+              strokeWidth={8}
+            />
+            {/* Línea principal azul */}
+            <Polyline
+              coordinates={[
+                { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
+                { latitude: Number(userLocation.latitude), longitude: Number(userLocation.longitude) }
+              ]}
+              strokeColor="#4285F4"
+              strokeWidth={5}
+            />
+          </>
         )}
       </MapView>
 
