@@ -168,12 +168,15 @@ class DriverTrackingService {
   
   static hasLocationChanged(newLocation) {
     if (!this.lastLocation) return true;
-    
-    const threshold = 0.0001; // ~11 metros
+
+    const threshold = 0.00002; // ~2 metros - más sensible al movimiento
     const latDiff = Math.abs(newLocation.latitude - this.lastLocation.latitude);
     const lngDiff = Math.abs(newLocation.longitude - this.lastLocation.longitude);
+
+    const hasMoved = latDiff > threshold || lngDiff > threshold;
+    console.log(`🚗 Movimiento detectado: ${hasMoved} (diff: ${(latDiff + lngDiff).toFixed(6)})`);
     
-    return latDiff > threshold || lngDiff > threshold;
+    return hasMoved;
   }
 
   // ============================================

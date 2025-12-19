@@ -95,6 +95,50 @@ const CATEGORIES = [
 ];
 
 const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, currentLocation, mode }) => {
+  // Mapbox Geocoding API (GRATIS - 100,000 llamadas/mes)
+const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q';
+  const [mapboxResults, setMapboxResults] = useState([]);
+  const [isSearchingMapbox, setIsSearchingMapbox] = useState(false);
+
+  // Función para buscar en Mapbox Geocoding API
+  const searchMapboxPlaces = async (text) => {
+    if (!text || text.length < 3) {
+      setMapboxResults([]);
+      return;
+    }
+
+    setIsSearchingMapbox(true);
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(text)}.json?access_token=${MAPBOX_ACCESS_TOKEN}&country=do&language=es&limit=5`
+      );
+      const data = await response.json();
+      
+      console.log('📍 Mapbox Geocoding response:', data.features?.length || 0, 'resultados');
+      
+      if (data.features && data.features.length > 0) {
+        const places = data.features.map((feature, index) => ({
+          id: `mapbox-${index}-${Date.now()}`,
+          name: feature.text || feature.place_name.split(',')[0],
+          address: feature.place_name,
+          fullDescription: feature.place_name,
+          coordinates: {
+            lat: feature.center[1],
+            lng: feature.center[0]
+          },
+          isMapboxResult: true
+        }));
+        setMapboxResults(places);
+      } else {
+        setMapboxResults([]);
+      }
+    } catch (error) {
+      console.error('❌ Error buscando en Mapbox:', error);
+      setMapboxResults([]);
+    }
+    setIsSearchingMapbox(false);
+  };
+
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
@@ -134,6 +178,7 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
     
     if (!text.trim()) {
       loadInitialResults();
+      setMapboxResults([]);
       return;
     }
 
@@ -150,11 +195,15 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
     });
     
     setResults(searchResults);
+    
+    // También buscar en Mapbox
+    searchMapboxPlaces(text);
   };
 
   // Calcular distancia (simplificada)
   const calculateDistance = (place) => {
     if (!currentLocation) return null;
+    if (!place.coordinates) return null;
     
     const lat1 = currentLocation.latitude;
     const lon1 = currentLocation.longitude;
@@ -181,14 +230,15 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
     
     onSelectDestination({
       name: place.name,
-      address: place.address,
+      address: place.address || place.fullDescription,
       coordinates: place.coordinates,
-      type: 'poi'
+      type: place.isMapboxResult ? 'mapbox' : 'poi'
     });
     
     // Limpiar y cerrar
     setSearchText('');
     setSelectedCategory('all');
+    setMapboxResults([]);
   };
 
   // Renderizar categorías
@@ -233,7 +283,11 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
         onPress={() => handleSelectPlace(item)}
       >
         <View style={styles.resultIcon}>
-          <Icon name="location" size={24} color="#007AFF" />
+          <Icon 
+            name={item.isMapboxResult ? "globe" : "location"} 
+            size={24} 
+            color={item.isMapboxResult ? "#4264FB" : "#007AFF"} 
+          />
         </View>
         <View style={styles.resultContent}>
           <Text style={styles.resultName}>{item.name}</Text>
@@ -241,11 +295,17 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
           {distance && (
             <Text style={styles.resultDistance}>📍 {distance} km</Text>
           )}
+          {item.isMapboxResult && (
+            <Text style={styles.mapboxBadge}>🗺️ Mapbox</Text>
+          )}
         </View>
         <Icon name="chevron-forward" size={20} color="#999" />
       </TouchableOpacity>
     );
   };
+
+  // Combinar resultados locales y de Mapbox
+  const combinedResults = [...results, ...mapboxResults];
 
   return (
     <Modal
@@ -275,7 +335,10 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
               autoFocus={true}
               placeholderTextColor="#999"
             />
-            {searchText.length > 0 && (
+            {isSearchingMapbox && (
+              <ActivityIndicator size="small" color="#007AFF" />
+            )}
+            {searchText.length > 0 && !isSearchingMapbox && (
               <TouchableOpacity onPress={() => handleSearch('')}>
                 <Icon name="close-circle" size={20} color="#999" />
               </TouchableOpacity>
@@ -304,19 +367,27 @@ const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, curre
             </View>
           )}
 
+          {/* Loading overlay */}
+          {isLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Obteniendo ubicación...</Text>
+            </View>
+          )}
+
           {/* Resultados */}
           <View style={styles.resultsContainer}>
-            {results.length > 0 ? (
+            {combinedResults.length > 0 ? (
               <>
                 <Text style={styles.sectionTitle}>
-                  {searchText ? 'Resultados' : 
+                  {searchText ? `Resultados (${combinedResults.length})` : 
                    selectedCategory === 'all' ? 'Lugares populares' : 
                    CATEGORIES.find(c => c.id === selectedCategory)?.name}
                 </Text>
                 <FlatList
-                  data={results}
+                  data={combinedResults}
                   renderItem={renderResultItem}
-                  keyExtractor={item => item.id}
+                  keyExtractor={(item, index) => item.id || `result-${index}`}
                   showsVerticalScrollIndicator={false}
                   style={styles.resultsList}
                 />
@@ -499,6 +570,12 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '500',
   },
+  mapboxBadge: {
+    fontSize: 11,
+    color: '#4264FB',
+    fontWeight: '500',
+    marginTop: 2,
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -531,6 +608,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
   },
 });
 
