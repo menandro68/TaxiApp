@@ -12,7 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
-  const [isForOther, setIsForOther] = useState(false);
+  const [isForOther, setIsForOther] = useState(true);
   const [passengerName, setPassengerName] = useState('');
   const [passengerPhone, setPassengerPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -57,7 +57,7 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
   };
 
   const resetForm = () => {
-    setIsForOther(false);
+    setIsForOther(true);
     setPassengerName('');
     setPassengerPhone('');
     setNotes('');
@@ -88,29 +88,6 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Opciones */}
             <View style={styles.optionsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  !isForOther && styles.optionSelected
-                ]}
-                onPress={() => setIsForOther(false)}
-              >
-                <Icon 
-                  name="person" 
-                  size={24} 
-                  color={!isForOther ? '#007AFF' : '#666'} 
-                />
-                <Text style={[
-                  styles.optionText,
-                  !isForOther && styles.optionTextSelected
-                ]}>
-                  Para mí
-                </Text>
-                {!isForOther && (
-                  <Icon name="checkmark-circle" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-
               <TouchableOpacity
                 style={[
                   styles.option,
