@@ -235,14 +235,14 @@ router.post('/location', async (req, res) => {
             return res.status(400).json({ error: 'driverId, latitude y longitude son requeridos' });
         }
         
-        console.log(`📍 Actualizando ubicación conductor ${driverId}: ${latitude}, ${longitude}`);
+        console.log(`📍 Actualizando ubicación conductor ${driverId}: ${latitude}, ${longitude}, speed: ${speed}`);
         
         const result = await db.query(
             `UPDATE drivers 
-             SET current_latitude = $1, current_longitude = $2, status = COALESCE($3, status)
-             WHERE id = $4 
-             RETURNING id, name, current_latitude, current_longitude`,
-            [latitude, longitude, status, driverId]
+             SET current_latitude = $1, current_longitude = $2, current_speed = $3, status = COALESCE($4, status)
+             WHERE id = $5 
+             RETURNING id, name, current_latitude, current_longitude, current_speed`,
+            [latitude, longitude, speed || 0, status, driverId]
         );
         
         if (result.rows.length === 0) {
@@ -268,7 +268,7 @@ router.get('/:id/location', async (req, res) => {
         const { id } = req.params;
         
         const result = await db.query(
-            `SELECT id, name, current_latitude as latitude, current_longitude as longitude 
+            `SELECT id, name, current_latitude as latitude, current_longitude as longitude, current_speed as speed 
              FROM drivers WHERE id = $1`,
             [id]
         );
@@ -284,7 +284,8 @@ router.get('/:id/location', async (req, res) => {
             driverId: driver.id,
             name: driver.name,
             latitude: driver.latitude,
-            longitude: driver.longitude
+            longitude: driver.longitude,
+            speed: parseFloat(driver.speed) || 0
         });
     } catch (error) {
         console.error('Error obteniendo ubicación:', error);
