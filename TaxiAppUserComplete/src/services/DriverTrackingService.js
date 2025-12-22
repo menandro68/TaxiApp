@@ -4,6 +4,9 @@ import ApiService from './ApiService';
 // SERVICIO DE TRACKING DEL CONDUCTOR - UBICACIÓN REAL
 // ============================================
 
+// Token de Mapbox para calcular rutas reales
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWJiNXRqdGMwNDJoMnFwdm1tcjdyeXIwIn0.eda5qjsc2FvhEliQLpxBrg';
+
 class DriverTrackingService {
   
   // Variables estáticas para el tracking
@@ -11,6 +14,10 @@ class DriverTrackingService {
   static isTracking = false;
   static driverId = null;
   static lastLocation = null;
+  static movementHistory = [];
+  static cachedETA = null;
+  static lastETAUpdate = null;
+  static lastDriverLocation = null; // Para detectar si el conductor se movió significativamente
   static callbacks = {
     onLocationUpdate: null,
     onArrival: null,
@@ -25,16 +32,15 @@ class DriverTrackingService {
     try {
       console.log('🚗 Iniciando tracking REAL del conductor:', driverId);
 
-      // Guardar datos
       this.driverId = driverId;
       this.callbacks = { ...this.callbacks, ...callbacks };
       this.isTracking = true;
       this.lastLocation = null;
+      this.cachedETA = null;
+      this.lastETAUpdate = null;
+      this.lastDriverLocation = null;
 
-      // Obtener ubicación inicial
-      await this.fetchDriverLocation();
-
-      // Iniciar polling cada 3 segundos
+      await this.fetchDriverLocation(userLocation);
       this.startLocationPolling(userLocation);
 
       return {
@@ -56,12 +62,11 @@ class DriverTrackingService {
   // ============================================
   
   static startLocationPolling(userLocation) {
-    // Limpiar interval anterior si existe
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
     }
 
-    const POLL_INTERVAL = 3000; // 3 segundos
+    const POLL_INTERVAL = 3000;
 
     this.trackingInterval = setInterval(async () => {
       if (!this.isTracking) {
@@ -72,6 +77,72 @@ class DriverTrackingService {
       await this.fetchDriverLocation(userLocation);
 
     }, POLL_INTERVAL);
+  }
+
+  // ============================================
+  // CALCULAR ETA REAL CON MAPBOX DIRECTIONS API
+  // ============================================
+  
+  static async calculateRealETA(driverLat, driverLng, userLat, userLng) {
+    try {
+      // Verificar si necesitamos actualizar el ETA
+      const now = Date.now();
+      const TEN_SECONDS = 10000;
+      
+      // Solo actualizar cada 10 segundos O si el conductor se movió más de 50 metros
+      if (this.cachedETA !== null && this.lastETAUpdate) {
+        const timeSinceUpdate = now - this.lastETAUpdate;
+        
+        if (timeSinceUpdate < TEN_SECONDS) {
+          // Verificar si el conductor se movió significativamente
+          if (this.lastDriverLocation) {
+            const movedDistance = this.calculateDistance(
+              driverLat, driverLng,
+              this.lastDriverLocation.lat, this.lastDriverLocation.lng
+            );
+            
+            // Si no se movió más de 50 metros, usar cache
+            if (movedDistance < 0.05) {
+              console.log('📍 Usando ETA cacheado:', this.cachedETA, 'min');
+              return this.cachedETA;
+            }
+          } else {
+            console.log('📍 Usando ETA cacheado:', this.cachedETA, 'min');
+            return this.cachedETA;
+          }
+        }
+      }
+
+      console.log('🗺️ Calculando ETA real con Mapbox...');
+      
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLng},${driverLat};${userLng},${userLat}?access_token=${MAPBOX_TOKEN}&overview=false`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const durationSeconds = route.duration; // Duración en segundos
+        const durationMinutes = Math.ceil(durationSeconds / 60);
+        const distanceKm = (route.distance / 1000).toFixed(2);
+        
+        console.log(`✅ ETA REAL: ${durationMinutes} min (${distanceKm} km por ruta)`);
+        
+        // Guardar en cache
+        this.cachedETA = durationMinutes;
+        this.lastETAUpdate = now;
+        this.lastDriverLocation = { lat: driverLat, lng: driverLng };
+        
+        return durationMinutes;
+      } else {
+        console.log('⚠️ No se encontró ruta, usando estimación básica');
+        return null;
+      }
+      
+    } catch (error) {
+      console.error('❌ Error calculando ETA con Mapbox:', error);
+      return null;
+    }
   }
 
   // ============================================
@@ -98,16 +169,17 @@ class DriverTrackingService {
 
       const driverLocation = {
         latitude: parseFloat(data.latitude),
-        longitude: parseFloat(data.longitude)
+        longitude: parseFloat(data.longitude),
+        speed: parseFloat(data.speed) || 0
       };
 
       console.log('📍 Ubicación REAL del conductor:', driverLocation);
 
-      // Calcular distancia al usuario si tenemos su ubicación
       let distance = null;
       let estimatedTimeRemaining = null;
       
       if (userLocation?.latitude && userLocation?.longitude) {
+        // Calcular distancia directa (para verificar llegada)
         distance = this.calculateDistance(
           driverLocation.latitude,
           driverLocation.longitude,
@@ -115,10 +187,22 @@ class DriverTrackingService {
           userLocation.longitude
         );
         
-        // Estimar tiempo: ~2 min por km en ciudad
-        estimatedTimeRemaining = Math.max(1, Math.ceil(distance * 2));
+        // Calcular ETA REAL con Mapbox
+        const realETA = await this.calculateRealETA(
+          driverLocation.latitude,
+          driverLocation.longitude,
+          userLocation.latitude,
+          userLocation.longitude
+        );
         
-        console.log(`📏 Distancia al usuario: ${distance.toFixed(2)} km, ETA: ${estimatedTimeRemaining} min`);
+        if (realETA !== null) {
+          estimatedTimeRemaining = realETA;
+        } else {
+          // Fallback: estimación básica si Mapbox falla
+          estimatedTimeRemaining = Math.max(1, Math.ceil(distance * 2.5));
+        }
+        
+        console.log(`📏 Distancia: ${distance.toFixed(2)} km, ETA REAL: ${estimatedTimeRemaining} min`);
 
         // Verificar si llegó (menos de 50 metros)
         if (distance < 0.05) {
@@ -136,7 +220,6 @@ class DriverTrackingService {
         }
       }
 
-      // Crear objeto de actualización
       const driverUpdate = {
         location: driverLocation,
         distance: distance,
@@ -146,10 +229,8 @@ class DriverTrackingService {
         realLocation: true
       };
 
-      // Guardar última ubicación
       this.lastLocation = driverLocation;
 
-      // Ejecutar callback de actualización
       if (this.callbacks.onLocationUpdate) {
         this.callbacks.onLocationUpdate(driverUpdate);
       }
@@ -168,13 +249,23 @@ class DriverTrackingService {
   
   static hasLocationChanged(newLocation) {
     if (!this.lastLocation) return true;
-
-    const threshold = 0.00002; // ~2 metros - más sensible al movimiento
+    
+    const threshold = 0.000005;
     const latDiff = Math.abs(newLocation.latitude - this.lastLocation.latitude);
     const lngDiff = Math.abs(newLocation.longitude - this.lastLocation.longitude);
-
-    const hasMoved = latDiff > threshold || lngDiff > threshold;
-    console.log(`🚗 Movimiento detectado: ${hasMoved} (diff: ${(latDiff + lngDiff).toFixed(6)})`);
+    const movedByDistance = latDiff > threshold || lngDiff > threshold;
+    
+    const movedNow = movedByDistance;
+    
+    this.movementHistory.push(movedNow);
+    if (this.movementHistory.length > 5) {
+      this.movementHistory.shift();
+    }
+    
+    const trueCount = this.movementHistory.filter(m => m === true).length;
+    const hasMoved = trueCount >= 3;
+    
+    console.log(`🚗 Movimiento: ${hasMoved} (actual: ${movedNow}, historial: ${this.movementHistory.join(',')})`);
     
     return hasMoved;
   }
@@ -184,7 +275,7 @@ class DriverTrackingService {
   // ============================================
   
   static calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radio de la Tierra en km
+    const R = 6371;
     const dLat = this.toRad(lat2 - lat1);
     const dLon = this.toRad(lon2 - lon1);
     const a = 
@@ -209,6 +300,10 @@ class DriverTrackingService {
     this.isTracking = false;
     this.driverId = null;
     this.lastLocation = null;
+    this.movementHistory = [];
+    this.cachedETA = null;
+    this.lastETAUpdate = null;
+    this.lastDriverLocation = null;
     
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval);
@@ -224,7 +319,8 @@ class DriverTrackingService {
     return {
       isTracking: this.isTracking,
       driverId: this.driverId,
-      lastLocation: this.lastLocation
+      lastLocation: this.lastLocation,
+      cachedETA: this.cachedETA
     };
   }
 

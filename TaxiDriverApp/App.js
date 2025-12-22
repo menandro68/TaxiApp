@@ -426,7 +426,7 @@ const handleArrivedAtPickup = async () => {
     if (!location) return;
     
     try {
-      console.log('📤 Enviando ubicación al backend:', location.latitude, location.longitude);
+      console.log('📤 Enviando ubicación al backend:', location.latitude, location.longitude, 'speed:', location.speed);
       const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/location', {
         method: 'POST',
         headers: {
@@ -436,9 +436,9 @@ const handleArrivedAtPickup = async () => {
           driverId: loggedDriver?.id || 3,
           latitude: location.latitude,
           longitude: location.longitude,
-          heading: 0,
-          speed: 0,
-          accuracy: 10,
+          heading: location.heading || 0,
+          speed: location.speed || 0,  // ✅ VELOCIDAD REAL DEL GPS
+          accuracy: location.accuracy || 10,
           status: 'online'
         })
       });
@@ -453,49 +453,49 @@ const handleArrivedAtPickup = async () => {
     }
   };
 
-// NUEVA FUNCIÓN: Iniciar tracking de ubicación
-  const startLocationTracking = () => {
-    // Limpiar intervalo anterior si existe
-    if (locationInterval) {
-      clearInterval(locationInterval);
+// NUEVA FUNCIÓN: Iniciar tracking de ubicación con watchPosition
+const startLocationTracking = () => {
+  // Limpiar watch anterior si existe
+  if (locationInterval) {
+    Geolocation.clearWatch(locationInterval);
+  }
+
+  // Usar watchPosition para actualizaciones en tiempo real
+  const watchId = Geolocation.watchPosition(
+    (position) => {
+      const location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        speed: position.coords.speed || 0,
+        heading: position.coords.heading || 0,
+        accuracy: position.coords.accuracy || 10,
+      };
+      console.log('📍 GPS REAL:', location.latitude, location.longitude, 'speed:', location.speed);
+      setUserLocation(location);
+      sendLocationToBackend(location);
+    },
+    (error) => {
+      console.log('❌ Error GPS:', error.message);
+    },
+    {
+      enableHighAccuracy: true,
+      distanceFilter: 5,        // Actualizar cada 5 metros de movimiento
+      interval: 3000,           // Mínimo 3 segundos entre actualizaciones
+      fastestInterval: 2000,    // Máximo cada 2 segundos
     }
+  );
 
-    // Función para obtener y enviar ubicación
-    const getAndSendLocation = () => {
-      Geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          console.log('📍 GPS obtenido:', location.latitude, location.longitude);
-          setUserLocation(location);
-          sendLocationToBackend(location);
-        },
-        (error) => {
-          console.log('❌ Error GPS:', error.message);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-      );
-    };
-
-    // Enviar ubicación inmediatamente
-    getAndSendLocation();
-
-    // Enviar ubicación cada 10 segundos
-    const interval = setInterval(getAndSendLocation, 10000);
-    
-    setLocationInterval(interval);
-    console.log('✅ Tracking de ubicación iniciado');
-  };
+  setLocationInterval(watchId);
+  console.log('✅ Tracking GPS iniciado con watchPosition');
+};
   // NUEVA FUNCIÓN: Detener tracking de ubicación
-  const stopLocationTracking = () => {
-    if (locationInterval) {
-      clearInterval(locationInterval);
-      setLocationInterval(null);
-      console.log('⏹️ Tracking de ubicación detenido');
-    }
-  };
+const stopLocationTracking = () => {
+  if (locationInterval) {
+    Geolocation.clearWatch(locationInterval);
+    setLocationInterval(null);
+    console.log('⏹️ Tracking GPS detenido');
+  }
+};
 
   // Función para iniciar el timer del modal
   const startRequestTimer = () => {
@@ -682,7 +682,7 @@ const acceptTrip = async () => {
         });
       }
       
-      setCurrentTrip({
+setCurrentTrip({
         ...pendingRequest,
         phone: pendingRequest.phone || '+1-809-555-0199'
       });
@@ -703,14 +703,24 @@ const acceptTrip = async () => {
       setCurrentStopIndex(0);
       
       setDriverStatus('busy');
-      setShowRequestModal(false);
-      setPendingRequest(null);
-      setTripPhase('');
       
       // Cambiar automáticamente a la pestaña del mapa
       setActiveTab('map');
       
-      Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${pendingRequest.user}`);
+      // Mostrar info de tercero si aplica (ANTES de limpiar pendingRequest)
+      if (pendingRequest.isForOther && pendingRequest.passengerInfo) {
+        Alert.alert(
+          '✅ Viaje Aceptado',
+          `Te diriges hacia ${pendingRequest.user}\n\n👤 Pasajero real: ${pendingRequest.passengerInfo.name}\n📱 Tel: ${pendingRequest.passengerInfo.phone}\n🔑 Clave: ${pendingRequest.tripCode}\n\n⚠️ Confirma la clave con el pasajero`
+        );
+      } else {
+        Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${pendingRequest.user}`);
+      }
+      
+      // Limpiar DESPUÉS del Alert
+      setShowRequestModal(false);
+      setPendingRequest(null);
+      setTripPhase('');
       
     } catch (error) {
       console.error('❌ Error aceptando viaje:', error);
