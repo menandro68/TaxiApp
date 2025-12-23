@@ -5,7 +5,7 @@ import ApiService from './ApiService';
 // ============================================
 
 // Token de Mapbox para calcular rutas reales
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWJiNXRqdGMwNDJoMnFwdm1tcjdyeXIwIn0.eda5qjsc2FvhEliQLpxBrg';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q';
 
 class DriverTrackingService {
   
