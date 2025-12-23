@@ -109,7 +109,7 @@ const SharedStorage = {
     const data = await getData(STORAGE_KEYS.USER_LOCATION);
     if (data && data.timestamp) {
       const age = Date.now() - data.timestamp;
-      if (age > 60 * 1000) { // 60 segundos
+      if (age > 600 * 1000) { // 60 segundos
         console.log('📍 Ubicación expirada (edad:', Math.round(age/1000), 's) - ignorando');
         return null;
       }

@@ -14,7 +14,7 @@ const AddressCache = {
     MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros mínimo para actualizar
     COORDINATE_PRECISION: 3,             // 3 decimales (~100m de grid)
     STORAGE_KEY: 'address_cache_v2',     // Clave para AsyncStorage
-    INSTANT_CACHE_MAX_AGE: 60 * 1000   // 60 segundos para cache instantaneo (sin GPS)
+    INSTANT_CACHE_MAX_AGE: 300 * 1000   // 60 segundos para cache instantaneo (sin GPS)
   },
   
   // Estado interno
@@ -256,7 +256,7 @@ class LocationFallbackService {
       Geolocation.getCurrentPosition(
         (position) => {
           // Validar precision minima (50 metros)
-          const maxAccuracy = highAccuracy ? 50 : 150; // GPS=50m, WiFi=150m
+          const maxAccuracy = highAccuracy ? 100 : 200; // GPS=50m, WiFi=150m
           if (position.coords.accuracy > maxAccuracy) {
             console.log('GPS con baja precision:', position.coords.accuracy, 'm - reintentando...');
             resolve({
@@ -309,9 +309,9 @@ class LocationFallbackService {
           });
         },
     {
-          enableHighAccuracy: highAccuracy,   // true=GPS, false=WiFi/red
-          timeout: 2000,              // 3 segundos máximo
-          maximumAge: 30000,          // Usar ubicación del OS si tiene menos de 30 segundos
+          enableHighAccuracy: true,   // true=GPS, false=WiFi/red
+          timeout: 15000,              // 3 segundos máximo
+          maximumAge: 10000,          // Usar ubicación del OS si tiene menos de 30 segundos
           distanceFilter: 0
         }
       );
