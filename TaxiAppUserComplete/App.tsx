@@ -3673,7 +3673,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   destinationInputPlaceholder: {
-    color: '#999',
+    color: '#4CAF50',
   },
   
   // ESTILOS PARA BOTÓN DE CALCULADORA DE TARIFAS
