@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,114 +7,157 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 const { width, height } = Dimensions.get('window');
 
 const SplashScreen = ({ onAnimationComplete }) => {
-  // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+  const dotAnim1 = useRef(new Animated.Value(0)).current;
+  const dotAnim2 = useRef(new Animated.Value(0)).current;
+  const dotAnim3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Secuencia de animaciones
+    // Animacion de los puntos de carga
+    const dotAnimation = (anim, delay) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    };
+
+    dotAnimation(dotAnim1, 0).start();
+    dotAnimation(dotAnim2, 200).start();
+    dotAnimation(dotAnim3, 400).start();
+
+    // Animacion principal
     Animated.sequence([
-      // Primero: Fade in y scale del logo
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 800,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          tension: 10,
-          friction: 2,
+          tension: 20,
+          friction: 7,
           useNativeDriver: true,
         }),
       ]),
-      // Segundo: Rotar el icono del taxi
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      // Tercero: Slide up del texto
-      Animated.parallel([
-        Animated.timing(slideUpAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Esperar un momento
-      Animated.delay(800),
-      // Fade out final
-      Animated.timing(fadeAnim, {
+      Animated.timing(slideUpAnim, {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
       }),
+      Animated.delay(1800),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
-      // Callback cuando termina la animación
       if (onAnimationComplete) {
         onAnimationComplete();
       }
     });
   }, []);
 
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#FFD700" barStyle="dark-content" />
+      <StatusBar backgroundColor="#87CEEB" barStyle="dark-content" translucent={false} />
       
       <Animated.View
         style={[
-          styles.logoContainer,
+          styles.content,
           {
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }],
           },
         ]}
       >
-        <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <Icon name="taxi" size={100} color="#333" />
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>Squid</Text>
+        </View>
+
+        <Animated.View
+          style={[
+            styles.taglineContainer,
+            {
+              transform: [{ translateY: slideUpAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.tagline}>Tu app dominicana</Text>
         </Animated.View>
       </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.textContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideUpAnim }],
-          },
-        ]}
-      >
-        <Text style={styles.appName}>TaxiApp</Text>
-        <Text style={styles.tagline}>Tu viaje seguro y rápido</Text>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.footer,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
+      <Animated.View style={[styles.footer, { opacity: fadeAnim }]}>
         <View style={styles.loadingContainer}>
-          <View style={styles.loadingDot} />
-          <View style={[styles.loadingDot, styles.loadingDotMiddle]} />
-          <View style={styles.loadingDot} />
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dotAnim1.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+                transform: [{
+                  scale: dotAnim1.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.3],
+                  }),
+                }],
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dotAnim2.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+                transform: [{
+                  scale: dotAnim2.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.3],
+                  }),
+                }],
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.dot,
+              {
+                opacity: dotAnim3.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                }),
+                transform: [{
+                  scale: dotAnim3.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 1.3],
+                  }),
+                }],
+              },
+            ]}
+          />
         </View>
-        <Text style={styles.loadingText}>Cargando...</Text>
       </Animated.View>
     </View>
   );
@@ -123,26 +166,33 @@ const SplashScreen = ({ onAnimationComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFD700',
+    backgroundColor: '#87CEEB',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoContainer: {
-    marginBottom: 30,
-  },
-  textContainer: {
+  content: {
     alignItems: 'center',
   },
-  appName: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
+  logoContainer: {
+    marginBottom: 15,
+  },
+  logoText: {
+    fontSize: 72,
+    fontWeight: '800',
+    color: '#1a1a2e',
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  taglineContainer: {
+    alignItems: 'center',
   },
   tagline: {
     fontSize: 18,
-    color: '#666',
-    fontStyle: 'italic',
+    color: '#2c3e50',
+    fontWeight: '600',
+    letterSpacing: 2,
   },
   footer: {
     position: 'absolute',
@@ -151,22 +201,14 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
+    alignItems: 'center',
   },
-  loadingDot: {
+  dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#333',
-    marginHorizontal: 5,
-    opacity: 0.3,
-  },
-  loadingDotMiddle: {
-    opacity: 0.6,
-  },
-  loadingText: {
-    color: '#666',
-    fontSize: 14,
+    backgroundColor: '#1a1a2e',
+    marginHorizontal: 6,
   },
 });
 

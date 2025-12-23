@@ -1,12 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Permisos de red y ubicación -->
+﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-
-    <!-- Permisos FCM adicionales -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
@@ -20,17 +16,14 @@
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
 
-        <!-- API Key de Google Maps -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q" />
 
-        <!-- API Key de Mapbox -->
         <meta-data
             android:name="com.mapbox.api_key"
             android:value="pk_eyJ1Ijo1bWUyVySkdm8lOCI5sImE1Oj1jWl4lY2hl8lcwY29sZVU4Ndk2dm1lltI8m*ZFoGo8QA7Q5jPbGaOG8Q" />
 
-        <!-- Servicio FCM -->
         <service
             android:name=".firebase.MyFirebaseMessagingService"
             android:exported="false">
@@ -39,18 +32,24 @@
             </intent-filter>
         </service>
 
-        <!-- Actividad principal -->
         <activity
-            android:name=".MainActivity"
-            android:label="@string/app_name"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize"
+            android:name=".SplashActivity"
+            android:theme="@style/SplashTheme"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false">
+        </activity>
+
     </application>
 </manifest>

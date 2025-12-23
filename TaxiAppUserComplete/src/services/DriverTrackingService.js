@@ -119,6 +119,7 @@ class DriverTrackingService {
       
       const response = await fetch(url);
       const data = await response.json();
+      console.log('🗺️ Mapbox response:', JSON.stringify(data).substring(0, 300));
       
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
