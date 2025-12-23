@@ -232,7 +232,7 @@ const DEFAULT_LOCATION = {
 
 class LocationFallbackService {
 
-  // VERIFICAR SI GPS ESTA DISPONIBLE Y HABILITADO
+  // VERIFICAR SI GPS ESTA DISPONIBLE - CON WATCHPOSITION PROGRESIVO
   static async checkGPSAvailability(highAccuracy = true) {
     return new Promise(async (resolve) => {
       console.log('Verificando disponibilidad del GPS...');
@@ -250,68 +250,83 @@ class LocationFallbackService {
         return;
       }
 
-      // Obtener ubicacion fresca
-      console.log('Obteniendo ubicacion GPS...');
+      // Variables para watchPosition
+      let watchId = null;
+      let bestLocation = null;
+      let resolved = false;
+      const startTime = Date.now();
+      const TOTAL_TIMEOUT = 1000;
+      const MIN_ACCURACY = highAccuracy ? 100 : 300;
 
-      Geolocation.getCurrentPosition(
-        (position) => {
-          // Validar precision minima (50 metros)
-          const maxAccuracy = highAccuracy ? 100 : 200; // GPS=50m, WiFi=150m
-          if (position.coords.accuracy > maxAccuracy) {
-            console.log('GPS con baja precision:', position.coords.accuracy, 'm - reintentando...');
-            resolve({
-              available: false,
-              reason: 'low_accuracy',
-              message: `Precision insuficiente: ${Math.round(position.coords.accuracy)}m`,
-              location: null
-            });
-            return;
-          }
+      // Función para resolver y limpiar
+      const finishWatch = (result) => {
+        if (resolved) return;
+        resolved = true;
+        if (watchId !== null) {
+          Geolocation.clearWatch(watchId);
+        }
+        resolve(result);
+      };
 
-          console.log('GPS disponible y funcionando - Precision:', position.coords.accuracy, 'm');
-          resolve({
+      // Timeout global
+      const timeoutId = setTimeout(() => {
+        console.log('Timeout global alcanzado');
+        if (bestLocation) {
+          console.log('Usando mejor ubicacion obtenida:', bestLocation.accuracy, 'm');
+          finishWatch({
             available: true,
-            reason: 'success',
-            message: 'GPS disponible',
-            location: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy
-            }
+            reason: 'timeout_with_location',
+            message: 'GPS con ubicacion parcial',
+            location: bestLocation
           });
-        },
-        (error) => {
-          console.log('GPS fallo:', error.message);
-
-          let reason = 'unknown_error';
-          let message = 'Error desconocido';
-
-          switch (error.code) {
-            case 1:
-              reason = 'permission_denied';
-              message = 'Permisos de ubicacion denegados';
-              break;
-            case 2:
-              reason = 'position_unavailable';
-              message = 'Ubicacion no disponible';
-              break;
-            case 3:
-              reason = 'timeout';
-              message = 'Tiempo de espera agotado';
-              break;
-          }
-
-          resolve({
+        } else {
+          finishWatch({
             available: false,
-            reason,
-            message,
+            reason: 'timeout',
+            message: 'No se pudo obtener ubicacion',
             location: null
           });
+        }
+      }, TOTAL_TIMEOUT);
+
+      // Iniciar watchPosition
+      console.log('Iniciando watchPosition progresivo...');
+      watchId = Geolocation.watchPosition(
+        (position) => {
+          const accuracy = position.coords.accuracy;
+          const elapsed = Date.now() - startTime;
+          console.log('Ubicacion recibida:', accuracy.toFixed(1), 'm (', elapsed, 'ms)');
+
+          // Guardar si es mejor que la anterior
+          if (!bestLocation || accuracy < bestLocation.accuracy) {
+            bestLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: accuracy,
+              timestamp: position.timestamp
+            };
+            console.log('Nueva mejor ubicacion:', accuracy.toFixed(1), 'm');
+          }
+
+          // Si la precisión es buena, terminar inmediatamente
+          if (accuracy <= MIN_ACCURACY) {
+            console.log('Precision excelente:', accuracy.toFixed(1), 'm - terminando');
+            clearTimeout(timeoutId);
+            finishWatch({
+              available: true,
+              reason: 'success',
+              message: 'GPS disponible',
+              location: bestLocation
+            });
+          }
         },
-    {
-          enableHighAccuracy: true,   // true=GPS, false=WiFi/red
-          timeout: 15000,              // 3 segundos máximo
-          maximumAge: 10000,          // Usar ubicación del OS si tiene menos de 30 segundos
+        (error) => {
+          console.log('Error watchPosition:', error.message);
+        },
+        {
+          enableHighAccuracy: highAccuracy,
+          timeout: TOTAL_TIMEOUT,
+          maximumAge: 10000,
           distanceFilter: 0
         }
       );
@@ -331,7 +346,7 @@ class LocationFallbackService {
         console.log('Intento GPS ' + attempt + '/' + MAX_RETRIES + '...');
 
         const useHighAccuracy = attempt === 1; // Solo primer intento usa GPS puro
-        console.log(useHighAccuracy ? '??? Usando GPS alta precisi�n' : '?? Usando WiFi/red celular');
+        console.log(useHighAccuracy ? '??? Usando GPS alta precisi�n' : '?? Usando WiFi/red celular');
         const gpsCheck = await this.checkGPSAvailability(useHighAccuracy);
         lastGpsCheck = gpsCheck;
 
