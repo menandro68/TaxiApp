@@ -2275,15 +2275,35 @@ const renderLoadingScreen = () => {
           </View>
         </View>
         {/* Selector de destinos para agregar paradas */}
-        <SmartDestinationSelector
+  <SmartDestinationSelector
           visible={showDestinationSelectorForAdd}
           onClose={() => setShowDestinationSelectorForAdd(false)}
           onSelectDestination={(place) => {
-            setNewDestination(place.name);
+            // Cerrar modales
             setShowDestinationSelectorForAdd(false);
+            setShowLocationModal(false);
+            
+            // Establecer como destino principal
+            setDestination(place.name);
+            setSelectedDestination({
+              name: place.name,
+              address: place.address || place.name,
+              location: {
+                latitude: place.coordinates?.lat || place.location?.latitude,
+                longitude: place.coordinates?.lng || place.location?.longitude,
+              }
+            });
+            
+            // Calcular ruta si hay ubicación
+            if (userLocation && place.coordinates) {
+              calculateRouteAndPrice(userLocation, {
+                latitude: place.coordinates.lat,
+                longitude: place.coordinates.lng
+              }, selectedVehicleType);
+            }
           }}
           currentLocation={userLocation}
-          mode="additional"
+          mode="destination"
         />
       </Modal>
     );
