@@ -16,6 +16,8 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
   const [passengerName, setPassengerName] = useState('');
   const [passengerPhone, setPassengerPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [puntoOrigen, setPuntoOrigen] = useState('');
+  const [destinoViaje, setDestinoViaje] = useState('');
   const [errors, setErrors] = useState({});
 
   const validatePhone = (phone) => {
@@ -36,6 +38,14 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
       } else if (!validatePhone(passengerPhone)) {
         newErrors.phone = 'Teléfono inválido (10 dígitos)';
       }
+
+      if (!puntoOrigen.trim()) {
+        newErrors.origen = 'El punto de origen es requerido';
+      }
+
+      if (!destinoViaje.trim()) {
+        newErrors.destino = 'El destino es requerido';
+      }
       
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
@@ -48,7 +58,9 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
       passengerInfo: isForOther ? {
         name: passengerName,
         phone: passengerPhone,
-        notes: notes
+        notes: notes,
+        origen: puntoOrigen,
+        destino: destinoViaje
       } : null
     };
     
@@ -61,6 +73,8 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
     setPassengerName('');
     setPassengerPhone('');
     setNotes('');
+    setPuntoOrigen('');
+    setDestinoViaje('');
     setErrors({});
   };
 
@@ -148,6 +162,38 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
                   />
                   {errors.phone && (
                     <Text style={styles.errorText}>{errors.phone}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Punto de origen *</Text>
+                  <TextInput
+                    style={[styles.input, errors.origen && styles.inputError]}
+                    placeholder="Ej: Calle Principal #123, Santo Domingo"
+                    value={puntoOrigen}
+                    onChangeText={(text) => {
+                      setPuntoOrigen(text);
+                      setErrors({...errors, origen: ''});
+                    }}
+                  />
+                  {errors.origen && (
+                    <Text style={styles.errorText}>{errors.origen}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>A donde quieres ir *</Text>
+                  <TextInput
+                    style={[styles.input, errors.destino && styles.inputError]}
+                    placeholder="Ej: Megacentro, Av. San Vicente de Paul"
+                    value={destinoViaje}
+                    onChangeText={(text) => {
+                      setDestinoViaje(text);
+                      setErrors({...errors, destino: ''});
+                    }}
+                  />
+                  {errors.destino && (
+                    <Text style={styles.errorText}>{errors.destino}</Text>
                   )}
                 </View>
 
