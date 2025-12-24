@@ -2825,25 +2825,21 @@ const renderLoadingScreen = () => {
      />
         </View>
         {/* CAMBIO PRINCIPAL - DE View A ScrollView */}
-        <ScrollView style={styles.controlsContainer} showsVerticalScrollIndicator={false}>
+<ScrollView style={styles.controlsContainer} showsVerticalScrollIndicator={false}>
           {/* NUEVO: Estado de ubicacion */}
           {renderLocationStatus()}
           {/* Selector de punto de recogida */}
           <View style={styles.formGroup}>
-            <TouchableOpacity
-              style={styles.pickupInput}
-             onPress={() => setShowLocationModal(true)}
-            >
+            <View style={styles.pickupInput}>
               <Icon name="location" size={20} color="#007AFF" />
               <View style={styles.pickupTextContainer}>
                 <Text style={styles.pickupText}>
-    {userLocation?.address ? userLocation.address : 'Punto de recogida'}
-                  </Text>
+                  {userLocation?.address ? userLocation.address : 'Punto de recogida'}
+                </Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#999" />
-            </TouchableOpacity>
+            </View>
           </View>
-          
           <View style={styles.destinationContainer}>
 <TouchableOpacity 
   style={styles.destinationInput}
