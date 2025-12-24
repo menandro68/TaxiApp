@@ -1945,37 +1945,38 @@ const resetAppState = async () => {
   }
 };
 
-const renderVehicleSelector = () => {
-  if (rideStatus !== TRIP_STATES.IDLE) return null;
+   const renderVehicleSelector = () => {
+    console.log('renderVehicleSelector - rideStatus:', rideStatus, 'IDLE:', TRIP_STATES.IDLE);
+    if (rideStatus !== TRIP_STATES.IDLE) return null;
 
-  return (
-    <TouchableOpacity 
-      style={styles.vehicleSelectorButton}
-      onPress={() => setShowVehicleSelector(true)}
-    >
-      <View style={styles.vehicleSelectorContent}>
-        <Text style={styles.vehicleSelectorIcon}>
-          {selectedVehicleType === 'economy' ? '' : 
-           selectedVehicleType === 'comfort' ? '�' : 
-           selectedVehicleType === 'premium' ? '' : 
-           selectedVehicleType === 'xl' ? '' : ''}
-        </Text>
-        <View style={styles.vehicleSelectorInfo}>
-          <Text style={styles.vehicleSelectorLabel}>Tipo de vehiculo</Text>
-          <Text style={styles.vehicleSelectorValue}>
-            {selectedVehicleType === 'economy' ? 'Economico' : 
-             selectedVehicleType === 'comfort' ? 'Confort' : 
-             selectedVehicleType === 'premium' ? 'Premium' : 
-             selectedVehicleType === 'xl' ? 'XL (6-7 personas)' : 
-             selectedVehicleType === 'moto' ? 'Moto Rapido' : 'Economico'}
-            - RD${estimatedPrice || '---'}
+    return (
+      <TouchableOpacity
+        style={styles.vehicleSelectorButton}
+        onPress={() => setShowVehicleSelector(true)}
+      >
+        <View style={styles.vehicleSelectorContent}>
+          <Text style={styles.vehicleSelectorIcon}>
+            {selectedVehicleType === 'economy' ? '🚗' :
+             selectedVehicleType === 'comfort' ? '🚙' :
+             selectedVehicleType === 'premium' ? '🏎️' :
+             selectedVehicleType === 'xl' ? '🚐' : '🏍️'}
           </Text>
+          <View style={styles.vehicleSelectorInfo}>
+            <Text style={styles.vehicleSelectorLabel}>Tipo de vehiculo</Text>
+            <Text style={styles.vehicleSelectorValue}>
+              {selectedVehicleType === 'economy' ? 'Economico' :
+               selectedVehicleType === 'comfort' ? 'Confort' :
+               selectedVehicleType === 'premium' ? 'Premium' :
+               selectedVehicleType === 'xl' ? 'XL (6-7 personas)' :
+               selectedVehicleType === 'moto' ? 'Moto Rapido' : 'Economico'}
+              - RD${estimatedPrice || '---'}
+            </Text>
+          </View>
+          <Icon name="chevron-down" size={20} color="#666" />
         </View>
-        <Icon name="chevron-down" size={20} color="#666" />
-      </View>
-    </TouchableOpacity>
-  );
-};
+      </TouchableOpacity>
+    );
+  };
 
 // COMPONENTE: Pantalla de carga inicial
 const renderLoadingScreen = () => {
@@ -2016,9 +2017,9 @@ const renderLoadingScreen = () => {
             
   {!showPriceEstimator && routeInfo && (
               <View style={styles.routeDetailsCompact}>
-                <Text style={styles.routeDetailCompact}>
-                  ?? {routeInfo.distance.text} � ?? {routeInfo.duration.text} � ?? RD${routeInfo.pricing.final_price}
-                </Text>
+               <Text style={styles.routeDetailCompact}>
+  📍 {routeInfo.distance.text} • ⏱️ {routeInfo.duration.text} • 💰 RD${routeInfo.pricing.final_price}
+</Text>
               </View>
             )}
           </>
