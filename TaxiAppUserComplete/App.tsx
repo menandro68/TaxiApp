@@ -920,7 +920,7 @@ const initializeLocationService = async () => {
   }
 };
 
-  const loadUserState = async () => {
+const loadUserState = async () => {
     try {
       const currentStatus = await SharedStorage.getTripStatus();
       const currentTripRequest = await SharedStorage.getTripRequest();
@@ -928,15 +928,35 @@ const initializeLocationService = async () => {
       const currentUserLocation = await SharedStorage.getUserLocation();
 
       if (currentStatus !== TRIP_STATES.IDLE) {
+        // VALIDAR CON BACKEND si el viaje realmente existe
+        try {
+          const tripId = currentTripRequest?.id;
+          if (tripId) {
+            const response = await ApiService.getTripStatus(tripId);
+            if (!response.success || response.status === 'completed' || response.status === 'cancelled') {
+              // Viaje no existe o ya terminó - resetear a IDLE
+              console.log('Viaje local no existe en servidor, reseteando a IDLE');
+              await SharedStorage.resetToIdle();
+              setRideStatus(TRIP_STATES.IDLE);
+              return;
+            }
+          } else {
+            // No hay tripId válido - resetear a IDLE
+            console.log('No hay tripId válido, reseteando a IDLE');
+            await SharedStorage.resetToIdle();
+            setRideStatus(TRIP_STATES.IDLE);
+            return;
+          }
+        } catch (apiError) {
+          // Error de red - mantener estado local por ahora
+          console.log('No se pudo verificar viaje con servidor, usando estado local');
+        }
+
         setRideStatus(currentStatus);
         setTripRequest(currentTripRequest);
         setDriverInfo(currentDriverInfo);
-     // NO restaurar ubicacion del storage - siempre usar GPS fresco
-        // La ubicacion se obtiene de initializeLocationService()
-        console.log('Ubicacion del storage ignorada, esperando GPS fresco');
         console.log('Estado del usuario restaurado:', currentStatus);
 
-        // Si hay un conductor asignado, iniciar tracking
         if (currentStatus === TRIP_STATES.DRIVER_ASSIGNED && currentDriverInfo) {
           startDriverTracking(currentDriverInfo, currentUserLocation);
         }
@@ -1946,7 +1966,7 @@ const resetAppState = async () => {
 };
 
    const renderVehicleSelector = () => {
-    console.log('renderVehicleSelector - rideStatus:', rideStatus, 'IDLE:', TRIP_STATES.IDLE);
+    
     if (rideStatus !== TRIP_STATES.IDLE) return null;
 
     return (
