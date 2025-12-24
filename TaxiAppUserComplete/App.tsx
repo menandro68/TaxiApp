@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
 import PushNotificationService from './src/services/PushNotificationService';
+import Tts from 'react-native-tts';
 import SecureStorage from './src/services/SecureStorage';
 import AnalyticsService from './src/services/analytics';
 import { addTripToHistory } from './src/history/TripHistoryStorage';
@@ -1229,12 +1230,27 @@ const startDriverTracking = async (driver, userLoc) => {
           }));
         },
 
-        onArrival: (arrivalInfo) => {
+  onArrival: (arrivalInfo) => {
           console.log('🎯 ¡Conductor ha llegado!', arrivalInfo);
 
           setIsDriverMoving(false);
           setTrackingActive(false);
           setDriverETA('Ha llegado');
+
+          // Mensaje de voz: "Tu conductor ha llegado" 5 veces
+          const speakArrival = async () => {
+            try {
+              await Tts.setDefaultLanguage('es-ES');
+              await Tts.setDefaultRate(0.5);
+              for (let i = 0; i < 5; i++) {
+                await Tts.speak('Tu conductor ha llegado');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            } catch (error) {
+              console.log('Error TTS:', error);
+            }
+          };
+          speakArrival();
 
           Alert.alert(
             '¡Conductor ha llegado!',
