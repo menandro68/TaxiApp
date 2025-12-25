@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,26 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
+const ThirdPartyRide = ({ visible, onClose, onConfirm, onSelectLocation, selectedOrigin, selectedDestination }) => {
   const [passengerName, setPassengerName] = useState('');
   const [passengerPhone, setPassengerPhone] = useState('');
   const [puntoOrigen, setPuntoOrigen] = useState('');
   const [destinoViaje, setDestinoViaje] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
+
+  // Actualizar cuando se seleccione ubicación externa
+  useEffect(() => {
+    if (selectedOrigin) {
+      setPuntoOrigen(selectedOrigin);
+    }
+  }, [selectedOrigin]);
+
+  useEffect(() => {
+    if (selectedDestination) {
+      setDestinoViaje(selectedDestination);
+    }
+  }, [selectedDestination]);
 
   const validatePhone = (phone) => {
     const phoneRegex = /^[0-9]{10}$/;
@@ -118,29 +131,29 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
             </View>
 
             <View style={styles.row}>
-              <View style={styles.inputWrapper}>
-                <Icon name="location-outline" size={18} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.origen && styles.inputError]}
-                  placeholder="Punto de origen *"
-                  value={puntoOrigen}
-                  onChangeText={(t) => { setPuntoOrigen(t); setErrors({...errors, origen: false}); }}
-                  placeholderTextColor="#999"
-                />
-              </View>
+              <TouchableOpacity 
+                style={[styles.inputWrapper, errors.origen && styles.inputError]}
+                onPress={() => onSelectLocation && onSelectLocation('origen')}
+              >
+                <Icon name="location-outline" size={18} color="#007AFF" style={styles.inputIcon} />
+                <Text style={[styles.input, !puntoOrigen && {color: '#999'}]}>
+                  {puntoOrigen || 'Punto de origen *'}
+                </Text>
+                <Icon name="chevron-forward" size={18} color="#999" style={{paddingRight: 12}} />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.row}>
-              <View style={styles.inputWrapper}>
-                <Icon name="flag-outline" size={18} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.destino && styles.inputError]}
-                  placeholder="Destino *"
-                  value={destinoViaje}
-                  onChangeText={(t) => { setDestinoViaje(t); setErrors({...errors, destino: false}); }}
-                  placeholderTextColor="#999"
-                />
-              </View>
+              <TouchableOpacity 
+                style={[styles.inputWrapper, errors.destino && styles.inputError]}
+                onPress={() => onSelectLocation && onSelectLocation('destino')}
+              >
+                <Icon name="flag-outline" size={18} color="#007AFF" style={styles.inputIcon} />
+                <Text style={[styles.input, !destinoViaje && {color: '#999'}]}>
+                  {destinoViaje || 'Destino *'}
+                </Text>
+                <Icon name="chevron-forward" size={18} color="#999" style={{paddingRight: 12}} />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.row}>

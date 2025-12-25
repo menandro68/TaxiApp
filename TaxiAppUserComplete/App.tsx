@@ -107,8 +107,11 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [driverETA, setDriverETA] = useState('');
   const [isDriverMoving, setIsDriverMoving] = useState(false);
   const [trackingActive, setTrackingActive] = useState(false);
-  const [showThirdPartyModal, setShowThirdPartyModal] = useState(false);
+ const [showThirdPartyModal, setShowThirdPartyModal] = useState(false);
   const [thirdPartyInfo, setThirdPartyInfo] = useState(null);
+  const [thirdPartyOrigin, setThirdPartyOrigin] = useState('');
+  const [thirdPartyDestination, setThirdPartyDestination] = useState('');
+  const [thirdPartyLocationField, setThirdPartyLocationField] = useState(null);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState('unknown');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -201,8 +204,20 @@ useEffect(() => {
             multiDestModalRef.current.updateStopAddress(activeMultiDestinationStopId, favoriteAddress.address);
             setActiveMultiDestinationStopId(null);
             return;
+       }
+
+          // Si es para modal de terceros
+          if (thirdPartyLocationField) {
+            if (thirdPartyLocationField === 'origen') {
+              setThirdPartyOrigin(favoriteAddress.address);
+            } else if (thirdPartyLocationField === 'destino') {
+              setThirdPartyDestination(favoriteAddress.address);
+            }
+            setThirdPartyLocationField(null);
+            setTimeout(() => setShowThirdPartyModal(true), 300);
+            return;
           }
-          
+
           // Establecer como destino principal (comportamiento original)
           setDestination(favoriteAddress.address);
           setSelectedDestination({
@@ -229,7 +244,7 @@ useEffect(() => {
     // Verificar cuando la pantalla obtiene foco
     const unsubscribe = navigation.addListener('focus', checkPendingFavoriteAddress);
     return unsubscribe;
-  }, [navigation, userLocation, selectedVehicleType, activeMultiDestinationStopId]);
+ }, [navigation, userLocation, selectedVehicleType, activeMultiDestinationStopId, thirdPartyLocationField]);
 
   // Verificar si el usuario ya vio el onboarding
   useEffect(() => {
@@ -1006,9 +1021,23 @@ const loadUserState = async () => {
   };
 
   // NUEVA FUNCIÓN: Manejar selección de ubicacion manual
-  const handleLocationSelected = async (location) => {
+ const handleLocationSelected = async (location) => {
     try {
       console.log('Nueva ubicacion seleccionada:', location);
+
+      // Si es para modal de terceros, actualizar y regresar
+      if (thirdPartyLocationField) {
+        const address = location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+        if (thirdPartyLocationField === 'origen') {
+          setThirdPartyOrigin(address);
+        } else if (thirdPartyLocationField === 'destino') {
+          setThirdPartyDestination(address);
+        }
+        setThirdPartyLocationField(null);
+        setShowLocationModal(false);
+        setTimeout(() => setShowThirdPartyModal(true), 300);
+        return;
+      }
       
       // Validar coordenadas
       const validation = LocationFallbackService.validateCoordinates(
@@ -3436,7 +3465,19 @@ const renderLoadingScreen = () => {
       {/* Modal de viajes para terceros */}
 <ThirdPartyRide
   visible={showThirdPartyModal}
-  onClose={() => setShowThirdPartyModal(false)}
+  onClose={() => {
+    setShowThirdPartyModal(false);
+    setThirdPartyOrigin('');
+    setThirdPartyDestination('');
+    setThirdPartyLocationField(null);
+  }}
+  onSelectLocation={(field) => {
+    setThirdPartyLocationField(field);
+    setShowThirdPartyModal(false);
+    setTimeout(() => setShowLocationModal(true), 300);
+  }}
+  selectedOrigin={thirdPartyOrigin}
+  selectedDestination={thirdPartyDestination}
 onConfirm={(rideData) => {
     // Generar clave automática para viaje de tercero
   const generateTripCode = () => {
@@ -3448,9 +3489,23 @@ onConfirm={(rideData) => {
       rideData.tripCode = tripCode;
     }
     
-    setThirdPartyInfo(rideData);
+setThirdPartyInfo(rideData);
     setShowThirdPartyModal(false);
+    
     if (rideData.isForOther) {
+      // Actualizar campos de pantalla principal SOLO para terceros
+      if (rideData.passengerInfo?.origen) {
+        setUserLocation(prevLocation => ({
+          latitude: prevLocation?.latitude || 18.4861,
+          longitude: prevLocation?.longitude || -69.9312,
+          address: rideData.passengerInfo.origen,
+          source: 'third_party'
+        }));
+      }
+      if (rideData.passengerInfo?.destino) {
+        setDestination(rideData.passengerInfo.destino);
+      }
+      
       Alert.alert(
         'Viaje para tercero confirmado',
         `El conductor contactará a ${rideData.passengerInfo.name} al ${rideData.passengerInfo.phone}\n\n🔑 Clave del viaje: ${rideData.tripCode}\n\nComparta esta clave con el pasajero para identificar el viaje.`
