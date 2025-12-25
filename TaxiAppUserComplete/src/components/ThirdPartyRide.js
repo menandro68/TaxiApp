@@ -6,18 +6,17 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
-  ScrollView,
-  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
-  const [isForOther, setIsForOther] = useState(true);
   const [passengerName, setPassengerName] = useState('');
   const [passengerPhone, setPassengerPhone] = useState('');
-  const [notes, setNotes] = useState('');
   const [puntoOrigen, setPuntoOrigen] = useState('');
   const [destinoViaje, setDestinoViaje] = useState('');
+  const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
 
   const validatePhone = (phone) => {
@@ -28,53 +27,35 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
   const handleConfirm = () => {
     const newErrors = {};
     
-    if (isForOther) {
-      if (!passengerName.trim()) {
-        newErrors.name = 'El nombre es requerido';
-      }
-      
-      if (!passengerPhone.trim()) {
-        newErrors.phone = 'El teléfono es requerido';
-      } else if (!validatePhone(passengerPhone)) {
-        newErrors.phone = 'Teléfono inválido (10 dígitos)';
-      }
-
-      if (!puntoOrigen.trim()) {
-        newErrors.origen = 'El punto de origen es requerido';
-      }
-
-      if (!destinoViaje.trim()) {
-        newErrors.destino = 'El destino es requerido';
-      }
-      
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
+    if (!passengerName.trim()) newErrors.name = true;
+    if (!passengerPhone.trim() || !validatePhone(passengerPhone)) newErrors.phone = true;
+    if (!puntoOrigen.trim()) newErrors.origen = true;
+    if (!destinoViaje.trim()) newErrors.destino = true;
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
     
-    const rideData = {
-      isForOther,
-      passengerInfo: isForOther ? {
+    onConfirm({
+      isForOther: true,
+      passengerInfo: {
         name: passengerName,
         phone: passengerPhone,
-        notes: notes,
         origen: puntoOrigen,
-        destino: destinoViaje
-      } : null
-    };
-    
-    onConfirm(rideData);
+        destino: destinoViaje,
+        notes: notes
+      }
+    });
     resetForm();
   };
 
   const resetForm = () => {
-    setIsForOther(true);
     setPassengerName('');
     setPassengerPhone('');
-    setNotes('');
     setPuntoOrigen('');
     setDestinoViaje('');
+    setNotes('');
     setErrors({});
   };
 
@@ -90,156 +71,109 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.container}>
+          {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>¿Para quién es el viaje?</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <Icon name="close" size={24} color="#333" />
+            <View style={styles.headerIcon}>
+              <Icon name="people" size={20} color="#fff" />
+            </View>
+            <Text style={styles.title}>Viaje para tercero</Text>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <Icon name="close" size={22} color="#666" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Opciones */}
-            <View style={styles.optionsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.option,
-                  isForOther && styles.optionSelected
-                ]}
-                onPress={() => setIsForOther(true)}
-              >
-                <Icon 
-                  name="people" 
-                  size={24} 
-                  color={isForOther ? '#007AFF' : '#666'} 
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.row}>
+              <View style={styles.inputWrapper}>
+                <Icon name="person-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.name && styles.inputError]}
+                  placeholder="Nombre del pasajero *"
+                  value={passengerName}
+                  onChangeText={(t) => { setPassengerName(t); setErrors({...errors, name: false}); }}
+                  placeholderTextColor="#999"
                 />
-                <Text style={[
-                  styles.optionText,
-                  isForOther && styles.optionTextSelected
-                ]}>
-                  Para otra persona
-                </Text>
-                {isForOther && (
-                  <Icon name="checkmark-circle" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Formulario para terceros */}
-            {isForOther && (
-              <View style={styles.formContainer}>
-                <Text style={styles.sectionTitle}>Datos del pasajero</Text>
-                
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Nombre completo *</Text>
-                  <TextInput
-                    style={[styles.input, errors.name && styles.inputError]}
-                    placeholder="Ej: Juan Pérez"
-                    value={passengerName}
-                    onChangeText={(text) => {
-                      setPassengerName(text);
-                      setErrors({...errors, name: ''});
-                    }}
-                  />
-                  {errors.name && (
-                    <Text style={styles.errorText}>{errors.name}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Teléfono *</Text>
-                  <TextInput
-                    style={[styles.input, errors.phone && styles.inputError]}
-                    placeholder="809-555-0123"
-                    value={passengerPhone}
-                    onChangeText={(text) => {
-                      setPassengerPhone(text);
-                      setErrors({...errors, phone: ''});
-                    }}
-                    keyboardType="phone-pad"
-                    maxLength={12}
-                  />
-                  {errors.phone && (
-                    <Text style={styles.errorText}>{errors.phone}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Punto de origen *</Text>
-                  <TextInput
-                    style={[styles.input, errors.origen && styles.inputError]}
-                    placeholder="Ej: Calle Principal #123, Santo Domingo"
-                    value={puntoOrigen}
-                    onChangeText={(text) => {
-                      setPuntoOrigen(text);
-                      setErrors({...errors, origen: ''});
-                    }}
-                  />
-                  {errors.origen && (
-                    <Text style={styles.errorText}>{errors.origen}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>A donde quieres ir *</Text>
-                  <TextInput
-                    style={[styles.input, errors.destino && styles.inputError]}
-                    placeholder="Ej: Megacentro, Av. San Vicente de Paul"
-                    value={destinoViaje}
-                    onChangeText={(text) => {
-                      setDestinoViaje(text);
-                      setErrors({...errors, destino: ''});
-                    }}
-                  />
-                  {errors.destino && (
-                    <Text style={styles.errorText}>{errors.destino}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Notas adicionales (opcional)</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Ej: Persona mayor, necesita ayuda con el equipaje"
-                    value={notes}
-                    onChangeText={setNotes}
-                    multiline
-                    numberOfLines={3}
-                    maxLength={200}
-                  />
-                </View>
-
-                <View style={styles.infoBox}>
-                  <Icon name="information-circle" size={20} color="#007AFF" />
-                  <Text style={styles.infoText}>
-                    El conductor recibirá estos datos y podrá contactar directamente al pasajero
-                  </Text>
-                </View>
+            <View style={styles.row}>
+              <View style={styles.inputWrapper}>
+                <Icon name="call-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.phone && styles.inputError]}
+                  placeholder="Teléfono (10 dígitos) *"
+                  value={passengerPhone}
+                  onChangeText={(t) => { setPassengerPhone(t); setErrors({...errors, phone: false}); }}
+                  keyboardType="phone-pad"
+                  maxLength={12}
+                  placeholderTextColor="#999"
+                />
               </View>
-            )}
-          </ScrollView>
+            </View>
 
-          {/* Botones de acción */}
+            <View style={styles.row}>
+              <View style={styles.inputWrapper}>
+                <Icon name="location-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.origen && styles.inputError]}
+                  placeholder="Punto de origen *"
+                  value={puntoOrigen}
+                  onChangeText={(t) => { setPuntoOrigen(t); setErrors({...errors, origen: false}); }}
+                  placeholderTextColor="#999"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.inputWrapper}>
+                <Icon name="flag-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.destino && styles.inputError]}
+                  placeholder="Destino *"
+                  value={destinoViaje}
+                  onChangeText={(t) => { setDestinoViaje(t); setErrors({...errors, destino: false}); }}
+                  placeholderTextColor="#999"
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.inputWrapper}>
+                <Icon name="chatbubble-outline" size={18} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Notas (opcional)"
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholderTextColor="#999"
+                />
+              </View>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Icon name="information-circle" size={16} color="#007AFF" />
+              <Text style={styles.infoText}>El conductor recibirá estos datos</Text>
+            </View>
+          </View>
+
+          {/* Buttons */}
           <View style={styles.footer}>
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={handleClose}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
+              <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.confirmButton}
-              onPress={handleConfirm}
-            >
-              <Text style={styles.confirmButtonText}>
-                {isForOther ? 'Confirmar pasajero' : 'Continuar'}
-              </Text>
+            <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
+              <Icon name="checkmark" size={18} color="#fff" />
+              <Text style={styles.confirmText}>Confirmar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -247,134 +181,113 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   container: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '85%',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  headerIcon: {
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    padding: 8,
+    marginRight: 12,
+  },
   title: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 17,
     fontWeight: '600',
     color: '#333',
   },
-  optionsContainer: {
-    padding: 20,
-    gap: 12,
+  closeBtn: {
+    padding: 4,
   },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  form: {
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#fff',
+  },
+  row: {
     marginBottom: 12,
   },
-  optionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
-  },
-  optionText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#666',
-  },
-  optionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  formContainer: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
+    borderRadius: 10,
+    backgroundColor: '#fafafa',
+  },
+  inputIcon: {
+    paddingLeft: 12,
+  },
+  input: {
+    flex: 1,
     padding: 12,
-    fontSize: 16,
+    fontSize: 15,
+    color: '#333',
   },
   inputError: {
     borderColor: '#FF3B30',
+    backgroundColor: '#fff5f5',
   },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
   },
-  infoBox: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f8ff',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
-  },
   infoText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
-    lineHeight: 18,
+    marginLeft: 6,
   },
   footer: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     gap: 12,
   },
-  cancelButton: {
+  cancelBtn: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#ddd',
     alignItems: 'center',
   },
-  cancelButtonText: {
-    fontSize: 16,
+  cancelText: {
+    fontSize: 15,
     color: '#666',
+    fontWeight: '500',
   },
-  confirmButton: {
+  confirmBtn: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    flexDirection: 'row',
+    padding: 14,
+    borderRadius: 10,
     backgroundColor: '#007AFF',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
-  confirmButtonText: {
-    fontSize: 16,
+  confirmText: {
+    fontSize: 15,
     color: '#fff',
     fontWeight: '600',
   },
