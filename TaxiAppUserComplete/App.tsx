@@ -3624,8 +3624,23 @@ onPress={() => {
       setMapPickerLocation(null);
       setMapPickerAddress('');
       return;
+ }
+
+    // Si es para modal de terceros
+    if (thirdPartyLocationField) {
+      if (thirdPartyLocationField === 'origen') {
+        setThirdPartyOrigin(address);
+      } else if (thirdPartyLocationField === 'destino') {
+        setThirdPartyDestination(address);
+      }
+      setThirdPartyLocationField(null);
+      setShowMapPicker(false);
+      setMapPickerLocation(null);
+      setMapPickerAddress('');
+      setTimeout(() => setShowThirdPartyModal(true), 300);
+      return;
     }
-    
+
     if (mapPickerMode === 'destination') {
       // Guardar como DESTINO
       setDestination(address);
