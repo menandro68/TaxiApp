@@ -2323,11 +2323,24 @@ const renderLoadingScreen = () => {
   <SmartDestinationSelector
           visible={showDestinationSelectorForAdd}
           onClose={() => setShowDestinationSelectorForAdd(false)}
-          onSelectDestination={(place) => {
+       onSelectDestination={(place) => {
             // Cerrar modales
             setShowDestinationSelectorForAdd(false);
             setShowLocationModal(false);
-            
+
+            // Si es para modal de terceros
+            if (thirdPartyLocationField) {
+              const address = place.name || place.address;
+              if (thirdPartyLocationField === 'origen') {
+                setThirdPartyOrigin(address);
+              } else if (thirdPartyLocationField === 'destino') {
+                setThirdPartyDestination(address);
+              }
+              setThirdPartyLocationField(null);
+              setTimeout(() => setShowThirdPartyModal(true), 300);
+              return;
+            }
+
             // Establecer como destino principal
             setDestination(place.name);
             setSelectedDestination({
