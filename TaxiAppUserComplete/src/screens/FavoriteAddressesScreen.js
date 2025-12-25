@@ -16,7 +16,9 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FavoriteAddressesScreen = ({ navigation }) => {
+const FavoriteAddressesScreen = ({ navigation, route }) => {
+  const thirdPartyField = route?.params?.thirdPartyField;
+  console.log('🔍 FavoriteAddresses recibió thirdPartyField:', thirdPartyField, 'params:', route?.params);
   const [addresses, setAddresses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -174,9 +176,10 @@ const FavoriteAddressesScreen = ({ navigation }) => {
 
   // Seleccionar dirección para usar
   const selectAddress = (address) => {
+    const fieldLabel = thirdPartyField === 'origen' ? 'punto de origen' : 'destino';
     Alert.alert(
       'Usar esta dirección',
-      `¿Deseas usar "${address.name}" como destino?`,
+      `¿Deseas usar "${address.name}" como ${fieldLabel}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {

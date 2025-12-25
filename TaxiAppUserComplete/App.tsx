@@ -348,9 +348,9 @@ useEffect(() => {
         }, 300);
         break;
       case 'addresses':
-        setTimeout(() => {
-          if (navigation && navigation.navigate) {
-            navigation.navigate('FavoriteAddresses');
+       setTimeout(() => {
+      if (navigation && navigation.navigate) {
+        navigation.navigate('FavoriteAddresses', { thirdPartyField: thirdPartyLocationField });
           } else {
             console.log('Navigation no disponible');
             Alert.alert('Error', 'No se puede navegar a esta pantalla');
@@ -2204,11 +2204,12 @@ const renderLoadingScreen = () => {
       {/* Opción 1: Direcciones Favoritas */}
    <TouchableOpacity 
   style={styles.locationOption}
-  onPress={() => {
+onPress={() => {
+    console.log('🔍 Navegando a FavoriteAddresses con thirdPartyField:', thirdPartyLocationField);
     setShowLocationModal(false);
     setTimeout(() => {
       if (navigation && navigation.navigate) {
-        navigation.navigate('FavoriteAddresses');
+        navigation.navigate('FavoriteAddresses', { thirdPartyField: thirdPartyLocationField });
       } else {
         Alert.alert('Error', 'No se puede navegar a esta pantalla');
       }
