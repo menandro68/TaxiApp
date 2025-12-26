@@ -2842,32 +2842,104 @@ onPress={() => {
       );
     }
 
-    if (rideStatus === TRIP_STATES.IN_RIDE && driverInfo) {
+  if (rideStatus === TRIP_STATES.IN_RIDE && driverInfo) {
       return (
         <View style={styles.driverContainer}>
           <Text style={styles.statusTitle}>Viaje en progreso</Text>
-       
-          {/* BOTÓN DE PÁNICO */}
-          <EmergencyButton
-            tripData={{
-              userName: 'Usuario',
-              driverName: driverInfo.name,
-              licensePlate: driverInfo.licensePlate,
-              vehicleModel: driverInfo.car,
-              destination: destination
-            }}
-            visible={true}
-            onEmergencyActivated={(result) => {
-              console.log('Emergencia activada:', result);
-            }}
-          />
           
           <Text style={styles.driverName}>{driverInfo.name}</Text>
           <Text style={styles.driverDetails}>{driverInfo.car}</Text>
           <Text style={styles.statusText}>Dirígete a tu destino</Text>
-          <TouchableOpacity style={styles.completeButton} onPress={completeRide}>
-            <Text style={styles.completeButtonText}>Completar viaje</Text>
-          </TouchableOpacity>
+   {/* BOTONES DE ACCIÓN - DISEÑO PROFESIONAL */}
+          <View style={{ 
+            width: '100%', 
+            paddingHorizontal: 20,
+            marginTop: 20,
+            alignItems: 'center'
+          }}>
+            {/* BOTÓN COMPLETAR VIAJE - ARRIBA */}
+            <TouchableOpacity 
+              style={{
+                backgroundColor: '#4CAF50',
+                paddingVertical: 16,
+                paddingHorizontal: 40,
+                borderRadius: 30,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                elevation: 4,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                marginBottom: 20,
+              }}
+              onPress={completeRide}
+            >
+              <Icon name="checkmark-circle" size={24} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17, marginLeft: 10 }}>Completar viaje</Text>
+            </TouchableOpacity>
+            
+            {/* BOTONES CIRCULARES - ABAJO */}
+            <View style={{ 
+              flexDirection: 'row', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              gap: 40
+            }}>
+              {/* BOTÓN COMPARTIR - IZQUIERDA */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: '#25D366',
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  elevation: 4,
+                  shadowColor: '#25D366',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                }}
+                onPress={() => setShowShareLocation(true)}
+              >
+                <Icon name="share-social" size={28} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 10, marginTop: 2 }}>Compartir</Text>
+              </TouchableOpacity>
+              
+              {/* BOTÓN 911 EMERGENCIA - DERECHA */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: '#FF3B30',
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  elevation: 5,
+                  shadowColor: '#FF3B30',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 5,
+                }}
+                onPress={() => {
+                  Alert.alert(
+                    '🚨 EMERGENCIA',
+                    '¿Deseas llamar al 911?',
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      { text: 'Llamar 911', style: 'destructive', onPress: () => Linking.openURL('tel:911') }
+                    ]
+                  );
+                }}
+                onLongPress={() => Linking.openURL('tel:911')}
+              >
+                <Icon name="warning" size={28} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 11 }}>911</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       );
     }
