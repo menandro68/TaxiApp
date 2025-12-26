@@ -2753,7 +2753,7 @@ onPress={() => {
           </TouchableOpacity>
           
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.title}>TaxiApp Usuario</Text>
+            <Text style={styles.title}>Squid Usuario</Text>
             <Text style={styles.subtitle}>Tu viaje seguro y rapido</Text>
           </View>
           
