@@ -2887,7 +2887,7 @@ onPress={() => {
               alignItems: 'center',
               gap: 40
             }}>
-              {/* BOTÓN COMPARTIR - IZQUIERDA */}
+      {/* BOTÓN COMPARTIR - IZQUIERDA */}
               <TouchableOpacity 
                 style={{
                   backgroundColor: '#25D366',
@@ -2902,7 +2902,10 @@ onPress={() => {
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
                 }}
-                onPress={() => setShowShareLocation(true)}
+                onPress={() => {
+                  console.log('Compartir presionado en viaje en progreso');
+                  setShowShareLocation(true);
+                }}
               >
                 <Icon name="share-social" size={28} color="#fff" />
                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 10, marginTop: 2 }}>Compartir</Text>
