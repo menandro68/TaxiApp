@@ -4203,13 +4203,13 @@ const styles = StyleSheet.create({
   vehiclePriceSelected: {
     color: '#007AFF',
   },
-  vehicleSelectorButton: {
+vehicleSelectorButton: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
+    padding: 20,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#4CAF50',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -4227,17 +4227,16 @@ const styles = StyleSheet.create({
   vehicleSelectorInfo: {
     flex: 1,
   },
-  vehicleSelectorLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+vehicleSelectorLabel: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginBottom: 4,
   },
   vehicleSelectorValue: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#4CAF50',
   },
-
   // ESTILOS PARA TRACKING DEL CONDUCTOR
 trackingContainer: {
     backgroundColor: '#f0f8ff',
