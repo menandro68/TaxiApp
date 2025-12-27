@@ -735,6 +735,7 @@ const setupNotificationHandlers = () => {
         },
       };
       
+      await SharedStorage.saveDriverInfo(mockDriverInfo);
       setDriverInfo(mockDriverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
@@ -1821,27 +1822,46 @@ const searchForDriver = () => {
     }
   };
 
-  const startRide = async () => {
+const startRide = async () => {
   try {
     // DETENER TRACKING AL INICIAR VIAJE
     stopDriverTracking();
-   
-    // Detener compartir ubicacion
     await SharedStorage.startRide();
     setRideStatus(TRIP_STATES.IN_RIDE);
+    
+    // Obtener ubicación de AsyncStorage si userLocation es null
+    let locationToUse = userLocation;
+    if (!locationToUse || !locationToUse.latitude) {
+      const storedLocation = await AsyncStorage.getItem('user_location');
+      if (storedLocation) {
+        locationToUse = JSON.parse(storedLocation);
+      }
+    }
+    
+// Obtener driverInfo de SharedStorage si es null
+    let driverToUse = driverInfo;
+    if (!driverToUse || !driverToUse.name) {
+      const storedDriverInfo = await SharedStorage.getDriverInfo();
+      if (storedDriverInfo) {
+        driverToUse = storedDriverInfo;
+      }
+    }
 
-    // Iniciar compartir ubicacion automáticamente
-    await ShareLocationService.startSharing(
-      {
-        id: tripRequest?.id,
-        pickup: userLocation?.address,
-        destination: destination,
-        driverName: driverInfo?.name,
-        vehiclePlate: driverInfo?.car
-      },
-      userLocation
-    );
-     
+    console.log('🚗 startRide - driverInfo:', driverToUse?.name, driverToUse?.car);
+
+    if (locationToUse && locationToUse.latitude) {
+      await ShareLocationService.startSharing(
+        {
+          id: tripRequest?.id,
+          pickup: locationToUse?.address,
+          destination: destination,
+          driverName: driverToUse?.name || 'Conductor',
+          vehiclePlate: driverToUse?.car || 'N/A'
+        },
+        locationToUse
+      );
+    }
+    
     Alert.alert('¡Viaje iniciado!', 'Disfruta tu viaje');
   } catch (error) {
     console.error('Error iniciando viaje:', error);

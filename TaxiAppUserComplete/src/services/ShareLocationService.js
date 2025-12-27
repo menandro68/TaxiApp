@@ -1,6 +1,8 @@
 import { Linking, Share } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const BACKEND_URL = 'https://web-production-99844.up.railway.app';
+
 class ShareLocationService {
   constructor() {
     this.isSharing = false;
@@ -48,6 +50,27 @@ class ShareLocationService {
       
       console.log('✅ Compartir ubicación iniciado:', this.shareId);
       
+      // Enviar datos iniciales al backend
+      try {
+        await fetch(`${BACKEND_URL}/api/tracking/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shareId: this.shareId,
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            tripData: {
+              destination: shareData.destination,
+              driverName: shareData.driverName,
+              vehiclePlate: shareData.vehiclePlate
+            }
+          })
+        });
+        console.log('📡 Tracking enviado al backend');
+      } catch (err) {
+        console.error('Error enviando al backend:', err);
+      }
+      
       // Iniciar actualización periódica de ubicación
       this.updateInterval = setInterval(async () => {
         try {
@@ -89,6 +112,22 @@ class ShareLocationService {
         }
 
         await AsyncStorage.setItem(`share_${this.shareId}`, JSON.stringify(data));
+        
+        // Enviar al backend
+        try {
+          await fetch(`${BACKEND_URL}/api/tracking/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              shareId: this.shareId,
+              latitude,
+              longitude
+            })
+          });
+        } catch (err) {
+          console.error('Error enviando ubicación al backend:', err);
+        }
+        
         console.log('📍 Ubicación actualizada');
       }
     } catch (error) {
@@ -125,14 +164,15 @@ class ShareLocationService {
   }
 
   // Crear mensaje para WhatsApp
-  createWhatsAppMessage(shareId, driverName, vehiclePlate, destination) {
+  createWhatsAppMessage(shareId, driverName, vehiclePlate, destination, latitude, longitude) {
+    const trackingUrl = `${BACKEND_URL}/track/${shareId}`;
     const message = `🚖 *Estoy en camino*\n\n` +
       `📍 Destino: ${destination}\n` +
       `🚗 Conductor: ${driverName}\n` +
       `🔢 Placa: ${vehiclePlate}\n\n` +
-      `🔴 *Sigue mi viaje en vivo:*\n` +
-      `https://taxiapp.do/track/${shareId}\n\n` +
-      `_Este enlace se desactivará al terminar el viaje_`;
+      `🔴 *Sigue mi viaje EN VIVO:*\n` +
+      `${trackingUrl}\n\n` +
+      `_Enviado desde Squid App_`;
     
     return encodeURIComponent(message);
   }
@@ -149,11 +189,14 @@ class ShareLocationService {
       if (!shareData) return false;
 
       const data = JSON.parse(shareData);
+      const lastLocation = data.locations[data.locations.length - 1];
       const message = this.createWhatsAppMessage(
         this.shareId,
         data.driverName,
         data.vehiclePlate,
-        data.destination
+        data.destination,
+        lastLocation.latitude,
+        lastLocation.longitude
       );
 
       let url = `whatsapp://send?text=${message}`;
@@ -191,7 +234,7 @@ class ShareLocationService {
         message: `🚖 Estoy en camino a ${data.destination}\n` +
                 `Conductor: ${data.driverName}\n` +
                 `Placa: ${data.vehiclePlate}\n\n` +
-                `Sigue mi viaje: https://taxiapp.do/track/${this.shareId}`,
+`🔴 Sigue mi viaje EN VIVO: ${BACKEND_URL}/track/${this.shareId}`,
         title: 'Compartir mi viaje'
       });
 
@@ -212,7 +255,7 @@ class ShareLocationService {
 
       const data = JSON.parse(shareData);
       const message = `Estoy en camino a ${data.destination}. ` +
-                     `Sigue mi viaje: https://taxiapp.do/track/${this.shareId}`;
+                     `Sigue mi viaje EN VIVO: ${BACKEND_URL}/track/${this.shareId}`;
 
       const url = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
       
