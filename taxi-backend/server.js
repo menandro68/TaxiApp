@@ -64,6 +64,7 @@ const suspensionsRouter = require('./routes/suspensions');
 const zonesRouter = require('./routes/zones-management');
 const dynamicPricingRouter = require('./routes/dynamic-pricing');
 const surgeRouter = require('./routes/surge-engine');
+const trackingRouter = require('./routes/tracking');
 
 // ==========================================
 // REGISTRAR RUTAS
@@ -81,6 +82,12 @@ app.use('/api/suspensions', suspensionsRouter);
 app.use('/api/zones', zonesRouter);
 app.use('/api/dynamic-pricing', dynamicPricingRouter);
 app.use('/api/surge', surgeRouter);
+app.use('/api/tracking', trackingRouter);
+
+// Ruta para página de tracking en tiempo real
+app.get('/track/:shareId', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'track.html'));
+});
 
 // ==========================================
 // PÁGINA PRINCIPAL

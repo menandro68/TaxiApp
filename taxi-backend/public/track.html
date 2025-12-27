@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seguir Viaje - Squid App</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 18px; margin-bottom: 5px; }
+    .header p { font-size: 12px; opacity: 0.9; }
+    
+    #map { width: 100%; height: 50vh; }
+    
+    .info-card {
+      background: white;
+      margin: 15px;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .info-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-icon { font-size: 20px; margin-right: 12px; }
+    .info-label { color: #666; font-size: 12px; }
+    .info-value { font-weight: 600; color: #333; }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-completed { background: #cce5ff; color: #004085; }
+    
+    .update-time {
+      text-align: center;
+      padding: 10px;
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #ddd;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .error-container {
+      text-align: center;
+      padding: 50px 20px;
+    }
+    .error-icon { font-size: 60px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p style="margin-top: 20px; color: #666;">Cargando ubicación...</p>
+  </div>
+
+  <div id="content" style="display: none;">
+    <div class="header">
+      <h1>🚖 Seguimiento de Viaje</h1>
+      <p id="tripStatus">Viaje en progreso</p>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-icon">📍</span>
+        <div>
+          <div class="info-label">Destino</div>
+          <div class="info-value" id="destination">-</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">🚗</span>
+        <div>
+          <div class="info-label">Conductor</div>
+          <div class="info-value" id="driverName">-</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">🔢</span>
+        <div>
+          <div class="info-label">Placa</div>
+          <div class="info-value" id="vehiclePlate">-</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-icon">📊</span>
+        <div>
+          <div class="info-label">Estado</div>
+          <div><span class="status-badge status-active" id="statusBadge">En viaje</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="update-time">
+      Última actualización: <span id="lastUpdate">-</span>
+    </div>
+  </div>
+
+  <div id="error" class="error-container" style="display: none;">
+    <div class="error-icon">😕</div>
+    <h2>Viaje no encontrado</h2>
+    <p style="color: #666; margin-top: 10px;">Este enlace puede haber expirado o el viaje ya terminó.</p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map, marker;
+    const shareId = window.location.pathname.split('/').pop();
+    
+    // Icono personalizado para el marcador
+    const carIcon = L.divIcon({
+      html: '<div style="font-size: 30px;">🚖</div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      className: 'car-marker'
+    });
+
+    async function fetchLocation() {
+      try {
+        const response = await fetch(`/api/tracking/${shareId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          showError();
+          return;
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+
+        const { currentLocation, tripData, lastUpdate, status } = data;
+
+        // Actualizar info
+        document.getElementById('destination').textContent = tripData.destination || 'No especificado';
+        document.getElementById('driverName').textContent = tripData.driverName || 'No especificado';
+        document.getElementById('vehiclePlate').textContent = tripData.vehiclePlate || 'No especificado';
+        
+        const statusBadge = document.getElementById('statusBadge');
+        if (status === 'completed') {
+          statusBadge.textContent = 'Viaje completado';
+          statusBadge.className = 'status-badge status-completed';
+          document.getElementById('tripStatus').textContent = 'Viaje finalizado';
+        }
+
+        // Formatear hora
+        const updateDate = new Date(lastUpdate);
+        document.getElementById('lastUpdate').textContent = updateDate.toLocaleTimeString('es-DO');
+
+        // Actualizar mapa
+        if (currentLocation) {
+          const { latitude, longitude } = currentLocation;
+
+          if (!map) {
+            map = L.map('map').setView([latitude, longitude], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '© OpenStreetMap'
+            }).addTo(map);
+            marker = L.marker([latitude, longitude], { icon: carIcon }).addTo(map);
+          } else {
+            marker.setLatLng([latitude, longitude]);
+            map.panTo([latitude, longitude]);
+          }
+        }
+
+        // Seguir actualizando si está activo
+        if (status === 'active') {
+          setTimeout(fetchLocation, 5000);
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+    }
+
+    // Iniciar
+    fetchLocation();
+  </script>
+</body>
+</html>
