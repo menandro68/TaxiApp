@@ -12,6 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ShareLocationService from '../services/ShareLocationService';
 
 const ShareLocationModal = ({ 
@@ -54,20 +55,40 @@ const ShareLocationModal = ({
 
   // Iniciar compartir ubicación
   const startSharing = async () => {
-    if (!tripData || !userLocation) {
+    if (!tripData) {
       Alert.alert('Error', 'No hay información del viaje disponible');
+      return;
+    }
+
+    // Obtener ubicación - primero del prop, si no de AsyncStorage
+    let locationToUse = userLocation;
+    if (!locationToUse || !locationToUse.latitude) {
+      try {
+        const storedLocation = await AsyncStorage.getItem('user_location');
+        if (storedLocation) {
+          locationToUse = JSON.parse(storedLocation);
+          console.log('📍 startSharing: Ubicación obtenida de AsyncStorage:', locationToUse);
+        }
+      } catch (e) {
+        console.error('Error obteniendo ubicación de AsyncStorage:', e);
+      }
+    }
+
+    if (!locationToUse || !locationToUse.latitude) {
+      Alert.alert('Error', 'No se pudo obtener tu ubicación');
       return;
     }
 
     setIsLoading(true);
     try {
-      const id = await ShareLocationService.startSharing(tripData, userLocation);
+      const id = await ShareLocationService.startSharing(tripData, locationToUse);
       if (id) {
         setShareId(id);
         setIsSharing(true);
         Alert.alert('Éxito', 'Compartir ubicación activado');
       }
     } catch (error) {
+      console.error('Error en startSharing:', error);
       Alert.alert('Error', 'No se pudo activar compartir ubicación');
     } finally {
       setIsLoading(false);
@@ -96,13 +117,50 @@ const ShareLocationModal = ({
 
   // Compartir por WhatsApp
   const shareViaWhatsApp = async (phoneNumber = '') => {
-    if (!isSharing) {
-      await startSharing();
-    }
-    
-    const success = await ShareLocationService.shareViaWhatsApp(phoneNumber);
-    if (success) {
-      Alert.alert('✅', 'Ubicación compartida por WhatsApp');
+    try {
+      // Si no está compartiendo, iniciar primero
+      if (!isSharing || !shareId) {
+        if (!tripData) {
+          Alert.alert('Error', 'No hay información del viaje disponible');
+          return;
+        }
+        
+        // Obtener ubicación - primero del prop, si no de AsyncStorage
+        let locationToUse = userLocation;
+        if (!locationToUse || !locationToUse.latitude) {
+          try {
+            const storedLocation = await AsyncStorage.getItem('user_location');
+            if (storedLocation) {
+              locationToUse = JSON.parse(storedLocation);
+              console.log('📍 Ubicación obtenida de AsyncStorage:', locationToUse);
+            }
+          } catch (e) {
+            console.error('Error obteniendo ubicación de AsyncStorage:', e);
+          }
+        }
+        
+        if (!locationToUse || !locationToUse.latitude) {
+          Alert.alert('Error', 'No se pudo obtener tu ubicación');
+          return;
+        }
+        
+        const id = await ShareLocationService.startSharing(tripData, locationToUse);
+        if (id) {
+          setShareId(id);
+          setIsSharing(true);
+        } else {
+          Alert.alert('Error', 'No se pudo activar compartir ubicación');
+          return;
+        }
+      }
+
+      const success = await ShareLocationService.shareViaWhatsApp(phoneNumber);
+      if (success) {
+        Alert.alert('✅', 'Ubicación compartida por WhatsApp');
+      }
+    } catch (error) {
+      console.error('Error compartiendo por WhatsApp:', error);
+      Alert.alert('Error', 'No se pudo compartir por WhatsApp');
     }
   };
 

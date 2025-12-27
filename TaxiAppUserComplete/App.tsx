@@ -2,6 +2,7 @@ import 'react-native-get-random-values';
 import PushNotificationService from './src/services/PushNotificationService';
 import Tts from 'react-native-tts';
 import SecureStorage from './src/services/SecureStorage';
+import Geolocation from '@react-native-community/geolocation';
 import AnalyticsService from './src/services/analytics';
 import { addTripToHistory } from './src/history/TripHistoryStorage';
 import PaymentHistoryScreen from './src/screens/PaymentHistoryScreen';
@@ -1617,13 +1618,7 @@ const searchForDriver = () => {
         currentLocation: selectedDriver.location,
         distance: selectedDriver.distance
       };
-
       setDriverInfo(driverInfo);
-      setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
-      
-      
-
-       setDriverInfo(mockDriverInfo);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       // Cerrar el modal
       setSearchModalVisible(false);
@@ -1700,8 +1695,15 @@ const searchForDriver = () => {
       // DETENER TRACKING AL COMPLETAR
       stopDriverTracking();
       
-      // Detener compartir ubicacion
+    // Detener compartir ubicacion
       await ShareLocationService.stopSharing();
+      
+      // Detener watcher de ubicación del viaje
+      if (global.tripLocationWatcher) {
+       Geolocation.clearWatch(global.tripLocationWatcher);
+        global.tripLocationWatcher = null;
+        console.log('🛑 Watcher de ubicación detenido');
+      }
 
       const completionData = {
         actualPrice: estimatedPrice,
@@ -1861,7 +1863,37 @@ const startRide = async () => {
         locationToUse
       );
     }
+// Iniciar actualización de ubicación en tiempo real durante el viaje
+    const watchId = Geolocation.watchPosition(
+      async (position) => {
+        try {
+          const newLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: Date.now(),
+            source: 'gps'
+          };
+          
+          await AsyncStorage.setItem('user_location', JSON.stringify(newLocation));
+          console.log('📍 Ubicación actualizada para tracking:', newLocation.latitude.toFixed(6), newLocation.longitude.toFixed(6));
+        } catch (err) {
+          console.log('Error guardando ubicación:', err.message);
+        }
+      },
+      (error) => {
+        console.log('Error watchPosition:', error.message);
+      },
+      { 
+        enableHighAccuracy: false, 
+        distanceFilter: 5,
+        interval: 5000,
+        fastestInterval: 3000
+      }
+    );
     
+    // Guardar referencia para limpiar después
+    global.tripLocationWatcher = watchId;
     Alert.alert('¡Viaje iniciado!', 'Disfruta tu viaje');
   } catch (error) {
     console.error('Error iniciando viaje:', error);

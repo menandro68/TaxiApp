@@ -74,14 +74,32 @@ class ShareLocationService {
       // Iniciar actualización periódica de ubicación
       this.updateInterval = setInterval(async () => {
         try {
+          console.log('🔄 Interval ejecutándose...');
           // Obtener ubicación actual desde AsyncStorage
           const currentLocation = await AsyncStorage.getItem('user_location');
+          console.log('📦 user_location:', currentLocation ? 'encontrado' : 'NO encontrado');
           if (currentLocation) {
             const location = JSON.parse(currentLocation);
-            await this.updateLocation(location.latitude, location.longitude);
+            console.log('📍 Enviando ubicación:', location.latitude, location.longitude);
+            
+            // Enviar directamente al backend
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tracking/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  shareId: this.shareId,
+                  latitude: location.latitude,
+                  longitude: location.longitude
+                })
+              });
+              console.log('📡 Tracking enviado, status:', response.status);
+            } catch (fetchErr) {
+              console.error('❌ Error fetch:', fetchErr.message);
+            }
           }
         } catch (error) {
-          console.error('Error en actualización periódica:', error);
+          console.error('❌ Error en actualización periódica:', error);
         }
       }, 5000); // Actualizar cada 5 segundos
       
@@ -234,7 +252,7 @@ class ShareLocationService {
         message: `🚖 Estoy en camino a ${data.destination}\n` +
                 `Conductor: ${data.driverName}\n` +
                 `Placa: ${data.vehiclePlate}\n\n` +
-`🔴 Sigue mi viaje EN VIVO: ${BACKEND_URL}/track/${this.shareId}`,
+                `🔴 Sigue mi viaje EN VIVO: ${BACKEND_URL}/track/${this.shareId}`,
         title: 'Compartir mi viaje'
       });
 
