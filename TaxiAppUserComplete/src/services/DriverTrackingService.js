@@ -4,8 +4,8 @@ import ApiService from './ApiService';
 // SERVICIO DE TRACKING DEL CONDUCTOR - UBICACIÓN REAL
 // ============================================
 
-// Token de Mapbox para calcular rutas reales
-const MAPBOX_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q';
+// API Key de Google Maps para calcular rutas reales
+const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
 
 class DriverTrackingService {
   
@@ -80,7 +80,7 @@ class DriverTrackingService {
   }
 
   // ============================================
-  // CALCULAR ETA REAL CON MAPBOX DIRECTIONS API
+  // CALCULAR ETA REAL CON GOOGLE DIRECTIONS API
   // ============================================
   
   static async calculateRealETA(driverLat, driverLng, userLat, userLng) {
@@ -113,19 +113,19 @@ class DriverTrackingService {
         }
       }
 
-      console.log('🗺️ Calculando ETA real con Mapbox...');
+      console.log('🗺️ Calculando ETA real con Google...');
       
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${driverLng},${driverLat};${userLng},${userLat}?access_token=${MAPBOX_TOKEN}&overview=false`;
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${driverLat},${driverLng}&destination=${userLat},${userLng}&mode=driving&key=${GOOGLE_MAPS_APIKEY}`;
       
       const response = await fetch(url);
       const data = await response.json();
-      console.log('🗺️ Mapbox response:', JSON.stringify(data).substring(0, 300));
+      console.log('🗺️ Google response:', JSON.stringify(data).substring(0, 300));
       
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        const durationSeconds = route.duration; // Duración en segundos
+      if (data.status === 'OK' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0].legs[0];
+        const durationSeconds = route.duration.value; // Duración en segundos
         const durationMinutes = Math.ceil(durationSeconds / 60);
-        const distanceKm = (route.distance / 1000).toFixed(2);
+        const distanceKm = (route.distance.value / 1000).toFixed(2);
         
         console.log(`✅ ETA REAL: ${durationMinutes} min (${distanceKm} km por ruta)`);
         
@@ -141,7 +141,7 @@ class DriverTrackingService {
       }
       
     } catch (error) {
-      console.error('❌ Error calculando ETA con Mapbox:', error);
+      console.error('❌ Error calculando ETA con Google:', error);
       return null;
     }
   }
@@ -188,7 +188,7 @@ class DriverTrackingService {
           userLocation.longitude
         );
         
-        // Calcular ETA REAL con Mapbox
+        // Calcular ETA REAL con Google
         const realETA = await this.calculateRealETA(
           driverLocation.latitude,
           driverLocation.longitude,
@@ -199,7 +199,7 @@ class DriverTrackingService {
         if (realETA !== null) {
           estimatedTimeRemaining = realETA;
         } else {
-          // Fallback: estimación básica si Mapbox falla
+          // Fallback: estimación básica si Google falla
           estimatedTimeRemaining = Math.max(1, Math.ceil(distance * 2.5));
         }
         

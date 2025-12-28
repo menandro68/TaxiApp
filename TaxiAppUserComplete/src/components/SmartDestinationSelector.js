@@ -95,13 +95,13 @@ const CATEGORIES = [
 ];
 
 const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, currentLocation, mode }) => {
-  // Mapbox Geocoding API (GRATIS - 100,000 llamadas/mes)
-const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q';
+  // Google Places API
+const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
   const [mapboxResults, setMapboxResults] = useState([]);
   const [isSearchingMapbox, setIsSearchingMapbox] = useState(false);
 
-  // Función para buscar en Mapbox Geocoding API
-  const searchMapboxPlaces = async (text) => {
+  // Función para buscar en Google Places API
+  const searchGooglePlaces = async (text) => {
     if (!text || text.length < 3) {
       setMapboxResults([]);
       return;
@@ -110,30 +110,28 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
     setIsSearchingMapbox(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(text)}.json?access_token=${MAPBOX_ACCESS_TOKEN}&country=do&language=es&limit=5`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_MAPS_APIKEY}&components=country:do&language=es`
       );
       const data = await response.json();
       
-      console.log('📍 Mapbox Geocoding response:', data.features?.length || 0, 'resultados');
+      console.log('📍 Google Places response:', data.predictions?.length || 0, 'resultados');
       
-      if (data.features && data.features.length > 0) {
-        const places = data.features.map((feature, index) => ({
-          id: `mapbox-${index}-${Date.now()}`,
-          name: feature.text || feature.place_name.split(',')[0],
-          address: feature.place_name,
-          fullDescription: feature.place_name,
-          coordinates: {
-            lat: feature.center[1],
-            lng: feature.center[0]
-          },
-          isMapboxResult: true
+      if (data.predictions && data.predictions.length > 0) {
+        const places = data.predictions.map((prediction, index) => ({
+          id: `google-${index}-${Date.now()}`,
+          name: prediction.structured_formatting?.main_text || prediction.description.split(',')[0],
+          address: prediction.description,
+          fullDescription: prediction.description,
+          coordinates: null, // Se obtiene después con Place Details
+          placeId: prediction.place_id,
+          isGoogleResult: true
         }));
         setMapboxResults(places);
       } else {
         setMapboxResults([]);
       }
     } catch (error) {
-      console.error('❌ Error buscando en Mapbox:', error);
+      console.error('❌ Error buscando en Google:', error);
       setMapboxResults([]);
     }
     setIsSearchingMapbox(false);
@@ -196,8 +194,8 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
     
     setResults(searchResults);
     
-    // También buscar en Mapbox
-    searchMapboxPlaces(text);
+    // También buscar en Google
+    searchGooglePlaces(text);
   };
 
   // Calcular distancia (simplificada)
@@ -232,7 +230,7 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
       name: place.name,
       address: place.address || place.fullDescription,
       coordinates: place.coordinates,
-      type: place.isMapboxResult ? 'mapbox' : 'poi'
+      type: place.isGoogleResult ? 'google' : 'poi'
     });
     
     // Limpiar y cerrar
@@ -284,9 +282,9 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
       >
         <View style={styles.resultIcon}>
           <Icon 
-            name={item.isMapboxResult ? "globe" : "location"} 
+            name={item.isGoogleResult ? "globe" : "location"} 
             size={24} 
-            color={item.isMapboxResult ? "#4264FB" : "#007AFF"} 
+            color={item.isGoogleResult ? "#4285F4" : "#007AFF"} 
           />
         </View>
         <View style={styles.resultContent}>
@@ -295,8 +293,8 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
           {distance && (
             <Text style={styles.resultDistance}>📍 {distance} km</Text>
           )}
-          {item.isMapboxResult && (
-            <Text style={styles.mapboxBadge}>🗺️ Mapbox</Text>
+          {item.isGoogleResult && (
+            <Text style={styles.googleBadge}>🗺️ Google</Text>
           )}
         </View>
         <Icon name="chevron-forward" size={20} color="#999" />
@@ -304,7 +302,7 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29s
     );
   };
 
-  // Combinar resultados locales y de Mapbox
+  // Combinar resultados locales y de Google
   const combinedResults = [...results, ...mapboxResults];
 
   return (
@@ -570,9 +568,9 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '500',
   },
-  mapboxBadge: {
+  googleBadge: {
     fontSize: 11,
-    color: '#4264FB',
+    color: '#4285F4',
     fontWeight: '500',
     marginTop: 2,
   },

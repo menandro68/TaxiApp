@@ -669,82 +669,36 @@ class LocationFallbackService {
   }
 
   // ====================================================================
-  // REVERSE GEOCODING OPTIMIZADO - Mapbox con parámetros específicos
+  // REVERSE GEOCODING OPTIMIZADO - Google Maps con parámetros específicos
   // ====================================================================
   static async getReverseGeocodeOptimized(latitude, longitude) {
     try {
-      // Construir URL con parámetros optimizados para direcciones específicas
-      const params = new URLSearchParams({
-        access_token: 'pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q',
-        language: 'es',
-        types: 'address,poi',           // Priorizar direcciones y puntos de interés
-        limit: 1,                        // Solo necesitamos el mejor resultado
-        country: 'DO'                    // Limitar a República Dominicana
-      });
-
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?${params}`;
+      const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
       
-      console.log('📍 Consultando Mapbox para:', latitude.toFixed(4), longitude.toFixed(4));
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_APIKEY}&language=es&result_type=street_address|route|premise`;
+      
+      console.log('📍 Consultando Google para:', latitude.toFixed(4), longitude.toFixed(4));
       
       const response = await fetch(url);
       const data = await response.json();
       
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        let address = feature.place_name;
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const result = data.results[0];
+        let address = result.formatted_address;
 
-        // Extraer componentes de la dirección para formato más limpio
-        const context = feature.context || [];
-        const streetName = feature.text || '';
-        const streetNumber = feature.address || '';
-        
-        // Buscar localidad/barrio en el contexto
-        let locality = '';
-        let region = '';
-        
-        context.forEach(item => {
-          if (item.id.startsWith('locality') || item.id.startsWith('neighborhood')) {
-            locality = item.text;
-          }
-          if (item.id.startsWith('place')) {
-            region = item.text;
-          }
-        });
-
-        // Construir dirección optimizada
-        if (streetName) {
-          let optimizedAddress = streetName;
-          if (streetNumber) {
-            optimizedAddress = `${streetName} ${streetNumber}`;
-          }
-          if (locality) {
-            optimizedAddress += `, ${locality}`;
-          }
-          if (region && region !== locality) {
-            optimizedAddress += `, ${region}`;
-          }
-          
-          // Agregar país si no está muy largo
-          if (optimizedAddress.length < 50) {
-            optimizedAddress += ', República Dominicana';
-          }
-          
-          address = optimizedAddress;
-        } else {
-          // Limpiar dirección por defecto si es muy larga
-          if (address.length > 60) {
-            address = address
-              .replace(', Republica Dominicana', '')
-              .replace(', Dominican Republic', '')
-              .replace(', República Dominicana', '');
-          }
+        // Limpiar dirección si es muy larga
+        if (address.length > 60) {
+          address = address
+            .replace(', Republica Dominicana', '')
+            .replace(', Dominican Republic', '')
+            .replace(', República Dominicana', '');
         }
 
         console.log('📍 Dirección obtenida:', address);
         return address;
       }
       
-      console.log('📍 Sin resultados de Mapbox');
+      console.log('📍 Sin resultados de Google');
       return 'Ubicacion desconocida';
       
     } catch (error) {

@@ -63,20 +63,21 @@ class LocationPickerService {
     }
   }
 
-  // Geocoding inverso (coordenadas a dirección) - MAPBOX API
+  // Geocoding inverso (coordenadas a dirección) - GOOGLE API
   async reverseGeocode(latitude, longitude) {
     try {
+      const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es&types=address,poi`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_APIKEY}&language=es`
       );
 
       if (!response.ok) throw new Error('Geocoding failed');
 
       const data = await response.json();
 
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        let address = feature.place_name;
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const result = data.results[0];
+        let address = result.formatted_address;
         
         // Limpiar si es muy largo
         if (address.length > 60) {
@@ -84,16 +85,16 @@ class LocationPickerService {
         }
 
         // Extraer componentes
-        const context = feature.context || [];
-        const neighborhood = context.find(c => c.id.startsWith('neighborhood'))?.text || '';
-        const locality = context.find(c => c.id.startsWith('locality'))?.text || '';
-        const place = context.find(c => c.id.startsWith('place'))?.text || 'Santo Domingo';
+        const components = result.address_components || [];
+        const street = components.find(c => c.types.includes('route'))?.long_name || '';
+        const neighborhood = components.find(c => c.types.includes('neighborhood') || c.types.includes('sublocality'))?.long_name || '';
+        const city = components.find(c => c.types.includes('locality'))?.long_name || 'Santo Domingo';
 
         return {
           formatted_address: address,
-          street: feature.text || '',
-          neighborhood: neighborhood || locality,
-          city: place,
+          street: street,
+          neighborhood: neighborhood,
+          city: city,
           country: 'República Dominicana'
         };
       }
@@ -111,23 +112,28 @@ class LocationPickerService {
     }
   }
 
-  // Buscar direcciones (geocoding) - MAPBOX API
+  // Buscar direcciones (geocoding) - GOOGLE API
   async searchAddress(query) {
     try {
+      const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&country=DO&language=es&limit=5`
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_APIKEY}&components=country:do&language=es`
       );
 
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
 
-      return data.features.map(item => ({
-        place_id: item.id,
-        formatted_address: item.place_name,
-        latitude: item.center[1],
-        longitude: item.center[0],
-        type: item.place_type[0]
+      if (data.status !== 'OK' || !data.predictions) {
+        return [];
+      }
+
+      return data.predictions.map(item => ({
+        place_id: item.place_id,
+        formatted_address: item.description,
+        latitude: null,
+        longitude: null,
+        type: item.types?.[0] || 'address'
       }));
     } catch (error) {
       console.error('Address search error:', error);

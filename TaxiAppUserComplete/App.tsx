@@ -776,15 +776,16 @@ const initializeLocationService = async () => {
     const defaultLat = 18.4861;
     const defaultLng = -69.9312;
 
-    // Función helper para obtener dirección via Mapbox
+   // Función helper para obtener dirección via Google
     const getAddressFromCoords = async (lat, lng) => {
       try {
+        const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_APIKEY}&language=es`
         );
         const data = await response.json();
-        if (data.features && data.features.length > 0) {
-          let address = data.features[0].place_name;
+        if (data.status === 'OK' && data.results && data.results.length > 0) {
+          let address = data.results[0].formatted_address;
           if (address.length > 60) {
             address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
           }
@@ -912,12 +913,13 @@ const initializeLocationService = async () => {
     
     let emergencyAddress = `${emergencyLat.toFixed(4)}, ${emergencyLng.toFixed(4)}`;
     try {
+ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${emergencyLng},${emergencyLat}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${emergencyLat},${emergencyLng}&key=${GOOGLE_MAPS_APIKEY}&language=es`
       );
       const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        emergencyAddress = data.features[0].place_name;
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        emergencyAddress = data.results[0].formatted_address;
       }
     } catch (e) {}
 
@@ -1986,10 +1988,10 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
 
     console.log('��� Iniciando reverse geocoding:', { latitude, longitude });
 
+ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=pk.eyJ1IjoibWVuYW5kcm82OCIsImEiOiJjbWlmY2hiMHcwY29sM2VuNGk2dnlzMzliIn0.PqOOzFKFJA7Q5jPbGwOG8Q&language=es`
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_APIKEY}&language=es`
     );
-
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -2000,9 +2002,8 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
 
     let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
 
-    if (data.features && data.features.length > 0) {
-      address = data.features[0].place_name;
-      
+if (data.status === 'OK' && data.results && data.results.length > 0) {
+      address = data.results[0].formatted_address;
       // Limpiar si es muy largo
       if (address.length > 60) {
         address = address.replace(', República Dominicana', '').replace(', Dominican Republic', '');
