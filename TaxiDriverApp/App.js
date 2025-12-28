@@ -77,7 +77,7 @@ export default function DriverApp({ navigation }) {
   });
   
   const timerRef = useRef(null);
-
+  const soundRef = useRef(null);
  useEffect(() => {
     // Cargar conductor guardado
     const loadSavedDriver = async () => {
@@ -163,12 +163,13 @@ export default function DriverApp({ navigation }) {
 Sound.setCategory('Playback');
       const moneySound = new Sound('money_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
         if (!error) {
+          soundRef.current = moneySound; // Guardar referencia
           let playCount = 0;
           const playSound = () => {
-            if (playCount < 7) {
+            if (playCount < 7 && soundRef.current) {
               playCount++;
               moneySound.play((success) => {
-                if (success) {
+                if (success && soundRef.current) {
                   playSound();
                 }
               });
@@ -610,6 +611,13 @@ const toggleDriverStatus = async () => {
 
 const acceptTrip = async () => {
     if (!pendingRequest) return;
+    
+   // Detener el sonido cuando se acepta el viaje
+    if (soundRef.current) {
+      soundRef.current.stop();
+      soundRef.current.release();
+      soundRef.current = null;
+    }
     
     // Detener el timer cuando se acepta el viaje
     if (timerRef.current) {
