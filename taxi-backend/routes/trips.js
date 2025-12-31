@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 // CREAR NUEVO VIAJE - SIN ASIGNACIÓN AUTOMÁTICA
 router.post('/create', async (req, res) => {
     try {
-        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords } = req.body;
+        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords } = req.body;
 
         // VALIDAR user_id
         if (!user_id) {
@@ -46,10 +46,10 @@ router.post('/create', async (req, res) => {
 
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
         const tripResult = await db.query(
-            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())
+            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', estimated_price || 0]
+            [userIdParsed, pickup_location, destination, 'pending', estimated_price || 0, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -128,7 +128,9 @@ router.post('/create', async (req, res) => {
                         paymentMethod: payment_method || 'Efectivo',
                         vehicleType: vehicle_type || 'Estándar',
                         pickupLat: pickup_coords.latitude.toString(),
-                        pickupLng: pickup_coords.longitude.toString()
+                        pickupLng: pickup_coords.longitude.toString(),
+                        destinationLat: destination_coords?.latitude?.toString() || '',
+                        destinationLng: destination_coords?.longitude?.toString() || ''
                     },
                     token: driver.fcm_token
                 };
