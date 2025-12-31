@@ -352,14 +352,16 @@ const handleArrivedAtPickup = async () => {
       body: JSON.stringify({ status: 'arrived' })
     });
     const data = await response.json();
-    if (data.success) {
+   if (data.success) {
       setTripPhase('arrived');
+      setActiveTab('dashboard'); // Regresar al Dashboard automáticamente
       await stopBackgroundTracking(); // Detener background tracking al llegar
-      Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida. El pasajero ha sido notificado.');
+ Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida. El pasajero ha sido notificado.');
     }
   } catch (error) {
     console.error('Error notificando llegada:', error);
     setTripPhase('arrived');
+    setActiveTab('dashboard'); // Regresar al Dashboard automáticamente
     await stopBackgroundTracking(); // Detener background tracking al llegar
     Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida.');
   }
