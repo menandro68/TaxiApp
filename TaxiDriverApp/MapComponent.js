@@ -389,14 +389,15 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
         <Text style={styles.infoText}>⏱️ {routeInfo?.durationText || '...'}</Text>
       </View>
 
-      {/* INDICADOR DE DATOS CARGADOS */}
+      {/* INDICADOR DE DATOS CARGADOS - OCULTO
       <View style={styles.statusPanel}>
         <Text style={styles.statusText}>
           {routeCoordinates.length > 0 ? '🛣️ Ruta lista' : '⏳ Cargando ruta...'}
         </Text>
       </View>
+      */}
 
-      {/* DEBUG */}
+      {/* DEBUG - OCULTO
       <View style={styles.debugPanel}>
         <Text style={styles.debugText}>
           Ruta: {routeCoordinates.length} pts | Pickup: {pickupCoord ? '✓' : '✗'} | GPS: {currentLocation ? '✓' : '✗'}
@@ -412,6 +413,7 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
           </Text>
         )}
       </View>
+      */}
 
       {/* PANEL NAVEGACIÓN */}
       {isNavigating && navigationSteps[currentStepIndex] && (
@@ -436,19 +438,16 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
               <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={startNavigation}>
                 <Text style={styles.btnText}>🚗 Ir Pasajero</Text>
               </TouchableOpacity>
+              {/* OCULTO
               <TouchableOpacity style={[styles.btn, styles.btnBlue]} onPress={handleCenterMap}>
                 <Text style={styles.btnText}>👤 Ver ruta</Text>
               </TouchableOpacity>
+              */}
             </>
-          ) : (
-            <>
-              <TouchableOpacity style={[styles.btn, styles.btnRed]} onPress={stopNavigation}>
-                <Text style={styles.btnText}>⏹️ Detener</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={() => speakInstruction(navigationSteps[currentStepIndex]?.instruction)}>
-                <Text style={styles.btnText}>🔊 Repetir</Text>
-              </TouchableOpacity>
-            </>
+        ) : (
+            <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={() => speakInstruction(navigationSteps[currentStepIndex]?.instruction)}>
+              <Text style={styles.btnText}>🔊 Repetir</Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
