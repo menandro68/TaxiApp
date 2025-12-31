@@ -436,7 +436,7 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
           {!isNavigating ? (
             <>
               <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={startNavigation}>
-                <Text style={styles.btnText}>🚗 Ir Pasajero</Text>
+                <Text style={styles.btnText}>{tripPhase === 'started' ? '🚗 Ir al Destino' : '🚗 Ir Pasajero'}</Text>
               </TouchableOpacity>
               {/* OCULTO
               <TouchableOpacity style={[styles.btn, styles.btnBlue]} onPress={handleCenterMap}>

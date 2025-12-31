@@ -985,12 +985,12 @@ setCurrentTrip({
   </TouchableOpacity>
 )}
           
-          {tripPhase === 'arrived' && (
+        {tripPhase === 'arrived' && (
             <TouchableOpacity 
               style={[styles.completeButton, { backgroundColor: '#3b82f6' }]} 
               onPress={() => {
                 setTripPhase('started');
-                Alert.alert('🚗 Viaje Iniciado', 'El viaje ha comenzado oficialmente');
+                setActiveTab('map');
               }}
             >
               <Text style={styles.buttonText}>▶️ Iniciar Viaje</Text>
@@ -1100,7 +1100,7 @@ setCurrentTrip({
         />
       )} */}
       
-      {/* DASHCAM - Solo cuando el viaje está iniciado */}
+ {/* DASHCAM - OCULTO
       {currentTrip && tripPhase === 'started' && (
         <View style={{
           position: 'absolute',
@@ -1122,6 +1122,7 @@ setCurrentTrip({
           />
         </View>
       )}
+      */}
       
       {/* Botones de Comunicación */}
       {currentTrip && (
