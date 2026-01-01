@@ -50,14 +50,27 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
   const [isNavigating, setIsNavigating] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const lastSpokenStep = useRef(-1);
+  const spokenAnnouncements = useRef({});
 
-  const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitude;
+const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitude;
   const pickupLng = currentTrip?.pickupLng || currentTrip?.pickupLocation?.longitude;
 
   const pickupCoord = pickupLat && pickupLng ? {
     latitude: parseFloat(pickupLat),
     longitude: parseFloat(pickupLng)
   } : null;
+
+  // Coordenadas del destino
+  const destLat = currentTrip?.destinationLat || currentTrip?.destinationLocation?.latitude;
+  const destLng = currentTrip?.destinationLng || currentTrip?.destinationLocation?.longitude;
+
+  const destCoord = destLat && destLng ? {
+    latitude: parseFloat(destLat),
+    longitude: parseFloat(destLng)
+  } : null;
+
+  // Destino de navegación según la fase del viaje
+  const navigationTarget = tripPhase === 'started' ? destCoord : pickupCoord;
 
   // Obtener ubicación GPS - solo una vez al montar
   useEffect(() => {
@@ -89,18 +102,27 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
     return () => clearInterval(interval);
   }, []);
 
-  // Obtener ruta cuando tengamos ubicación y pickup
+  // Obtener ruta cuando tengamos ubicación y destino
   useEffect(() => {
-    if (currentTrip && currentLocation && pickupCoord && !routeFetched.current) {
-      console.log('🚀 Obteniendo ruta al pasajero...');
+    if (currentTrip && currentLocation && navigationTarget && !routeFetched.current) {
+      console.log('🚀 Obteniendo ruta...', tripPhase === 'started' ? 'al destino' : 'al pasajero');
       routeFetched.current = true;
-      fetchRoute(currentLocation, pickupCoord);
+      fetchRoute(currentLocation, navigationTarget);
     }
-  }, [currentTrip, currentLocation, pickupCoord]);
+  }, [currentTrip, currentLocation, navigationTarget]);
+
+  // Recalcular ruta cuando cambie la fase del viaje
+  useEffect(() => {
+    if (tripPhase === 'started' && currentLocation && destCoord) {
+      console.log('🔄 Fase cambiada a started - recalculando ruta al destino');
+      routeFetched.current = false;
+      fetchRoute(currentLocation, destCoord);
+    }
+  }, [tripPhase]);
 
   // Actualizar paso de navegación en tiempo real
   useEffect(() => {
-    if (!isNavigating || !currentLocation || navigationSteps.length === 0 || !pickupCoord) return;
+    if (!isNavigating || !currentLocation || navigationSteps.length === 0 || !navigationTarget) return;
 
     const currentStep = navigationSteps[currentStepIndex];
     if (!currentStep) return;
@@ -114,49 +136,80 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const distanceToStep = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-    // Calcular distancia al pickup
-    const dLatP = (pickupCoord.latitude - currentLocation.latitude) * Math.PI / 180;
-    const dLonP = (pickupCoord.longitude - currentLocation.longitude) * Math.PI / 180;
+    // Calcular distancia al destino de navegación
+    const dLatP = (navigationTarget.latitude - currentLocation.latitude) * Math.PI / 180;
+    const dLonP = (navigationTarget.longitude - currentLocation.longitude) * Math.PI / 180;
     const aP = Math.sin(dLatP/2) * Math.sin(dLatP/2) +
-      Math.cos(currentLocation.latitude * Math.PI / 180) * Math.cos(pickupCoord.latitude * Math.PI / 180) *
+      Math.cos(currentLocation.latitude * Math.PI / 180) * Math.cos(navigationTarget.latitude * Math.PI / 180) *
       Math.sin(dLonP/2) * Math.sin(dLonP/2);
-    const distanceToPickup = R * 2 * Math.atan2(Math.sqrt(aP), Math.sqrt(1-aP));
+    const distanceToTarget = R * 2 * Math.atan2(Math.sqrt(aP), Math.sqrt(1-aP));
 
-    console.log('📍 Paso:', distanceToStep.toFixed(0), 'm | Pickup:', distanceToPickup.toFixed(0), 'm');
+    const targetName = tripPhase === 'started' ? 'destino' : 'pasajero';
+    console.log('📍 Paso:', distanceToStep.toFixed(0), 'm |', targetName + ':', distanceToTarget.toFixed(0), 'm');
 
-    // PRIORIDAD: Detectar llegada al pasajero (< 50 metros)
-    if (distanceToPickup < 50) {
+    // PRIORIDAD: Detectar llegada (< 50 metros)
+    if (distanceToTarget < 50) {
       if (voiceEnabled && lastSpokenStep.current !== 'arrived') {
         lastSpokenStep.current = 'arrived';
         Tts.stop();
-        speakInstruction('Has llegado al punto de recogida del pasajero');
+        const mensaje = tripPhase === 'started' 
+          ? 'Has llegado al destino' 
+          : 'Has llegado al punto de recogida del pasajero';
+        speakInstruction(mensaje);
       }
       setIsNavigating(false);
-      Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero');
+      const alertTitle = tripPhase === 'started' ? '✅ Destino' : '✅ Llegaste';
+      const alertMsg = tripPhase === 'started' 
+        ? 'Has llegado al destino del pasajero' 
+        : 'Has llegado al punto de recogida del pasajero';
+      Alert.alert(alertTitle, alertMsg);
       return;
     }
 
-    const timeNow = Date.now();
-    const lastSpoken = typeof lastSpokenStep.current === 'number' ? lastSpokenStep.current : 0;
-    const timeSinceLastSpeak = timeNow - lastSpoken;
-
-    // Anticipar próximo giro (150m antes)
+    // SISTEMA DE VOZ PROFESIONAL - Detecta giros por texto en español
+    const stepKey = 'step_' + currentStepIndex;
     const nextStep = navigationSteps[currentStepIndex + 1];
-    if (nextStep && distanceToStep < 150 && distanceToStep > 50 && timeSinceLastSpeak > 6000) {
-      lastSpokenStep.current = timeNow;
-      speakInstruction('En ' + Math.round(distanceToStep) + ' metros, ' + nextStep.instruction);
+    const nextInstruction = nextStep?.instruction?.toLowerCase() || '';
+    
+    // Detectar si hay giro por TEXTO (más confiable que maneuver)
+    const hasNextTurn = nextInstruction.includes('gira') || 
+                        nextInstruction.includes('derecha') || 
+                        nextInstruction.includes('izquierda') ||
+                        nextInstruction.includes('rotonda') ||
+                        nextInstruction.includes('retorno') ||
+                        nextInstruction.includes('incorpora') ||
+                        nextInstruction.includes('sal ') ||
+                        nextInstruction.includes('toma');
+    
+    // Anunciar el PRÓXIMO paso si tiene instrucción de giro
+    if (nextStep && hasNextTurn) {
+      // ANUNCIO 1: Preparación a 250m
+      if (distanceToStep < 250 && distanceToStep > 180 && !spokenAnnouncements.current[stepKey + '_250']) {
+        spokenAnnouncements.current[stepKey + '_250'] = true;
+        speakInstruction('En 250 metros, ' + nextStep.instruction);
+      }
+      
+      // ANUNCIO 2: Recordatorio a 100m
+      if (distanceToStep < 100 && distanceToStep > 60 && !spokenAnnouncements.current[stepKey + '_100']) {
+        spokenAnnouncements.current[stepKey + '_100'] = true;
+        speakInstruction('En 100 metros, ' + nextStep.instruction);
+      }
+      
+      // ANUNCIO 3: Alerta inmediata a 30m
+      if (distanceToStep < 30 && !spokenAnnouncements.current[stepKey + '_now']) {
+        spokenAnnouncements.current[stepKey + '_now'] = true;
+        speakInstruction('Ahora, ' + nextStep.instruction);
+      }
     }
 
-    // Avanzar al siguiente paso cuando estemos cerca
-    if (distanceToStep < 35 && currentStepIndex < navigationSteps.length - 1) {
+    // Avanzar al siguiente paso
+    if (distanceToStep < 20 && currentStepIndex < navigationSteps.length - 1) {
       const nextIndex = currentStepIndex + 1;
       setCurrentStepIndex(nextIndex);
-      lastSpokenStep.current = timeNow;
       
-      if (voiceEnabled) {
-        // Decir la instrucción actual y la distancia del tramo
-        const stepDistance = navigationSteps[nextIndex].distance;
-        speakInstruction(navigationSteps[nextIndex].instruction + '. Continúa por ' + stepDistance);
+      // Anunciar siguiente tramo si no es giro
+      if (voiceEnabled && nextStep && !hasNextTurn) {
+        speakInstruction('Continúa recto por ' + nextStep.distance);
       }
     }
 
@@ -169,7 +222,7 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
         longitudeDelta: 0.003,
       }, 300);
     }
-  }, [currentLocation, isNavigating, currentStepIndex, navigationSteps, voiceEnabled, pickupCoord]);
+  }, [currentLocation, isNavigating, currentStepIndex, navigationSteps, voiceEnabled, navigationTarget, tripPhase]);
 
   const fetchRoute = async (origin, destination) => {
     try {
@@ -262,15 +315,27 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
     Tts.speak(text);
   };
 
-  const startNavigation = () => {
+  const startNavigation = async () => {
+    // Si no hay ruta cargada, esperar a que se cargue
+    if (navigationSteps.length === 0 && navigationTarget && currentLocation) {
+      console.log('⏳ Esperando ruta...');
+      routeFetched.current = false;
+      await fetchRoute(currentLocation, navigationTarget);
+      // Pequeña espera para que el state se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    // Verificar de nuevo después de cargar
     if (navigationSteps.length === 0) {
-      Alert.alert('Espera', 'Cargando ruta...');
+      Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión.');
       return;
     }
+    
     setIsNavigating(true);
     setCurrentStepIndex(0);
     lastSpokenStep.current = 0;
-    speakInstruction('Iniciando navegación. ' + navigationSteps[0].instruction);
+    const destino = tripPhase === 'started' ? 'al destino' : 'al pasajero';
+    speakInstruction('Iniciando navegación ' + destino + '. ' + navigationSteps[0].instruction);
   };
 
   const stopNavigation = () => {

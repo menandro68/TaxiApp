@@ -38,6 +38,34 @@ const { width, height } = Dimensions.get('window');
 
 import { LogBox } from 'react-native';
 LogBox.ignoreAllLogs(true);
+// NORMALIZACIÓN DE DATOS DEL VIAJE (snake_case → camelCase)
+const normalizeTrip = (trip, fcmData = {}) => {
+  if (!trip) return null;
+  
+  return {
+    id: trip.id || fcmData.id,
+    user: fcmData.user || trip.user_name || 'Pasajero',
+    phone: fcmData.phone || trip.user_phone || '',
+    pickup: trip.pickup_location || fcmData.pickup || '',
+    destination: trip.destination || fcmData.destination || '',
+    // Coordenadas de pickup (prioridad: BD > FCM)
+    pickupLat: parseFloat(trip.pickup_lat) || parseFloat(fcmData.pickupLat) || null,
+    pickupLng: parseFloat(trip.pickup_lng) || parseFloat(fcmData.pickupLng) || null,
+    // Coordenadas de destino (prioridad: BD > FCM)
+    destinationLat: parseFloat(trip.destination_lat) || parseFloat(fcmData.destinationLat) || null,
+    destinationLng: parseFloat(trip.destination_lng) || parseFloat(fcmData.destinationLng) || null,
+    // Otros datos
+    price: parseFloat(trip.price) || parseFloat(fcmData.estimatedPrice) || 0,
+    status: trip.status || 'assigned',
+    vehicleType: fcmData.vehicleType || 'economy',
+    paymentMethod: fcmData.paymentMethod || 'cash',
+    distance: fcmData.distance || '',
+    // Para terceros
+    isForOther: fcmData.isForOther || false,
+    passengerInfo: fcmData.passengerInfo || null,
+    tripCode: fcmData.tripCode || null,
+  };
+};
 
 export default function DriverApp({ navigation }) {
   const [driverStatus, setDriverStatus] = useState('offline'); // offline, online, busy, suspended
@@ -692,23 +720,29 @@ const acceptTrip = async () => {
         });
       }
       
-setCurrentTrip({
-        ...pendingRequest,
-        phone: pendingRequest.phone || '+1-809-555-0199'
-      });
+// NORMALIZAR datos combinando servidor + FCM
+      const normalizedTrip = normalizeTrip(data.trip, pendingRequest);
+      console.log('📦 Trip normalizado:', normalizedTrip);
+      setCurrentTrip(normalizedTrip);
       
-      // Configurar las paradas del viaje
+      // Configurar las paradas del viaje con coordenadas normalizadas
       const stops = {
         pickup: {
-          address: pendingRequest.pickup || 'Punto de recogida',
-          coordinates: pendingRequest.pickupLocation || null
+          address: normalizedTrip.pickup || 'Punto de recogida',
+          coordinates: normalizedTrip.pickupLat ? {
+            latitude: normalizedTrip.pickupLat,
+            longitude: normalizedTrip.pickupLng
+          } : null
         },
         destination: {
-          address: pendingRequest.destination || 'Destino final', 
-          coordinates: pendingRequest.destinationLocation || null
+          address: normalizedTrip.destination || 'Destino final',
+          coordinates: normalizedTrip.destinationLat ? {
+            latitude: normalizedTrip.destinationLat,
+            longitude: normalizedTrip.destinationLng
+          } : null
         },
         additionalStops: pendingRequest.additionalDestinations || []
-      };
+           };
       setTripStops(stops);
       setCurrentStopIndex(0);
       
