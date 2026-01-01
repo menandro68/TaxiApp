@@ -516,4 +516,53 @@ router.get('/', async (req, res) => {
     }
 });
 
+// OBTENER HISTORIAL DE VIAJES DEL CONDUCTOR
+router.get('/driver-history/:driverId', async (req, res) => {
+    try {
+        const { driverId } = req.params;
+        const { period } = req.query; // 'today', 'week', 'month'
+        
+        let dateFilter = '';
+        const now = new Date();
+        
+        if (period === 'today') {
+            dateFilter = `AND DATE(t.created_at) = CURRENT_DATE`;
+        } else if (period === 'week') {
+            dateFilter = `AND t.created_at >= NOW() - INTERVAL '7 days'`;
+        } else if (period === 'month') {
+            dateFilter = `AND t.created_at >= NOW() - INTERVAL '30 days'`;
+        }
+        
+        const result = await db.query(
+            `SELECT t.id, t.pickup_location, t.destination, t.price, t.status, 
+                    t.created_at, t.updated_at,
+                    u.name as user_name, u.phone as user_phone
+             FROM trips t
+             LEFT JOIN users u ON t.user_id = u.id
+             WHERE t.driver_id = $1 
+             AND t.status = 'completed'
+             ${dateFilter}
+             ORDER BY t.created_at DESC`,
+            [parseInt(driverId)]
+        );
+        
+        // Calcular totales
+        const trips = result.rows;
+        const totalEarnings = trips.reduce((sum, t) => sum + parseFloat(t.price || 0), 0);
+        const totalTrips = trips.length;
+        
+        res.json({
+            success: true,
+            period: period || 'all',
+            totalEarnings,
+            totalTrips,
+            averagePerTrip: totalTrips > 0 ? Math.round(totalEarnings / totalTrips) : 0,
+            trips
+        });
+    } catch (error) {
+        console.error('Error al obtener historial del conductor:', error);
+        res.status(500).json({ error: 'Error al obtener historial' });
+    }
+});
+
 module.exports = router;
