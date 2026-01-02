@@ -38,7 +38,7 @@ const cleanInstruction = (html) => {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
-const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking }) => {
+const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -162,7 +162,16 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
       const alertMsg = tripPhase === 'started' 
         ? 'Has llegado al destino del pasajero' 
         : 'Has llegado al punto de recogida del pasajero';
-      Alert.alert(alertTitle, alertMsg);
+      Alert.alert(alertTitle, alertMsg, [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (tripPhase !== 'started' && onArrivedAtPickup) {
+              onArrivedAtPickup();
+            }
+          }
+        }
+      ]);
       return;
     }
 
@@ -316,15 +325,36 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   };
 
   const startNavigation = async () => {
-    // Si no hay ruta cargada, esperar a que se cargue
-    if (navigationSteps.length === 0 && navigationTarget && currentLocation) {
-      console.log('⏳ Esperando ruta...');
+    // Si no tenemos ubicación, intentar obtenerla
+    let location = currentLocation;
+    if (!location) {
+      console.log('📍 Obteniendo ubicación GPS...');
+      try {
+        const position = await new Promise((resolve, reject) => {
+          Geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+          );
+        });
+        location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        setCurrentLocation(location);
+        console.log('✅ GPS obtenido:', location.latitude, location.longitude);
+      } catch (error) {
+        console.log('❌ Error GPS:', error.message);
+        Alert.alert('Error', 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.');
+        return;
+      }
+    }
+
+    // Si no hay ruta cargada, obtenerla
+    if (navigationSteps.length === 0 && navigationTarget && location) {
+      console.log('⏳ Obteniendo ruta...');
       routeFetched.current = false;
-      await fetchRoute(currentLocation, navigationTarget);
-      // Pequeña espera para que el state se actualice
+      await fetchRoute(location, navigationTarget);
       await new Promise(resolve => setTimeout(resolve, 500));
     }
-    
+
     // Verificar de nuevo después de cargar
     if (navigationSteps.length === 0) {
       Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión.');

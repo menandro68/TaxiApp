@@ -383,18 +383,21 @@ const handleArrivedAtPickup = async () => {
       body: JSON.stringify({ status: 'arrived' })
     });
     const data = await response.json();
-   if (data.success) {
+if (data.success) {
       setTripPhase('arrived');
-      setActiveTab('dashboard'); // Regresar al Dashboard automáticamente
       await stopBackgroundTracking(); // Detener background tracking al llegar
- Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida. El pasajero ha sido notificado.');
+      Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
+        {
+          text: 'OK',
+          onPress: () => setActiveTab('dashboard')
+        }
+      ]);
     }
   } catch (error) {
     console.error('Error notificando llegada:', error);
     setTripPhase('arrived');
     setActiveTab('dashboard'); // Regresar al Dashboard automáticamente
     await stopBackgroundTracking(); // Detener background tracking al llegar
-    Alert.alert('✅ Llegada Detectada', 'Has llegado al punto de recogida.');
   }
 };
 
@@ -859,10 +862,18 @@ const acceptTrip = async () => {
     Alert.alert('Viaje Rechazado', 'La solicitud fue rechazada');
   };
 
-  const completeTrip = async () => {
+ const completeTrip = async () => {
     if (!currentTrip) return;
-    
+
     try {
+      // Actualizar estado en el backend
+      await fetch(`${API_URL}/trips/status/${currentTrip.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' })
+      });
+      console.log('✅ Viaje marcado como completado en el backend');
+
       await SharedStorage.completeTrip();
       await SharedStorage.clearTripData();
       
@@ -1130,13 +1141,17 @@ const acceptTrip = async () => {
 
   const renderMap = () => (
     <View style={styles.tabContent}>
-      <MapComponent 
+ <MapComponent 
         currentTrip={currentTrip} 
         tripPhase={tripPhase}
         onStartBackgroundTracking={startBackgroundTracking}
         onLocationUpdate={(location) => {
           console.log('📍 Ubicación actualizada:', location);
-          setUserLocation(location); // NUEVO: Capturar ubicación del usuario
+          setUserLocation(location);
+        }}
+        onArrivedAtPickup={() => {
+          setTripPhase('arrived');
+          setActiveTab('dashboard');
         }}
       />
       

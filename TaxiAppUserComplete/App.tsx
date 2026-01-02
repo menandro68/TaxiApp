@@ -1149,12 +1149,12 @@ const loadUserState = async () => {
       const routeData = await ApiService.calculateRoute(origin, destination, vehicleType);
       
       setRouteInfo(routeData);
-      setEstimatedPrice(routeData.pricing.final_price);
+      setEstimatedPrice(routeData.price);
       
       console.log('Ruta calculada con API real:', {
         distance: routeData.distance,
         duration: routeData.duration,
-        price: routeData.pricing.final_price
+        price: routeData.price
       });
 
       return routeData;
@@ -1246,8 +1246,7 @@ const startDriverTracking = async (driver, userLoc) => {
         onLocationUpdate: (driverUpdate) => {
           console.log('📍 Ubicación REAL del conductor:', driverUpdate);
 
-          setDriverLocation(driverUpdate.location);
-          
+         setDriverLocation(driverUpdate);
           // El nuevo servicio calcula ETA basado en distancia real
           if (driverUpdate.estimatedTimeRemaining) {
             setDriverETA(`${driverUpdate.estimatedTimeRemaining} min`);
@@ -1478,11 +1477,15 @@ const sendTripRequestToBackend = async (tripData) => {
       vehicle_type: tripData.vehicleType,
       payment_method: tripData.paymentMethod,
       estimated_price: finalEstimatedPrice,
-      pickup_coords: {
-        latitude: tripData.origin.latitude,
-        longitude: tripData.origin.longitude
+  pickup_coords: {
+          latitude: tripData.origin.latitude,
+          longitude: tripData.origin.longitude
+        },
+        destination_coords: {
+          latitude: tripData.destination.latitude,
+          longitude: tripData.destination.longitude
+        }
       }
-    };
     
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
