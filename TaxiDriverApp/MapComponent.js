@@ -51,6 +51,7 @@ const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgro
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const lastSpokenStep = useRef(-1);
   const spokenAnnouncements = useRef({});
+  const isGettingLocation = useRef(false);
 
 const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitude;
   const pickupLng = currentTrip?.pickupLng || currentTrip?.pickupLocation?.longitude;
@@ -75,26 +76,37 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   // Obtener ubicación GPS - solo una vez al montar
   useEffect(() => {
     console.log('📍 Iniciando GPS...');
+    if (isGettingLocation.current) return;
+    isGettingLocation.current = true;
     Geolocation.getCurrentPosition(
       (position) => {
+        isGettingLocation.current = false;
         const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
         console.log('📍 GPS obtenido:', loc.latitude, loc.longitude);
         setCurrentLocation(loc);
         if (onLocationUpdate) onLocationUpdate(loc);
       },
-      (error) => console.log('❌ GPS Error:', error.message),
+      (error) => {
+        isGettingLocation.current = false;
+        console.log('❌ GPS Error:', error.message);
+      },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
 
-    // Actualizar cada 10 segundos
+    // Actualizar cada 3 segundos
     const interval = setInterval(() => {
+      if (isGettingLocation.current) return;
+      isGettingLocation.current = true;
       Geolocation.getCurrentPosition(
         (position) => {
+          isGettingLocation.current = false;
           const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
           setCurrentLocation(loc);
           if (onLocationUpdate) onLocationUpdate(loc);
         },
-        () => {},
+        () => {
+          isGettingLocation.current = false;
+        },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     }, 3000);
