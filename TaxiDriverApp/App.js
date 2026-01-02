@@ -867,7 +867,7 @@ const acceptTrip = async () => {
 
     try {
       // Actualizar estado en el backend
-      await fetch(`${API_URL}/trips/status/${currentTrip.id}`, {
+  await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed' })
