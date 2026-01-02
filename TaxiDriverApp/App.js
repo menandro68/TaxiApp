@@ -13,7 +13,8 @@ import {
   Modal,
   Platform,
   Linking,
-  BackHandler,
+BackHandler,
+  ActivityIndicator,
 } from 'react-native';
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
 import BackgroundService from 'react-native-background-actions';
@@ -87,7 +88,9 @@ export default function DriverApp({ navigation }) {
   const [tripStops, setTripStops] = useState(null);
   const [userLocation, setUserLocation] = useState(null); // NUEVO: Estado para ubicación del usuario
   const [locationInterval, setLocationInterval] = useState(null); // Para controlar el intervalo de ubicación
-  
+  const [showEarningsDetail, setShowEarningsDetail] = useState(false);
+  const [earningsDetailData, setEarningsDetailData] = useState({ period: '', trips: [], total: 0 });
+  const [loadingEarnings, setLoadingEarnings] = useState(false);  
   // Estados para Login
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -932,6 +935,41 @@ const acceptTrip = async () => {
     return R * c; // Distancia en metros
   };
 
+  // FUNCIÓN PARA CARGAR HISTORIAL DE GANANCIAS
+  const loadEarningsDetail = async (period) => {
+    if (!loggedDriver?.id) {
+      Alert.alert('Error', 'Debes iniciar sesión');
+      return;
+    }
+    
+    setLoadingEarnings(true);
+    try {
+      const response = await fetch(
+    `https://web-production-99844.up.railway.app/api/trips/driver-history/${loggedDriver.id}?period=${period}`
+      );
+      const data = await response.json();
+      
+      if (data.success) {
+        const periodNames = { today: 'Hoy', week: 'Esta Semana', month: 'Este Mes' };
+        setEarningsDetailData({
+          period: periodNames[period] || period,
+          trips: data.trips || [],
+          total: data.totalEarnings || 0,
+          count: data.totalTrips || 0,
+          average: data.averagePerTrip || 0
+        });
+        setShowEarningsDetail(true);
+      } else {
+        Alert.alert('Error', 'No se pudo cargar el historial');
+      }
+    } catch (error) {
+      console.error('Error cargando historial:', error);
+      Alert.alert('Error', 'Error de conexión');
+    } finally {
+      setLoadingEarnings(false);
+    }
+  };
+
   const testFCM = () => {
     fcmService.testNotification();
   };
@@ -1215,43 +1253,43 @@ const acceptTrip = async () => {
     </View>
   );
 
-  const renderEarnings = () => (
+const renderEarnings = () => (
     <ScrollView style={styles.tabContent}>
       <Text style={styles.title}>📊 Mis Ganancias</Text>
-      
+
       <View style={styles.earningsDetailCard}>
         <Text style={styles.sectionTitle}>Resumen Detallado</Text>
-        
-        <View style={styles.statRow}>
+        <Text style={{fontSize: 12, color: '#666', marginBottom: 10}}>Toca cualquier campo para ver detalles</Text>
+
+        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('today')}>
           <Text style={styles.statLabel}>Ganancias de hoy:</Text>
-          <Text style={styles.statValue}>RD${earnings.today}</Text>
-        </View>
-        
-        <View style={styles.statRow}>
+          <Text style={styles.statValueLink}>RD${earnings.today} ›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('week')}>
           <Text style={styles.statLabel}>Esta semana:</Text>
-          <Text style={styles.statValue}>RD${earnings.week}</Text>
-        </View>
-        
-        <View style={styles.statRow}>
+          <Text style={styles.statValueLink}>RD${earnings.week} ›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('month')}>
           <Text style={styles.statLabel}>Este mes:</Text>
-          <Text style={styles.statValue}>RD${earnings.month}</Text>
-        </View>
-        
+          <Text style={styles.statValueLink}>RD${earnings.month} ›</Text>
+        </TouchableOpacity>
+
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Viajes completados:</Text>
           <Text style={styles.statValue}>8</Text>
         </View>
-        
+
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Promedio por viaje:</Text>
           <Text style={styles.statValue}>RD${Math.round(earnings.today / 8)}</Text>
         </View>
-        
+
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Calificación:</Text>
           <Text style={styles.statValue}>⭐ 4.8</Text>
         </View>
-        
         {/* NUEVO: Métricas de desempeño */}
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>Viajes ofrecidos:</Text>
@@ -1755,6 +1793,80 @@ const acceptTrip = async () => {
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+   </Modal>
+
+      {/* Modal de Desglose de Ganancias */}
+      <Modal
+        visible={showEarningsDetail}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEarningsDetail(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.requestModal, {maxHeight: '80%'}]}>
+            <Text style={styles.modalTitle}>📊 {earningsDetailData.period}</Text>
+            
+            {loadingEarnings ? (
+              <ActivityIndicator size="large" color="#3b82f6" />
+            ) : (
+              <>
+                <View style={{flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee'}}>
+                  <View style={{alignItems: 'center'}}>
+                    <Text style={{fontSize: 24, fontWeight: 'bold', color: '#22c55e'}}>RD${earningsDetailData.total}</Text>
+                    <Text style={{color: '#666'}}>Total</Text>
+                  </View>
+                  <View style={{alignItems: 'center'}}>
+                    <Text style={{fontSize: 24, fontWeight: 'bold', color: '#3b82f6'}}>{earningsDetailData.count}</Text>
+                    <Text style={{color: '#666'}}>Viajes</Text>
+                  </View>
+                  <View style={{alignItems: 'center'}}>
+                    <Text style={{fontSize: 24, fontWeight: 'bold', color: '#f59e0b'}}>RD${earningsDetailData.average}</Text>
+                    <Text style={{color: '#666'}}>Promedio</Text>
+                  </View>
+                </View>
+
+                <ScrollView style={{maxHeight: 300}}>
+                  {earningsDetailData.trips.length === 0 ? (
+                    <Text style={{textAlign: 'center', color: '#999', padding: 20}}>No hay viajes en este período</Text>
+                  ) : (
+                    earningsDetailData.trips.map((trip, index) => (
+                      <View key={trip.id || index} style={{
+                        backgroundColor: '#f8f9fa',
+                        padding: 12,
+                        borderRadius: 8,
+                        marginBottom: 10
+                      }}>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5}}>
+                          <Text style={{fontWeight: 'bold', color: '#333'}}>Viaje #{trip.id}</Text>
+                          <Text style={{fontWeight: 'bold', color: '#22c55e'}}>RD${trip.price || 0}</Text>
+                        </View>
+                        <Text style={{color: '#666', fontSize: 12}}>📍 {trip.pickup_location || 'N/A'}</Text>
+                        <Text style={{color: '#666', fontSize: 12}}>🎯 {trip.destination || 'N/A'}</Text>
+                        <Text style={{color: '#666', fontSize: 12}}>👤 {trip.user_name || 'Pasajero'}</Text>
+                        <Text style={{color: '#999', fontSize: 11, marginTop: 5}}>
+                          {trip.created_at ? new Date(trip.created_at).toLocaleString('es-DO') : ''}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#6b7280',
+                padding: 15,
+                borderRadius: 10,
+                marginTop: 15,
+                alignItems: 'center'
+              }}
+              onPress={() => setShowEarningsDetail(false)}
+            >
+              <Text style={{color: 'white', fontWeight: 'bold', fontSize: 16}}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
       
       {/* Navegación Inferior */}
@@ -2015,12 +2127,29 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  statRow: {
+statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+  },
+  statRowTouchable: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    backgroundColor: '#f0f9ff',
+    marginHorizontal: -10,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 5,
+  },
+  statValueLink: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#3b82f6',
   },
   statLabel: {
     fontSize: 14,
