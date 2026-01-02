@@ -1153,6 +1153,9 @@ const acceptTrip = async () => {
           setTripPhase('arrived');
           setActiveTab('dashboard');
         }}
+          onArrivedAtDestination={() => {
+    setActiveTab('dashboard');
+  }}
       />
       
       {/* GESTOR DE PARADAS MÚLTIPLES */}

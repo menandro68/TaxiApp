@@ -38,7 +38,7 @@ const cleanInstruction = (html) => {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
-const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup }) => {
+const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -166,8 +166,10 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
         {
           text: 'OK',
           onPress: () => {
-            if (tripPhase !== 'started' && onArrivedAtPickup) {
-              onArrivedAtPickup();
+            if (tripPhase === 'started') {
+              if (onArrivedAtDestination) onArrivedAtDestination();
+            } else {
+              if (onArrivedAtPickup) onArrivedAtPickup();
             }
           }
         }
