@@ -32,6 +32,8 @@ import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import Sound from 'react-native-sound';
+import { NativeModules, AppState } from 'react-native';
+const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
@@ -109,6 +111,7 @@ export default function DriverApp({ navigation }) {
   
   const timerRef = useRef(null);
   const soundRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
  useEffect(() => {
     // Cargar conductor guardado
     const loadSavedDriver = async () => {
@@ -123,6 +126,52 @@ export default function DriverApp({ navigation }) {
       }
     };
     loadSavedDriver();
+    // Verificar si hay viaje pendiente de TripRequestActivity
+    const checkPendingTrip = async () => {
+      try {
+        if (TripIntent) {
+          const pendingTrip = await TripIntent.getPendingTrip();
+          if (pendingTrip && pendingTrip.tripId) {
+            console.log('🚕 Viaje pendiente encontrado:', pendingTrip);
+            // Simular la solicitud como si viniera de FCM
+            const tripData = {
+              id: pendingTrip.tripId,
+              user: pendingTrip.user || 'Pasajero',
+              phone: pendingTrip.phone || '',
+              pickup: pendingTrip.pickup || '',
+              destination: pendingTrip.destination || '',
+              estimatedPrice: parseFloat(pendingTrip.estimatedPrice) || 0,
+              distance: pendingTrip.distance || '',
+              paymentMethod: pendingTrip.paymentMethod || 'cash',
+              pickupLat: parseFloat(pendingTrip.pickupLat) || null,
+              pickupLng: parseFloat(pendingTrip.pickupLng) || null,
+              destinationLat: parseFloat(pendingTrip.destinationLat) || null,
+              destinationLng: parseFloat(pendingTrip.destinationLng) || null,
+              type: 'NEW_TRIP_REQUEST',
+            };
+        // Auto-aceptar el viaje (ya fue aceptado en pantalla nativa)
+            setTimeout(() => {
+              if (global.autoAcceptTrip) {
+                global.autoAcceptTrip(tripData);
+              }
+            }, 1000);
+          }
+        }
+      } catch (error) {
+        console.log('Error verificando viaje pendiente:', error);
+      }
+    };
+   checkPendingTrip();
+    
+  // Listener para verificar viaje pendiente cuando app vuelve al foreground DESDE BACKGROUND
+    const appStateListener = AppState.addEventListener('change', (nextAppState) => {
+      // Solo ejecutar si viene de background/inactive a active
+      if (nextAppState === 'active' && appStateRef.current.match(/inactive|background/)) {
+        console.log('📱 App volvió al foreground desde background, verificando viaje pendiente...');
+        checkPendingTrip();
+      }
+      appStateRef.current = nextAppState;
+    });
     
     // Inicializar FCM cuando la app carga
     fcmService.initialize();
@@ -185,8 +234,14 @@ export default function DriverApp({ navigation }) {
     
   // Configurar función global para manejar solicitudes de viaje
     global.handleNewTripRequest = (tripData) => {
-      console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
-      setPendingRequest(tripData);
+  console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
+  
+  // 🔔 TRAER APP AL FRENTE (como inDrive)
+  if (BringToForeground) {
+    BringToForeground.bringAppToForeground();
+  }
+  
+  setPendingRequest(tripData);
       setShowRequestModal(true);
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
       
@@ -210,10 +265,76 @@ Sound.setCategory('Playback');
         }
       });
     };
+
+    // Función para auto-aceptar viaje (desde TripRequestActivity nativa)
+    global.autoAcceptTrip = async (tripData) => {
+      console.log('🚗 Auto-aceptando viaje desde pantalla nativa:', tripData);
+      
+      try {
+        const tripId = tripData.id;
+        const driverId = loggedDriver?.id || 1;
+        
+        console.log(`✅ Auto-aceptando viaje ${tripId}...`);
+        
+        const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/accept/${tripId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            driver_id: driverId,
+            driverLat: userLocation?.latitude || null,
+            driverLng: userLocation?.longitude || null
+          })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          Alert.alert('Error', data.error || 'No se pudo aceptar el viaje.');
+          return;
+        }
+
+        console.log('✅ Viaje auto-aceptado en el servidor:', data);
+        
+        // Normalizar datos
+        const normalizedTrip = normalizeTrip(data.trip, tripData);
+        setCurrentTrip(normalizedTrip);
+        
+        // Configurar paradas
+        const stops = {
+          pickup: {
+            address: normalizedTrip.pickup || 'Punto de recogida',
+            coordinates: normalizedTrip.pickupLat ? {
+              latitude: normalizedTrip.pickupLat,
+              longitude: normalizedTrip.pickupLng
+            } : null
+          },
+          destination: {
+            address: normalizedTrip.destination || 'Destino final',
+            coordinates: normalizedTrip.destinationLat ? {
+              latitude: normalizedTrip.destinationLat,
+              longitude: normalizedTrip.destinationLng
+            } : null
+          },
+          additionalStops: []
+        };
+        setTripStops(stops);
+        setCurrentStopIndex(0);
+        
+        setDriverStatus('busy');
+        setActiveTab('map');
+        setTripPhase('');
+        
+        Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${tripData.user}`);
+        
+      } catch (error) {
+        console.error('❌ Error auto-aceptando viaje:', error);
+        Alert.alert('Error', 'No se pudo conectar con el servidor');
+      }
+    };
     // Solicitar permisos de ubicación
     requestLocationPermissions();
     
-    // Cleanup del timer cuando el componente se desmonta
+ // Cleanup del timer cuando el componente se desmonta
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -221,6 +342,7 @@ Sound.setCategory('Playback');
       stopLocationTracking(); // Detener tracking al desmontar
       stopBackgroundTracking(); // Detener background tracking al desmontar
       unsubscribe(); // Limpiar listener de conexión
+      appStateListener.remove(); // Limpiar listener de AppState
     };
   }, []);
 
@@ -572,10 +694,37 @@ const toggleDriverStatus = async () => {
           { text: 'Iniciar Sesión', onPress: () => setShowLogin(true) }
         ]
       );
-      return;
+   return;
     }
+    
+  // Verificar permiso de overlay para mostrar app sobre otras (solo primera vez)
     try {
-      // Verificar suspensión antes de conectarse
+      const hasOverlay = await OverlayPermission.hasPermission();
+      const permissionAsked = await AsyncStorage.getItem('overlayPermissionAsked');
+      
+      if (!hasOverlay && !permissionAsked) {
+        await AsyncStorage.setItem('overlayPermissionAsked', 'true');
+        Alert.alert(
+          '⚠️ Permiso Requerido',
+          'Para recibir solicitudes de viaje, necesitas activar "Mostrar sobre otras apps".\n\nEsto solo se pide una vez.',
+          [
+            { text: 'Después', style: 'cancel' },
+            { 
+              text: 'Activar Ahora', 
+              onPress: async () => {
+                await OverlayPermission.requestPermission();
+              }
+            }
+          ]
+        );
+        return;
+      }
+    } catch (error) {
+      console.log('Error verificando permiso overlay:', error);
+    }
+    
+    try {
+      // Verificar suspensión antes de conectarsee
       const suspensionStatus = await PenaltyService.checkSuspensionStatus();
       if (suspensionStatus.isSuspended) {
         Alert.alert(
