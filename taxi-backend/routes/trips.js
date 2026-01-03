@@ -112,11 +112,9 @@ router.post('/create', async (req, res) => {
         for (const driver of driversWithDistance) {
             if (driver.fcm_token) {
                 const message = {
-                    notification: {
-                        title: '🚕 Nuevo Servicio Disponible',
-                        body: `Pasajero: ${user.name || 'Usuario'} - ${driver.distance.toFixed(1)} km de ti`
-                    },
                     data: {
+                        title: '🚕 Nuevo Servicio Disponible',
+                        body: `Pasajero: ${user.name || 'Usuario'} - ${driver.distance.toFixed(1)} km de ti`,
                         tripId: tripId.toString(),
                         type: 'NEW_TRIP_REQUEST',
                         user: user.name || 'Usuario',
