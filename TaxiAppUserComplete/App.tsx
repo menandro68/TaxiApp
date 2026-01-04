@@ -2999,6 +2999,36 @@ onPress={() => {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* PANEL DE BRANDING SQUID */}
+          <View style={{
+            backgroundColor: '#87CEEB',
+            borderRadius: 20,
+            padding: 40,
+            marginTop: 40,
+            marginHorizontal: 15,
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 280,
+            flex: 1,
+          }}>
+            <Text style={{
+              fontSize: 48,
+              fontWeight: 'bold',
+              color: '#1a1a2e',
+              letterSpacing: 2,
+              marginBottom: 10,
+            }}>
+              Squid
+            </Text>
+            <Text style={{
+              fontSize: 18,
+              color: '#1a1a2e',
+              fontWeight: '500',
+            }}>
+              Tu app dominicana
+            </Text>
+          </View>
         </View>
       );
     }
@@ -5037,4 +5067,6 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
+
 
