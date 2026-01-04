@@ -481,11 +481,10 @@ router.put('/:tripId/cancel', async (req, res) => {
         const trip = tripResult.rows[0];
 
         // Actualizar estado a cancelado
-        await db.query(
-            `UPDATE trips SET status = 'cancelled', cancel_reason = $1 WHERE id = $2`,
-            [reason || 'Cancelado por el usuario', tripId]
+      await db.query(
+            `UPDATE trips SET status = 'cancelled' WHERE id = $1`,
+            [tripId]
         );
-
         // Notificar al conductor si tiene FCM token
         if (trip.driver_fcm_token) {
             try {
@@ -628,3 +627,4 @@ router.get('/driver-history/:driverId', async (req, res) => {
 });
 
 module.exports = router;
+
