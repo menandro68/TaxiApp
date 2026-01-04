@@ -307,6 +307,7 @@ router.post('/reject/:tripId', async (req, res) => {
         }
 
         const trip = tripResult.rows[0];
+        
 
         // Buscar el siguiente conductor disponible
         const driversResult = await db.query(
@@ -492,6 +493,14 @@ router.put('/:tripId/cancel', async (req, res) => {
         }
 
         const trip = tripResult.rows[0];
+
+        // DEBUG: Verificar datos del viaje
+        console.log('🔍 DEBUG Cancelación:');
+        console.log('   tripId:', tripId);
+        console.log('   driver_id:', trip.driver_id);
+        console.log('   pending_driver_id:', trip.pending_driver_id);
+        console.log('   driver_fcm_token:', trip.driver_fcm_token);
+        console.log('   user_name:', trip.user_name);
 
         // Actualizar estado a cancelado
       await db.query(
