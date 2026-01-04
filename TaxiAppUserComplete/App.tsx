@@ -65,6 +65,7 @@ import RouteService from './src/services/RouteService';
 import DriverTrackingService from './src/services/DriverTrackingService';
 import LocationFallbackService, { POPULAR_LOCATIONS } from './src/services/LocationFallbackService';
 import ApiService from './src/services/ApiService';
+import NetInfo from '@react-native-community/netinfo';
 import UserProfile from './src/screens/UserProfile';
 
 // ConfiguraciÃ³n del drawer
@@ -118,6 +119,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showPopularLocations, setShowPopularLocations] = useState(false);
   const [locationSource, setLocationSource] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showFareCalculator, setShowFareCalculator] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -161,6 +163,24 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [passwordStrength, setPasswordStrength] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [newDestination, setNewDestination] = useState('');
+
+  // Monitorear conexión a internet
+  useEffect(() => {
+    const checkInternet = async () => {
+      try {
+        const response = await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+        console.log('?? Internet disponible');
+        setIsConnected(true);
+      } catch (error) {
+        console.log('?? Sin acceso a internet');
+        setIsConnected(false);
+      }
+    };
+    checkInternet();
+    const interval = setInterval(checkInternet, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
     useEffect(() => {
     // Configurar manejador global de errores
     GlobalErrorHandler.setup();
@@ -3379,6 +3399,17 @@ onPress={() => {
   if (false) {
     return <SplashScreen onAnimationComplete={() => setShowSplash(false)} />;
   }
+
+  // Pantalla de Sin conexion
+  if (!isConnected) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff'}}>
+        <Icon name='cloud-offline-outline' size={80} color='#007AFF' style={{marginBottom: 20}} />
+        <Text style={{fontSize: 22, fontWeight: 'bold', color: '#FF0000', marginBottom: 10}}>Sin conexion</Text>
+        <Text style={{fontSize: 16, color: '#FF0000', textAlign: 'center', paddingHorizontal: 40}}>Verifique su conexion a internet para usar la aplicacion</Text>
+      </View>
+    );
+  }
   
   // Verificando si mostrar onboarding
   if (checkingOnboarding) {
@@ -5078,6 +5109,21 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
