@@ -464,11 +464,15 @@ router.put('/:tripId/cancel', async (req, res) => {
         const { tripId } = req.params;
         const { reason } = req.body;
 
-        // Obtener info del viaje y conductor
+   // Obtener info del viaje y conductor (incluyendo pending_driver_id para viajes no aceptados)
         const tripResult = await db.query(
-            `SELECT t.*, d.fcm_token as driver_fcm_token, d.name as driver_name, u.name as user_name
+            `SELECT t.*, 
+                    COALESCE(d1.fcm_token, d2.fcm_token) as driver_fcm_token, 
+                    COALESCE(d1.name, d2.name) as driver_name, 
+                    u.name as user_name
              FROM trips t
-             LEFT JOIN drivers d ON t.driver_id = d.id
+             LEFT JOIN drivers d1 ON t.driver_id = d1.id
+             LEFT JOIN drivers d2 ON t.pending_driver_id = d2.id
              LEFT JOIN users u ON t.user_id = u.id
              WHERE t.id = $1`,
             [tripId]
