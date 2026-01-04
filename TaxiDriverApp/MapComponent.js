@@ -285,9 +285,12 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
         if (onStartBackgroundTracking && currentTrip) {
           onStartBackgroundTracking(currentTrip.id, destination.latitude, destination.longitude);
         }
+        return steps; // Retornar los pasos
       }
+      return null;
     } catch (error) {
       console.error('❌ Error ruta:', error);
+      return null;
     }
   };
 
@@ -362,15 +365,18 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     }
 
     // Si no hay ruta cargada, obtenerla
-    if (navigationSteps.length === 0 && navigationTarget && location) {
+    let steps = navigationSteps;
+    if (steps.length === 0 && navigationTarget && location) {
       console.log('⏳ Obteniendo ruta...');
       routeFetched.current = false;
-      await fetchRoute(location, navigationTarget);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const fetchedSteps = await fetchRoute(location, navigationTarget);
+      if (fetchedSteps && fetchedSteps.length > 0) {
+        steps = fetchedSteps;
+      }
     }
 
-    // Verificar de nuevo después de cargar
-    if (navigationSteps.length === 0) {
+    // Verificar que tenemos ruta
+    if (steps.length === 0) {
       Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión.');
       return;
     }
@@ -379,7 +385,7 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     setCurrentStepIndex(0);
     lastSpokenStep.current = 0;
     const destino = tripPhase === 'started' ? 'al destino' : 'al pasajero';
-    speakInstruction('Iniciando navegación ' + destino + '. ' + navigationSteps[0].instruction);
+    speakInstruction('Iniciando navegación ' + destino + '. ' + steps[0].instruction);
   };
 
   const stopNavigation = () => {

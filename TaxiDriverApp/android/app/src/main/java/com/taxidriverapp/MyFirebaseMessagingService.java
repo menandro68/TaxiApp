@@ -79,6 +79,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             fullScreenIntent.putExtra("estimatedPrice", data.get("estimatedPrice"));
             fullScreenIntent.putExtra("distance", data.get("distance"));
             fullScreenIntent.putExtra("paymentMethod", data.get("paymentMethod"));
+            fullScreenIntent.putExtra("pickupLat", data.get("pickupLat"));
+            fullScreenIntent.putExtra("pickupLng", data.get("pickupLng"));
+            fullScreenIntent.putExtra("destinationLat", data.get("destinationLat"));
+            fullScreenIntent.putExtra("destinationLng", data.get("destinationLng"));
 
             int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
