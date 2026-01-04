@@ -1713,7 +1713,18 @@ const searchForDriver = () => {
             stopDriverTracking();
             
             // Registrar cancelación en analytics
-            AnalyticsService.logRideCancel('user_cancelled', rideStatus);
+          AnalyticsService.logRideCancel('user_cancelled', rideStatus);
+
+            // NOTIFICAR AL CONDUCTOR via API
+            const tripRequest = await SharedStorage.getTripRequest();
+            if (tripRequest?.id) {
+              try {
+                await ApiService.cancelTrip(tripRequest.id, 'Cancelado por el usuario');
+                console.log('Notificacion de cancelacion enviada al conductor');
+              } catch (apiError) {
+                console.error('Error notificando cancelacion:', apiError);
+              }
+            }
 
             await SharedStorage.cancelRide('Cancelado por el usuario');
             await resetAppState();
@@ -5137,6 +5148,9 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
+
+
 
 
 
