@@ -145,6 +145,15 @@ router.post('/create', async (req, res) => {
 
         console.log(`📱 Total conductores notificados: ${notifiedDrivers.length}`);
 
+        // Guardar el primer conductor notificado como pending_driver_id
+        if (notifiedDrivers.length > 0) {
+            await db.query(
+                `UPDATE trips SET pending_driver_id = $1 WHERE id = $2`,
+                [notifiedDrivers[0].id, tripId]
+            );
+            console.log(`📌 pending_driver_id guardado: ${notifiedDrivers[0].id}`);
+        }
+
         res.json({
             success: true,
             tripId: tripId,
@@ -631,4 +640,3 @@ router.get('/driver-history/:driverId', async (req, res) => {
 });
 
 module.exports = router;
-
