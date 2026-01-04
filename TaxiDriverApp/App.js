@@ -126,6 +126,35 @@ export default function DriverApp({ navigation }) {
       }
     };
     loadSavedDriver();
+    // Verificar si hay viaje pendiente de notificación en background
+    const checkPendingTripFromBackground = async () => {
+      try {
+        const pendingTripStr = await AsyncStorage.getItem('pending_trip_request');
+        if (pendingTripStr) {
+          const tripData = JSON.parse(pendingTripStr);
+          console.log('🚕 Viaje pendiente de background encontrado:', tripData);
+          
+          // Verificar que no sea muy antiguo (máximo 2 minutos)
+          const age = Date.now() - (tripData.timestamp || 0);
+          if (age < 120000) {
+            // Mostrar la solicitud como si llegara de FCM
+            setTimeout(() => {
+              if (global.handleNewTripRequest) {
+                global.handleNewTripRequest(tripData);
+              }
+            }, 1500);
+          } else {
+            console.log('⏰ Viaje pendiente expirado, ignorando');
+          }
+          
+          // Limpiar el viaje pendiente
+          await AsyncStorage.removeItem('pending_trip_request');
+        }
+      } catch (error) {
+        console.log('Error verificando viaje pendiente de background:', error);
+      }
+    };
+    checkPendingTripFromBackground();
     // Verificar si hay viaje pendiente de TripRequestActivity
     const checkPendingTrip = async () => {
       try {
@@ -267,13 +296,28 @@ Sound.setCategory('Playback');
     };
 
     // Función para auto-aceptar viaje (desde TripRequestActivity nativa)
-    global.autoAcceptTrip = async (tripData) => {
+global.autoAcceptTrip = async (tripData) => {
       console.log('🚗 Auto-aceptando viaje desde pantalla nativa:', tripData);
       
       try {
         const tripId = tripData.id;
-        const driverId = loggedDriver?.id || 1;
         
+        // Obtener driver de AsyncStorage si loggedDriver no está disponible
+        let driverId = loggedDriver?.id;
+        if (!driverId) {
+          const savedDriver = await AsyncStorage.getItem('loggedDriver');
+          if (savedDriver) {
+            const driver = JSON.parse(savedDriver);
+            driverId = driver.id;
+            console.log('📦 Driver ID obtenido de AsyncStorage:', driverId);
+          }
+        }
+        
+        if (!driverId) {
+          console.error('❌ No se pudo obtener driver ID');
+          Alert.alert('Error', 'No se pudo identificar al conductor');
+          return;
+        }
         console.log(`✅ Auto-aceptando viaje ${tripId}...`);
         
         const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/accept/${tripId}`, {

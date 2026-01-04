@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -22,18 +23,42 @@ import android.widget.TextView;
 public class TripRequestActivity extends Activity {
     private static final String TAG = "TripRequestActivity";
     private static final int NOTIFICATION_ID = 1001;
-    
+    private static final int COUNTDOWN_SECONDS = 20;
+
     private CountDownTimer countDownTimer;
     private Vibrator vibrator;
+    
     private String tripId;
+    private String user;
+    private String phone;
+    private String pickup;
+    private String destination;
+    private String estimatedPrice;
+    private String distance;
+    private String paymentMethod;
+    private String vehicleType;
+    private String pickupLat;
+    private String pickupLng;
+    private String destinationLat;
+    private String destinationLng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         Log.d(TAG, "🚕 TripRequestActivity onCreate");
 
-        // Mostrar sobre pantalla de bloqueo
+        setupWindowFlags();
+        loadTripData();
+        logTripData();
+        createUI();
+        startVibration();
+        startCountdown();
+
+        Log.d(TAG, "✅ TripRequestActivity iniciada");
+    }
+
+    private void setupWindowFlags() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -49,24 +74,49 @@ public class TripRequestActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             );
         }
+    }
 
-        // Obtener datos del intent
+    private void loadTripData() {
         Intent intent = getIntent();
-        tripId = intent.getStringExtra("tripId");
-        String user = intent.getStringExtra("user");
-        String phone = intent.getStringExtra("phone");
-        String pickup = intent.getStringExtra("pickup");
-        String destination = intent.getStringExtra("destination");
-        String price = intent.getStringExtra("estimatedPrice");
-        String distance = intent.getStringExtra("distance");
-        String paymentMethod = intent.getStringExtra("paymentMethod");
+        
+        // Usar TripDataStore - lee del Intent, si está vacío lee de SharedPreferences
+        tripId = TripDataStore.getTripId(this, intent.getStringExtra("tripId"));
+        user = TripDataStore.getUser(this, intent.getStringExtra("user"));
+        phone = TripDataStore.getPhone(this, intent.getStringExtra("phone"));
+        pickup = TripDataStore.getPickup(this, intent.getStringExtra("pickup"));
+        destination = TripDataStore.getDestination(this, intent.getStringExtra("destination"));
+        estimatedPrice = TripDataStore.getEstimatedPrice(this, intent.getStringExtra("estimatedPrice"));
+        distance = TripDataStore.getDistance(this, intent.getStringExtra("distance"));
+        paymentMethod = TripDataStore.getPaymentMethod(this, intent.getStringExtra("paymentMethod"));
+        vehicleType = TripDataStore.getVehicleType(this, intent.getStringExtra("vehicleType"));
+        pickupLat = TripDataStore.getPickupLat(this, intent.getStringExtra("pickupLat"));
+        pickupLng = TripDataStore.getPickupLng(this, intent.getStringExtra("pickupLng"));
+        destinationLat = TripDataStore.getDestinationLat(this, intent.getStringExtra("destinationLat"));
+        destinationLng = TripDataStore.getDestinationLng(this, intent.getStringExtra("destinationLng"));
+        
+        // Valores por defecto
+        if (user == null || user.isEmpty()) user = "Pasajero";
+        if (pickup == null || pickup.isEmpty()) pickup = "Ubicación de recogida";
+        if (destination == null || destination.isEmpty()) destination = "Destino";
+        if (estimatedPrice == null || estimatedPrice.isEmpty()) estimatedPrice = "0";
+        if (paymentMethod == null || paymentMethod.isEmpty()) paymentMethod = "cash";
+    }
 
-        // Crear UI programáticamente
+    private void logTripData() {
+        Log.d(TAG, "📦 Datos cargados:");
+        Log.d(TAG, "   tripId: " + tripId);
+        Log.d(TAG, "   user: " + user);
+        Log.d(TAG, "   pickup: " + pickup);
+        Log.d(TAG, "   destination: " + destination);
+        Log.d(TAG, "   price: " + estimatedPrice);
+    }
+
+    private void createUI() {
         LinearLayout mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setBackgroundColor(Color.parseColor("#1a1a2e"));
         mainLayout.setGravity(Gravity.CENTER);
-        mainLayout.setPadding(50, 100, 50, 100);
+        mainLayout.setPadding(50, 80, 50, 80);
 
         // Título
         TextView titleText = new TextView(this);
@@ -74,43 +124,43 @@ public class TripRequestActivity extends Activity {
         titleText.setTextSize(28);
         titleText.setTextColor(Color.WHITE);
         titleText.setGravity(Gravity.CENTER);
-        titleText.setPadding(0, 0, 0, 50);
+        titleText.setPadding(0, 0, 0, 40);
         mainLayout.addView(titleText);
 
         // Pasajero
         TextView userText = new TextView(this);
-        userText.setText("👤 " + (user != null ? user : "Pasajero"));
-        userText.setTextSize(22);
+        userText.setText("👤 " + user);
+        userText.setTextSize(24);
         userText.setTextColor(Color.WHITE);
         userText.setGravity(Gravity.CENTER);
-        userText.setPadding(0, 20, 0, 20);
+        userText.setPadding(0, 20, 0, 15);
         mainLayout.addView(userText);
 
-        // Origen
+        // Pickup
         TextView pickupText = new TextView(this);
-        pickupText.setText("📍 " + (pickup != null ? pickup : "Origen"));
+        pickupText.setText("📍 " + pickup);
         pickupText.setTextSize(16);
-        pickupText.setTextColor(Color.parseColor("#aaaaaa"));
+        pickupText.setTextColor(Color.parseColor("#b0b0b0"));
         pickupText.setGravity(Gravity.CENTER);
-        pickupText.setPadding(0, 10, 0, 10);
+        pickupText.setPadding(20, 10, 20, 10);
         mainLayout.addView(pickupText);
 
         // Destino
         TextView destText = new TextView(this);
-        destText.setText("🎯 " + (destination != null ? destination : "Destino"));
+        destText.setText("🎯 " + destination);
         destText.setTextSize(16);
-        destText.setTextColor(Color.parseColor("#aaaaaa"));
+        destText.setTextColor(Color.parseColor("#b0b0b0"));
         destText.setGravity(Gravity.CENTER);
-        destText.setPadding(0, 10, 0, 30);
+        destText.setPadding(20, 10, 20, 30);
         mainLayout.addView(destText);
 
         // Precio
         TextView priceText = new TextView(this);
-        priceText.setText("💰 RD$" + (price != null ? price : "0"));
-        priceText.setTextSize(36);
+        priceText.setText("💰 RD$" + estimatedPrice);
+        priceText.setTextSize(38);
         priceText.setTextColor(Color.parseColor("#4ade80"));
         priceText.setGravity(Gravity.CENTER);
-        priceText.setPadding(0, 20, 0, 20);
+        priceText.setPadding(0, 20, 0, 15);
         mainLayout.addView(priceText);
 
         // Método de pago
@@ -120,33 +170,35 @@ public class TripRequestActivity extends Activity {
         paymentText.setTextSize(18);
         paymentText.setTextColor(Color.WHITE);
         paymentText.setGravity(Gravity.CENTER);
-        paymentText.setPadding(0, 10, 0, 40);
+        paymentText.setPadding(0, 10, 0, 30);
         mainLayout.addView(paymentText);
 
         // Timer
-        TextView timerText = new TextView(this);
-        timerText.setText("⏱️ 20s");
-        timerText.setTextSize(20);
+        final TextView timerText = new TextView(this);
+        timerText.setText("⏱️ " + COUNTDOWN_SECONDS + "s");
+        timerText.setTextSize(22);
         timerText.setTextColor(Color.parseColor("#fbbf24"));
         timerText.setGravity(Gravity.CENTER);
-        timerText.setPadding(0, 20, 0, 40);
+        timerText.setPadding(0, 20, 0, 15);
+        timerText.setTag("timer");
         mainLayout.addView(timerText);
 
         // Progress Bar
-        ProgressBar progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        final ProgressBar progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setMax(100);
         progressBar.setProgress(100);
+        progressBar.setTag("progress");
         LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 20);
-        progressParams.setMargins(0, 0, 0, 50);
+            LinearLayout.LayoutParams.MATCH_PARENT, 24);
+        progressParams.setMargins(0, 10, 0, 40);
         progressBar.setLayoutParams(progressParams);
         mainLayout.addView(progressBar);
 
-        // Contenedor de botones
+        // Botones
         LinearLayout buttonLayout = new LinearLayout(this);
         buttonLayout.setOrientation(LinearLayout.HORIZONTAL);
         buttonLayout.setGravity(Gravity.CENTER);
-        buttonLayout.setPadding(0, 30, 0, 0);
+        buttonLayout.setPadding(0, 20, 0, 0);
 
         // Botón Rechazar
         Button rejectButton = new Button(this);
@@ -154,12 +206,12 @@ public class TripRequestActivity extends Activity {
         rejectButton.setTextSize(16);
         rejectButton.setTextColor(Color.WHITE);
         rejectButton.setBackgroundColor(Color.parseColor("#ef4444"));
-        rejectButton.setPadding(60, 40, 60, 40);
+        rejectButton.setPadding(50, 35, 50, 35);
+        rejectButton.setOnClickListener(v -> rejectTrip());
         LinearLayout.LayoutParams rejectParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        rejectParams.setMargins(20, 0, 20, 0);
+        rejectParams.setMargins(10, 0, 10, 0);
         rejectButton.setLayoutParams(rejectParams);
-        rejectButton.setOnClickListener(v -> rejectTrip());
         buttonLayout.addView(rejectButton);
 
         // Botón Aceptar
@@ -168,64 +220,68 @@ public class TripRequestActivity extends Activity {
         acceptButton.setTextSize(16);
         acceptButton.setTextColor(Color.WHITE);
         acceptButton.setBackgroundColor(Color.parseColor("#22c55e"));
-        acceptButton.setPadding(60, 40, 60, 40);
+        acceptButton.setPadding(50, 35, 50, 35);
+        acceptButton.setOnClickListener(v -> acceptTrip());
         LinearLayout.LayoutParams acceptParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        acceptParams.setMargins(20, 0, 20, 0);
+        acceptParams.setMargins(10, 0, 10, 0);
         acceptButton.setLayoutParams(acceptParams);
-        acceptButton.setOnClickListener(v -> acceptTrip());
         buttonLayout.addView(acceptButton);
 
         mainLayout.addView(buttonLayout);
         setContentView(mainLayout);
+    }
 
-        // Iniciar vibración
+    private void startVibration() {
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        long[] pattern = {0, 1000, 500, 1000, 500, 1000};
-        vibrator.vibrate(pattern, 0);
+        if (vibrator != null && vibrator.hasVibrator()) {
+            long[] pattern = {0, 1000, 500, 1000, 500, 1000};
+            vibrator.vibrate(pattern, 0);
+        }
+    }
 
-        // Iniciar countdown
-        countDownTimer = new CountDownTimer(20000, 1000) {
+    private void startCountdown() {
+        final View rootView = getWindow().getDecorView().getRootView();
+        
+        countDownTimer = new CountDownTimer(COUNTDOWN_SECONDS * 1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 int seconds = (int) (millisUntilFinished / 1000);
-                timerText.setText("⏱️ " + seconds + "s");
-                progressBar.setProgress((int) ((millisUntilFinished / 20000.0) * 100));
+                
+                TextView timerText = rootView.findViewWithTag("timer");
+                if (timerText != null) {
+                    timerText.setText("⏱️ " + seconds + "s");
+                }
+                
+                ProgressBar progressBar = rootView.findViewWithTag("progress");
+                if (progressBar != null) {
+                    int progress = (int) ((millisUntilFinished / (float)(COUNTDOWN_SECONDS * 1000)) * 100);
+                    progressBar.setProgress(progress);
+                }
             }
 
             @Override
             public void onFinish() {
+                Log.d(TAG, "⏱️ Tiempo agotado");
                 rejectTrip();
             }
         }.start();
-
-        Log.d(TAG, "✅ UI creada - Trip ID: " + tripId);
     }
 
     private void acceptTrip() {
         Log.d(TAG, "✅ Viaje aceptado: " + tripId);
         cleanup();
-        
-        // Guardar datos del viaje para que React Native los lea
+
         TripIntentModule.savePendingTrip(
-            this,
-            tripId,
-            getIntent().getStringExtra("user"),
-            getIntent().getStringExtra("phone"),
-            getIntent().getStringExtra("pickup"),
-            getIntent().getStringExtra("destination"),
-            getIntent().getStringExtra("estimatedPrice"),
-            getIntent().getStringExtra("distance"),
-            getIntent().getStringExtra("paymentMethod"),
-            getIntent().getStringExtra("pickupLat"),
-            getIntent().getStringExtra("pickupLng"),
-            getIntent().getStringExtra("destinationLat"),
-            getIntent().getStringExtra("destinationLng")
+            this, tripId, user, phone, pickup, destination,
+            estimatedPrice, distance, paymentMethod,
+            pickupLat, pickupLng, destinationLat, destinationLng
         );
-        
-        // Abrir MainActivity
+
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("tripAccepted", true);
+        intent.putExtra("tripId", tripId);
         startActivity(intent);
         finish();
     }
@@ -233,20 +289,23 @@ public class TripRequestActivity extends Activity {
     private void rejectTrip() {
         Log.d(TAG, "❌ Viaje rechazado: " + tripId);
         cleanup();
+        TripDataStore.clear(this);
         finish();
     }
 
     private void cleanup() {
         if (countDownTimer != null) {
             countDownTimer.cancel();
+            countDownTimer = null;
         }
         if (vibrator != null) {
             vibrator.cancel();
+            vibrator = null;
         }
-        // Cancelar notificación
-        NotificationManager notificationManager = 
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(NOTIFICATION_ID);
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) {
+            notificationManager.cancel(NOTIFICATION_ID);
+        }
     }
 
     @Override
