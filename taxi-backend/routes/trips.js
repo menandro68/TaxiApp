@@ -458,6 +458,70 @@ router.put('/status/:tripId', async (req, res) => {
     }
 });
 
+// CANCELAR VIAJE - NOTIFICAR AL CONDUCTOR
+router.put('/:tripId/cancel', async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const { reason } = req.body;
+
+        // Obtener info del viaje y conductor
+        const tripResult = await db.query(
+            `SELECT t.*, d.fcm_token as driver_fcm_token, d.name as driver_name, u.name as user_name
+             FROM trips t
+             LEFT JOIN drivers d ON t.driver_id = d.id
+             LEFT JOIN users u ON t.user_id = u.id
+             WHERE t.id = $1`,
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Viaje no encontrado' });
+        }
+
+        const trip = tripResult.rows[0];
+
+        // Actualizar estado a cancelado
+        await db.query(
+            `UPDATE trips SET status = 'cancelled', cancel_reason = $1 WHERE id = $2`,
+            [reason || 'Cancelado por el usuario', tripId]
+        );
+
+        // Notificar al conductor si tiene FCM token
+        if (trip.driver_fcm_token) {
+            try {
+                const admin = require('firebase-admin');
+                await admin.messaging().send({
+                    token: trip.driver_fcm_token,
+                    notification: {
+                        title: 'Viaje Cancelado',
+                        body: `El usuario ${trip.user_name || 'Usuario'} ha cancelado el viaje`
+                    },
+                    data: {
+                        type: 'trip_cancelled',
+                        tripId: tripId.toString(),
+                        reason: reason || 'Cancelado por el usuario'
+                    },
+                    android: {
+                        priority: 'high',
+                        notification: {
+                            channelId: 'taxi_notifications',
+                            sound: 'default'
+                        }
+                    }
+                });
+                console.log('Notificacion de cancelacion enviada al conductor');
+            } catch (fcmError) {
+                console.error('Error enviando notificacion FCM:', fcmError);
+            }
+        }
+
+        res.json({ success: true, message: 'Viaje cancelado exitosamente' });
+    } catch (error) {
+        console.error('Error cancelando viaje:', error);
+        res.status(500).json({ error: 'Error al cancelar viaje' });
+    }
+});
+
 // OBTENER VIAJES ACTIVOS
 router.get('/active', async (req, res) => {
     try {
