@@ -164,7 +164,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [newDestination, setNewDestination] = useState('');
 
-  // Monitorear conexión a internet
+  // Monitorear conexiï¿½n a internet
   useEffect(() => {
     const checkInternet = async () => {
       try {
@@ -848,8 +848,8 @@ const initializeLocationService = async () => {
             setIsLoadingLocation(false);
             return;
           } else {
-            // Usar ubicación por defecto mientras GPS se estabiliza
-            console.log('GPS falló - usando ubicación por defecto');
+            // Usar ubicaciï¿½n por defecto mientras GPS se estabiliza
+            console.log('GPS fallï¿½ - usando ubicaciï¿½n por defecto');
             const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
             setUserLocation({
               latitude: defaultLat,
@@ -2923,7 +2923,35 @@ onPress={() => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.startButton} onPress={startRide}>
               <Text style={styles.startButtonText}>Iniciar</Text>
-            </TouchableOpacity>
+    </TouchableOpacity>
+          </View>
+          {/* PANEL DE BRANDING SQUID */}
+          <View style={{
+            backgroundColor: '#87CEEB',
+            borderRadius: 20,
+            padding: 50,
+            marginTop: 60,
+            marginHorizontal: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 280,
+          }}>
+            <Text style={{
+              fontSize: 48,
+              fontWeight: 'bold',
+              color: '#1a1a2e',
+              letterSpacing: 2,
+              marginBottom: 10,
+            }}>
+              Squid
+            </Text>
+            <Text style={{
+              fontSize: 18,
+              color: '#1a1a2e',
+              fontWeight: '500',
+            }}>
+              Tu app dominicana
+            </Text>
           </View>
         </View>
       );
@@ -5109,6 +5137,10 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
+
+
+
 
 
 
