@@ -828,12 +828,23 @@ const initializeLocationService = async () => {
             setIsLoadingLocation(false);
             return;
           } else {
-            // NO usar fallback genÃ©rico - exigir GPS real
-            console.log(' GPS fallÃ³ y no hay cache valido - requiere GPS real');
+            // Usar ubicación por defecto mientras GPS se estabiliza
+            console.log('GPS falló - usando ubicación por defecto');
+            const defaultAddress = await getAddressFromCoords(defaultLat, defaultLng);
+            setUserLocation({
+              latitude: defaultLat,
+              longitude: defaultLng,
+              address: defaultAddress,
+              source: 'default_fallback'
+            });
+            setLocationSource('default_fallback');
             setIsLoadingLocation(false);
-          // Reintentar automÃ¡ticamente sin mostrar alerta
-            setTimeout(() => initializeLocationService(), 3000);
-            return; // NO usar fallback genÃ©rico
+            // Reintentar GPS en background
+            setTimeout(() => {
+              console.log('Reintentando GPS en background...');
+              initializeLocationService();
+            }, 5000);
+            return;
           }
         }
         
@@ -5067,6 +5078,7 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
 
 
 
