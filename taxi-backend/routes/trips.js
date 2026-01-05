@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 // CREAR NUEVO VIAJE - SIN ASIGNACIÓN AUTOMÁTICA
 router.post('/create', async (req, res) => {
     try {
-        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords } = req.body;
+        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops } = req.body;
 
         // VALIDAR user_id
         if (!user_id) {
@@ -128,7 +128,8 @@ router.post('/create', async (req, res) => {
                         pickupLat: pickup_coords.latitude.toString(),
                         pickupLng: pickup_coords.longitude.toString(),
                         destinationLat: destination_coords?.latitude?.toString() || '',
-                        destinationLng: destination_coords?.longitude?.toString() || ''
+                        destinationLng: destination_coords?.longitude?.toString() || '',
+                        additionalStops: JSON.stringify(additional_stops || [])
                     },
                     token: driver.fcm_token
                 };
