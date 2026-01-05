@@ -26,10 +26,30 @@ const AddressCache = {
   async initialize() {
     if (this._initialized) return;
     
+    // Lista de direcciones inválidas (compartida)
+    const INVALID_ADDRESSES = [
+      'ubicacion desconocida',
+      'ubicación desconocida', 
+      'unknown location',
+      'error',
+      'null',
+      'undefined'
+    ];
+    
     try {
       const stored = await AsyncStorage.getItem(this.CONFIG.STORAGE_KEY);
       if (stored) {
         this._cache = JSON.parse(stored);
+        
+        // AUTO-LIMPIEZA: Si la dirección guardada es inválida, limpiar automáticamente
+        const addressLower = (this._cache.address || '').toLowerCase().trim();
+        if (!this._cache.address || addressLower.length < 5 || INVALID_ADDRESSES.includes(addressLower)) {
+          console.log('📍 Caché: AUTO-LIMPIEZA - Dirección inválida detectada:', this._cache.address);
+          this._cache = null;
+          await AsyncStorage.removeItem(this.CONFIG.STORAGE_KEY);
+          this._initialized = true;
+          return;
+        }
         const age = Date.now() - this._cache.timestamp;
         console.log('📍 Caché: Cargado desde storage (edad:', Math.round(age/1000), 's)');
         
@@ -121,6 +141,24 @@ const AddressCache = {
   
   // Guardar nueva dirección (con persistencia)
   async set(lat, lng, address) {
+    // VALIDACIÓN PROFESIONAL: Nunca guardar direcciones inválidas
+    const INVALID_ADDRESSES = [
+      'ubicacion desconocida',
+      'ubicación desconocida', 
+      'unknown location',
+      'error',
+      'null',
+      'undefined'
+    ];
+    
+    const addressLower = (address || '').toLowerCase().trim();
+    
+    // Rechazar si es inválida o muy corta
+    if (!address || addressLower.length < 5 || INVALID_ADDRESSES.includes(addressLower)) {
+      console.log('📍 Caché: RECHAZADO - Dirección inválida:', address);
+      return; // No guardar
+    }
+    
     this._cache = {
       latitude: lat,
       longitude: lng,

@@ -1463,6 +1463,7 @@ if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
       vehicleType: selectedVehicleType,
       status: 'searching',
       requestTime: new Date().toISOString(),
+      additionalDestinations: additionalDestinations || [],
     };
 
     console.log('Enviando solicitud de viaje con metodo de pago:', selectedPaymentMethod);
@@ -1512,12 +1513,12 @@ const sendTripRequestToBackend = async (tripData) => {
           latitude: tripData.origin.latitude,
           longitude: tripData.origin.longitude
         },
-        destination_coords: {
+    destination_coords: {
           latitude: tripData.destination.latitude,
           longitude: tripData.destination.longitude
-        }
+        },
+        additional_stops: tripData.additionalDestinations || []
       }
-    
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
     
@@ -1544,6 +1545,10 @@ const sendTripRequestToBackend = async (tripData) => {
     
     if (data.success) {
       console.log('✅ Viaje creado:', data.tripId);
+      
+      // GUARDAR TRIPID EN SHAREDSTORAGE PARA PODER CANCELAR
+      await SharedStorage.saveTripRequest({ id: data.tripId, status: 'pending' });
+      
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
      setSearchModalVisible(true);
@@ -5148,6 +5153,7 @@ const AppWithNavigation = (props) => {
 };
 
 export default AppWithNavigation;
+
 
 
 
