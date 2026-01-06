@@ -144,7 +144,10 @@ class FCMService {
         vehicleType: data.vehicleType || 'Estándar',
         type: 'NEW_TRIP_REQUEST',
         pickupLat: parseFloat(data.pickupLat) || null,
-        pickupLng: parseFloat(data.pickupLng) || null
+        pickupLng: parseFloat(data.pickupLng) || null,
+        destinationLat: parseFloat(data.destinationLat) || null,
+        destinationLng: parseFloat(data.destinationLng) || null,
+        additionalStops: JSON.parse(data.additionalStops || '[]')
       };
 
       console.log('🚕 Procesando solicitud de servicio:', tripData);

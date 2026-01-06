@@ -176,6 +176,7 @@ export default function DriverApp({ navigation }) {
               pickupLng: parseFloat(pendingTrip.pickupLng) || null,
               destinationLat: parseFloat(pendingTrip.destinationLat) || null,
               destinationLng: parseFloat(pendingTrip.destinationLng) || null,
+              additionalStops: JSON.parse(pendingTrip.additionalStops || '[]'),
               type: 'NEW_TRIP_REQUEST',
             };
         // Auto-aceptar el viaje (ya fue aceptado en pantalla nativa)
@@ -359,7 +360,7 @@ global.autoAcceptTrip = async (tripData) => {
               longitude: normalizedTrip.destinationLng
             } : null
           },
-          additionalStops: []
+         additionalStops: tripData.additionalStops || []
         };
         setTripStops(stops);
         setCurrentStopIndex(0);
@@ -940,7 +941,7 @@ const acceptTrip = async () => {
             longitude: normalizedTrip.destinationLng
           } : null
         },
-        additionalStops: pendingRequest.additionalDestinations || []
+        additionalStops: pendingRequest.additionalStops || []
            };
       setTripStops(stops);
       setCurrentStopIndex(0);
@@ -1334,10 +1335,13 @@ const acceptTrip = async () => {
 
   const renderMap = () => (
     <View style={styles.tabContent}>
- <MapComponent 
-        currentTrip={currentTrip} 
-        tripPhase={tripPhase}
-        onStartBackgroundTracking={startBackgroundTracking}
+<MapComponent
+currentTrip={currentTrip}
+  tripPhase={tripPhase}
+  userLocation={userLocation}
+  currentStopIndex={currentStopIndex}
+  tripStops={tripStops}
+  onStartBackgroundTracking={startBackgroundTracking}
         onLocationUpdate={(location) => {
           console.log('📍 Ubicación actualizada:', location);
           setUserLocation(location);
@@ -1346,9 +1350,24 @@ const acceptTrip = async () => {
           setTripPhase('arrived');
           setActiveTab('dashboard');
         }}
-          onArrivedAtDestination={() => {
-    setActiveTab('dashboard');
-  }}
+  onArrivedAtDestination={() => {
+            const additionalStops = tripStops?.additionalStops || [];
+            const totalStops = additionalStops.length;
+            
+            console.log('🎯 Llegada destino - stopIndex:', currentStopIndex, 'total:', totalStops);
+            
+            if (currentStopIndex < totalStops) {
+              const nextIndex = currentStopIndex + 1;
+              setCurrentStopIndex(nextIndex);
+              Alert.alert(
+                '✅ Destino ' + (currentStopIndex + 1) + ' Completado',
+                'Continúa al siguiente destino.',
+                [{ text: 'Ir al Siguiente', onPress: () => setActiveTab('map') }]
+              );
+            } else {
+              setActiveTab('dashboard');
+            }
+          }}
       />
       
       {/* GESTOR DE PARADAS MÚLTIPLES */}

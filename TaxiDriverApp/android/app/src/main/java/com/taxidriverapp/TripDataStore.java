@@ -21,7 +21,8 @@ public class TripDataStore {
                                     String pickupLng,
                                     String destinationLat,
                                     String destinationLng,
-                                    String vehicleType) {
+                                    String vehicleType,
+                                    String additionalStops) {
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
@@ -39,6 +40,7 @@ public class TripDataStore {
             editor.putString("destinationLat", destinationLat);
             editor.putString("destinationLng", destinationLng);
             editor.putString("vehicleType", vehicleType);
+            editor.putString("additionalStops", additionalStops);
             editor.putLong("timestamp", System.currentTimeMillis());
             
             editor.apply();
@@ -78,6 +80,7 @@ public class TripDataStore {
     public static String getDestinationLat(Context ctx, String val) { return getValue(ctx, val, "destinationLat"); }
     public static String getDestinationLng(Context ctx, String val) { return getValue(ctx, val, "destinationLng"); }
     public static String getVehicleType(Context ctx, String val) { return getValue(ctx, val, "vehicleType"); }
+    public static String getAdditionalStops(Context ctx, String val) { return getValue(ctx, val, "additionalStops"); }
     
     public static void clear(Context context) {
         try {

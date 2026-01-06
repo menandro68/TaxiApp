@@ -68,7 +68,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 data.get("pickupLng"),
                 data.get("destinationLat"),
                 data.get("destinationLng"),
-                data.get("vehicleType")
+                data.get("vehicleType"),
+                data.get("additionalStops")
             );
             
             showFullScreenNotification(data);
@@ -109,6 +110,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             fullScreenIntent.putExtra("distance", data.get("distance"));
             fullScreenIntent.putExtra("paymentMethod", data.get("paymentMethod"));
             fullScreenIntent.putExtra("vehicleType", data.get("vehicleType"));
+            fullScreenIntent.putExtra("additionalStops", data.get("additionalStops"));
             fullScreenIntent.putExtra("pickupLat", data.get("pickupLat"));
             fullScreenIntent.putExtra("pickupLng", data.get("pickupLng"));
             fullScreenIntent.putExtra("destinationLat", data.get("destinationLat"));

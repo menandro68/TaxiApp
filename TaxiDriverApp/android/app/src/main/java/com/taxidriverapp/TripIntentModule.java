@@ -44,6 +44,7 @@ public class TripIntentModule extends ReactContextBaseJavaModule {
                 tripData.putString("pickupLng", prefs.getString("pickupLng", ""));
                 tripData.putString("destinationLat", prefs.getString("destinationLat", ""));
                 tripData.putString("destinationLng", prefs.getString("destinationLng", ""));
+                tripData.putString("additionalStops", prefs.getString("additionalStops", "[]"));
                 
                 // Limpiar después de leer
                 prefs.edit().clear().apply();
@@ -61,7 +62,7 @@ public class TripIntentModule extends ReactContextBaseJavaModule {
     public static void savePendingTrip(Context context, String tripId, String user, 
             String phone, String pickup, String destination, String estimatedPrice,
             String distance, String paymentMethod, String pickupLat, String pickupLng,
-            String destinationLat, String destinationLng) {
+            String destinationLat, String destinationLng, String additionalStops) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.edit()
             .putBoolean("hasPendingTrip", true)
@@ -77,6 +78,7 @@ public class TripIntentModule extends ReactContextBaseJavaModule {
             .putString("pickupLng", pickupLng)
             .putString("destinationLat", destinationLat)
             .putString("destinationLng", destinationLng)
+            .putString("additionalStops", additionalStops)
             .apply();
     }
 }

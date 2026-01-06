@@ -38,9 +38,9 @@ const cleanInstruction = (html) => {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
-const MapComponent = ({ currentTrip, tripPhase, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination }) => {
+const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination }) => {
   const mapRef = useRef(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const routeFetched = useRef(false);
@@ -71,7 +71,27 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   } : null;
 
   // Destino de navegación según la fase del viaje
-  const navigationTarget = tripPhase === 'started' ? destCoord : pickupCoord;
+  // Si hay múltiples destinos, usar el destino según currentStopIndex
+  const getNavigationTarget = () => {
+    if (tripPhase !== 'started') return pickupCoord;
+    
+    const additionalStops = tripStops?.additionalStops || [];
+    if (currentStopIndex === 0 || additionalStops.length === 0) {
+      return destCoord; // Primer destino principal
+    }
+    
+    // Destino adicional - necesitamos geocodificar la dirección
+    // Por ahora usamos destCoord como fallback
+    return destCoord;
+  };
+  const navigationTarget = getNavigationTarget();
+
+  // Sincronizar ubicación del padre (App.js) con estado local
+  useEffect(() => {
+    if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude) {
+      setCurrentLocation(propUserLocation);
+    }
+  }, [propUserLocation]);
 
   // Obtener ubicación GPS - solo una vez al montar
   useEffect(() => {
@@ -342,48 +362,77 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   };
 
   const startNavigation = async () => {
-    // Si no tenemos ubicación, intentar obtenerla
+    console.log('🚀 startNavigation INICIADO');
+    
+    // Verificar que tenemos destino
+    const target = navigationTarget || pickupCoord || destCoord;
+    if (!target) {
+      console.log('❌ Sin destino de navegación');
+      Alert.alert('Error', 'No hay destino disponible para navegar.');
+      return;
+    }
+    console.log('✅ Target:', target.latitude, target.longitude);
+
+    // Obtener ubicación - múltiples intentos
     let location = currentLocation;
-    if (!location) {
+    if (!location || !location.latitude) {
       console.log('📍 Obteniendo ubicación GPS...');
-      try {
-        const position = await new Promise((resolve, reject) => {
-          Geolocation.getCurrentPosition(
-            resolve,
-            reject,
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-          );
-        });
-        location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-        setCurrentLocation(location);
-        console.log('✅ GPS obtenido:', location.latitude, location.longitude);
-      } catch (error) {
-        console.log('❌ Error GPS:', error.message);
-        Alert.alert('Error', 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.');
-        return;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            Geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              { enableHighAccuracy: attempt === 1, timeout: 8000, maximumAge: 5000 }
+            );
+          });
+          location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+          setCurrentLocation(location);
+          console.log('✅ GPS obtenido intento', attempt, ':', location.latitude, location.longitude);
+          break;
+        } catch (error) {
+          console.log('⚠️ GPS intento', attempt, 'falló:', error.message);
+          if (attempt === 3) {
+            Alert.alert('Error GPS', 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.');
+            return;
+          }
+        }
       }
     }
 
-    // Si no hay ruta cargada, obtenerla
+    // Si aún no hay ubicación, usar propUserLocation como fallback
+    if (!location && propUserLocation) {
+      location = propUserLocation;
+      console.log('📍 Usando propUserLocation como fallback');
+    }
+
+    if (!location) {
+      Alert.alert('Error', 'No se pudo obtener tu ubicación.');
+      return;
+    }
+
+    // Obtener ruta si no existe
     let steps = navigationSteps;
-    if (steps.length === 0 && navigationTarget && location) {
+    if (!steps || steps.length === 0) {
       console.log('⏳ Obteniendo ruta...');
       routeFetched.current = false;
-      const fetchedSteps = await fetchRoute(location, navigationTarget);
+      const fetchedSteps = await fetchRoute(location, target);
       if (fetchedSteps && fetchedSteps.length > 0) {
         steps = fetchedSteps;
       }
     }
 
     // Verificar que tenemos ruta
-    if (steps.length === 0) {
-      Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión.');
+    if (!steps || steps.length === 0) {
+      Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión a internet.');
       return;
     }
     
+    console.log('✅ Iniciando navegación con', steps.length, 'pasos');
     setIsNavigating(true);
     setCurrentStepIndex(0);
     lastSpokenStep.current = 0;
+    spokenAnnouncements.current = {};
     const destino = tripPhase === 'started' ? 'al destino' : 'al pasajero';
     speakInstruction('Iniciando navegación ' + destino + '. ' + steps[0].instruction);
   };

@@ -41,6 +41,7 @@ public class TripRequestActivity extends Activity {
     private String pickupLng;
     private String destinationLat;
     private String destinationLng;
+    private String additionalStops;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -93,6 +94,7 @@ public class TripRequestActivity extends Activity {
         pickupLng = TripDataStore.getPickupLng(this, intent.getStringExtra("pickupLng"));
         destinationLat = TripDataStore.getDestinationLat(this, intent.getStringExtra("destinationLat"));
         destinationLng = TripDataStore.getDestinationLng(this, intent.getStringExtra("destinationLng"));
+        additionalStops = TripDataStore.getAdditionalStops(this, intent.getStringExtra("additionalStops"));
         
         // Valores por defecto
         if (user == null || user.isEmpty()) user = "Pasajero";
@@ -153,6 +155,25 @@ public class TripRequestActivity extends Activity {
         destText.setGravity(Gravity.CENTER);
         destText.setPadding(20, 10, 20, 30);
         mainLayout.addView(destText);
+
+        // Paradas adicionales
+        if (additionalStops != null && !additionalStops.isEmpty() && !additionalStops.equals("[]")) {
+            try {
+                org.json.JSONArray stopsArray = new org.json.JSONArray(additionalStops);
+                for (int i = 0; i < stopsArray.length(); i++) {
+                    String stop = stopsArray.getString(i);
+                    TextView stopText = new TextView(this);
+                    stopText.setText("\uD83D\uDEA9 Parada " + (i + 1) + ": " + stop);
+                    stopText.setTextSize(14);
+                    stopText.setTextColor(Color.parseColor("#fbbf24"));
+                    stopText.setGravity(Gravity.CENTER);
+                    stopText.setPadding(20, 5, 20, 5);
+                    mainLayout.addView(stopText);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing additionalStops: " + e.getMessage());
+            }
+        }
 
         // Precio
         TextView priceText = new TextView(this);
@@ -275,7 +296,7 @@ public class TripRequestActivity extends Activity {
         TripIntentModule.savePendingTrip(
             this, tripId, user, phone, pickup, destination,
             estimatedPrice, distance, paymentMethod,
-            pickupLat, pickupLng, destinationLat, destinationLng
+            pickupLat, pickupLng, destinationLat, destinationLng, additionalStops
         );
 
         Intent intent = new Intent(this, MainActivity.class);
