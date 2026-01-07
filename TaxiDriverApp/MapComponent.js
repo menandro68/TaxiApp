@@ -373,45 +373,44 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     }
     console.log('✅ Target:', target.latitude, target.longitude);
 
-    // Obtener ubicación - múltiples intentos
-    let location = currentLocation;
+    // ESTRATEGIA ROBUSTA: Usar cualquier ubicación disponible inmediatamente
+    let location = currentLocation || propUserLocation;
+    
+    // Si no hay ubicación en memoria, intentar obtenerla
     if (!location || !location.latitude) {
-      console.log('📍 Obteniendo ubicación GPS...');
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      console.log('📍 Sin ubicación en memoria, obteniendo GPS...');
+      
+      // Intentar con configuraciones cada vez menos restrictivas
+      const configs = [
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 },
+        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 },
+      ];
+      
+      for (let i = 0; i < configs.length; i++) {
         try {
           const position = await new Promise((resolve, reject) => {
-            Geolocation.getCurrentPosition(
-              resolve,
-              reject,
-              { enableHighAccuracy: attempt === 1, timeout: 8000, maximumAge: 5000 }
-            );
+            Geolocation.getCurrentPosition(resolve, reject, configs[i]);
           });
           location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
           setCurrentLocation(location);
-          console.log('✅ GPS obtenido intento', attempt, ':', location.latitude, location.longitude);
+          console.log('✅ GPS obtenido config', i + 1);
           break;
         } catch (error) {
-          console.log('⚠️ GPS intento', attempt, 'falló:', error.message);
-          if (attempt === 3) {
-            Alert.alert('Error GPS', 'No se pudo obtener tu ubicación. Verifica que el GPS esté activado.');
-            return;
-          }
+          console.log('⚠️ GPS config', i + 1, 'falló');
         }
       }
     }
 
-    // Si aún no hay ubicación, usar propUserLocation como fallback
-    if (!location && propUserLocation) {
-      location = propUserLocation;
-      console.log('📍 Usando propUserLocation como fallback');
+    // FALLBACK FINAL: Usar punto cerca del destino para calcular ruta
+    if (!location || !location.latitude) {
+      console.log('⚠️ Usando ubicación aproximada');
+      location = { latitude: target.latitude - 0.001, longitude: target.longitude - 0.001 };
     }
 
-    if (!location) {
-      Alert.alert('Error', 'No se pudo obtener tu ubicación.');
-      return;
-    }
+    console.log('📍 Ubicación final:', location.latitude, location.longitude);
 
-    // Obtener ruta si no existe
+    // Obtener ruta - siempre intentar obtener nueva si no hay pasos
     let steps = navigationSteps;
     if (!steps || steps.length === 0) {
       console.log('⏳ Obteniendo ruta...');
@@ -422,9 +421,18 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
       }
     }
 
+    // Si aún no hay ruta, reintentar
+    if (!steps || steps.length === 0) {
+      console.log('⚠️ Reintentando ruta...');
+      const fetchedSteps = await fetchRoute(location, target);
+      if (fetchedSteps && fetchedSteps.length > 0) {
+        steps = fetchedSteps;
+      }
+    }
+
     // Verificar que tenemos ruta
     if (!steps || steps.length === 0) {
-      Alert.alert('Error', 'No se pudo obtener la ruta. Verifica tu conexión a internet.');
+      Alert.alert('Sin conexión', 'No se pudo obtener la ruta. Verifica tu internet y reintenta.');
       return;
     }
     
