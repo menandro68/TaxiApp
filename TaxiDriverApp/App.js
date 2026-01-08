@@ -297,6 +297,34 @@ Sound.setCategory('Playback');
     };
 
     // Función para auto-aceptar viaje (desde TripRequestActivity nativa)
+     // Función para limpiar viaje cuando el usuario cancela
+global.clearCurrentTrip = async () => {
+  console.log('🗑️ Limpiando viaje cancelado por el usuario');
+  setCurrentTrip(null);
+  setTripPhase('');
+  setPendingRequest(null);
+  setShowRequestModal(false);
+  setCurrentStopIndex(0);
+  setTripStops(null);
+  setDriverStatus('online');
+  setActiveTab('dashboard');
+
+  // IMPORTANTE: Notificar al servidor que el conductor está disponible
+  try {
+    const driverId = loggedDriver?.id || 1;
+    const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/status', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId: driverId, status: 'online', isOnline: true })
+    });
+    if (response.ok) {
+      console.log('✅ Estado actualizado en servidor: ONLINE (después de cancelación)');
+    }
+  } catch (error) {
+    console.log('⚠️ Error actualizando estado en servidor:', error.message);
+  }
+};
+
 global.autoAcceptTrip = async (tripData) => {
       console.log('🚗 Auto-aceptando viaje desde pantalla nativa:', tripData);
       
