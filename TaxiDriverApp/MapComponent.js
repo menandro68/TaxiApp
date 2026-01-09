@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
 import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import Tts from 'react-native-tts';
@@ -361,9 +361,21 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     Tts.speak(text);
   };
 
+  // Función para abrir navegación externa (Google Maps o Waze)
+  const openExternalNavigation = (targetCoord, app = 'google') => {
+    const { latitude, longitude } = targetCoord;
+    const url = app === 'waze' 
+      ? `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`
+      : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
+    
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'No se pudo abrir la aplicación de navegación');
+    });
+  };
+
   const startNavigation = async () => {
     console.log('🚀 startNavigation INICIADO');
-    
+
     // Verificar que tenemos destino
     const target = navigationTarget || pickupCoord || destCoord;
     if (!target) {
@@ -373,39 +385,61 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     }
     console.log('✅ Target:', target.latitude, target.longitude);
 
-    // ESTRATEGIA ROBUSTA: Usar cualquier ubicación disponible inmediatamente
+    // ESTRATEGIA ROBUSTA: Múltiples fuentes de ubicación
     let location = currentLocation || propUserLocation;
-    
-    // Si no hay ubicación en memoria, intentar obtenerla
+
+    // Si no hay ubicación, intentar getLastKnownPosition (instantáneo)
     if (!location || !location.latitude) {
-      console.log('📍 Sin ubicación en memoria, obteniendo GPS...');
-      
-      // Intentar con configuraciones cada vez menos restrictivas
-      const configs = [
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 },
-        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 },
-      ];
-      
-      for (let i = 0; i < configs.length; i++) {
-        try {
-          const position = await new Promise((resolve, reject) => {
-            Geolocation.getCurrentPosition(resolve, reject, configs[i]);
-          });
-          location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
-          setCurrentLocation(location);
-          console.log('✅ GPS obtenido config', i + 1);
-          break;
-        } catch (error) {
-          console.log('⚠️ GPS config', i + 1, 'falló');
-        }
+      console.log('📍 Sin ubicación en memoria, intentando lastKnownPosition...');
+      try {
+        const lastPos = await new Promise((resolve, reject) => {
+          Geolocation.getCurrentPosition(
+            resolve, 
+            reject, 
+            { enableHighAccuracy: false, timeout: 2000, maximumAge: 300000 } // 5 min cache
+          );
+        });
+        location = { latitude: lastPos.coords.latitude, longitude: lastPos.coords.longitude };
+        setCurrentLocation(location);
+        console.log('✅ Última ubicación conocida obtenida');
+      } catch (e) {
+        console.log('⚠️ No hay última ubicación conocida');
       }
     }
 
-    // FALLBACK FINAL: Usar punto cerca del destino para calcular ruta
+    // Si aún no hay ubicación, intento rápido de GPS
     if (!location || !location.latitude) {
-      console.log('⚠️ Usando ubicación aproximada');
-      location = { latitude: target.latitude - 0.001, longitude: target.longitude - 0.001 };
+      console.log('📍 Intentando GPS rápido...');
+      try {
+        const position = await new Promise((resolve, reject) => {
+          Geolocation.getCurrentPosition(
+            resolve, 
+            reject, 
+            { enableHighAccuracy: true, timeout: 3000, maximumAge: 60000 }
+          );
+        });
+        location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        setCurrentLocation(location);
+        console.log('✅ GPS rápido exitoso');
+      } catch (e) {
+        console.log('❌ GPS rápido falló');
+      }
+    }
+
+    // FALLBACK PROFESIONAL: Ofrecer navegación externa
+    if (!location || !location.latitude) {
+      console.log('❌ GPS no disponible, ofreciendo navegación externa');
+      Alert.alert(
+        '📍 GPS Temporalmente No Disponible',
+        '¿Deseas abrir la navegación en otra aplicación?',
+        [
+          { text: 'Google Maps', onPress: () => openExternalNavigation(target, 'google') },
+          { text: 'Waze', onPress: () => openExternalNavigation(target, 'waze') },
+          { text: 'Reintentar', onPress: () => startNavigation() },
+          { text: 'Cancelar', style: 'cancel' }
+        ]
+      );
+      return;
     }
 
     console.log('📍 Ubicación final:', location.latitude, location.longitude);
