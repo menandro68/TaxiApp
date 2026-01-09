@@ -107,6 +107,10 @@ class FCMService {
       // Compatibilidad con formato anterior
       console.log('🚗 Nueva solicitud de viaje recibida (formato antiguo)');
       this.handleTripRequest(data);
+    } else if (data && data.type === 'trip_cancelled') {
+      // Usuario canceló el viaje
+      console.log('❌ Viaje cancelado por el usuario');
+      this.handleTripCancelled(data);
     } else if (notification) {
       // Mostrar alerta para otras notificaciones
       Alert.alert(
@@ -295,6 +299,31 @@ class FCMService {
       console.error('❌ Error rechazando viaje:', error);
       throw error;
     }
+  }
+
+  // Manejar cancelación de viaje por el usuario
+  handleTripCancelled(data) {
+    console.log('❌ Procesando cancelación de viaje:', data);
+
+    // DETENER SONIDO INMEDIATAMENTE al recibir la cancelación
+    if (global.clearCurrentTrip) {
+      global.clearCurrentTrip();
+    }
+
+    // Mostrar alerta al conductor
+    Alert.alert(
+      '❌ Viaje Cancelado',
+      `El usuario ha cancelado el viaje.\n\nMotivo: ${data.reason || 'No especificado'}`,
+      [
+        {
+          text: 'ENTENDIDO',
+          onPress: () => {
+            console.log('Conductor confirmó cancelación');
+          }
+        }
+      ],
+      { cancelable: false }
+    );
   }
 
   // Simular notificación de prueba

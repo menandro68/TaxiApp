@@ -300,6 +300,19 @@ Sound.setCategory('Playback');
      // Función para limpiar viaje cuando el usuario cancela
 global.clearCurrentTrip = async () => {
   console.log('🗑️ Limpiando viaje cancelado por el usuario');
+  
+  // Detener el sonido cuando se cancela el viaje
+  if (soundRef.current) {
+    soundRef.current.stop();
+    soundRef.current.release();
+    soundRef.current = null;
+  }
+  
+  // Detener el timer
+  if (timerRef.current) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
   setCurrentTrip(null);
   setTripPhase('');
   setPendingRequest(null);
