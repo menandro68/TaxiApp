@@ -514,21 +514,13 @@ router.put('/:tripId/cancel', async (req, res) => {
                 const admin = require('firebase-admin');
                 await admin.messaging().send({
                     token: trip.driver_fcm_token,
-                    notification: {
-                        title: 'Viaje Cancelado',
-                        body: `El usuario ${trip.user_name || 'Usuario'} ha cancelado el viaje`
-                    },
                     data: {
                         type: 'trip_cancelled',
                         tripId: tripId.toString(),
                         reason: reason || 'Cancelado por el usuario'
                     },
                     android: {
-                        priority: 'high',
-                        notification: {
-                            channelId: 'taxi_notifications',
-                            sound: 'default'
-                        }
+                        priority: 'high'
                     }
                 });
                 console.log('Notificacion de cancelacion enviada al conductor');
