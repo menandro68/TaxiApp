@@ -305,25 +305,10 @@ class FCMService {
   handleTripCancelled(data) {
     console.log('❌ Procesando cancelación de viaje:', data);
 
-    // DETENER SONIDO INMEDIATAMENTE al recibir la cancelación
+    // DETENER SONIDO Y CERRAR MODAL - El Alert se muestra desde App.js
     if (global.clearCurrentTrip) {
       global.clearCurrentTrip();
     }
-
-    // Mostrar alerta al conductor
-    Alert.alert(
-      '❌ Viaje Cancelado',
-      `El usuario ha cancelado el viaje.\n\nMotivo: ${data.reason || 'No especificado'}`,
-      [
-        {
-          text: 'ENTENDIDO',
-          onPress: () => {
-            console.log('Conductor confirmó cancelación');
-          }
-        }
-      ],
-      { cancelable: false }
-    );
   }
 
   // Simular notificación de prueba

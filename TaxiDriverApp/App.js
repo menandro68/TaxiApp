@@ -35,6 +35,14 @@ import Sound from 'react-native-sound';
 import { NativeModules, AppState } from 'react-native';
 const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 
+// Variable global para el sonido (accesible desde cualquier lugar)
+let globalSoundInstance = null;
+let globalSoundCancelled = false;
+let globalTripCancelled = false;
+let globalSetShowRequestModal = null;
+let globalSetPendingRequest = null;
+let globalSetActiveTab = null;
+let globalTimerRef = null;
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
 const { width, height } = Dimensions.get('window');
@@ -76,12 +84,17 @@ export default function DriverApp({ navigation }) {
   const [pendingRequest, setPendingRequest] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, map, earnings
   const [earnings, setEarnings] = useState({ today: 420, week: 2100, month: 8500 });
-  const [showRequestModal, setShowRequestModal] = useState(false);
+ const [showRequestModal, setShowRequestModal] = useState(false);
   const [showPreRegister, setShowPreRegister] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
+
+  // Exponer setters globalmente para acceso desde FCM
+  globalSetShowRequestModal = setShowRequestModal;
+  globalSetPendingRequest = setPendingRequest;
+  globalSetActiveTab = setActiveTab;
   const [isOffline, setIsOffline] = useState(false);
   const [tripPhase, setTripPhase] = useState(''); // AGREGADO: '', 'arrived', 'started'
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
@@ -111,7 +124,49 @@ export default function DriverApp({ navigation }) {
   
   const timerRef = useRef(null);
   const soundRef = useRef(null);
-  const appStateRef = useRef(AppState.currentState);
+ const soundCancelledRef = useRef(false);
+  const clearTripFnRef = useRef(null);
+const appStateRef = useRef(AppState.currentState);
+
+// Función de limpieza actualizada en cada render (evita stale closure)
+clearTripFnRef.current = () => {
+    console.log('🧹 Ejecutando limpieza con refs actualizadas');
+    
+    // Marcar como cancelado en AMBAS variables
+    soundCancelledRef.current = true;
+    globalSoundCancelled = true;
+    
+    // Intentar detener usando ref
+    if (soundRef.current) {
+      console.log('🔇 Deteniendo sonido (soundRef)...');
+      soundRef.current.stop();
+      soundRef.current.release();
+      soundRef.current = null;
+      console.log('✅ Sonido detenido via soundRef');
+    }
+    
+    // Intentar detener usando variable global
+    if (globalSoundInstance) {
+      console.log('🔇 Deteniendo sonido (globalSoundInstance)...');
+      globalSoundInstance.stop();
+      globalSoundInstance.release();
+      globalSoundInstance = null;
+      console.log('✅ Sonido detenido via globalSoundInstance');
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setCurrentTrip(null);
+    setTripPhase('');
+    setPendingRequest(null);
+    setShowRequestModal(false);
+    setCurrentStopIndex(0);
+    setTripStops(null);
+    setDriverStatus('online');
+    setActiveTab('dashboard');
+  };
+
  useEffect(() => {
     // Cargar conductor guardado
     const loadSavedDriver = async () => {
@@ -263,29 +318,38 @@ export default function DriverApp({ navigation }) {
     });
     
   // Configurar función global para manejar solicitudes de viaje
-    global.handleNewTripRequest = (tripData) => {
+global.handleNewTripRequest = (tripData) => {
   console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
   
+  // Si el viaje ya fue cancelado, no procesar
+  if (globalTripCancelled) {
+    console.log('🚫 Viaje ya cancelado, ignorando solicitud');
+    return;
+  }
+  
+soundCancelledRef.current = false; // Reset para nueva solicitud
+  globalSoundCancelled = false; // Reset variable global también
   // 🔔 TRAER APP AL FRENTE (como inDrive)
   if (BringToForeground) {
     BringToForeground.bringAppToForeground();
   }
-  
+
   setPendingRequest(tripData);
       setShowRequestModal(true);
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
-      
+
     // 🔊 NUEVO: Reproducir voz "Nuevo Servicio" 5 veces
 Sound.setCategory('Playback');
       const moneySound = new Sound('money_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
         if (!error) {
           soundRef.current = moneySound; // Guardar referencia
+          globalSoundInstance = moneySound; // Guardar en variable global
           let playCount = 0;
-          const playSound = () => {
-            if (playCount < 7 && soundRef.current) {
+      const playSound = () => {
+            if (playCount < 7 && soundRef.current && !soundCancelledRef.current && !globalSoundCancelled) {
               playCount++;
               moneySound.play((success) => {
-                if (success && soundRef.current) {
+                if (success && soundRef.current && !soundCancelledRef.current && !globalSoundCancelled) {
                   playSound();
                 }
               });
@@ -295,32 +359,64 @@ Sound.setCategory('Playback');
         }
       });
     };
-
     // Función para auto-aceptar viaje (desde TripRequestActivity nativa)
      // Función para limpiar viaje cuando el usuario cancela
 global.clearCurrentTrip = async () => {
   console.log('🗑️ Limpiando viaje cancelado por el usuario');
-  
-  // Detener el sonido cuando se cancela el viaje
-  if (soundRef.current) {
-    soundRef.current.stop();
-    soundRef.current.release();
-    soundRef.current = null;
+
+  // MARCAR VIAJE COMO CANCELADO
+  globalTripCancelled = true;
+
+  // DETENER SONIDO INMEDIATAMENTE usando variables globales
+  globalSoundCancelled = true;
+  if (globalSoundInstance) {
+    console.log('🔇 Deteniendo sonido via globalSoundInstance...');
+    try {
+      globalSoundInstance.stop();
+      globalSoundInstance.release();
+    } catch (e) {
+      console.log('⚠️ Error deteniendo sonido:', e);
+    }
+    globalSoundInstance = null;
+    console.log('✅ Sonido detenido');
   }
-  
-  // Detener el timer
-  if (timerRef.current) {
-    clearInterval(timerRef.current);
-    timerRef.current = null;
+
+// IMPORTANTE: Eliminar viaje pendiente de AsyncStorage para evitar que se reproduzca sonido al volver al foreground
+  try {
+    await AsyncStorage.removeItem('pending_trip_request');
+    console.log('🗑️ Viaje pendiente eliminado de AsyncStorage');
+  } catch (e) {
+    console.log('⚠️ Error eliminando viaje pendiente:', e);
   }
-  setCurrentTrip(null);
-  setTripPhase('');
-  setPendingRequest(null);
-  setShowRequestModal(false);
-  setCurrentStopIndex(0);
-  setTripStops(null);
-  setDriverStatus('online');
-  setActiveTab('dashboard');
+
+   // DETENER TIMER INMEDIATAMENTE
+  if (globalTimerRef) {
+    clearInterval(globalTimerRef);
+    globalTimerRef = null;
+    console.log('✅ Timer detenido');
+  }
+
+// CERRAR MODAL Y LIMPIAR ESTADO usando setters globales
+  if (globalSetShowRequestModal) {
+    globalSetShowRequestModal(false);
+    console.log('✅ Modal cerrado via setter global');
+  }
+  if (globalSetPendingRequest) {
+    globalSetPendingRequest(null);
+  }
+  if (globalSetActiveTab) {
+    globalSetActiveTab('dashboard');
+  }
+
+  // Mostrar Alert en el centro después de cerrar modal
+  setTimeout(() => {
+    Alert.alert(
+      '❌ VIAJE CANCELADO',
+      'El usuario ha cancelado el viaje.\n\nMotivo: Cancelado por el usuario',
+      [{ text: 'ENTENDIDO', style: 'default' }],
+      { cancelable: false }
+    );
+  }, 400);
 
   // IMPORTANTE: Notificar al servidor que el conductor está disponible
   try {
@@ -337,7 +433,6 @@ global.clearCurrentTrip = async () => {
     console.log('⚠️ Error actualizando estado en servidor:', error.message);
   }
 };
-
 global.autoAcceptTrip = async (tripData) => {
       console.log('🚗 Auto-aceptando viaje desde pantalla nativa:', tripData);
       
@@ -756,7 +851,18 @@ const stopLocationTracking = () => {
       clearInterval(timerRef.current);
     }
     
-    timerRef.current = setInterval(() => {
+  timerRef.current = setInterval(() => {
+      // Verificar si el viaje fue cancelado por el usuario
+      if (globalTripCancelled) {
+        console.log('🚫 Viaje cancelado detectado en timer, cerrando modal');
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        setShowRequestModal(false);
+        setPendingRequest(null);
+        setActiveTab('dashboard');
+        return;
+      }
+      
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
@@ -766,6 +872,7 @@ const stopLocationTracking = () => {
         return prev - 1;
       });
     }, 1000);
+     globalTimerRef = timerRef.current;
   };
 
 const toggleDriverStatus = async () => {
@@ -1118,7 +1225,7 @@ const acceptTrip = async () => {
         week: earnings.week + tripEarning,
         month: earnings.month + tripEarning
       };
-      
+    
       setEarnings(newEarnings);
       setCurrentTrip(null);
       setDriverStatus('online');
