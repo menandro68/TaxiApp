@@ -55,7 +55,8 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
-  Linking,  
+Linking,
+  AppState,
 } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { Platform } from 'react-native';
@@ -82,6 +83,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showPickupSelector, setShowPickupSelector] = useState(false);
   const [pickupLocation, setPickupLocation] = useState(null);
   const gpsObtainedRef = useRef(false);
+  const gpsAlertShownRef = useRef(false);
 
   const Stack = createStackNavigator();
 
@@ -179,6 +181,24 @@ const DRAWER_WIDTH = screenWidth * 0.75;
     checkInternet();
     const interval = setInterval(checkInternet, 10000);
     return () => clearInterval(interval);
+  }, []);
+  // Detectar cuando el usuario regresa a la app después de ir a Configuración
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('📱 App volvió al primer plano, verificando ubicación...');
+        // Resetear para permitir nuevo intento de GPS
+        gpsObtainedRef.current = false;
+        // Reintentar obtener ubicación
+        initializeLocationService();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
     useEffect(() => {
@@ -859,16 +879,33 @@ const initializeLocationService = async () => {
             });
             setLocationSource('default_fallback');
             setIsLoadingLocation(false);
-            // Reintentar GPS en background
+// Mostrar alerta al usuario sobre GPS desactivado (solo una vez)
+          if (!gpsAlertShownRef.current) {
+            gpsAlertShownRef.current = true;
             setTimeout(() => {
-              console.log('Reintentando GPS en background...');
-              initializeLocationService();
-            }, 5000);
-            return;
-          }
+              Alert.alert(
+                '📍 GPS Desactivado',
+                'No se puede obtener tu ubicación porque el GPS del teléfono está desactivado.\n\nPor favor activa la ubicación en la configuración de tu teléfono.',
+                [
+                  {
+                    text: 'Ir a Configuración',
+                    onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS'),
+                    style: 'default'
+                  }
+                ],
+                { cancelable: false }
+              );
+            }, 500);
+     
+      }
+          return;
         }
+      }
         
         // ✅ UBICACIÓN OBTENIDA CORRECTAMENTE
+        
+        
+       
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
 
@@ -930,8 +967,24 @@ const initializeLocationService = async () => {
       setLocationSource('default');
       setLocationPermissionStatus('denied');
 
-      setTimeout(() => {
-        setShowLocationModal(true);
+    setTimeout(() => {
+        Alert.alert(
+          '📍 Ubicación Desactivada',
+          'Para brindarte un mejor servicio, necesitamos acceder a tu ubicación GPS.\n\nPor favor activa la ubicación en la configuración de tu teléfono.',
+          [
+            {
+              text: 'Ir a Configuración',
+              onPress: () => Linking.openSettings(),
+              style: 'default'
+            },
+            {
+              text: 'Seleccionar Manualmente',
+              onPress: () => setShowLocationModal(true),
+              style: 'cancel'
+            }
+          ],
+          { cancelable: false }
+        );
       }, 500);
     }
 
@@ -3495,7 +3548,21 @@ onPress={() => {
       {searchModalVisible && (
   <DriverSearchModal
     visible={true}
-    onClose={() => setSearchModalVisible(false)}
+   onClose={async () => {
+  setSearchModalVisible(false);
+  setIsSearchingDriver(false);
+  // Cancelar viaje en servidor para notificar al conductor
+  const tripReq = await SharedStorage.getTripRequest();
+  if (tripReq?.id) {
+    try {
+      await ApiService.cancelTrip(tripReq.id, 'Cancelado por el usuario');
+      console.log('✅ Viaje cancelado durante búsqueda');
+    } catch (error) {
+      console.error('Error cancelando viaje:', error);
+    }
+  }
+  await resetAppState();
+}}
     onDriverFound={handleDriverFound}
   userLocation={tripRequest?.origin || userLocation}
   />
