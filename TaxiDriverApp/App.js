@@ -39,9 +39,12 @@ const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 let globalSoundInstance = null;
 let globalSoundCancelled = false;
 let globalTripCancelled = false;
+let globalCancelledTripId = null;
 let globalSetShowRequestModal = null;
 let globalSetPendingRequest = null;
 let globalSetActiveTab = null;
+let globalSetCurrentTrip = null;
+let globalSetDriverStatus = null;
 let globalTimerRef = null;
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
@@ -92,9 +95,11 @@ export default function DriverApp({ navigation }) {
   const [showSupportChat, setShowSupportChat] = useState(false);
 
   // Exponer setters globalmente para acceso desde FCM
-  globalSetShowRequestModal = setShowRequestModal;
+ globalSetShowRequestModal = setShowRequestModal;
   globalSetPendingRequest = setPendingRequest;
   globalSetActiveTab = setActiveTab;
+  globalSetCurrentTrip = setCurrentTrip;
+  globalSetDriverStatus = setDriverStatus;
   const [isOffline, setIsOffline] = useState(false);
   const [tripPhase, setTripPhase] = useState(''); // AGREGADO: '', 'arrived', 'started'
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
@@ -182,18 +187,31 @@ clearTripFnRef.current = () => {
     };
     loadSavedDriver();
     // Verificar si hay viaje pendiente de notificación en background
-    const checkPendingTripFromBackground = async () => {
+ const checkPendingTripFromBackground = async () => {
       try {
         const pendingTripStr = await AsyncStorage.getItem('pending_trip_request');
         if (pendingTripStr) {
           const tripData = JSON.parse(pendingTripStr);
           console.log('🚕 Viaje pendiente de background encontrado:', tripData);
-          
+
+          // VERIFICAR si este viaje ya fue cancelado
+          if (global.cancelledTripId && global.cancelledTripId === tripData.id) {
+            console.log('🚫 Viaje pendiente ya fue cancelado, ignorando');
+            await AsyncStorage.removeItem('pending_trip_request');
+            global.cancelledTripId = null; // Limpiar
+            return;
+          }
+
           // Verificar que no sea muy antiguo (máximo 2 minutos)
           const age = Date.now() - (tripData.timestamp || 0);
           if (age < 120000) {
-            // Mostrar la solicitud como si llegara de FCM
+        // Mostrar la solicitud como si llegara de FCM
             setTimeout(() => {
+              // Verificar si el viaje fue cancelado mientras esperábamos
+              if (globalTripCancelled || (global.cancelledTripId && global.cancelledTripId === tripData.id)) {
+                console.log('🚫 Viaje cancelado durante espera, no mostrar modal');
+                return;
+              }
               if (global.handleNewTripRequest) {
                 global.handleNewTripRequest(tripData);
               }
@@ -389,11 +407,18 @@ global.clearCurrentTrip = async () => {
     console.log('⚠️ Error eliminando viaje pendiente:', e);
   }
 
-   // DETENER TIMER INMEDIATAMENTE
+// DETENER TIMER INMEDIATAMENTE (ambas referencias)
+  console.log('🔍 DEBUG: globalTimerRef =', globalTimerRef);
+  console.log('🔍 DEBUG: timerRef exists =', !!timerRef, 'timerRef.current =', timerRef?.current);
   if (globalTimerRef) {
     clearInterval(globalTimerRef);
     globalTimerRef = null;
-    console.log('✅ Timer detenido');
+    console.log('✅ Timer detenido via globalTimerRef');
+  }
+  if (timerRef && timerRef.current) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+    console.log('✅ Timer detenido via timerRef');
   }
 
 // CERRAR MODAL Y LIMPIAR ESTADO usando setters globales
@@ -403,6 +428,14 @@ global.clearCurrentTrip = async () => {
   }
   if (globalSetPendingRequest) {
     globalSetPendingRequest(null);
+  }
+if (globalSetCurrentTrip) {
+    globalSetCurrentTrip(null);
+    console.log('✅ Viaje activo limpiado via setter global');
+  }
+  if (globalSetDriverStatus) {
+    globalSetDriverStatus('online');
+    console.log('✅ Estado cambiado a ONLINE via setter global');
   }
   if (globalSetActiveTab) {
     globalSetActiveTab('dashboard');
