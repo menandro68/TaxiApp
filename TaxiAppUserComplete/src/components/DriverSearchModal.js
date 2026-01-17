@@ -1,5 +1,5 @@
 // DriverSearchModal.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DriverSearchService from '../services/DriverSearchService';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) => {
   const [searchProgress, setSearchProgress] = useState({
@@ -27,20 +28,76 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   const [driverFound, setDriverFound] = useState(null);
   const [searchFailed, setSearchFailed] = useState(false);
   const [pulseAnim] = useState(new Animated.Value(1));
+  const [availableDrivers, setAvailableDrivers] = useState([]);
+  const mapRef = useRef(null);
+
+  // Región centrada en usuario o Santo Domingo por defecto
+  const getMapRegion = () => ({
+    latitude: userLocation?.latitude || 18.4861,
+    longitude: userLocation?.longitude || -69.9312,
+    latitudeDelta: 0.03,
+    longitudeDelta: 0.03,
+  });
 
   useEffect(() => {
     if (visible && userLocation) {
+      loadAvailableDrivers();
+      
+      // Timer 1: Centrar mapa después de 500ms
+      const timer1 = setTimeout(() => {
+        if (mapRef.current) {
+          console.log('📍 Modal: Centrando mapa en usuario');
+          mapRef.current.animateToRegion({
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            latitudeDelta: 0.03,
+            longitudeDelta: 0.03,
+          }, 500);
+        }
+      }, 500);
+      
+      // Timer 2: Backup - Centrar de nuevo después de 1500ms
+      const timer2 = setTimeout(() => {
+        if (mapRef.current) {
+          console.log('📍 Modal: Backup centrado en usuario');
+          mapRef.current.animateToRegion({
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+            latitudeDelta: 0.03,
+            longitudeDelta: 0.03,
+          }, 300);
+        }
+      }, 1500);
+      
       setTimeout(() => {
         startSearch();
       }, 100);
+      
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
-  }, [visible]);
+  }, [visible, userLocation]);
 
   useEffect(() => {
     if (isSearching) {
       startPulseAnimation();
     }
   }, [isSearching]);
+
+  // Cargar conductores disponibles para mostrar en el mapa
+  const loadAvailableDrivers = async () => {
+    try {
+      const drivers = await DriverSearchService.searchDriversInRadius(userLocation, 15);
+      if (drivers && drivers.length > 0) {
+        setAvailableDrivers(drivers);
+        console.log('🚗 Conductores disponibles para mapa:', drivers.length);
+      }
+    } catch (error) {
+      console.log('No se pudieron cargar conductores para mapa:', error);
+    }
+  };
 
   const startPulseAnimation = () => {
     Animated.loop(
@@ -90,24 +147,82 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation }) =>
   };
 
   const handleClose = () => {
-    onClose();
+    Alert.alert('Cancelar búsqueda', '¿Estás seguro que deseas cancelar?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Sí',
+        onPress: () => {
+          onClose();
+        },
+      },
+    ]);
   };
 
   const handleRetry = () => {
     setSearchFailed(false);
+    loadAvailableDrivers();
     startSearch();
   };
 
   const renderSearching = () => (
     <View style={styles.searchingContainer}>
-      <Animated.View style={[styles.pulseContainer, { transform: [{ scale: pulseAnim }] }]}>
-        <View style={styles.radarContainer}>
-          <View style={[styles.radarRing, styles.radarRing1]} />
-          <View style={[styles.radarRing, styles.radarRing2]} />
-          <View style={[styles.radarRing, styles.radarRing3]} />
-          <Icon name="car" size={40} color="#007AFF" />
+      {/* MAPA DENTRO DEL MODAL */}
+      <View style={styles.mapContainer}>
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          style={styles.map}
+          initialRegion={getMapRegion()}
+          showsUserLocation={true}
+          showsMyLocationButton={false}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+        >
+          {/* Marcador de ubicación del usuario */}
+          {userLocation && (
+            <Marker
+              coordinate={{
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+              }}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View style={styles.userMarker}>
+                <View style={styles.userMarkerInner} />
+              </View>
+            </Marker>
+          )}
+
+          {/* Marcadores de conductores disponibles */}
+          {availableDrivers.map((driver, index) => (
+            <Marker
+              key={driver.id || index}
+              coordinate={{
+                latitude: driver.location?.latitude || driver.latitude,
+                longitude: driver.location?.longitude || driver.longitude,
+              }}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <View style={styles.driverMarker}>
+                <Icon name="car" size={16} color="#fff" />
+              </View>
+            </Marker>
+          ))}
+        </MapView>
+
+        {/* Overlay con animación de radar */}
+        <View style={styles.radarOverlay}>
+          <Animated.View style={[styles.pulseContainer, { transform: [{ scale: pulseAnim }] }]}>
+            <View style={styles.radarContainer}>
+              <View style={[styles.radarRing, styles.radarRing1]} />
+              <View style={[styles.radarRing, styles.radarRing2]} />
+              <View style={[styles.radarRing, styles.radarRing3]} />
+            </View>
+          </Animated.View>
         </View>
-      </Animated.View>
+      </View>
 
       <Text style={styles.searchTitle}>Buscando conductores cerca de ti</Text>
       <Text style={styles.searchMessage}>{searchProgress.message}</Text>
@@ -229,16 +344,38 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 30,
+    padding: 20,
     width: width - 40,
     maxWidth: 400,
     alignItems: 'center',
   },
   searchingContainer: {
     alignItems: 'center',
+    width: '100%',
+  },
+  mapContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  map: {
+    width: '100%',
+    height: '100%',
+  },
+  radarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   pulseContainer: {
-    marginBottom: 30,
   },
   radarContainer: {
     width: 120,
@@ -248,22 +385,53 @@ const styles = StyleSheet.create({
   },
   radarRing: {
     position: 'absolute',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#007AFF',
     borderRadius: 100,
-    opacity: 0.3,
+    opacity: 0.5,
   },
   radarRing1: {
-    width: 60,
-    height: 60,
+    width: 40,
+    height: 40,
   },
   radarRing2: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 80,
   },
   radarRing3: {
     width: 120,
     height: 120,
+  },
+  userMarker: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 122, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#007AFF',
+  },
+  userMarkerInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
+  },
+  driverMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#34C759',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
   },
   searchTitle: {
     fontSize: 18,
