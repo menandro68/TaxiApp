@@ -169,17 +169,52 @@ clearTripFnRef.current = () => {
     setCurrentStopIndex(0);
     setTripStops(null);
     setDriverStatus('online');
-    setActiveTab('dashboard');
+  setActiveTab('dashboard');
   };
 
- useEffect(() => {
+  // FUNCIÓN PARA CARGAR GANANCIAS REALES DESDE EL SERVIDOR
+  const loadRealEarnings = async (driverId) => {
+    if (!driverId) return;
+    try {
+      console.log('📊 Cargando ganancias reales del servidor...');
+      
+      const [todayRes, weekRes, monthRes] = await Promise.all([
+        fetch(`https://web-production-99844.up.railway.app/api/trips/driver-history/${driverId}?period=today`),
+        fetch(`https://web-production-99844.up.railway.app/api/trips/driver-history/${driverId}?period=week`),
+        fetch(`https://web-production-99844.up.railway.app/api/trips/driver-history/${driverId}?period=month`)
+      ]);
+      
+      const [todayData, weekData, monthData] = await Promise.all([
+        todayRes.json(),
+        weekRes.json(),
+        monthRes.json()
+      ]);
+      
+      const newEarnings = {
+        today: todayData.success ? (todayData.totalEarnings || 0) : 0,
+        week: weekData.success ? (weekData.totalEarnings || 0) : 0,
+        month: monthData.success ? (monthData.totalEarnings || 0) : 0
+      };
+      
+      setEarnings(newEarnings);
+      console.log('✅ Ganancias actualizadas:', newEarnings);
+    } catch (error) {
+      console.error('❌ Error cargando ganancias:', error);
+    }
+  };
+
+useEffect(() => {
     // Cargar conductor guardado
     const loadSavedDriver = async () => {
+ 
       try {
         const savedDriver = await AsyncStorage.getItem('loggedDriver');
-        if (savedDriver) {
-          setLoggedDriver(JSON.parse(savedDriver));
+    if (savedDriver) {
+          const driver = JSON.parse(savedDriver);
+          setLoggedDriver(driver);
           console.log('✅ Conductor cargado desde almacenamiento');
+          // Cargar ganancias reales del servidor
+          loadRealEarnings(driver.id);
         }
       } catch (error) {
         console.error('Error cargando conductor:', error);
@@ -558,7 +593,19 @@ global.autoAcceptTrip = async (tripData) => {
       unsubscribe(); // Limpiar listener de conexión
       appStateListener.remove(); // Limpiar listener de AppState
     };
-  }, []);
+}, []);
+
+  // useEffect para actualizar ganancias periódicamente (cada 60 segundos)
+  useEffect(() => {
+    if (!loggedDriver?.id || driverStatus === 'offline') return;
+    
+    const interval = setInterval(() => {
+      console.log('🔄 Actualizando ganancias periódicamente...');
+      loadRealEarnings(loggedDriver.id);
+    }, 60000); // Cada 60 segundos
+    
+    return () => clearInterval(interval);
+  }, [loggedDriver?.id, driverStatus]);
 
  // useEffect para verificar automáticamente la llegada al PICKUP y al DESTINO
 useEffect(() => {
@@ -1252,14 +1299,12 @@ const acceptTrip = async () => {
       await SharedStorage.completeTrip();
       await SharedStorage.clearTripData();
       
-      const tripEarning = currentTrip.estimatedPrice || 180;
-      const newEarnings = {
-        today: earnings.today + tripEarning,
-        week: earnings.week + tripEarning,
-        month: earnings.month + tripEarning
-      };
-    
-      setEarnings(newEarnings);
+   const tripEarning = currentTrip.estimatedPrice || 180;
+      
+      // Recargar ganancias reales del servidor (más preciso que sumar localmente)
+      if (loggedDriver?.id) {
+        await loadRealEarnings(loggedDriver.id);
+      }
       setCurrentTrip(null);
       setDriverStatus('online');
       setTripPhase(''); // Resetear la fase del viaje
