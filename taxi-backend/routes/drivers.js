@@ -170,10 +170,9 @@ router.get('/available', async (req, res) => {
                 d.vehicle_plate, 
                 d.status, 
                 d.total_trips as completed_trips,
-                dl.latitude,
-                dl.longitude
+                d.current_latitude as latitude,
+                d.current_longitude as longitude
              FROM drivers d
-             LEFT JOIN driver_locations dl ON d.id = dl.driver_id
              WHERE d.status = 'active'
              ORDER BY d.rating DESC 
              LIMIT 10`
