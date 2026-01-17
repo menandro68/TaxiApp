@@ -859,7 +859,26 @@ const initializeLocationService = async () => {
 
      if (locationResult.success && locationResult.location) {
         // Si es fallback, verificar si ya tenemos ubicacion GPS guardada
-      if (locationResult.location.source === 'fallback') {
+    if (locationResult.location.source === 'fallback') {
+          // SIEMPRE mostrar alerta cuando GPS falla (solo una vez)
+          if (!gpsAlertShownRef.current) {
+            gpsAlertShownRef.current = true;
+            setTimeout(() => {
+              Alert.alert(
+                '📍 GPS Desactivado',
+                'No se puede obtener tu ubicación porque el GPS del teléfono está desactivado.\n\nPor favor activa la ubicación en la configuración de tu teléfono.',
+                [
+                  {
+                    text: 'Ir a Configuración',
+                    onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS'),
+                    style: 'default'
+                  }
+                ],
+                { cancelable: false }
+              );
+            }, 500);
+          }
+          
           const savedLocation = await SharedStorage.getUserLocation();
          if (savedLocation && savedLocation.latitude && savedLocation.source !== 'fallback') {
             console.log(' Ignorando fallback, usando ubicacion GPS guardada:', savedLocation.address);
@@ -879,25 +898,7 @@ const initializeLocationService = async () => {
             });
             setLocationSource('default_fallback');
             setIsLoadingLocation(false);
-// Mostrar alerta al usuario sobre GPS desactivado (solo una vez)
-          if (!gpsAlertShownRef.current) {
-            gpsAlertShownRef.current = true;
-            setTimeout(() => {
-              Alert.alert(
-                '📍 GPS Desactivado',
-                'No se puede obtener tu ubicación porque el GPS del teléfono está desactivado.\n\nPor favor activa la ubicación en la configuración de tu teléfono.',
-                [
-                  {
-                    text: 'Ir a Configuración',
-                    onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS'),
-                    style: 'default'
-                  }
-                ],
-                { cancelable: false }
-              );
-            }, 500);
-     
-      }
+
           return;
         }
       }
