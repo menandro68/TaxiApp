@@ -241,6 +241,7 @@ router.post('/accept/:tripId', async (req, res) => {
                         vehicleModel: driver.vehicle_model || '',
                         vehiclePlate: driver.vehicle_plate || '',
                         driverLat: (driverLat || driver.current_latitude || '').toString(),
+                        driverId: driver.id.toString(),
                         driverLng: (driverLng || driver.current_longitude || '').toString()
                     },
                     token: user.fcm_token
