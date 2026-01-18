@@ -35,7 +35,8 @@ class ShareLocationService {
         pickup: tripData.pickup || 'Origen',
         destination: tripData.destination || 'Destino',
         driverName: tripData.driverName || 'Conductor',
-        vehiclePlate: tripData.vehiclePlate || 'N/A',
+       vehiclePlate: tripData.vehiclePlate || 'N/A',
+        driverId: tripData.driverId || null,
         estimatedArrival: tripData.estimatedArrival || null,
         locations: [{
           latitude: userLocation.latitude,
@@ -62,7 +63,8 @@ class ShareLocationService {
             tripData: {
               destination: shareData.destination,
               driverName: shareData.driverName,
-              vehiclePlate: shareData.vehiclePlate
+              vehiclePlate: shareData.vehiclePlate,
+              driverId: shareData.driverId
             }
           })
         });
