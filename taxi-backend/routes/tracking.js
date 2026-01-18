@@ -17,15 +17,17 @@ router.post('/update', (req, res) => {
     
     // Obtener o crear registro
     let tracking = trackingData.get(shareId);
-    
     if (!tracking) {
       tracking = {
         shareId,
         tripData: tripData || {},
+        driverId: tripData?.driverId || null,
         locations: [],
         createdAt: now,
         status: 'active'
       };
+    } else if (tripData?.driverId && !tracking.driverId) {
+      tracking.driverId = tripData.driverId;
     }
 
     // Agregar nueva ubicación
@@ -68,6 +70,7 @@ router.get('/:shareId', (req, res) => {
       success: true,
       shareId: tracking.shareId,
       tripData: tracking.tripData,
+      driverId: tracking.driverId,
       currentLocation: lastLocation,
       lastUpdate: tracking.lastUpdate,
       status: tracking.status
