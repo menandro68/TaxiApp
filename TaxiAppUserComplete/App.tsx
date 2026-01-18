@@ -70,7 +70,11 @@ import NetInfo from '@react-native-community/netinfo';
 import UserProfile from './src/screens/UserProfile';
 
 // Configuración del drawer
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Funciones responsive
+const scale = (size) => (screenWidth / 375) * size;
+const verticalScale = (size) => (screenHeight / 812) * size;
 const DRAWER_WIDTH = screenWidth * 0.75;
 
   const App = ({ navigation, route }) =>  {
@@ -4000,8 +4004,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  title: {
-    fontSize: 24,
+title: {
+    fontSize: scale(24),
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#333',
@@ -4022,54 +4026,54 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     fontWeight: '500',
   },
-  subtitle: {
-    fontSize: 16,
+subtitle: {
+    fontSize: scale(14),
     textAlign: 'center',
     color: '#666',
   },
   requestContainer: {
     flex: 1,
   },
-  mapContainer: {
-    height: Dimensions.get('window').height * 0.25, // Reducido a 25% de la pantalla
-    marginHorizontal: 10,
-    marginTop: 10,
+mapContainer: {
+    height: screenHeight * 0.28,
+    marginHorizontal: scale(10),
+    marginTop: verticalScale(10),
     marginBottom: 5,
     borderRadius: 10,
     overflow: 'hidden',
   },
-  controlsContainer: {
-    flex: 1, // Cambiado para ocupar el resto del espacio
-    padding: 12, // Reducido de 20 a 12
+controlsContainer: {
+    flex: 1,
+    padding: scale(12),
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: scale(20),
+    borderTopRightRadius: scale(20),
   },
   destinationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
-  pickupInput: {
+pickupInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,  // Reduce esto a 8
+    padding: scale(12),
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: scale(12),
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  pickupTextContainer: {
+pickupTextContainer: {
     flex: 1,
-    marginLeft: 10,  // Reduce de 10 a 8
+    marginLeft: scale(10),
   },
   pickupLabel: {
-    fontSize: 6,  // Reduce de 12 a 11
+    fontSize: scale(11),
     color: '#666',
-    marginBottom: 1,  // Reduce de 2 a 1
+    marginBottom: verticalScale(2),
   },
   pickupText: {
-    fontSize: 10,  // Reduce de 14 a 13
+    fontSize: scale(13),
     color: '#333',
   },
   formGroup: {
@@ -4107,21 +4111,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
   },
-  destinationInput: {
+destinationInput: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
+    borderRadius: scale(8),
+    padding: scale(10),
     backgroundColor: '#fff',
-    marginRight: 10,
+    marginRight: scale(10),
   },
-  destinationInputText: {
+destinationInputText: {
     flex: 1,
-    fontSize: 14,  // Reducido de 16
+    fontSize: scale(14),
     color: '#333',
   },
   destinationInputPlaceholder: {
@@ -4520,9 +4524,9 @@ const styles = StyleSheet.create({
   },
 vehicleSelectorButton: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 15,
+    borderRadius: scale(12),
+    padding: scale(15),
+    marginBottom: verticalScale(12),
     borderWidth: 1,
     borderColor: '#4CAF50',
     elevation: 2,
@@ -4647,19 +4651,19 @@ trackingMapContainer: {
     fontFamily: 'monospace',
   },
   
-  requestButton: {
+requestButton: {
     backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 6,
+    padding: scale(14),
+    borderRadius: scale(8),
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   requestButtonDisabled: {
     backgroundColor: '#ccc',
   },
-  requestButtonText: {
+requestButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
   },
   statusContainer: {
@@ -4809,11 +4813,11 @@ rideActions: {
   },
 
   // Header autenticado
-  authenticatedHeader: {
+authenticatedHeader: {
     backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
+    paddingTop: verticalScale(50),
+    paddingBottom: verticalScale(15),
+    paddingHorizontal: scale(20),
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
   },
