@@ -1238,7 +1238,9 @@ const loadUserState = async () => {
       const routeData = await ApiService.calculateRoute(origin, destination, vehicleType);
       
       setRouteInfo(routeData);
-      setEstimatedPrice(routeData.price);
+     if (routeData.price !== undefined) {
+  setEstimatedPrice(routeData.price);
+}
       
       console.log('Ruta calculada con API real:', {
         distance: routeData.distance,
@@ -1962,13 +1964,14 @@ const startRide = async () => {
     console.log('🚗 startRide - driverInfo:', driverToUse?.name, driverToUse?.car);
 
     if (locationToUse && locationToUse.latitude) {
-      await ShareLocationService.startSharing(
+  await ShareLocationService.startSharing(
         {
           id: tripRequest?.id,
           pickup: locationToUse?.address,
           destination: destination,
           driverName: driverToUse?.name || 'Conductor',
-          vehiclePlate: driverToUse?.car || 'N/A'
+          vehiclePlate: driverToUse?.car || 'N/A',
+          driverId: driverToUse?.id || null
         },
         locationToUse
       );
