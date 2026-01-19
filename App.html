@@ -749,31 +749,55 @@
         margin-left: 0;
     }
 }
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-280px);
-            }
+    @media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-280px);
+    }
 
-            .sidebar.open {
-                transform: translateX(0);
-            }
+    .sidebar.open {
+        transform: translateX(0);
+    }
 
-            .main-content {
-                margin-left: 0;
-            }
+    .main-content {
+        margin-left: 0;
+    }
 
-            .search-input {
-                width: 200px;
-            }
+    .search-input {
+        width: 200px;
+    }
 
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+    .top-bar-right {
+        display: none;
+    }
 
-            .top-bar-right {
-                display: none;
-            }
-        }
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+        margin-bottom: 10px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    .stat-change {
+        font-size: 0.7rem;
+    }
+}
 
        /* Estilos para el Modal de Desglose de Viaje */
 .trip-details-container {
