@@ -713,8 +713,42 @@
         .screen.active {
             display: block;
         }
+        
 
         /* Responsive */
+        /* ========================================
+   RESPONSIVE - TABLETS (1024px)
+   ======================================== */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    .main-content {
+        margin-left: 240px;
+    }
+}
+
+/* ========================================
+   RESPONSIVE - TABLETS PEQUEÑAS (900px)
+   ======================================== */
+@media (max-width: 900px) {
+    .sidebar {
+        position: fixed;
+        width: 280px;
+        transform: translateX(-280px);
+        z-index: 1001;
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+}
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-280px);
