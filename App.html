@@ -2004,6 +2004,12 @@ static async getStats() {
         function switchScreen(screenName) {
             // Actualizar estado
             appState.currentScreen = screenName;
+
+            // Cerrar sidebar en móviles
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+    }
             
             // Ocultar todas las pantallas
             document.querySelectorAll('.screen').forEach(screen => {
