@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-
 import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import Tts from 'react-native-tts';
+import MapViewDirections from 'react-native-maps-directions';
 
 // Configurar TTS
 Tts.setDefaultLanguage('es-ES');
@@ -87,7 +88,7 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   const navigationTarget = getNavigationTarget();
 
   // Sincronizar ubicación del padre (App.js) con estado local
-  useEffect(() => {
+useEffect(() => {
     if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude) {
       setCurrentLocation(propUserLocation);
     }
@@ -101,7 +102,7 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
     Geolocation.getCurrentPosition(
       (position) => {
         isGettingLocation.current = false;
-        const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude, heading: position.coords.heading || 0 };
         console.log('📍 GPS obtenido:', loc.latitude, loc.longitude);
         setCurrentLocation(loc);
         if (onLocationUpdate) onLocationUpdate(loc);
@@ -120,7 +121,7 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
       Geolocation.getCurrentPosition(
         (position) => {
           isGettingLocation.current = false;
-          const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+          const loc = { latitude: position.coords.latitude, longitude: position.coords.longitude, heading: position.coords.heading || 0 };
           setCurrentLocation(loc);
           if (onLocationUpdate) onLocationUpdate(loc);
         },
@@ -258,12 +259,15 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
 
     // Centrar mapa en conductor
     if (mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.003,
-        longitudeDelta: 0.003,
-      }, 300);
+      mapRef.current.animateCamera({
+        center: {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+        },
+        heading: currentLocation.heading || 0,
+        pitch: 45,
+        zoom: 18,
+      }, { duration: 300 });
     }
   }, [currentLocation, isNavigating, currentStepIndex, navigationSteps, voiceEnabled, navigationTarget, tripPhase]);
 
@@ -277,7 +281,7 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
       if (data.status === 'OK' && data.routes.length > 0) {
         const route = data.routes[0];
         const leg = route.legs[0];
-        const points = decodePolyline(route.overview_polyline.points);
+       const points = leg.steps.flatMap(step => decodePolyline(step.polyline.points));
         
         // Extraer pasos de navegación
         const steps = leg.steps.map((step, index) => ({
@@ -290,7 +294,9 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
         }));
         
         console.log('✅ Ruta:', points.length, 'puntos,', steps.length, 'pasos');
-        
+
+        console.log('🔍 PUNTOS 0-9:', JSON.stringify(points.slice(0, 10).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
+console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
         setRouteCoordinates(points);
         setNavigationSteps(steps);
         setRouteInfo({
@@ -516,11 +522,12 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
   
   if (pickupCoord) {
     console.log('📍 MARKER PASAJERO:', pickupCoord.latitude.toFixed(5), pickupCoord.longitude.toFixed(5));
-  }
+}
   if (currentLocation) {
     console.log('🚗 MARKER CONDUCTOR:', currentLocation.latitude.toFixed(5), currentLocation.longitude.toFixed(5));
   }
   if (routeCoordinates.length > 0) {
+    console.log('📊 PRIMEROS 30 PUNTOS:', JSON.stringify(routeCoordinates.slice(0, 30).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
     console.log('🛣️ RUTA inicio:', routeCoordinates[0].latitude.toFixed(5), routeCoordinates[0].longitude.toFixed(5));
     console.log('🛣️ RUTA fin:', routeCoordinates[routeCoordinates.length-1].latitude.toFixed(5), routeCoordinates[routeCoordinates.length-1].longitude.toFixed(5));
   }
@@ -543,15 +550,34 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
           }, 1000);
         }}
       >
-        {/* POLYLINE - RUTA AZUL - MÁS GRUESA */}
+        {/* MapViewDirections - SOLO obtiene coordenadas (no dibuja) */}
+        {currentLocation && navigationTarget && (
+          <MapViewDirections
+            origin={currentLocation}
+            destination={navigationTarget}
+            apikey={GOOGLE_MAPS_APIKEY}
+            strokeWidth={0}
+            mode="DRIVING"
+            precision="high"
+            onReady={(result) => {
+              console.log('✅ MVD:', result.coordinates.length, 'pts');
+              setRouteCoordinates(result.coordinates);
+            }}
+            onError={(err) => console.log('❌ MVD ERROR:', err)}
+          />
+        )}
+        
+        {/* Polyline - DIBUJA la ruta */}
         {routeCoordinates.length >= 2 && (
           <Polyline
+            key={`route-${routeCoordinates.length}-${routeCoordinates[0]?.latitude}`}
             coordinates={routeCoordinates}
             strokeColor="#FF0000"
-            strokeWidth={5}
-            zIndex={200}
+            strokeWidth={6}
             lineCap="round"
             lineJoin="round"
+            geodesic={false}
+            zIndex={100}
           />
         )}
 
