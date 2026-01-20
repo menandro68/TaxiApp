@@ -858,6 +858,45 @@
         padding: 6px 10px;
         font-size: 0.75rem;
     }
+
+    .modal {
+        width: 95%;
+        max-width: none;
+        max-height: 85vh;
+        margin: 10px;
+    }
+
+    .modal-header {
+        padding: 16px;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .modal-footer {
+        padding: 12px 16px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .form-input,
+    .form-select {
+        padding: 12px;
+        font-size: 16px;
+    }
 }
 
        /* Estilos para el Modal de Desglose de Viaje */
@@ -3511,13 +3550,13 @@ static async getStats() {
         // FUNCIONES DE INTERFAZ
         // ========================================
         
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        }
+    function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    sidebar.classList.toggle('open');
+    mainContent.classList.toggle('expanded');
+}
 
         function showNotifications() {
             NotificationService.info('Panel de notificaciones próximamente disponible');
