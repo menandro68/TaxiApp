@@ -11,24 +11,27 @@ const CommandCenterModule = {
     SANTO_DOMINGO: [18.4861, -69.9312],
 
     init: function() {
-        // Evitar inicialización múltiple
-        if (this.initialized && this.map) {
-            this.map.invalidateSize();
-            return;
-        }
-
-        // Limpiar intervalos anteriores
+        // Limpiar siempre antes de inicializar
         this.cleanup();
 
         // Esperar a que el contenedor esté visible
         setTimeout(() => {
+            const mapContainer = document.getElementById('commandCenterMap');
+            if (!mapContainer) {
+                console.error('Contenedor del mapa no encontrado');
+                return;
+            }
+            
+            // Limpiar cualquier instancia previa del contenedor
+            mapContainer.innerHTML = '';
+            
             this.initMap();
             this.initializeDrivers();
             this.updateMetrics();
             this.startIntervals();
             this.initialized = true;
             console.log('✅ Centro de Comando iniciado correctamente');
-        }, 100);
+        }, 200);
     },
 
     cleanup: function() {
