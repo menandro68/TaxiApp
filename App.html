@@ -897,6 +897,19 @@
         padding: 12px;
         font-size: 16px;
     }
+
+    .content-area {
+        padding: 12px;
+    }
+
+    .table-title {
+        font-size: 1rem;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
 }
 
        /* Estilos para el Modal de Desglose de Viaje */
@@ -1251,7 +1264,8 @@
                 </div>
                  </div>
 
-                   <table class="data-table">
+                  <div class="data-table-wrapper">
+    <table class="data-table">
                 <thead>
                     <tr>
                         <th>Conductor</th>
@@ -1265,9 +1279,9 @@
                 <tbody id="driversTableBody">
                     <!-- Driver rows will be loaded dynamically -->
                 </tbody>
-            </table>
-            <div id="driversPaginationControls"></div>
+         </table>
         </div>
+            <div id="driversPaginationControls"></div>
     </div>
 
     <!-- Suspensions Screen -->
