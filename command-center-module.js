@@ -58,6 +58,14 @@ const CommandCenterModule = {
             return;
         }
 
+        // Verificar si ya existe una instancia de Leaflet y eliminarla
+        if (mapContainer._leaflet_id) {
+            mapContainer._leaflet_id = null;
+        }
+        
+        // Limpiar contenido previo
+        mapContainer.innerHTML = '';
+
         // Crear mapa
         this.map = L.map('commandCenterMap').setView(this.SANTO_DOMINGO, 13);
 
@@ -68,8 +76,10 @@ const CommandCenterModule = {
 
         // Forzar redimensionamiento
         setTimeout(() => {
-            this.map.invalidateSize();
-        }, 200);
+            if (this.map) {
+                this.map.invalidateSize();
+            }
+        }, 300);
     },
 
     getDriverIcon: function(status) {
