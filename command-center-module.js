@@ -22,6 +22,10 @@ const CommandCenterModule = {
                 return;
             }
             
+            // Forzar dimensiones antes de inicializar
+            mapContainer.style.height = '500px';
+            mapContainer.style.width = '100%';
+            
             // Limpiar cualquier instancia previa del contenedor
             mapContainer.innerHTML = '';
             
@@ -30,8 +34,17 @@ const CommandCenterModule = {
             this.updateMetrics();
             this.startIntervals();
             this.initialized = true;
+            
+            // Forzar redimensionamiento múltiples veces
+            setTimeout(() => {
+                if (this.map) this.map.invalidateSize();
+            }, 100);
+            setTimeout(() => {
+                if (this.map) this.map.invalidateSize();
+            }, 500);
+            
             console.log('✅ Centro de Comando iniciado correctamente');
-        }, 200);
+        }, 500);
     },
 
     cleanup: function() {
