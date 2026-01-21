@@ -6,6 +6,8 @@
     <title>Panel de Administración - TaxiApp</title>
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.socket.io; style-src 'self' 'unsafe-inline';">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <style>
         * {
             margin: 0;
@@ -997,11 +999,11 @@
             <span class="nav-text">Dashboard</span>
         </a>
 
-         <a href="#" class="nav-item" onclick="window.open('command-center.html', '_blank'); return false;">
-            <span class="nav-icon">🛰️</span>
-            <span>Centro de Comando</span>
-            <span style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">LIVE</span>
-        </a>
+      <a class="nav-item" data-screen="command-center" onclick="switchScreen('command-center')">
+    <span class="nav-icon">🛰️</span>
+    <span class="nav-text">Centro de Comando</span>
+    <span style="background: #ff0000; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">LIVE</span>
+    </a>
 
         <a class="nav-item" data-screen="analytics" onclick="switchScreen('analytics')">
             <span class="nav-icon">📈</span>
@@ -1572,6 +1574,68 @@
             </div>
         </div>
     </div>
+
+    <!-- Command Center Screen -->
+<div id="command-center" class="screen">
+    <div style="height: calc(100vh - 140px); display: flex; flex-direction: column;">
+        <!-- Header del Centro de Comando -->
+        <div style="background: linear-gradient(90deg, #1a1a2e, #0f3460); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00d4ff;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 24px;">🛰️</span>
+                <h2 style="color: #00d4ff; margin: 0;">CENTRO DE COMANDO</h2>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 10px; height: 10px; background: #00ff00; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                    <span style="color: white;">EN VIVO</span>
+                </div>
+            </div>
+            <div id="commandCenterTime" style="color: white; font-size: 18px;"></div>
+        </div>
+        
+        <!-- Contenido Principal -->
+        <div style="display: grid; grid-template-columns: 1fr 350px; flex: 1; overflow: hidden;">
+            <!-- Mapa -->
+            <div id="commandCenterMap" style="width: 100%; height: 100%; background: #1a1a1a;"></div>
+            
+            <!-- Panel de Control -->
+            <div style="background: #1a1a2e; display: flex; flex-direction: column; overflow-y: auto;">
+                <!-- Métricas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">VIAJES ACTIVOS</div>
+                        <div id="ccActiveTrips" style="font-size: 32px; font-weight: bold; color: white;">0</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #f093fb, #f5576c); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">CONDUCTORES</div>
+                        <div id="ccActiveDrivers" style="font-size: 32px; font-weight: bold; color: white;">0</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4facfe, #00f2fe); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">EN ESPERA</div>
+                        <div id="ccWaiting" style="font-size: 32px; font-weight: bold; color: white;">0</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #43e97b, #38f9d7); padding: 15px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">COMPLETADOS</div>
+                        <div id="ccCompleted" style="font-size: 32px; font-weight: bold; color: white;">0</div>
+                    </div>
+                </div>
+                
+                <!-- Alertas -->
+                <div style="padding: 15px; border-top: 1px solid #333; flex: 1;">
+                    <h3 style="margin-bottom: 10px; color: white;">⚠️ ALERTAS ACTIVAS</h3>
+                    <div id="ccAlertsContainer">
+                        <div style="background: #2a2a3e; padding: 12px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #00ff00; color: white;">
+                            Sistema operando normalmente
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botón de Emergencia -->
+                <button onclick="CommandCenterModule.activateEmergency()" style="background: #ff0000; color: white; border: none; padding: 15px; margin: 15px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; animation: emergencyPulse 2s infinite;">
+                    🚨 ACTIVAR PROTOCOLO DE EMERGENCIA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     
 <!-- Geofencing Screen -->
 <div id="geofencing" class="screen">
@@ -2092,6 +2156,11 @@ static async getStats() {
                 container.innerHTML = PricingModule.getHTML();
                 PricingModule.init();
             }
+
+            // Cargar módulo de Centro de Comando
+if (screenName === 'command-center') {
+    CommandCenterModule.init();
+}
 
             // Mostrar pantalla seleccionada
             document.getElementById(screenName).classList.add('active');
@@ -3890,6 +3959,7 @@ static async getStats() {
     <script src="communications-module.js"></script>
     <script src="trips-filters-module.js"></script>
     <script src="trip-reassignment-module.js"></script>
+    <script src="command-center-module.js"></script>
 
 </body>
 </html>
