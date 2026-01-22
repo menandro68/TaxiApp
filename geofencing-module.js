@@ -77,6 +77,9 @@ var GeofencingModule = (function() {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'OpenStreetMap contributors'
         }).addTo(map);
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 100);
         console.log('Mapa inicializado');
     }
 
