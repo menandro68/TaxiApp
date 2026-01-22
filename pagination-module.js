@@ -1,5 +1,5 @@
 // pagination-module.js
-if (typeof API_URL === 'undefined') { var API_URL = `${window.location.origin}/api`; }
+if (typeof window.API_URL === 'undefined') { window.API_URL = `${window.location.origin}/api`; }
 // M�DULO DE PAGINACI�N - NO AFECTA EL C�DIGO EXISTENTE
 const PaginationModule = {
     // Estado de paginaci�n por pantalla
