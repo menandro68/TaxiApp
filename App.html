@@ -2131,6 +2131,12 @@ static async getStats() {
                 SupportModule.init();
             }
 
+            if (screenName === 'geofencing') {
+                const container = document.getElementById('geofencing');
+                container.innerHTML = '<div id="map" style="height: 500px; width: 100%; border-radius: 10px;"></div><div id="geofenceList"></div><div id="eventsList"></div><div id="activeGeofences">0</div><div id="restrictedZones">0</div><div id="activeUsers">0</div><div id="totalEvents">0</div>';
+                GeofencingModule.init();
+            }
+
             // Cargar módulo de comunicados
             if (screenName === 'communications') {
                 const container = document.getElementById('communications');
@@ -3968,6 +3974,7 @@ if (screenName === 'vehicles') {
     <script src="documents-module.js"></script> 
     <script src="trips-monitor-module.js"></script>
     <script src="support-module.js"></script> 
+    <script src="geofencing-module.js"></script>
     <script src="finances-module.js"></script>
     <script src="pagination-module.js"></script>
     <!-- Módulo de Reportes -->
