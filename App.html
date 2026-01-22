@@ -2170,6 +2170,11 @@ if (screenName === 'command-center') {
     CommandCenterModule.init();
 }
 
+if (screenName === 'analytics') {
+    const container = document.getElementById('analytics');
+    container.innerHTML = AnalyticsModule.getHTML();
+    AnalyticsModule.init();
+}
             // Mostrar pantalla seleccionada
             document.getElementById(screenName).classList.add('active');
             
@@ -3969,6 +3974,7 @@ if (screenName === 'command-center') {
     <script src="trips-filters-module.js"></script>
     <script src="trip-reassignment-module.js"></script>
     <script src="command-center-module.js"></script>
+    <script src="analytics-module.js"></script>
 
 </body>
 </html>
