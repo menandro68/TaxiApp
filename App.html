@@ -2175,6 +2175,12 @@ if (screenName === 'analytics') {
     container.innerHTML = AnalyticsModule.getHTML();
     AnalyticsModule.init();
 }
+
+if (screenName === 'vehicles') {
+    const container = document.getElementById('vehicles');
+    container.innerHTML = VehiclesModule.getHTML();
+    VehiclesModule.init();
+}
             // Mostrar pantalla seleccionada
             document.getElementById(screenName).classList.add('active');
             
@@ -3975,6 +3981,7 @@ if (screenName === 'analytics') {
     <script src="trip-reassignment-module.js"></script>
     <script src="command-center-module.js"></script>
     <script src="analytics-module.js"></script>
+    <script src="vehicles-module.js"></script>
 
 </body>
 </html>
