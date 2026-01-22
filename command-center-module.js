@@ -23,9 +23,9 @@ const CommandCenterModule = {
             }
             
             // Forzar dimensiones antes de inicializar
-            mapContainer.style.height = '500px';
-            mapContainer.style.width = '100%';
-            
+          mapContainer.style.width = '800px';
+          mapContainer.style.height = '500px';
+          mapContainer.style.display = 'block';
             // Limpiar cualquier instancia previa del contenedor
             mapContainer.innerHTML = '';
             
