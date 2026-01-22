@@ -1,15 +1,15 @@
 // MÓDULO DE MONITOREO DE VIAJES EN TIEMPO REAL
 const TripsMonitorModule = {
-    API_URL: ${window.location.origin}/api',
+    API_URL: `${window.location.origin}/api`,
     refreshInterval: null,
     currentTrips: [],
-    
+
     // Inicializar el módulo
     init() {
         console.log('🚕 Módulo de monitoreo de viajes inicializado');
         this.startAutoRefresh();
     },
-    
+
     // HTML de la interfaz
     getHTML() {
         return `
@@ -20,7 +20,7 @@ const TripsMonitorModule = {
                     </h2>
                     <p style="color: #666;">Monitoreo de todos los viajes activos</p>
                 </div>
-                
+
                 <!-- Estadísticas rápidas -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
                     <div style="background: #ffc107; padding: 15px; border-radius: 8px; color: white; text-align: center;">
@@ -40,7 +40,7 @@ const TripsMonitorModule = {
                         <div style="font-size: 12px;">Total Activos</div>
                     </div>
                 </div>
-                
+
                 <!-- Lista de viajes activos -->
                 <div style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                     <h3 style="margin-bottom: 15px;">📋 Lista de Viajes Activos</h3>
@@ -50,7 +50,7 @@ const TripsMonitorModule = {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Actualización automática -->
                 <div style="margin-top: 10px; text-align: right; color: #999; font-size: 12px;">
                     ⚡ Actualización automática cada 5 segundos
@@ -59,13 +59,13 @@ const TripsMonitorModule = {
             </div>
         `;
     },
-    
+
     // Cargar viajes activos
     async loadTrips() {
         try {
-            const response = await fetch(`${this.API_URL}/trips-monitor/active`);
+            const response = await fetch(this.API_URL + '/trips-monitor/active');
             const data = await response.json();
-            
+
             if (data.success) {
                 this.currentTrips = data.trips;
                 this.updateDisplay();
@@ -75,7 +75,7 @@ const TripsMonitorModule = {
             console.error('Error cargando viajes:', error);
         }
     },
-    
+
     // Actualizar estadísticas
     updateStats() {
         const stats = {
@@ -83,23 +83,23 @@ const TripsMonitorModule = {
             accepted: 0,
             in_progress: 0
         };
-        
+
         this.currentTrips.forEach(trip => {
             if (stats[trip.status] !== undefined) {
                 stats[trip.status]++;
             }
         });
-        
+
         document.getElementById('trips-pending').textContent = stats.pending;
         document.getElementById('trips-accepted').textContent = stats.accepted;
         document.getElementById('trips-progress').textContent = stats.in_progress;
         document.getElementById('trips-total').textContent = this.currentTrips.length;
     },
-    
+
     // Actualizar lista de viajes
     updateDisplay() {
         const listContainer = document.getElementById('trips-list');
-        
+
         if (!this.currentTrips || this.currentTrips.length === 0) {
             listContainer.innerHTML = `
                 <div style="text-align: center; padding: 40px; color: #999;">
@@ -108,7 +108,7 @@ const TripsMonitorModule = {
             `;
             return;
         }
-        
+
         let html = '<table style="width: 100%; border-collapse: collapse;">';
         html += `
             <thead>
@@ -125,11 +125,11 @@ const TripsMonitorModule = {
             </thead>
             <tbody>
         `;
-        
+
         this.currentTrips.forEach(trip => {
             const statusBadge = this.getStatusBadge(trip.status);
             const time = new Date(trip.created_at).toLocaleTimeString();
-            
+
             html += `
                 <tr style="border-bottom: 1px solid #dee2e6;">
                     <td style="padding: 10px;">#${trip.trip_id}</td>
@@ -143,15 +143,17 @@ const TripsMonitorModule = {
                 </tr>
             `;
         });
-        
+
         html += '</tbody></table>';
         listContainer.innerHTML = html;
-        
+
         // Actualizar tiempo de última actualización
-        document.getElementById('last-update').textContent = 
-            ` - Última actualización: ${new Date().toLocaleTimeString()}`;
+        const updateElement = document.getElementById('last-update');
+        if (updateElement) {
+            updateElement.textContent = ' - Última actualización: ' + new Date().toLocaleTimeString();
+        }
     },
-    
+
     // Obtener badge de estado
     getStatusBadge(status) {
         const badges = {
@@ -161,17 +163,17 @@ const TripsMonitorModule = {
         };
         return badges[status] || status;
     },
-    
+
     // Iniciar actualización automática
     startAutoRefresh() {
         this.loadTrips(); // Cargar inmediatamente
-        
+
         // Actualizar cada 5 segundos
         this.refreshInterval = setInterval(() => {
             this.loadTrips();
         }, 5000);
     },
-    
+
     // Detener actualización automática
     stopAutoRefresh() {
         if (this.refreshInterval) {
@@ -179,7 +181,7 @@ const TripsMonitorModule = {
             this.refreshInterval = null;
         }
     },
-    
+
     // Limpiar al salir
     cleanup() {
         this.stopAutoRefresh();
