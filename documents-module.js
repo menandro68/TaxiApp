@@ -3,13 +3,13 @@
 
 const DocumentsModule = {
     // URL del backend
-    API_URL: ${window.location.origin}/api',
+    API_URL: `${window.location.origin}/api`,
     
     // Estado del módulo
     currentFilter: 'all',
     documents: [],
     
-    // Inicializar el módulo (se llamará solo cuando se necesite)
+    // Inicializar el módulo
     init() {
         console.log('📄 Módulo de documentos inicializado');
     },
@@ -74,7 +74,7 @@ const DocumentsModule = {
     // Cargar documentos desde el servidor
     async loadDocuments() {
         try {
-            const response = await fetch(`${this.API_URL}/documents/pending`);
+            const response = await fetch(this.API_URL + '/documents/pending');
             const data = await response.json();
             
             if (data.success) {
@@ -91,7 +91,7 @@ const DocumentsModule = {
     // Cargar estadísticas
     async loadStats() {
         try {
-            const response = await fetch(`${this.API_URL}/documents/stats`);
+            const response = await fetch(this.API_URL + '/documents/stats');
             const data = await response.json();
             
             if (data.success) {
@@ -196,7 +196,8 @@ const DocumentsModule = {
     viewDocument(id) {
         const doc = this.documents.find(d => d.id === id);
         if (doc && doc.document_url) {
-            window.open(`http://localhost:3000${doc.document_url}`, '_blank');
+            const baseUrl = this.API_URL.replace('/api', '');
+            window.open(baseUrl + doc.document_url, '_blank');
         } else {
             alert('No se puede ver el documento');
         }
@@ -207,7 +208,7 @@ const DocumentsModule = {
         if (!confirm('¿Estás seguro de aprobar este documento?')) return;
         
         try {
-            const response = await fetch(`${this.API_URL}/documents/${id}/approve`, {
+            const response = await fetch(this.API_URL + '/documents/' + id + '/approve', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ reviewed_by: 1 })
@@ -230,7 +231,7 @@ const DocumentsModule = {
         if (!reason) return;
         
         try {
-            const response = await fetch(`${this.API_URL}/documents/${id}/reject`, {
+            const response = await fetch(this.API_URL + '/documents/' + id + '/reject', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -253,13 +254,11 @@ const DocumentsModule = {
     // Filtrar documentos
     async filterDocuments(status) {
         this.currentFilter = status;
-        // Aquí podrías implementar filtrado local o hacer una nueva petición
         await this.loadDocuments();
     },
     
     // Mostrar mensaje de éxito
     showSuccess(message) {
-        // Usar el sistema de notificaciones existente si está disponible
         if (window.showNotification) {
             window.showNotification(message, 'success');
         } else {
@@ -269,7 +268,6 @@ const DocumentsModule = {
     
     // Mostrar mensaje de error
     showError(message) {
-        // Usar el sistema de notificaciones existente si está disponible
         if (window.showNotification) {
             window.showNotification(message, 'error');
         } else {
