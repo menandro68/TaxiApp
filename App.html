@@ -1139,7 +1139,7 @@
     <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">5 PENDIENTES</span>
        </a>
 
-       <a href="payments.html" class="nav-item" target="_blank">
+      <a href="#" class="nav-item" data-screen="pagos" onclick="switchScreen('pagos'); return false;">
     <span class="nav-icon">💳</span>
     <span class="nav-text">Pagos</span>
       </a>
@@ -1457,6 +1457,13 @@
     <div id="finances" class="screen">
         <!-- El contenido se cargará dinámicamente -->
     </div>
+
+    <div id="pagos" class="screen">
+    <div class="loading">
+        <div class="spinner"></div>
+        Cargando pagos...
+    </div>
+</div>
 
   <div id="pagos-conductores" class="screen">
     <div class="loading">
@@ -2266,6 +2273,9 @@ if (screenName === 'vehicles') {
                   case 'settings':
                         await loadSettings();
                         break;
+                   case 'pagos':
+                        await loadPagos();
+                        break;     
                    case 'pagos-conductores':
                         await loadPagosConductores();
                         break;     
@@ -2368,6 +2378,130 @@ if (screenName === 'vehicles') {
             }
             
             html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        // ========================================
+        // PAGOS (MÉTODOS DE PAGO)
+        // ========================================
+        async function loadPagos() {
+            const container = document.getElementById('pagos');
+            if (!container) return;
+            
+            const resumen = {
+                ingresosDiarios: 45600,
+                transaccionesHoy: 124,
+                efectivo: 28500,
+                tarjeta: 17100
+            };
+            
+            const transacciones = [
+                { id: 'PAY-001', fecha: '22/01/2026 10:30', usuario: 'Carlos Méndez', conductor: 'Juan Pérez', monto: 350, metodo: 'Efectivo', estado: 'completado' },
+                { id: 'PAY-002', fecha: '22/01/2026 10:45', usuario: 'María Santos', conductor: 'Ana García', monto: 520, metodo: 'Tarjeta', estado: 'completado' },
+                { id: 'PAY-003', fecha: '22/01/2026 11:00', usuario: 'Pedro López', conductor: 'Luis Martínez', monto: 280, metodo: 'Efectivo', estado: 'completado' },
+                { id: 'PAY-004', fecha: '22/01/2026 11:15', usuario: 'Ana Rodríguez', conductor: 'Carlos López', monto: 450, metodo: 'Tarjeta', estado: 'pendiente' },
+                { id: 'PAY-005', fecha: '22/01/2026 11:30', usuario: 'José García', conductor: 'María Pérez', monto: 380, metodo: 'Efectivo', estado: 'completado' }
+            ];
+            
+            renderPagos(resumen, transacciones);
+        }
+        
+        function renderPagos(resumen, transacciones) {
+            const container = document.getElementById('pagos');
+            
+            let html = `
+                <div style="padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                            💳 Gestión de Pagos
+                        </h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">Monitorea todas las transacciones de la plataforma</p>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #28a745;">
+                            <div style="color: #666; font-size: 14px;">💰 Ingresos Hoy</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #28a745; margin: 10px 0;">RD$${resumen.ingresosDiarios.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999;">${resumen.transaccionesHoy} transacciones</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #17a2b8;">
+                            <div style="color: #666; font-size: 14px;">💵 Efectivo</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #17a2b8; margin: 10px 0;">RD$${resumen.efectivo.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999;">62% del total</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #6f42c1;">
+                            <div style="color: #666; font-size: 14px;">💳 Tarjeta</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #6f42c1; margin: 10px 0;">RD$${resumen.tarjeta.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999;">38% del total</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #ffc107;">
+                            <div style="color: #666; font-size: 14px;">📊 Promedio</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #ffc107; margin: 10px 0;">RD$368</div>
+                            <div style="font-size: 12px; color: #999;">Por viaje</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0;">📋 Transacciones Recientes</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="date" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                <select style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option>Todos los métodos</option>
+                                    <option>Efectivo</option>
+                                    <option>Tarjeta</option>
+                                </select>
+                                <button style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    📊 Exportar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">ID</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Fecha/Hora</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Usuario</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Conductor</th>
+                                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb;">Monto</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Método</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            transacciones.forEach(t => {
+                const metodoIcon = t.metodo === 'Efectivo' ? '💵' : '💳';
+                const metodoColor = t.metodo === 'Efectivo' ? '#17a2b8' : '#6f42c1';
+                const estadoColor = t.estado === 'completado' ? '#28a745' : '#ffc107';
+                const estadoTexto = t.estado === 'completado' ? 'Completado' : 'Pendiente';
+                
+                html += `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 12px; font-weight: 500;">${t.id}</td>
+                        <td style="padding: 12px; color: #666;">${t.fecha}</td>
+                        <td style="padding: 12px;">${t.usuario}</td>
+                        <td style="padding: 12px;">${t.conductor}</td>
+                        <td style="padding: 12px; text-align: right; font-weight: 600;">RD$${t.monto.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="background: ${metodoColor}20; color: ${metodoColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${metodoIcon} ${t.metodo}</span>
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="background: ${estadoColor}20; color: ${estadoColor}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${estadoTexto}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
             container.innerHTML = html;
         }
         
