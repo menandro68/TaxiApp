@@ -2171,6 +2171,12 @@ static async getStats() {
                 PricingModule.init();
             }
 
+            if (screenName === 'settings') {
+                const container = document.getElementById('settings');
+                container.innerHTML = SettingsModule.getHTML();
+                SettingsModule.init();
+            }
+
             // Cargar módulo de Centro de Comando
 if (screenName === 'command-center') {
     CommandCenterModule.init();
@@ -2247,8 +2253,11 @@ if (screenName === 'vehicles') {
                             // TripsFiltersModule.loadSelectOptions();
                         }
                         break;
-                    case 'reports':
+                   case 'reports':
                         // No necesita carga adicional, el módulo se encarga
+                        break;
+                    case 'settings':
+                        await loadSettings();
                         break;
                     // resto de casos...
                 }
@@ -2260,6 +2269,115 @@ if (screenName === 'vehicles') {
         // ========================================
         // CARGA DE DATOS DEL DASHBOARD
         // ========================================
+
+        // ========================================
+        // CARGA DE CONFIGURACIÓN DEL SISTEMA
+        // ========================================
+        async function loadSettings() {
+            const settingsContainer = document.getElementById('settings');
+            if (!settingsContainer) return;
+            
+            try {
+                const response = await fetch(`${window.location.origin}/api/admin/settings`);
+                const data = await response.json();
+                
+                if (data.success && data.settings) {
+                    renderSettings(data.settings);
+                } else {
+                    settingsContainer.innerHTML = '<div class="error-message">Error al cargar configuración</div>';
+                }
+            } catch (error) {
+                console.error('Error cargando configuración:', error);
+                settingsContainer.innerHTML = '<div class="error-message">Error de conexión</div>';
+            }
+        }
+        
+        function renderSettings(settings) {
+            const container = document.getElementById('settings');
+            
+            const categoryNames = {
+                general: 'Configuración General',
+                pricing: 'Tarifas y Precios',
+                drivers: 'Conductores',
+                trips: 'Viajes',
+                notifications: 'Notificaciones',
+                system: 'Sistema'
+            };
+            
+            const categoryIcons = {
+                general: '⚙️',
+                pricing: '💰',
+                drivers: '🚗',
+                trips: '📍',
+                notifications: '🔔',
+                system: '🖥️'
+            };
+            
+            let html = '<div class="settings-container" style="padding: 20px;">';
+            html += '<div class="settings-header" style="margin-bottom: 20px;">';
+            html += '<h2 style="margin: 0; color: #1f2937;">⚙️ Configuración del Sistema</h2>';
+            html += '<p style="color: #6b7280; margin-top: 5px;">Administra los parámetros de la plataforma</p>';
+            html += '</div>';
+            
+            html += '<div class="settings-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">';
+            
+            for (const [category, items] of Object.entries(settings)) {
+                html += `<div class="settings-card" style="background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+                html += `<div class="settings-card-header" style="background: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e5e7eb;">`;
+                html += `<h3 style="margin: 0; font-size: 1rem; color: #374151;">${categoryIcons[category] || '📋'} ${categoryNames[category] || category}</h3>`;
+                html += `</div>`;
+                html += `<div class="settings-card-body" style="padding: 15px 20px;">`;
+                
+                for (const item of items) {
+                    html += `<div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6;">`;
+                    html += `<div class="setting-info" style="flex: 1;">`;
+                    html += `<div style="font-weight: 500; color: #1f2937;">${item.description}</div>`;
+                    html += `<div style="font-size: 0.75rem; color: #9ca3af;">${item.key}</div>`;
+                    html += `</div>`;
+                    html += `<div class="setting-value" style="min-width: 150px; text-align: right;">`;
+                    
+                    if (item.type === 'boolean') {
+                        const checked = item.value === 'true' ? 'checked' : '';
+                        html += `<label class="toggle-switch" style="position: relative; display: inline-block; width: 50px; height: 26px;">`;
+                        html += `<input type="checkbox" ${checked} ${!item.editable ? 'disabled' : ''} onchange="updateSetting(${item.id}, this.checked ? 'true' : 'false')" style="opacity: 0; width: 0; height: 0;">`;
+                        html += `<span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: ${item.value === 'true' ? '#10b981' : '#ccc'}; transition: .3s; border-radius: 26px;"></span>`;
+                        html += `</label>`;
+                    } else if (item.type === 'number') {
+                        html += `<input type="number" value="${item.value}" ${!item.editable ? 'disabled' : ''} onchange="updateSetting(${item.id}, this.value)" style="width: 100px; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; text-align: right;">`;
+                    } else {
+                        html += `<input type="text" value="${item.value}" ${!item.editable ? 'disabled' : ''} onchange="updateSetting(${item.id}, this.value)" style="width: 150px; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px;">`;
+                    }
+                    
+                    html += `</div></div>`;
+                }
+                
+                html += `</div></div>`;
+            }
+            
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+        
+        async function updateSetting(id, value) {
+            try {
+                const response = await fetch(`${window.location.origin}/api/admin/settings/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: value })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Configuración actualizada', 'success');
+                } else {
+                    showNotification('Error al actualizar', 'error');
+                }
+            } catch (error) {
+                console.error('Error actualizando configuración:', error);
+                showNotification('Error de conexión', 'error');
+            }
+        }
         
         // NUEVO: Función para actualizar métricas en tiempo real
         async function updateDashboardMetrics() {
@@ -3976,6 +4094,7 @@ if (screenName === 'vehicles') {
     <script src="support-module.js"></script> 
     <script src="geofencing-module.js"></script>
     <script src="finances-module.js"></script>
+    <script src="settings-module.js"></script>
     <script src="pagination-module.js"></script>
     <!-- Módulo de Reportes -->
     <script src="reports-module.js"></script>
