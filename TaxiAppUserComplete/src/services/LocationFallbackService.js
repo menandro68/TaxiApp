@@ -293,7 +293,7 @@ class LocationFallbackService {
       let bestLocation = null;
       let resolved = false;
       const startTime = Date.now();
-      const TOTAL_TIMEOUT = 1000;
+      const TOTAL_TIMEOUT = 5000;
       const MIN_ACCURACY = highAccuracy ? 100 : 300;
 
       // Función para resolver y limpiar
