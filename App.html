@@ -1133,7 +1133,7 @@
         </a>
 
 
-     <a href="#" class="nav-item" onclick="window.open('driver-payments.html', '_blank'); return false;">
+    <a href="#" class="nav-item" data-screen="pagos-conductores" onclick="switchScreen('pagos-conductores'); return false;">
     <span class="nav-icon">💸</span>
     <span>Pagos a Conductores</span>
     <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: auto;">5 PENDIENTES</span>
@@ -1457,6 +1457,13 @@
     <div id="finances" class="screen">
         <!-- El contenido se cargará dinámicamente -->
     </div>
+
+  <div id="pagos-conductores" class="screen">
+    <div class="loading">
+        <div class="spinner"></div>
+        Cargando pagos a conductores...
+    </div>
+</div>
 
     <!-- Conciliación de Pagos Screen -->
 <div id="conciliacion-pagos" class="screen">
@@ -2259,6 +2266,9 @@ if (screenName === 'vehicles') {
                   case 'settings':
                         await loadSettings();
                         break;
+                   case 'pagos-conductores':
+                        await loadPagosConductores();
+                        break;     
                     case 'conciliacion-pagos':
                         await loadConciliacionPagos();
                         break;
@@ -2362,8 +2372,173 @@ if (screenName === 'vehicles') {
         }
         
         // ========================================
-        // CONCILIACIÓN DE PAGOS
+        // PAGOS A CONDUCTORES
         // ========================================
+        async function loadPagosConductores() {
+            const container = document.getElementById('pagos-conductores');
+            if (!container) return;
+            
+            // Datos de demostración
+            const pagosPendientes = [
+                { id: 1, conductor: 'Juan Pérez', cedula: '001-1234567-8', viajes: 25, monto: 4500, periodo: '15-22 Ene 2026', estado: 'pendiente' },
+                { id: 2, conductor: 'María García', cedula: '001-2345678-9', viajes: 32, monto: 5800, periodo: '15-22 Ene 2026', estado: 'pendiente' },
+                { id: 3, conductor: 'Carlos López', cedula: '001-3456789-0', viajes: 18, monto: 3200, periodo: '15-22 Ene 2026', estado: 'pendiente' },
+                { id: 4, conductor: 'Ana Rodríguez', cedula: '001-4567890-1', viajes: 28, monto: 5100, periodo: '15-22 Ene 2026', estado: 'pendiente' },
+                { id: 5, conductor: 'Pedro Martínez', cedula: '001-5678901-2', viajes: 22, monto: 3900, periodo: '15-22 Ene 2026', estado: 'pendiente' }
+            ];
+            
+            const resumen = {
+                totalPendiente: 22500,
+                conductoresPendientes: 5,
+                pagadoEsteMes: 145000,
+                proximoPago: '29 Ene 2026'
+            };
+            
+            renderPagosConductores(pagosPendientes, resumen);
+        }
+        
+        function renderPagosConductores(pagos, resumen) {
+            const container = document.getElementById('pagos-conductores');
+            
+            let html = `
+                <div style="padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                                💸 Pagos a Conductores
+                            </h2>
+                            <p style="margin: 5px 0 0 0; opacity: 0.9;">Gestiona los pagos semanales a los conductores</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="generarNomina()" style="padding: 10px 20px; background: white; color: #28a745; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                📋 Generar Nómina
+                            </button>
+                            <button onclick="procesarPagosMasivos()" style="padding: 10px 20px; background: #ffc107; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                💰 Procesar Pagos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #dc3545;">
+                            <div style="color: #666; font-size: 14px;">💰 Total Pendiente</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #dc3545; margin: 10px 0;">RD$${resumen.totalPendiente.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999;">${resumen.conductoresPendientes} conductores</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #28a745;">
+                            <div style="color: #666; font-size: 14px;">✅ Pagado Este Mes</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #28a745; margin: 10px 0;">RD$${resumen.pagadoEsteMes.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999;">Enero 2026</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #667eea;">
+                            <div style="color: #666; font-size: 14px;">📅 Próximo Pago</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #667eea; margin: 10px 0;">${resumen.proximoPago}</div>
+                            <div style="font-size: 12px; color: #999;">Fecha programada</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #ffc107;">
+                            <div style="color: #666; font-size: 14px;">👥 Conductores Activos</div>
+                            <div style="font-size: 28px; font-weight: bold; color: #ffc107; margin: 10px 0;">48</div>
+                            <div style="font-size: 12px; color: #999;">En la plataforma</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0;">📋 Pagos Pendientes</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <select style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option>Esta Semana</option>
+                                    <option>Semana Pasada</option>
+                                    <option>Este Mes</option>
+                                </select>
+                                <button onclick="exportarPagos()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    📊 Exportar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">
+                                        <input type="checkbox" onclick="seleccionarTodos(this)">
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Conductor</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Cédula</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Viajes</th>
+                                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb;">Monto</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Período</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Estado</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            pagos.forEach(p => {
+                html += `
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 12px;"><input type="checkbox" class="pago-check" data-id="${p.id}"></td>
+                        <td style="padding: 12px; font-weight: 500;">${p.conductor}</td>
+                        <td style="padding: 12px; color: #666;">${p.cedula}</td>
+                        <td style="padding: 12px; text-align: center;">${p.viajes}</td>
+                        <td style="padding: 12px; text-align: right; font-weight: 600; color: #28a745;">RD$${p.monto.toLocaleString()}</td>
+                        <td style="padding: 12px; color: #666;">${p.periodo}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="background: #ffc10720; color: #ffc107; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Pendiente</span>
+                        </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button onclick="pagarConductor(${p.id})" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 5px;">💰 Pagar</button>
+                            <button onclick="verDetalleConductor(${p.id})" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">👁️ Ver</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function seleccionarTodos(checkbox) {
+            document.querySelectorAll('.pago-check').forEach(c => c.checked = checkbox.checked);
+        }
+        
+        function pagarConductor(id) {
+            if (confirm('¿Confirmar pago a este conductor?')) {
+                showNotification('Pago procesado exitosamente', 'success');
+                loadPagosConductores();
+            }
+        }
+        
+        function verDetalleConductor(id) {
+            showNotification('Abriendo detalle del conductor...', 'info');
+        }
+        
+        function generarNomina() {
+            showNotification('Generando nómina...', 'info');
+        }
+        
+        function procesarPagosMasivos() {
+            const seleccionados = document.querySelectorAll('.pago-check:checked').length;
+            if (seleccionados === 0) {
+                showNotification('Seleccione al menos un conductor', 'warning');
+                return;
+            }
+            if (confirm(`¿Procesar pago a ${seleccionados} conductores?`)) {
+                showNotification(`Procesando ${seleccionados} pagos...`, 'success');
+                loadPagosConductores();
+            }
+        }
+        
+        function exportarPagos() {
+            showNotification('Exportando reporte de pagos...', 'info');
+        }
         async function loadConciliacionPagos() {
             const container = document.getElementById('conciliacion-pagos');
             if (!container) return;
