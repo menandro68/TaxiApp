@@ -110,6 +110,7 @@ const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, 
   const originalRouteRef = useRef([]);
   const consecutiveOffRoute = useRef(0);
   const isRerouting = useRef(false); // NUEVO: Flag para evitar recálculos simultáneos
+  const lastValidHeading = useRef(0); // Guardar último heading válido
 
 const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitude;
   const pickupLng = currentTrip?.pickupLng || currentTrip?.pickupLocation?.longitude;
@@ -283,21 +284,22 @@ useEffect(() => {
                         nextInstruction.includes('toma');
     
     // Anunciar el PRÓXIMO paso si tiene instrucción de giro
+    // SISTEMA ADAPTATIVO: Funciona con pasos cortos de zona urbana
     if (nextStep && hasNextTurn) {
-      // ANUNCIO 1: Preparación a 250m
-      if (distanceToStep < 250 && distanceToStep > 180 && !spokenAnnouncements.current[stepKey + '_250']) {
-        spokenAnnouncements.current[stepKey + '_250'] = true;
-        speakInstruction('En 250 metros, ' + nextStep.instruction);
+      // ANUNCIO 1: Preparación (60-80% del paso)
+      if (distanceToStep < 80 && distanceToStep > 40 && !spokenAnnouncements.current[stepKey + '_far']) {
+        spokenAnnouncements.current[stepKey + '_far'] = true;
+        speakInstruction('En ' + Math.round(distanceToStep / 10) * 10 + ' metros, ' + nextStep.instruction);
       }
-      
-      // ANUNCIO 2: Recordatorio a 100m
-      if (distanceToStep < 100 && distanceToStep > 60 && !spokenAnnouncements.current[stepKey + '_100']) {
-        spokenAnnouncements.current[stepKey + '_100'] = true;
-        speakInstruction('En 100 metros, ' + nextStep.instruction);
+
+      // ANUNCIO 2: Recordatorio (30-50% del paso)
+      if (distanceToStep < 40 && distanceToStep > 20 && !spokenAnnouncements.current[stepKey + '_mid']) {
+        spokenAnnouncements.current[stepKey + '_mid'] = true;
+        speakInstruction('En ' + Math.round(distanceToStep / 10) * 10 + ' metros, ' + nextStep.instruction);
       }
-      
-      // ANUNCIO 3: Alerta inmediata a 30m
-      if (distanceToStep < 30 && !spokenAnnouncements.current[stepKey + '_now']) {
+
+      // ANUNCIO 3: Alerta inmediata (<20m)
+      if (distanceToStep < 20 && !spokenAnnouncements.current[stepKey + '_now']) {
         spokenAnnouncements.current[stepKey + '_now'] = true;
         speakInstruction('Ahora, ' + nextStep.instruction);
       }
@@ -345,10 +347,7 @@ useEffect(() => {
           
           // Marcar que estamos recalculando ANTES de hacer nada
           isRerouting.current = true;
-          lastRerouteTime.current = now;
           consecutiveOffRoute.current = 0;
-          
-          speakInstruction('Recalculando ruta');
           
           // RESETEAR SISTEMA DE VOZ para que funcione con la nueva ruta
           setCurrentStepIndex(0);
@@ -358,8 +357,16 @@ useEffect(() => {
           // Recalcular ruta con try-catch para evitar crashes
           try {
             fetchRoute(currentLocation, navigationTarget)
-              .then(() => {
-                console.log('✅ Recálculo completado');
+              .then((result) => {
+                if (result && result.length > 0) {
+                  // Ruta válida - actualizar cooldown y anunciar
+                  lastRerouteTime.current = Date.now();
+                  speakInstruction('Ruta recalculada');
+                  console.log('✅ Recálculo completado con', result.length, 'pasos');
+                } else {
+                  // Ruta descartada - permitir reintento inmediato
+                  console.log('⚠️ Ruta descartada, permitiendo reintento');
+                }
               })
               .catch((error) => {
                 console.log('❌ Error en recálculo:', error);
@@ -398,9 +405,14 @@ useEffect(() => {
   const fetchRoute = async (origin, destination) => {
     try {
       console.log('🛣️ API Directions...');
-      // Obtener heading del conductor (dirección en grados)
-      const heading = origin?.heading || 0;
-      console.log('🧭 Heading enviado a API:', heading);
+      // Obtener heading del conductor - usar último válido si actual es 0
+      let heading = origin?.heading || 0;
+      if (heading > 0) {
+        lastValidHeading.current = heading; // Guardar heading válido
+      } else {
+        heading = lastValidHeading.current; // Usar último válido
+      }
+      console.log('🧭 Heading enviado a API:', heading, '(último válido:', lastValidHeading.current, ')');
       const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es${headingParam}&key=${GOOGLE_MAPS_APIKEY}`;
       const response = await fetch(url);
@@ -410,6 +422,24 @@ useEffect(() => {
         const route = data.routes[0];
         const leg = route.legs[0];
        const points = leg.steps.flatMap(step => decodePolyline(step.polyline.points));
+
+        // VALIDAR que la ruta va en dirección correcta
+        if (heading > 0 && points.length >= 2) {
+          const routeHeading = Math.atan2(
+            points[1].longitude - points[0].longitude,
+            points[1].latitude - points[0].latitude
+          ) * 180 / Math.PI;
+          const normalizedRouteHeading = (routeHeading + 360) % 360;
+          const headingDiff = Math.abs(normalizedRouteHeading - heading);
+          const adjustedDiff = headingDiff > 180 ? 360 - headingDiff : headingDiff;
+          
+          console.log('🧭 Validación ruta - Heading conductor:', heading.toFixed(0), '° | Ruta:', normalizedRouteHeading.toFixed(0), '° | Diferencia:', adjustedDiff.toFixed(0), '°');
+          
+          if (adjustedDiff > 120) {
+            console.log('❌ Ruta descartada - va en dirección opuesta');
+            return null;
+          }
+        }
         
         // Extraer pasos de navegación
         const steps = leg.steps.map((step, index) => ({
