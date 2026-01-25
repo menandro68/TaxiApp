@@ -2928,15 +2928,7 @@ onPress={() => {
   };
 
   const renderContent = () => {
-  // ✅ VALIDACIÓN CORRECTA: Si NO hay ubicacion, espera
-  if (!userLocation) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Obteniendo tu ubicacion...</Text>
-      </View>
-    );
-  }
+// La ubicación se obtiene en segundo plano - no bloquear la pantalla
     
   if (rideStatus === TRIP_STATES.REQUESTING_RIDE) {
     return (

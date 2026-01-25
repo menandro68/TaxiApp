@@ -302,15 +302,20 @@ class FCMService {
   }
 
   // Manejar cancelación de viaje por el usuario
-  handleTripCancelled(data) {
+handleTripCancelled(data) {
     console.log('❌ Procesando cancelación de viaje:', data);
+
+    // GUARDAR tripId cancelado para evitar mostrar modal si llega tarde
+    if (data.tripId) {
+      global.cancelledTripId = data.tripId;
+      console.log('🚫 Trip cancelado guardado:', data.tripId);
+    }
 
     // DETENER SONIDO Y CERRAR MODAL - El Alert se muestra desde App.js
     if (global.clearCurrentTrip) {
       global.clearCurrentTrip();
     }
   }
-
   // Simular notificación de prueba
   async testNotification() {
     Alert.alert(

@@ -674,9 +674,14 @@ const backgroundTask = async (taskData) => {
   const { pickupLat, pickupLng, tripId } = taskData.parameters || taskData;
   
   while (BackgroundService.isRunning()) {
-    try {
-      // Obtener ubicación actual
-      const position = await new Promise((resolve, reject) => {
+    // SOLO pedir GPS si la app está en BACKGROUND
+    // Cuando está en foreground, MapComponent ya maneja el GPS
+    const appState = AppState.currentState;
+    
+    if (appState !== 'active') {
+      try {
+        // Obtener ubicación actual (solo en background)
+        const position = await new Promise((resolve, reject) => {
         Geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
@@ -716,8 +721,12 @@ const backgroundTask = async (taskData) => {
         await BackgroundService.stop();
         break;
       }
-    } catch (error) {
-      console.error('Error en background task:', error);
+} catch (error) {
+        console.error('Error en background task:', error);
+      }
+    } else {
+      // App en foreground - MapComponent maneja el GPS
+      console.log('📱 App en foreground - saltando GPS en background task');
     }
 
     // Esperar 5 segundos antes de la siguiente verificación

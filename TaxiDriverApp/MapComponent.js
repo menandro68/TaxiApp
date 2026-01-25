@@ -39,6 +39,59 @@ const cleanInstruction = (html) => {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
+// Calcular distancia mínima del conductor a la ruta (en metros)
+// VERSIÓN PROFESIONAL: Calcula distancia al SEGMENTO más cercano, no solo puntos
+const getDistanceToRoute = (location, routeCoords) => {
+  if (!location || !routeCoords || routeCoords.length < 2) return Infinity;
+  
+  const toRad = (deg) => deg * Math.PI / 180;
+  const R = 6371000; // Radio de la Tierra en metros
+  
+  // Función para calcular distancia entre dos puntos
+  const haversine = (lat1, lon1, lat2, lon2) => {
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  };
+  
+  // Función para calcular distancia perpendicular a un segmento de línea
+  const distanceToSegment = (px, py, x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    
+    if (dx === 0 && dy === 0) {
+      return haversine(px, py, x1, y1);
+    }
+    
+    // Proyección del punto sobre la línea (0-1 = dentro del segmento)
+    let t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+    t = Math.max(0, Math.min(1, t)); // Limitar al segmento
+    
+    // Punto más cercano en el segmento
+    const closestLat = x1 + t * dx;
+    const closestLng = y1 + t * dy;
+    
+    return haversine(px, py, closestLat, closestLng);
+  };
+  
+  let minDistance = Infinity;
+  
+  // Verificar distancia a cada SEGMENTO de la ruta
+  for (let i = 0; i < routeCoords.length - 1; i++) {
+    const dist = distanceToSegment(
+      location.latitude, location.longitude,
+      routeCoords[i].latitude, routeCoords[i].longitude,
+      routeCoords[i + 1].latitude, routeCoords[i + 1].longitude
+    );
+    if (dist < minDistance) minDistance = dist;
+  }
+  
+  return minDistance;
+};
+
 const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
@@ -53,6 +106,10 @@ const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, 
   const lastSpokenStep = useRef(-1);
   const spokenAnnouncements = useRef({});
   const isGettingLocation = useRef(false);
+  const lastRerouteTime = useRef(0);
+  const originalRouteRef = useRef([]);
+  const consecutiveOffRoute = useRef(0);
+  const isRerouting = useRef(false); // NUEVO: Flag para evitar recálculos simultáneos
 
 const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitude;
   const pickupLng = currentTrip?.pickupLng || currentTrip?.pickupLocation?.longitude;
@@ -257,6 +314,73 @@ useEffect(() => {
       }
     }
 
+    // DETECTAR DESVÍO Y RECALCULAR RUTA AUTOMÁTICAMENTE
+    // CORREGIDO: Solo detectar si NO estamos recalculando y tenemos ruta válida
+    if (!isRerouting.current && originalRouteRef.current.length >= 2) {
+      const distanceToRoute = getDistanceToRoute(currentLocation, originalRouteRef.current);
+      
+      // Solo loguear si es valor válido (no Infinity)
+      if (distanceToRoute !== Infinity) {
+        console.log('📏 Distancia a ruta original:', distanceToRoute.toFixed(0), 'm');
+      }
+      
+      const now = Date.now();
+      const REROUTE_THRESHOLD = 30; // metros - umbral profesional con cálculo de segmentos
+      const REROUTE_COOLDOWN = 30000; // 30 segundos entre recálculos
+      const CONSECUTIVE_REQUIRED = 4; // 4 lecturas consecutivas para confirmar desvío real
+      
+      if (distanceToRoute !== Infinity && distanceToRoute > REROUTE_THRESHOLD) {
+        consecutiveOffRoute.current++;
+        console.log('⚠️ Fuera de ruta:', consecutiveOffRoute.current, '/', CONSECUTIVE_REQUIRED);
+        
+        if (consecutiveOffRoute.current >= CONSECUTIVE_REQUIRED && (now - lastRerouteTime.current) > REROUTE_COOLDOWN) {
+          console.log('🔄 DESVÍO CONFIRMADO:', distanceToRoute.toFixed(0), 'm - Recalculando ruta...');
+          
+          // VERIFICAR que tenemos destino válido antes de recalcular
+          if (!navigationTarget || !navigationTarget.latitude) {
+            console.log('❌ No hay destino válido para recalcular');
+            consecutiveOffRoute.current = 0;
+            return;
+          }
+          
+          // Marcar que estamos recalculando ANTES de hacer nada
+          isRerouting.current = true;
+          lastRerouteTime.current = now;
+          consecutiveOffRoute.current = 0;
+          
+          speakInstruction('Recalculando ruta');
+          
+          // RESETEAR SISTEMA DE VOZ para que funcione con la nueva ruta
+          setCurrentStepIndex(0);
+          lastSpokenStep.current = -1;
+          spokenAnnouncements.current = {};
+          
+          // Recalcular ruta con try-catch para evitar crashes
+          try {
+            fetchRoute(currentLocation, navigationTarget)
+              .then(() => {
+                console.log('✅ Recálculo completado');
+              })
+              .catch((error) => {
+                console.log('❌ Error en recálculo:', error);
+              })
+              .finally(() => {
+                isRerouting.current = false;
+              });
+          } catch (error) {
+            console.log('❌ Error crítico en recálculo:', error);
+            isRerouting.current = false;
+          }
+        }
+      } else if (distanceToRoute !== Infinity) {
+        // Reset contador cuando vuelve a la ruta
+        if (consecutiveOffRoute.current > 0) {
+          console.log('✅ Volvió a la ruta - contador reseteado');
+        }
+        consecutiveOffRoute.current = 0;
+      }
+    }
+
     // Centrar mapa en conductor
     if (mapRef.current) {
       mapRef.current.animateCamera({
@@ -274,7 +398,11 @@ useEffect(() => {
   const fetchRoute = async (origin, destination) => {
     try {
       console.log('🛣️ API Directions...');
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es&key=${GOOGLE_MAPS_APIKEY}`;
+      // Obtener heading del conductor (dirección en grados)
+      const heading = origin?.heading || 0;
+      console.log('🧭 Heading enviado a API:', heading);
+      const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
+      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es${headingParam}&key=${GOOGLE_MAPS_APIKEY}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -299,13 +427,20 @@ useEffect(() => {
 console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
         setRouteCoordinates(points);
         setNavigationSteps(steps);
+        // Guardar ruta original para detección de desvío
+        originalRouteRef.current = points;
+        consecutiveOffRoute.current = 0; // Reset contador para evitar detección inmediata
+        console.log('📌 Ruta original guardada (fetchRoute):', points.length, 'pts');
         setRouteInfo({
           distanceText: leg.distance.text,
           durationText: leg.duration.text
         });
 
-        // Centrar mapa después de obtener ruta
-        setTimeout(() => centerMap(), 500);
+        // Centrar mapa SOLO si NO estamos navegando
+        // Durante navegación, animateCamera ya mantiene el mapa centrado
+        if (!isNavigating) {
+          setTimeout(() => centerMap(), 500);
+        }
 
         // Iniciar background tracking
         if (onStartBackgroundTracking && currentTrip) {
@@ -477,6 +612,11 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
     }
     
     console.log('✅ Iniciando navegación con', steps.length, 'pasos');
+    
+    // Resetear estado de recálculo
+    isRerouting.current = false;
+    consecutiveOffRoute.current = 0;
+    
     setIsNavigating(true);
     setCurrentStepIndex(0);
     lastSpokenStep.current = 0;
@@ -487,6 +627,8 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
 
   const stopNavigation = () => {
     setIsNavigating(false);
+    isRerouting.current = false;
+    consecutiveOffRoute.current = 0;
     Tts.stop();
     centerMap();
   };
@@ -550,8 +692,8 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
           }, 1000);
         }}
       >
-        {/* MapViewDirections - SOLO obtiene coordenadas (no dibuja) */}
-        {currentLocation && navigationTarget && (
+        {/* MapViewDirections - DESHABILITADO para evitar conflictos
+        {currentLocation && navigationTarget && !isNavigating && (
           <MapViewDirections
             origin={currentLocation}
             destination={navigationTarget}
@@ -562,16 +704,40 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
             onReady={(result) => {
               console.log('✅ MVD:', result.coordinates.length, 'pts');
               setRouteCoordinates(result.coordinates);
+              if (originalRouteRef.current.length === 0) {
+                originalRouteRef.current = result.coordinates;
+                console.log('📌 Ruta original guardada:', result.coordinates.length, 'pts');
+              }
             }}
             onError={(err) => console.log('❌ MVD ERROR:', err)}
           />
         )}
+        */}
         
-        {/* Polyline - DIBUJA la ruta */}
+        {/* Polyline - DIBUJA la ruta (se recorta conforme avanzas) */}
         {routeCoordinates.length >= 2 && (
           <Polyline
             key={`route-${routeCoordinates.length}-${routeCoordinates[0]?.latitude}`}
-            coordinates={routeCoordinates}
+            coordinates={(() => {
+              if (!currentLocation || !isNavigating) return routeCoordinates;
+              
+              // Encontrar el punto más cercano en la ruta
+              let minDist = Infinity;
+              let closestIndex = 0;
+              
+              for (let i = 0; i < routeCoordinates.length; i++) {
+                const dx = routeCoordinates[i].latitude - currentLocation.latitude;
+                const dy = routeCoordinates[i].longitude - currentLocation.longitude;
+                const dist = dx * dx + dy * dy;
+                if (dist < minDist) {
+                  minDist = dist;
+                  closestIndex = i;
+                }
+              }
+              
+              // Retornar solo desde el punto más cercano hasta el final
+              return routeCoordinates.slice(closestIndex);
+            })()}
             strokeColor="#FF0000"
             strokeWidth={6}
             lineCap="round"
@@ -647,7 +813,7 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
       </View>
       */}
 
-      {/* PANEL NAVEGACIÓN */}
+      {/* PANEL NAVEGACIÓN - OCULTO
       {isNavigating && navigationSteps[currentStepIndex] && (
         <View style={styles.navPanel}>
           <View style={styles.navHeader}>
@@ -661,6 +827,7 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
           <Text style={styles.navStep}>Paso {currentStepIndex + 1} de {navigationSteps.length}</Text>
         </View>
       )}
+      */}
 
       {/* BOTONES */}
       {currentTrip && (
