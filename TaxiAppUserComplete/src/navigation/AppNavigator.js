@@ -13,6 +13,7 @@ import FavoriteAddressesScreen from '../screens/FavoriteAddressesScreen';
 import AddressHistoryScreen from '../screens/AddressHistoryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
+import DriverSearchScreen from '../screens/DriverSearchScreen';
 
 const Stack = createStackNavigator();
 
@@ -100,6 +101,15 @@ const AppNavigator = () => {
           component={SupportScreen}
           options={{
             headerShown: false
+          }}
+        />
+        
+        <Stack.Screen
+          name="DriverSearch"
+          component={DriverSearchScreen}
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
           }}
         />
         

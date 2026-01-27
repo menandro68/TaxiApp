@@ -1,4 +1,4 @@
-// DriverSearchModal.js - SIN MapView (evita bug de África)
+// DriverSearchScreen.js - Pantalla de navegación (solución al bug de MapView en Modal)
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -8,16 +8,20 @@ import {
   Animated,
   Dimensions,
   Alert,
+  BackHandler,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import DriverSearchService from '../services/DriverSearchService';
 
 const { width, height } = Dimensions.get('window');
-const RADAR_SIZE = width * 0.9; // 90% del ancho
+const RADAR_SIZE = width * 0.9;
 const RADAR_CENTER = RADAR_SIZE / 2;
 
-const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDriversLoaded }) => {
+const DriverSearchScreen = ({ navigation, route }) => {
+  const { userLocation, tripRequestId } = route.params || {};
+  console.log('📍 DriverSearchScreen userLocation:', JSON.stringify(userLocation));
+  
   const [searchProgress, setSearchProgress] = useState({
     attempt: 0,
     totalAttempts: 5,
@@ -27,37 +31,82 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
   const [isSearching, setIsSearching] = useState(false);
   const [driverFound, setDriverFound] = useState(null);
   const [searchFailed, setSearchFailed] = useState(false);
-  const [pulseAnim1] = useState(new Animated.Value(0));
-  const [pulseAnim2] = useState(new Animated.Value(0));
-  const [pulseAnim3] = useState(new Animated.Value(0));
   const [availableDrivers, setAvailableDrivers] = useState([]);
   const [mapReady, setMapReady] = useState(false);
+  const [showMarkers, setShowMarkers] = useState(false);
   const mapRef = useRef(null);
 
+  // Calcular posición del conductor en el overlay
+  const getDriverPosition = (driver, index) => {
+    const userLat = userLocation?.latitude || 18.4861;
+    const userLng = userLocation?.longitude || -69.9312;
+    const driverLat = parseFloat(driver.location?.latitude || driver.latitude);
+    const driverLng = parseFloat(driver.location?.longitude || driver.longitude);
+    
+    const markerSize = RADAR_SIZE * 0.1;
+    const totalDrivers = availableDrivers.length;
+
+    if (!driverLat || !driverLng || isNaN(driverLat) || isNaN(driverLng)) {
+      const angle = (index * (360 / Math.max(totalDrivers, 1))) * (Math.PI / 180);
+      const radius = RADAR_CENTER * 0.5;
+      return {
+        top: RADAR_CENTER + Math.sin(angle) * radius - markerSize / 2,
+        left: RADAR_CENTER + Math.cos(angle) * radius - markerSize / 2,
+      };
+    }
+
+    // Convertir diferencia de coordenadas a píxeles
+    const deltaLat = (driverLat - userLat) * 8000;
+    const deltaLng = (driverLng - userLng) * 8000;
+
+    const maxRadius = RADAR_CENTER * 0.85;
+    const distance = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
+    const scale = distance > maxRadius ? maxRadius / distance : 1;
+
+    const x = deltaLng * scale;
+    const y = -deltaLat * scale;
+
+    return {
+      top: RADAR_CENTER + y - markerSize / 2,
+      left: RADAR_CENTER + x - markerSize / 2,
+    };
+  };
+
+  // Manejar botón atrás de Android
   useEffect(() => {
-    if (visible && userLocation) {
-      console.log('📍 Modal: Iniciando búsqueda');
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleClose();
+      return true;
+    });
+    return () => backHandler.remove();
+  }, []);
+
+  useEffect(() => {
+    if (userLocation) {
+      console.log('📍 DriverSearchScreen: Iniciando búsqueda');
       loadAvailableDrivers();
       setTimeout(() => {
         startSearch();
       }, 100);
     }
-  }, [visible, userLocation]);
+  }, [userLocation]);
 
+  // Delay para MapView
   useEffect(() => {
-    if (isSearching || visible) {
-      startPulseAnimation();
-    }
-  }, [isSearching, visible]);
+    const timer = setTimeout(() => setMapReady(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
+  // Activar marcadores después de que el mapa esté listo
   useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => setMapReady(true), 300);
+    if (mapReady) {
+      const timer = setTimeout(() => {
+        setShowMarkers(true);
+        console.log('🚗 Activando marcadores overlay');
+      }, 1000);
       return () => clearTimeout(timer);
-    } else {
-      setMapReady(false);
     }
-  }, [visible]);
+  }, [mapReady]);
 
   const loadAvailableDrivers = async () => {
     try {
@@ -65,41 +114,10 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
       if (drivers && drivers.length > 0) {
         setAvailableDrivers(drivers);
         console.log('🚗 Conductores disponibles:', drivers.length);
-        if (onDriversLoaded) {
-          onDriversLoaded(drivers);
-        }
       }
     } catch (error) {
       console.log('No se pudieron cargar conductores:', error);
     }
-  };
-
-  const startPulseAnimation = () => {
-    // Reiniciar
-    pulseAnim1.setValue(0);
-    pulseAnim2.setValue(0);
-    pulseAnim3.setValue(0);
-
-    // Animación escalonada de 3 círculos
-    Animated.loop(
-      Animated.stagger(400, [
-        Animated.timing(pulseAnim1, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim2, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim3, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   };
 
   const startSearch = async () => {
@@ -118,10 +136,11 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
       if (result.success) {
         setDriverFound(result.driver);
         setTimeout(() => {
-          onDriverFound(result.driver);
-          if (onDriversLoaded) {
-            onDriversLoaded([]);
-          }
+          // Navegar de vuelta con el conductor encontrado
+          navigation.navigate('Main', { 
+            driverFound: result.driver,
+            fromDriverSearch: true 
+          });
         }, 2000);
       } else {
         setSearchFailed(true);
@@ -140,10 +159,10 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
       {
         text: 'Sí',
         onPress: () => {
-          if (onDriversLoaded) {
-            onDriversLoaded([]);
-          }
-          onClose();
+          navigation.navigate('Main', { 
+            searchCancelled: true,
+            fromDriverSearch: true 
+          });
         },
       },
     ]);
@@ -155,125 +174,78 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
     startSearch();
   };
 
-  // Calcular posición del conductor relativa al usuario
-  const getDriverPosition = (driver, index) => {
-    const userLat = userLocation?.latitude || 18.4861;
-    const userLng = userLocation?.longitude || -69.9312;
-    const driverLat = parseFloat(driver.location?.latitude || driver.latitude);
-    const driverLng = parseFloat(driver.location?.longitude || driver.longitude);
-    
-    const markerSize = RADAR_SIZE * 0.075;
-
-    if (!driverLat || !driverLng || isNaN(driverLat) || isNaN(driverLng)) {
-      const angle = (index * 120) * (Math.PI / 180);
-      const radius = RADAR_CENTER * 0.6;
-      return {
-        top: RADAR_CENTER + Math.sin(angle) * radius - markerSize / 2,
-        left: RADAR_CENTER + Math.cos(angle) * radius - markerSize / 2,
-      };
-    }
-
-    const deltaLat = (driverLat - userLat) * 5000;
-    const deltaLng = (driverLng - userLng) * 5000;
-
-    const maxRadius = RADAR_CENTER * 0.7;
-    const distance = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
-    const scale = distance > maxRadius ? maxRadius / distance : 1;
-
-    const x = deltaLng * scale;
-    const y = -deltaLat * scale;
-
-    return {
-      top: RADAR_CENTER + y - markerSize / 2,
-      left: RADAR_CENTER + x - markerSize / 2,
-    };
-  };
-
-  if (!visible) return null;
-
-  const renderPulseCircle = (anim, size, delay) => (
-    <Animated.View
-      style={[
-        styles.pulseCircle,
-        {
-          width: size,
-          height: size,
-          borderRadius: 20,
-          opacity: anim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.6, 0],
-          }),
-          transform: [
-            {
-              scale: anim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.3, 1],
-              }),
-            },
-          ],
-        },
-      ]}
-    />
-  );
-
   const renderSearching = () => (
     <View style={styles.searchingContainer}>
-      {/* Contenedor del radar */}
-      <View style={[styles.radarContainer, { width: RADAR_SIZE + 20, height: RADAR_SIZE + 20 }]}>
-        {/* Fondo del círculo */}
-        <View style={[styles.radarBackground, { width: RADAR_SIZE, height: RADAR_SIZE, borderRadius: 20, overflow: 'hidden' }]}>
-          {mapReady && userLocation ? (
+      {/* Contenedor del mapa */}
+      <View style={[styles.mapContainer, { width: RADAR_SIZE, height: RADAR_SIZE }]}>
+        {mapReady && userLocation ? (
+          <View style={{ flex: 1 }}>
             <MapView
               ref={mapRef}
               provider={PROVIDER_GOOGLE}
-              style={{ width: RADAR_SIZE, height: RADAR_SIZE }}
+              style={styles.map}
               initialRegion={{
-                latitude: 18.4861,
-                longitude: -69.9312,
-                latitudeDelta: 0.02,
-                longitudeDelta: 0.02,
+                latitude: userLocation?.latitude || 18.4861,
+                longitude: userLocation?.longitude || -69.9312,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.015,
               }}
-              onMapReady={() => {
-                console.log('🗺️ Mapa del modal listo');
+              onLayout={() => {
+                console.log('🗺️ MapView onLayout - forzando posición');
                 setTimeout(() => {
                   if (mapRef.current && userLocation) {
-                    mapRef.current.animateToRegion({
-                      latitude: userLocation.latitude,
-                      longitude: userLocation.longitude,
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
-                    }, 500);
+                    mapRef.current.setCamera({
+                      center: {
+                        latitude: userLocation.latitude,
+                        longitude: userLocation.longitude,
+                      },
+                      zoom: 15,
+                      pitch: 0,
+                      heading: 0,
+                    });
                   }
-                }, 300);
+                }, 100);
               }}
               scrollEnabled={false}
               zoomEnabled={false}
               rotateEnabled={false}
               pitchEnabled={false}
-            >
-              <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}>
-                <View style={styles.userMarker}>
-                  <Icon name="location" size={10} color="#fff" />
+              showsUserLocation={true}
+              showsMyLocationButton={false}
+            />
+            {/* Overlay con pin del usuario y carritos de conductores */}
+            {showMarkers && (
+              <View style={styles.driversOverlay}>
+                {/* Pin azul del usuario en el centro */}
+                <View style={[styles.userPinOverlay, { top: RADAR_CENTER - 13, left: RADAR_CENTER - 13 }]}>
+                  <View style={styles.userPinDot} />
                 </View>
-              </Marker>
-              {availableDrivers.map((driver, index) => {
-                const lat = parseFloat(driver.location?.latitude || driver.latitude);
-                const lng = parseFloat(driver.location?.longitude || driver.longitude);
-                if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
-                return (
-                  <Marker key={`driver-${driver.id || index}`} coordinate={{ latitude: lat, longitude: lng }}>
-                    <Text style={{ fontSize: 24 }}>🚗</Text>
-                  </Marker>
-                );
-              })}
-            </MapView>
-          ) : (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Icon name="map" size={40} color="#007AFF" />
-              <Text style={{ marginTop: 10, color: '#007AFF' }}>Cargando mapa...</Text>
-            </View>
-          )}
-        </View>
+                
+                {/* Carritos de conductores */}
+                {availableDrivers.map((driver, index) => {
+                  const position = getDriverPosition(driver, index);
+                  console.log('🚗 Carrito posición:', driver.id, position);
+                  return (
+                    <View
+                      key={`driver-overlay-${driver.id || index}`}
+                      style={[
+                        styles.driverMarkerOverlay,
+                        { top: position.top, left: position.left },
+                      ]}
+                    >
+                      <Text style={styles.driverEmoji}>🚗</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.loadingMap}>
+            <Icon name="map" size={40} color="#007AFF" />
+            <Text style={styles.loadingMapText}>Cargando mapa...</Text>
+          </View>
+        )}
       </View>
 
       <Text style={styles.searchTitle}>Buscando conductores cerca de ti</Text>
@@ -297,7 +269,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
       <View style={styles.searchInfo}>
         <Icon name="location" size={16} color="#666" />
         <Text style={styles.searchInfoText}>
-          Radio de búsqueda: {searchProgress.radius < 1 ? `${searchProgress.radius * 1000}m` : `${searchProgress.radius}km`}
+          Radio: {searchProgress.radius < 1 ? `${searchProgress.radius * 1000}m` : `${searchProgress.radius}km`}
         </Text>
       </View>
 
@@ -317,31 +289,29 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
 
       {driverFound && (
         <View style={styles.driverInfo}>
-          <View style={styles.driverDetails}>
-            <Text style={styles.driverName}>{driverFound.name}</Text>
-            <View style={styles.ratingContainer}>
-              <Icon name="star" size={16} color="#FFD700" />
-              <Text style={styles.rating}>{driverFound.rating}</Text>
-              <Text style={styles.trips}>• {driverFound.trips} viajes</Text>
-            </View>
+          <Text style={styles.driverName}>{driverFound.name}</Text>
+          <View style={styles.ratingContainer}>
+            <Icon name="star" size={16} color="#FFD700" />
+            <Text style={styles.rating}>{driverFound.rating}</Text>
+            <Text style={styles.trips}>• {driverFound.trips} viajes</Text>
           </View>
 
           <View style={styles.vehicleInfo}>
             <Icon name="car" size={20} color="#666" />
             <Text style={styles.vehicleText}>
-              {driverFound.vehicle.make} {driverFound.vehicle.model}
+              {driverFound.vehicle?.make} {driverFound.vehicle?.model}
             </Text>
           </View>
 
           <View style={styles.plateInfo}>
             <Text style={styles.plateLabel}>Placa:</Text>
-            <Text style={styles.plateNumber}>{driverFound.vehicle.plate}</Text>
+            <Text style={styles.plateNumber}>{driverFound.vehicle?.plate}</Text>
           </View>
 
           <View style={styles.etaContainer}>
             <Icon name="time" size={20} color="#007AFF" />
             <Text style={styles.etaText}>
-              Llegará en aproximadamente {driverFound.eta} minutos
+              Llegará en ~{driverFound.eta} minutos
             </Text>
           </View>
         </View>
@@ -357,7 +327,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
 
       <Text style={styles.failedTitle}>Sin conductores disponibles</Text>
       <Text style={styles.failedMessage}>
-        EN ESTE MOMENTO NO TENEMOS CONDUCTORES DISPONIBLE INTENTELO MAS TARDES
+        No hay conductores disponibles en este momento. Intenta más tarde.
       </Text>
 
       <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
@@ -365,15 +335,15 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
         <Text style={styles.retryButtonText}>Intentar de nuevo</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.closeButtonAlt} onPress={handleClose}>
+      <TouchableOpacity style={styles.closeButtonAlt} onPress={() => navigation.goBack()}>
         <Text style={styles.closeButtonAltText}>Cerrar</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={styles.fullScreenModal}>
-      {/* Header con botón cerrar */}
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.appName}>Squid Usuario</Text>
         <Text style={styles.appSlogan}>Tu viaje seguro y rapido</Text>
@@ -387,14 +357,9 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
 };
 
 const styles = StyleSheet.create({
-  fullScreenModal: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  container: {
+    flex: 1,
     backgroundColor: '#fff',
-    zIndex: 9999,
   },
   header: {
     alignItems: 'center',
@@ -416,60 +381,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 30,
   },
-  radarContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  radarBackground: {
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
+  mapContainer: {
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: 3,
     borderColor: '#007AFF',
-    borderRadius: 20,
+    marginBottom: 30,
   },
-  pulseCircle: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  map: {
+    flex: 1,
   },
-  staticCircle: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
-    backgroundColor: 'transparent',
+  loadingMap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
   },
-  userMarkerContainer: {
-    position: 'absolute',
-    zIndex: 10,
+  loadingMapText: {
+    marginTop: 10,
+    color: '#007AFF',
   },
   userMarker: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  driverMarkerContainer: {
-    position: 'absolute',
-    zIndex: 50,
-  },
-  driverMarker: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  driverEmoji: {
-    fontSize: 40,
+    elevation: 5,
   },
   searchTitle: {
     fontSize: 18,
@@ -544,9 +485,6 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 15,
   },
-  driverDetails: {
-    marginBottom: 10,
-  },
   driverName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -556,6 +494,7 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
   },
   rating: {
     fontSize: 14,
@@ -629,7 +568,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
-    paddingHorizontal: 20,
   },
   retryButton: {
     flexDirection: 'row',
@@ -653,6 +591,51 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
+  driversOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  driverMarkerOverlay: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  driverMarker: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#00C851',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    elevation: 5,
+  },
+  driverEmoji: {
+    fontSize: 28,
+  },
+  userPinOverlay: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  userPinDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    borderWidth: 3,
+    borderColor: '#fff',
+    elevation: 5,
+  },
 });
 
-export default DriverSearchModal;
+export default DriverSearchScreen;

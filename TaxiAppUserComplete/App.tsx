@@ -160,6 +160,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [searchAttempts, setSearchAttempts] = useState(0);
   const [additionalDestinations, setAdditionalDestinations] = useState([]);
   const [showAddDestinationModal, setShowAddDestinationModal] = useState(false);
+  const [searchDrivers, setSearchDrivers] = useState([]);
   const [inputErrors, setInputErrors] = useState({
     email: '',
     password: '',
@@ -1611,7 +1612,10 @@ const sendTripRequestToBackend = async (tripData) => {
       
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
-     setSearchModalVisible(true);
+ navigation.navigate('DriverSearch', {
+       userLocation: tripRequest?.origin || userLocation,
+       tripRequestId: data.tripId,
+     });
     } else {
       throw new Error(data.message || 'Error desconocido');
     }
@@ -1690,7 +1694,10 @@ const searchForDriver = () => {
       console.log('Iniciando busqueda incremental de conductores...');
       
       // Mostrar el modal de búsqueda
-      setSearchModalVisible(true);
+    navigation.navigate('DriverSearch', {
+  userLocation: tripRequest?.origin || userLocation,
+  tripRequestId: tripRequest?.id,
+});
       setIsSearchingDriver(true);
       setSearchProgress(null);
       setSearchAttempts(0);
@@ -3164,12 +3171,13 @@ onPress={() => {
     return (
       <View style={styles.requestContainer}>
         <View style={styles.mapContainer}>
-        <MapComponent 
-        userLocation={userLocation || { 
-         latitude: 18.4861, 
+  <MapComponent
+        userLocation={userLocation || {
+         latitude: 18.4861,
          longitude: -69.9312,
          address: 'Santo Domingo Este, República Dominicana'
-        }} 
+        }}
+        searchDrivers={searchDrivers}
      />
         </View>
         {/* CAMBIO PRINCIPAL - DE View A ScrollView */}
@@ -3564,7 +3572,8 @@ onPress={() => {
   await resetAppState();
 }}
     onDriverFound={handleDriverFound}
-  userLocation={tripRequest?.origin || userLocation}
+userLocation={tripRequest?.origin || userLocation}
+  onDriversLoaded={(drivers) => setSearchDrivers(drivers)}
   />
       )}
         {/* Modal de búsqueda de conductores */}

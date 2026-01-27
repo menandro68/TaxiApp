@@ -17,7 +17,8 @@ const MapComponent = ({
   showDriverLocation = false, 
   onMapPress = null, 
   interactive = false,
-  trackingMode = false
+  trackingMode = false,
+  searchDrivers = []
 }) => {
   console.log('🗺️ MapComponent [interactive=' + interactive + '] destination:', destination);
   if (trackingMode) {
@@ -367,6 +368,24 @@ const MapComponent = ({
           />
         )}
 
+        {/* 🚗 Marcadores de conductores en búsqueda */}
+        {searchDrivers && searchDrivers.length > 0 && searchDrivers.map((driver, index) => {
+          const lat = parseFloat(driver.location?.latitude || driver.latitude);
+          const lng = parseFloat(driver.location?.longitude || driver.longitude);
+          if (!lat || !lng || isNaN(lat) || isNaN(lng)) return null;
+          return (
+            <Marker
+              key={`search-driver-${driver.id || index}`}
+              coordinate={{ latitude: lat, longitude: lng }}
+              title={driver.name || 'Conductor'}
+            >
+              <View style={styles.searchDriverMarker}>
+                <Text style={{ fontSize: 16 }}>🚗</Text>
+              </View>
+            </Marker>
+          );
+        })}
+
         {/* Línea de ruta entre conductor y usuario (solo tracking) */}
         {trackingMode && driverLocation && userLocation && driverLocation.latitude && userLocation.latitude && (
           <>
@@ -543,6 +562,17 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: '#FFFFFF',
     borderRadius: 2,
+  },
+  searchDriverMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#00C851',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    elevation: 5,
   },
   carEmoji: {
     fontSize: 17,
