@@ -765,9 +765,19 @@ const initializeApp = async () => {
 
 const setupNotificationHandlers = () => {
     // Handler para cuando se asigna un conductor
-    global.handleDriverAssigned = async (driverData) => {
+   global.handleDriverAssigned = async (driverData) => {
       console.log('Conductor asignado via notificacion:', driverData);
       
+ // Navegar de vuelta a Main ANTES de cambiar estados (evita crash en DriverSearchScreen)
+      if (global.navigationRef?.isReady()) {
+    console.log('🔙 Navegando de DriverSearchScreen a Main...');
+        global.navigationRef.goBack();
+        // Esperar a que la navegación complete antes de actualizar estados
+        const { InteractionManager } = require('react-native');
+        await new Promise(resolve => InteractionManager.runAfterInteractions(resolve));
+        console.log('✅ Navegación completada, actualizando estados...');
+      }
+
       const mockDriverInfo = {
         id: driverData.driverId || 'driver_001',
         name: driverData.driverName || 'Conductor',
