@@ -173,7 +173,7 @@ router.get('/available', async (req, res) => {
                 d.current_latitude as latitude,
                 d.current_longitude as longitude
              FROM drivers d
-             WHERE d.status = 'active' AND d.is_online = true
+             WHERE d.status = 'online'
              ORDER BY d.rating DESC 
              LIMIT 10`
         );
