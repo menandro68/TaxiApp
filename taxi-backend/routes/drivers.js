@@ -173,7 +173,7 @@ router.get('/available', async (req, res) => {
                 d.current_latitude as latitude,
                 d.current_longitude as longitude
              FROM drivers d
-             WHERE d.status = 'online'
+             WHERE d.status = 'online' AND d.last_seen > NOW() - INTERVAL '15 seconds'
              ORDER BY d.rating DESC 
              LIMIT 10`
         );
@@ -238,7 +238,7 @@ router.post('/location', async (req, res) => {
         
         const result = await db.query(
             `UPDATE drivers 
-             SET current_latitude = $1, current_longitude = $2, current_speed = $3, status = COALESCE($4, status)
+           SET current_latitude = $1, current_longitude = $2, current_speed = $3, status = COALESCE($4, status), last_seen = NOW()
              WHERE id = $5 
              RETURNING id, name, current_latitude, current_longitude, current_speed`,
             [latitude, longitude, speed || 0, status, driverId]
