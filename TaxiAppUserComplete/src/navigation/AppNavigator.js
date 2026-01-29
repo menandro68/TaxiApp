@@ -1,5 +1,17 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+
+// Referencia global de navegación
+export const navigationRef = createNavigationContainerRef();
+
+export function navigate(name, params) {
+  if (navigationRef.isReady()) {
+    navigationRef.navigate(name, params);
+  }
+}
+
+// Hacer disponible globalmente
+global.navigationRef = navigationRef;
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Importar pantallas
@@ -19,7 +31,7 @@ const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator 
         initialRouteName="Main"
         screenOptions={{
