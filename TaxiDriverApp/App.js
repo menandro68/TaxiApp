@@ -132,6 +132,7 @@ export default function DriverApp({ navigation }) {
  const soundCancelledRef = useRef(false);
   const clearTripFnRef = useRef(null);
 const appStateRef = useRef(AppState.currentState);
+const gpsAlertShownRef = useRef(false);
 
 // Función de limpieza actualizada en cada render (evita stale closure)
 clearTripFnRef.current = () => {
@@ -889,6 +890,9 @@ const startLocationTracking = () => {
     Geolocation.clearWatch(locationInterval);
   }
 
+  // Reset del alert para nueva sesión
+  gpsAlertShownRef.current = false;
+
   // Usar watchPosition para actualizaciones en tiempo real
   const watchId = Geolocation.watchPosition(
     (position) => {
@@ -904,13 +908,33 @@ const startLocationTracking = () => {
       sendLocationToBackend(location);
     },
     (error) => {
-      console.log('❌ Error GPS:', error.message);
+      console.log('❌ Error GPS:', error.message, 'code:', error.code);
+      
+      // Mostrar alerta de GPS desactivado (solo una vez)
+      if (!gpsAlertShownRef.current) {
+        gpsAlertShownRef.current = true;
+        setTimeout(() => {
+          Alert.alert(
+            '📍 GPS Desactivado',
+            'No se puede obtener tu ubicación porque el GPS del teléfono está desactivado.\n\nPor favor activa la ubicación en la configuración de tu teléfono.',
+            [
+              {
+                text: 'Ir a Configuración',
+                onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS'),
+                style: 'default'
+              }
+            ],
+            { cancelable: false }
+          );
+        }, 500);
+      }
     },
     {
       enableHighAccuracy: true,
-      distanceFilter: 5,        // Actualizar cada 5 metros de movimiento
-      interval: 3000,           // Mínimo 3 segundos entre actualizaciones
-      fastestInterval: 2000,    // Máximo cada 2 segundos
+      distanceFilter: 5,
+      interval: 3000,
+      fastestInterval: 2000,
+      timeout: 15000,
     }
   );
 
