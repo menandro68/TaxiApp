@@ -67,7 +67,8 @@ router.post('/create', async (req, res) => {
             `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, 
                     current_latitude, current_longitude, fcm_token
              FROM drivers 
-             WHERE status IN ('available', 'online')`
+             WHERE status IN ('available', 'online')
+             AND last_seen > NOW() - INTERVAL '60 seconds'`
         );
 
         const availableDrivers = driversResult.rows || [];
@@ -317,7 +318,8 @@ router.post('/reject/:tripId', async (req, res) => {
              FROM drivers 
              WHERE status IN ('available', 'online')
              AND id != $1
-             AND current_latitude IS NOT NULL`,
+             AND current_latitude IS NOT NULL
+             AND last_seen > NOW() - INTERVAL '60 seconds'`,
             [driver_id]
         );
 
