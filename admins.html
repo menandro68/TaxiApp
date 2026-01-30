@@ -314,7 +314,7 @@
     </div>
 
     <script>
-        const API_URL = ${window.location.origin}';
+        const API_URL = window.location.origin;
         const token = localStorage.getItem('adminToken');
         const adminId = localStorage.getItem('adminId');
         const currentUser = JSON.parse(localStorage.getItem('adminData') || '{}');
@@ -330,7 +330,7 @@
         // Cargar lista de administradores
         async function loadAdmins() {
             try {
-                const response = await fetch(API_URL + '/api/admin/list', {
+                const response = await fetch(API_URL + '/api/admin/users', {
                     headers: {
                         'Authorization': token,
                         'x-admin-id': adminId
