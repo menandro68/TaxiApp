@@ -345,24 +345,62 @@ useEffect(() => {
     
     checkDriverStatus();
 
+   // Configurar callbacks de SmartSyncService para recálculo de ruta
+    SmartSyncService.setCallbacks({
+      onTripSynced: (tripData) => {
+        console.log('📡 Viaje sincronizado desde servidor:', tripData);
+        if (tripData.status === 'cancelled') {
+          Alert.alert(
+            '❌ Viaje Cancelado',
+            'El viaje fue cancelado mientras estabas sin conexión.',
+            [{ text: 'OK' }]
+          );
+          setCurrentTrip(null);
+          setTripPhase('');
+          setDriverStatus('online');
+        }
+      },
+      onRouteRecalculateNeeded: (location) => {
+        console.log('🔄 Recalculando ruta desde ubicación actual...');
+        // Forzar actualización de ubicación para que MapComponent recalcule
+        setUserLocation({ ...location, forceRecalculate: true });
+      }
+    });
+
     // Configurar monitoreo de conexión offline
     const unsubscribe = OfflineService.addConnectionListener((isOnline) => {
       setIsOffline(!isOnline);
       if (!isOnline) {
+        // Guardar viaje activo cuando se pierde conexión
+        if (currentTrip) {
+          SmartSyncService.saveActiveTrip(currentTrip);
+          console.log('💾 Viaje guardado localmente por pérdida de conexión');
+        }
+        if (userLocation) {
+          SmartSyncService.saveLastLocation(userLocation);
+        }
         Alert.alert(
           '📡 Sin Conexión a Internet',
           'Estás trabajando en modo offline. Los viajes se sincronizarán cuando vuelvas a tener conexión.',
           [{ text: 'OK' }]
         );
       } else if (isOffline && isOnline) {
-        // Conexión restaurada - iniciar sincronización inteligente
-        console.log('✅ Conexión restaurada - procesando cola de sincronización');
-        SmartSyncService.processSyncQueue();
-        Alert.alert(
-          '🔄 Sincronizando',
-          'Conexión restaurada. Sincronizando datos pendientes...',
-          [{ text: 'OK' }]
-        );
+        // Conexión restaurada - iniciar sincronización completa
+        console.log('✅ Conexión restaurada - iniciando sincronización completa');
+        SmartSyncService.syncOnReconnect(userLocation, currentTrip).then((result) => {
+          if (result.success) {
+            const message = result.results?.routeRecalculated 
+              ? 'Datos sincronizados y ruta recalculada.'
+              : 'Datos sincronizados correctamente.';
+            Alert.alert('✅ Sincronizado', message, [{ text: 'OK' }]);
+          } else {
+            Alert.alert(
+              '⚠️ Sincronización Parcial',
+              'Algunos datos no pudieron sincronizarse. Se reintentará automáticamente.',
+              [{ text: 'OK' }]
+            );
+          }
+        });
       }
     });
     

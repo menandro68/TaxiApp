@@ -193,12 +193,24 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, []);
 
-  // Obtener ruta cuando tengamos ubicación y destino
+// Obtener ruta cuando tengamos ubicación y destino
   useEffect(() => {
     if (currentTrip && currentLocation && navigationTarget && !routeFetched.current) {
       console.log('🚀 Obteniendo ruta...', tripPhase === 'started' ? 'al destino' : 'al pasajero');
       routeFetched.current = true;
       fetchRoute(currentLocation, navigationTarget);
+    }
+    
+    // Forzar recálculo cuando se recupera conexión
+    if (currentLocation?.forceRecalculate && navigationTarget) {
+      console.log('🔄 Forzando recálculo de ruta por reconexión...');
+      routeFetched.current = false;
+      originalRouteRef.current = [];
+      consecutiveOffRoute.current = 0;
+      isRerouting.current = false;
+      fetchRoute(currentLocation, navigationTarget).then(() => {
+        console.log('✅ Ruta recalculada después de reconexión');
+      });
     }
   }, [currentTrip, currentLocation, navigationTarget]);
 
