@@ -6,7 +6,7 @@ class DriverSearchService {
   constructor() {
     this.searchRadii = [0.5, 1, 1.5, 2.5, 3]; // Radios: 500m, 1km, 1.5km, 2.5km, 3km // Radios en km: 3km, 5km, 8km, 12km, 20km
     this.maxAttempts = 5;
-    this.searchDelay = 2000; // 2 segundos entre búsquedas
+    this.searchDelay = 8000; // 8 segundos entre búsquedas
   }
 
   // Calcular distancia entre dos puntos (Haversine formula)
