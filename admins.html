@@ -339,7 +339,8 @@
                 
                 if (!response.ok) throw new Error('Error al cargar administradores');
                 
-                const admins = await response.json();
+              const result = await response.json();
+              const admins = result.data || result;
                 displayAdmins(admins);
             } catch (error) {
                 console.error('Error:', error);
