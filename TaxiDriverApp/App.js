@@ -350,7 +350,7 @@ useEffect(() => {
       setIsOffline(!isOnline);
       if (!isOnline) {
         Alert.alert(
-          '📡 Sin Conexión',
+          '📡 Sin Conexión a Internet',
           'Estás trabajando en modo offline. Los viajes se sincronizarán cuando vuelvas a tener conexión.',
           [{ text: 'OK' }]
         );
