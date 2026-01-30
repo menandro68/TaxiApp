@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Administradores - TaxiApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #333;
+        }
+        
+        .btn-back {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .actions {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .btn-success {
+            background: #48bb78;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .role-super_admin {
+            background: #f687b3;
+            color: white;
+        }
+        
+        .role-admin {
+            background: #667eea;
+            color: white;
+        }
+        
+        .role-supervisor {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .role-operador {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .role-viewer {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .current-user {
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👥 Gestión de Administradores</h1>
+        <a href="App.html" class="btn-back">← Volver al Panel</a>
+    </div>
+
+    <!-- Modal para nuevo administrador -->
+    <div id="newAdminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Crear Nuevo Administrador</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newUsername">Usuario:</label>
+                    <input type="text" id="newUsername" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-group">
+                    <label for="newEmail">Email:</label>
+                    <input type="email" id="newEmail" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Contraseña:</label>
+                    <input type="password" id="newPassword" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                <div class="form-group">
+                    <label for="newAdminRole">Rol:</label>
+                    <select id="newAdminRole">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="operador">Operador</option>
+                        <option value="viewer">Visualizador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeNewAdminModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="createNewAdmin()">Crear Administrador</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="actions">
+            <h2>Administradores del Sistema</h2>
+            <button class="btn btn-success" onclick="openNewAdminModal()">+ Nuevo Administrador</button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Fecha Creación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="adminsTable">
+                <tr>
+                    <td colspan="6" style="text-align: center;">Cargando...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal para cambiar rol -->
+    <div id="roleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cambiar Rol de Administrador</h2>
+                <p id="adminInfo" style="color: #666; font-size: 14px;"></p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newRole">Seleccionar nuevo rol:</label>
+                    <select id="newRole">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="operador">Operador</option>
+                        <option value="viewer">Visualizador</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="confirmRoleChange()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = ${window.location.origin}';
+        const token = localStorage.getItem('adminToken');
+        const adminId = localStorage.getItem('adminId');
+        const currentUser = JSON.parse(localStorage.getItem('adminData') || '{}');
+        
+        let selectedAdminId = null;
+        
+        // Verificar que sea super_admin
+        if (currentUser.role !== 'super_admin') {
+            alert('No tienes permisos para acceder a esta página');
+            window.location.href = 'App.html';
+        }
+        
+        // Cargar lista de administradores
+        async function loadAdmins() {
+            try {
+                const response = await fetch(API_URL + '/api/admin/list', {
+                    headers: {
+                        'Authorization': token,
+                        'x-admin-id': adminId
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Error al cargar administradores');
+                
+                const admins = await response.json();
+                displayAdmins(admins);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar los administradores');
+            }
+        }
+        
+        function displayAdmins(admins) {
+            const tbody = document.getElementById('adminsTable');
+            
+            if (admins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay administradores</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = admins.map(admin => {
+                const isCurrentUser = admin.id == adminId;
+                const roleClass = `role-${admin.role}`;
+                const rowClass = isCurrentUser ? 'current-user' : '';
+                
+                return `
+                    <tr class="${rowClass}">
+                        <td>${admin.id}</td>
+                        <td>${admin.username} ${isCurrentUser ? '(Tú)' : ''}</td>
+                        <td>${admin.email}</td>
+                        <td><span class="role-badge ${roleClass}">${getRoleName(admin.role)}</span></td>
+                        <td>${new Date(admin.created_at).toLocaleDateString()}</td>
+                        <td>
+                            ${!isCurrentUser ? `
+                                <button class="btn" onclick="changeRole(${admin.id}, '${admin.username}', '${admin.role}')" style="padding: 5px 10px; font-size: 14px;">Cambiar Rol</button>
+                                <button class="btn btn-danger" onclick="deleteAdmin(${admin.id}, '${admin.username}')" style="padding: 5px 10px; font-size: 14px; margin-left: 5px;">Eliminar</button>
+                            ` : '<span style="color: #999;">No puedes modificarte</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function getRoleName(role) {
+            const roles = {
+                'super_admin': 'Super Admin',
+                'admin': 'Administrador',
+                'supervisor': 'Supervisor',
+                'operador': 'Operador',
+                'viewer': 'Visualizador'
+            };
+            return roles[role] || role;
+        }
+        
+        // Función para abrir el modal de cambio de rol
+        function changeRole(adminId, username, currentRole) {
+            selectedAdminId = adminId;
+            document.getElementById('adminInfo').textContent = `Usuario: ${username} - Rol actual: ${getRoleName(currentRole)}`;
+            document.getElementById('newRole').value = currentRole;
+            document.getElementById('roleModal').classList.add('active');
+        }
+        
+        // Función para cerrar el modal
+        function closeModal() {
+            document.getElementById('roleModal').classList.remove('active');
+            selectedAdminId = null;
+            document.getElementById('newRole').value = '';
+        }
+        
+        // Función para confirmar el cambio de rol
+        async function confirmRoleChange() {
+            const newRole = document.getElementById('newRole').value;
+            
+            if (!newRole) {
+                alert('Por favor selecciona un rol');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/${selectedAdminId}/role`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': token,
+                        'x-admin-id': adminId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: newRole })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al cambiar el rol');
+                }
+                
+                const result = await response.json();
+                alert(result.message || 'Rol actualizado exitosamente');
+                closeModal();
+                loadAdmins(); // Recargar la lista
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Error al cambiar el rol');
+            }
+        }
+        
+        // Funciones para nuevo administrador
+        function openNewAdminModal() {
+            document.getElementById('newAdminModal').classList.add('active');
+        }
+
+        function closeNewAdminModal() {
+            document.getElementById('newAdminModal').classList.remove('active');
+            // Limpiar campos
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newEmail').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newAdminRole').value = '';
+        }
+
+        async function createNewAdmin() {
+            const username = document.getElementById('newUsername').value;
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPassword').value;
+            const role = document.getElementById('newAdminRole').value;
+            
+            // Validaciones
+            if (!username || !email || !password || !role) {
+                alert('Todos los campos son obligatorios');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'x-admin-id': adminId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password, role })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al crear administrador');
+                }
+                
+                const result = await response.json();
+                alert('Administrador creado exitosamente');
+                closeNewAdminModal();
+                loadAdmins(); // Recargar la lista
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Error al crear el administrador');
+            }
+        }
+        
+        // Función para eliminar administrador
+        async function deleteAdmin(id, username) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar al administrador "${username}"?\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/admin/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': token,
+                        'x-admin-id': adminId
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al eliminar administrador');
+                }
+                
+                const result = await response.json();
+                alert(result.message || 'Administrador eliminado exitosamente');
+                loadAdmins(); // Recargar la lista
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Error al eliminar el administrador');
+            }
+        }
+        
+        // Cargar al iniciar
+        loadAdmins();
+    </script>
+</body>
+</html>
