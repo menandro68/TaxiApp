@@ -282,10 +282,10 @@ app.post('/api/communications/broadcast', async (req, res) => {
                 
                 await admin.messaging().send(fcmMessage);
                 sent++;
-                console.log(`✅ Enviado a ${driver.name}`);
+             console.log(`✅ Enviado a ${driver.name}`);
             } catch (fcmError) {
                 failed++;
-                console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
+               console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
             }
         }
         
