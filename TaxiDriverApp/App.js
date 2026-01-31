@@ -133,6 +133,12 @@ export default function DriverApp({ navigation }) {
   const clearTripFnRef = useRef(null);
 const appStateRef = useRef(AppState.currentState);
 const gpsAlertShownRef = useRef(false);
+const currentTripRef = useRef(null);
+const userLocationRef = useRef(null);
+
+// Mantener refs sincronizados con estados (para acceso en listeners)
+currentTripRef.current = currentTrip;
+userLocationRef.current = userLocation;
 
 // Función de limpieza actualizada en cada render (evita stale closure)
 clearTripFnRef.current = () => {
@@ -367,40 +373,79 @@ useEffect(() => {
       }
     });
 
-    // Configurar monitoreo de conexión offline
+  // Configurar monitoreo de conexión offline
+    let wasOffline = false;
     const unsubscribe = OfflineService.addConnectionListener((isOnline) => {
+      const previouslyOffline = wasOffline;
+      wasOffline = !isOnline;
       setIsOffline(!isOnline);
       if (!isOnline) {
         // Guardar viaje activo cuando se pierde conexión
-        if (currentTrip) {
-          SmartSyncService.saveActiveTrip(currentTrip);
+   if (currentTripRef.current) {
+          SmartSyncService.saveActiveTrip(currentTripRef.current);
           console.log('💾 Viaje guardado localmente por pérdida de conexión');
         }
-        if (userLocation) {
-          SmartSyncService.saveLastLocation(userLocation);
+        if (userLocationRef.current) {
+          SmartSyncService.saveLastLocation(userLocationRef.current);
         }
         Alert.alert(
           '📡 Sin Conexión a Internet',
           'Estás trabajando en modo offline. Los viajes se sincronizarán cuando vuelvas a tener conexión.',
           [{ text: 'OK' }]
         );
-      } else if (isOffline && isOnline) {
-        // Conexión restaurada - iniciar sincronización completa
-        console.log('✅ Conexión restaurada - iniciando sincronización completa');
-        SmartSyncService.syncOnReconnect(userLocation, currentTrip).then((result) => {
-          if (result.success) {
-            const message = result.results?.routeRecalculated 
-              ? 'Datos sincronizados y ruta recalculada.'
-              : 'Datos sincronizados correctamente.';
-            Alert.alert('✅ Sincronizado', message, [{ text: 'OK' }]);
-          } else {
-            Alert.alert(
-              '⚠️ Sincronización Parcial',
-              'Algunos datos no pudieron sincronizarse. Se reintentará automáticamente.',
-              [{ text: 'OK' }]
-            );
-          }
-        });
+} else if (previouslyOffline && isOnline) {
+        console.log('✅ Conexión restaurada - iniciando sincronización');
+        console.log('🔍 DEBUG refs: currentTripRef=', !!currentTripRef.current, 'userLocationRef=', !!userLocationRef.current);
+        
+       // Si hay viaje activo, reproducir voz y recalcular ruta (SIN ALERT)
+        if (currentTripRef.current && userLocationRef.current) {
+          console.log('🔄 Recalculando ruta tras reconexión...');
+          
+      // Mensaje de voz
+          const Speech = require('react-native-tts').default;
+          Speech.setDefaultLanguage('es-MX');
+          Speech.setDefaultRate(0.5);
+          Speech.speak('Sincronizando ruta');
+          
+          // Forzar recálculo de ruta
+          setUserLocation(prev => ({
+            ...prev,
+            forceRecalculate: true,
+            reconnected: true
+          }));
+        }
+        
+      // Reenviar estado al servidor
+        if ((driverStatus === 'online' || currentTripRef.current) && loggedDriver) {
+          console.log('🔄 Reenviando estado al servidor...');
+          fetch(`${API_URL}/drivers/update-status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              driverId: loggedDriver.id,
+              status: 'online',
+              isOnline: true
+            })
+          }).then(response => {
+            if (response.ok) {
+              console.log('✅ Estado restaurado en servidor');
+              if (userLocation) {
+                fetch(`${API_URL}/drivers/update-location`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    driverId: loggedDriver.id,
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude
+                  })
+                }).then(() => console.log('✅ Ubicación actualizada tras reconexión'));
+              }
+            }
+          }).catch(err => console.error('❌ Error restaurando estado:', err));
+        }
+        
+        // Sincronizar sin mostrar alert
+        SmartSyncService.syncOnReconnect(userLocation, currentTrip);
       }
     });
     
