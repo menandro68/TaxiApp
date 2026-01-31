@@ -874,9 +874,12 @@ const initializeLocationService = async () => {
 
      if (locationResult.success && locationResult.location) {
         // Si es fallback, verificar si ya tenemos ubicacion GPS guardada
-    if (locationResult.location.source === 'fallback') {
-          // SIEMPRE mostrar alerta cuando GPS falla (solo una vez)
-          if (!gpsAlertShownRef.current) {
+  if (locationResult.location.source === 'fallback') {
+          // Solo mostrar alerta si el GPS está REALMENTE desactivado (no por timeout)
+          const fallbackReason = locationResult.location.fallbackReason;
+        const isGPSDisabled = fallbackReason === 'permission_denied' || fallbackReason === 'gps_disabled';
+          
+          if (isGPSDisabled && !gpsAlertShownRef.current) {
             gpsAlertShownRef.current = true;
             setTimeout(() => {
               Alert.alert(
@@ -892,6 +895,8 @@ const initializeLocationService = async () => {
                 { cancelable: false }
               );
             }, 500);
+          } else if (!isGPSDisabled) {
+            console.log('📍 GPS lento o timeout, usando ubicación por defecto sin alerta');
           }
           
           const savedLocation = await SharedStorage.getUserLocation();

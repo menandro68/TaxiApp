@@ -358,8 +358,17 @@ class LocationFallbackService {
             });
           }
         },
-        (error) => {
-          console.log('Error watchPosition:', error.message);
+     (error) => {
+          console.log('Error watchPosition:', error.code, error.message);
+          // Código 2 = POSITION_UNAVAILABLE (GPS desactivado)
+          if (error.code === 2) {
+            finishWatch({
+              available: false,
+              reason: 'gps_disabled',
+              message: 'GPS del dispositivo desactivado',
+              location: null
+            });
+          }
         },
         {
           enableHighAccuracy: highAccuracy,
