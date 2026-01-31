@@ -115,29 +115,56 @@ const CommunicationsModule = {
         }
         
         try {
-            // Aquí se conectará con tu backend
-            console.log('Enviando comunicado...', {
-                type,
-                subject,
-                message,
-                recipients,
-                timestamp: new Date().toISOString()
+            // Mostrar loading
+            const btnEnviar = document.querySelector('.btn-primary');
+            const textoOriginal = btnEnviar.textContent;
+            btnEnviar.textContent = 'Enviando...';
+            btnEnviar.disabled = true;
+            
+            // Enviar al backend
+            const response = await fetch('https://web-production-99844.up.railway.app/api/communications/broadcast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    type,
+                    subject,
+                    message,
+                    recipients
+                })
             });
             
-            // Simulación de envío exitoso
-            alert('✅ Comunicado enviado exitosamente');
+            const data = await response.json();
             
-            // Limpiar formulario
-            document.getElementById('commSubject').value = '';
-            document.getElementById('commMessage').value = '';
-            document.getElementById('commPreview').style.display = 'none';
+            // Restaurar botón
+            btnEnviar.textContent = textoOriginal;
+            btnEnviar.disabled = false;
             
-            // Actualizar historial
-            this.loadCommunicationHistory();
+            if (data.success) {
+                alert(`✅ ${data.message}\n\nEnviados: ${data.sent}\nFallidos: ${data.failed}\nTotal: ${data.total}`);
+                
+                // Limpiar formulario
+                document.getElementById('commSubject').value = '';
+                document.getElementById('commMessage').value = '';
+                document.getElementById('commPreview').style.display = 'none';
+                
+                // Actualizar historial
+                this.loadCommunicationHistory();
+            } else {
+                alert('❌ Error: ' + (data.error || 'No se pudo enviar el comunicado'));
+            }
             
         } catch (error) {
             console.error('Error al enviar comunicado:', error);
-            alert('❌ Error al enviar el comunicado');
+            alert('❌ Error de conexión al enviar el comunicado');
+            
+            // Restaurar botón en caso de error
+            const btnEnviar = document.querySelector('.btn-primary');
+            if (btnEnviar) {
+                btnEnviar.textContent = 'Enviar Comunicado';
+                btnEnviar.disabled = false;
+            }
         }
     },
 
