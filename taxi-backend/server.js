@@ -224,6 +224,91 @@ app.get('/test-fcm/:driverId', async (req, res) => {
 });
 
 // ==========================================
+// ENDPOINT: COMUNICADOS MASIVOS A CONDUCTORES
+// ==========================================
+app.post('/api/communications/broadcast', async (req, res) => {
+    try {
+        const { type, subject, message, recipients } = req.body;
+        
+        if (!subject || !message) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Asunto y mensaje son requeridos' 
+            });
+        }
+        
+        console.log('📢 Enviando comunicado masivo:', { type, subject, recipients });
+        
+        // Construir query según destinatarios
+        let query = 'SELECT id, name, fcm_token FROM drivers WHERE fcm_token IS NOT NULL';
+        if (recipients === 'activos') {
+            query += " AND status = 'available'";
+        } else if (recipients === 'inactivos') {
+            query += " AND status = 'offline'";
+        }
+        
+        const result = await db.query(query);
+        const drivers = result.rows;
+        
+        if (drivers.length === 0) {
+            return res.json({ 
+                success: true, 
+                message: 'No hay conductores con token FCM registrado',
+                sent: 0 
+            });
+        }
+        
+        console.log(`📱 Enviando a ${drivers.length} conductores...`);
+        
+        let sent = 0;
+        let failed = 0;
+        
+        for (const driver of drivers) {
+            try {
+                const fcmMessage = {
+                    notification: {
+                        title: `📢 ${subject}`,
+                        body: message
+                    },
+                    data: {
+                        type: 'BROADCAST',
+                        commType: type || 'general',
+                        subject: subject,
+                        message: message,
+                        timestamp: new Date().toISOString()
+                    },
+                    token: driver.fcm_token
+                };
+                
+                await admin.messaging().send(fcmMessage);
+                sent++;
+                console.log(`✅ Enviado a ${driver.name}`);
+            } catch (fcmError) {
+                failed++;
+                console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
+            }
+        }
+        
+        console.log(`📊 Resultado: ${sent} enviados, ${failed} fallidos`);
+        
+        res.json({
+            success: true,
+            message: `Comunicado enviado a ${sent} conductores`,
+            sent: sent,
+            failed: failed,
+            total: drivers.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error en broadcast:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// ==========================================
 // MANEJO DE ERRORES 404
 // ==========================================
 app.use((req, res) => {
