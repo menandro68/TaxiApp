@@ -2298,7 +2298,7 @@ const renderLoadingScreen = () => {
         {/* INFO RESUMIDA */}
         <View style={styles.trackingInfoCompact}>
           <View style={styles.trackingInfoItem}>
-            <Text style={styles.trackingLabel}>ETA:</Text>
+            <Text style={styles.trackingLabel}>Llegará en:</Text>
             <Text style={styles.trackingValue}>{driverETA}</Text>
           </View>
           <View style={styles.trackingInfoItem}>
