@@ -88,7 +88,6 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [pickupLocation, setPickupLocation] = useState(null);
   const gpsObtainedRef = useRef(false);
   const gpsAlertShownRef = useRef(false);
-
   const Stack = createStackNavigator();
 
   // Agregar después de todos los useState
@@ -2267,6 +2266,20 @@ const renderRouteInfo = () => {
 {!showPriceEstimator && (
               <View style={styles.routeDetailsCompact}>
                <Text style={styles.routeDetailCompact}>Servicio</Text>
+               <View style={styles.serviciosIconsRow}>
+               <TouchableOpacity style={styles.servicioIconContainer} onPress={() => setShowVehicleSelector(true)}>
+                   <Text style={styles.servicioIcon}>🚗</Text>
+                   <Text style={styles.servicioLabel}>Viaje</Text>
+                 </TouchableOpacity>
+                <TouchableOpacity style={styles.servicioIconContainer}>
+                <Text style={styles.servicioIcon}>🏍️</Text>
+                <Text style={styles.servicioLabel}>Moto</Text>
+                 </TouchableOpacity>
+                    <TouchableOpacity style={styles.servicioIconContainer}>
+                   <Text style={styles.servicioIcon}>📦</Text>
+                   <Text style={styles.servicioLabel}>Paquete</Text>
+                 </TouchableOpacity>
+               </View>
               </View>
             )}
           </>
@@ -4472,6 +4485,33 @@ routeDetailCompact: {
     color: '#666',
     fontWeight: '900',
     textAlign: 'center',
+  },
+  serviciosIconsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  servicioIconContainer: {
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 8,
+    minWidth: 70,
+  },
+servicioIcon: {
+    fontSize: 28,
+  },
+  servicioImageIcon: {
+    width: 40,
+    height: 28,
+    resizeMode: 'contain',
+  },
+  servicioLabel: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 4,
+    fontWeight: '500',
   },
   calculatingText: {
     marginLeft: 10,
