@@ -321,6 +321,44 @@ useEffect(() => {
     // Inicializar FCM cuando la app carga
     fcmService.initialize();
 
+    // Consultar comunicados pendientes al abrir la app
+    const checkUnreadCommunications = async () => {
+      try {
+        const savedDriver = await AsyncStorage.getItem('loggedDriver');
+        if (savedDriver) {
+          const driver = JSON.parse(savedDriver);
+          const response = await fetch(`https://web-production-99844.up.railway.app/api/communications/unread/${driver.id}`);
+          const data = await response.json();
+          
+          if (data.success && data.count > 0) {
+            // Mostrar cada comunicado no leído
+            for (const comm of data.unread) {
+              Alert.alert(
+                `📢 ${comm.subject}`,
+                comm.message,
+                [{
+                  text: 'OK',
+                  onPress: async () => {
+                    // Marcar como leído
+                    await fetch('https://web-production-99844.up.railway.app/api/communications/mark-read', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ communicationId: comm.id, driverId: driver.id })
+                    });
+                  }
+                }]
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Error verificando comunicados:', error);
+      }
+    };
+    
+    // Ejecutar después de 2 segundos para que la app cargue primero
+    setTimeout(checkUnreadCommunications, 2000);
+
     // Verificar si el conductor está suspendido
     const checkDriverStatus = async () => {
       const suspensionStatus = await PenaltyService.checkSuspensionStatus();
