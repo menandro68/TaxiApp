@@ -1353,7 +1353,7 @@ const startDriverTracking = async (driver, userLoc) => {
         onLocationUpdate: (driverUpdate) => {
           console.log('📍 Ubicación REAL del conductor:', driverUpdate);
 
-         setDriverLocation(driverUpdate);
+        setDriverLocation(driverUpdate.location);
           // El nuevo servicio calcula ETA basado en distancia real
           if (driverUpdate.estimatedTimeRemaining) {
             setDriverETA(`${driverUpdate.estimatedTimeRemaining} min`);

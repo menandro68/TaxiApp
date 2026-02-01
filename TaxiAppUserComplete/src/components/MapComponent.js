@@ -519,7 +519,8 @@ const styles = StyleSheet.create({
   // Estilos para overlay markers (Legacy Architecture fix) - MÁS PEQUEÑOS
   overlayMarker: {
     position: 'absolute',
-    zIndex: 1000,
+    zIndex: 2000,
+    elevation: 20,
   },
   userMarker: {
     width: 17,
@@ -575,7 +576,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   carEmoji: {
-    fontSize: 17,
+    fontSize: 14,
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
