@@ -2241,8 +2241,7 @@ const renderLoadingScreen = () => {
 };
 
   // COMPONENTE: Información de ruta con precio en tiempo real
-  const renderRouteInfo = () => {
-    if (!routeInfo && !isCalculatingRoute && !showPriceEstimator) return null;
+const renderRouteInfo = () => {
 
     return (
       <View style={styles.routeInfoCompact}>
@@ -2265,12 +2264,9 @@ const renderLoadingScreen = () => {
                 </View>
               </View>
             )}
-            
-  {!showPriceEstimator && routeInfo && (
+{!showPriceEstimator && (
               <View style={styles.routeDetailsCompact}>
-               <Text style={styles.routeDetailCompact}>
-  📍 {routeInfo.distance.text} • ⏱️ {routeInfo.duration.text} • 💰 RD${routeInfo.pricing.final_price}
-</Text>
+               <Text style={styles.routeDetailCompact}>Servicio</Text>
               </View>
             )}
           </>
@@ -4471,9 +4467,11 @@ destinationInputText: {
   routeDetailsCompact: {
     paddingVertical: 4,
   },
-  routeDetailCompact: {
-    fontSize: 12,
+routeDetailCompact: {
+    fontSize: 27,
     color: '#666',
+    fontWeight: '900',
+    textAlign: 'center',
   },
   calculatingText: {
     marginLeft: 10,
