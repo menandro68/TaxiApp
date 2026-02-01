@@ -226,85 +226,157 @@ app.get('/test-fcm/:driverId', async (req, res) => {
 // ==========================================
 // ENDPOINT: COMUNICADOS MASIVOS A CONDUCTORES
 // ==========================================
+
+// Crear tablas si no existen (se ejecuta al iniciar)
+const initCommunicationsTables = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS communications (
+        id SERIAL PRIMARY KEY,
+        type VARCHAR(50) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        sender_id INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS communication_reads (
+        id SERIAL PRIMARY KEY,
+        communication_id INTEGER REFERENCES communications(id) ON DELETE CASCADE,
+        driver_id INTEGER,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(communication_id, driver_id)
+      );
+    `);
+    console.log('✅ Tablas de comunicados verificadas');
+  } catch (error) {
+    console.log('⚠️ Error creando tablas de comunicados:', error.message);
+  }
+};
+initCommunicationsTables();
+
+// Enviar comunicado masivo (guarda en BD + envía FCM)
 app.post('/api/communications/broadcast', async (req, res) => {
     try {
         const { type, subject, message, recipients } = req.body;
         
-        if (!subject || !message) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Asunto y mensaje son requeridos' 
-            });
-        }
+        // 1. Guardar comunicado en base de datos
+        const insertResult = await pool.query(
+          'INSERT INTO communications (type, subject, message) VALUES ($1, $2, $3) RETURNING id',
+          [type || 'general', subject, message]
+        );
+        const communicationId = insertResult.rows[0].id;
+        console.log(`📢 Comunicado #${communicationId} guardado en BD`);
         
-        console.log('📢 Enviando comunicado masivo:', { type, subject, recipients });
+        // 2. Obtener conductores con token FCM válido
+        const driversResult = await pool.query(
+            "SELECT id, name, fcm_token FROM drivers WHERE fcm_token IS NOT NULL AND fcm_token != '' AND LENGTH(fcm_token) > 50"
+        );
         
-        // Construir query según destinatarios
-        let query = 'SELECT id, name, fcm_token FROM drivers WHERE fcm_token IS NOT NULL';
-        if (recipients === 'activos') {
-            query += " AND status = 'available'";
-        } else if (recipients === 'inactivos') {
-            query += " AND status = 'offline'";
-        }
-        
-        const result = await db.query(query);
-        const drivers = result.rows;
-        
-        if (drivers.length === 0) {
-            return res.json({ 
-                success: true, 
-                message: 'No hay conductores con token FCM registrado',
-                sent: 0 
-            });
-        }
-        
-        console.log(`📱 Enviando a ${drivers.length} conductores...`);
+        const drivers = driversResult.rows;
+        console.log(`📢 Enviando comunicado a ${drivers.length} conductores con FCM`);
         
         let sent = 0;
         let failed = 0;
         
+        // 3. Enviar notificación FCM a cada conductor
         for (const driver of drivers) {
             try {
                 const fcmMessage = {
-                    notification: {
-                        title: `📢 ${subject}`,
-                        body: message
-                    },
+                    token: driver.fcm_token,
                     data: {
                         type: 'BROADCAST',
-                        commType: type || 'general',
-                        subject: subject,
-                        message: message,
-                        timestamp: new Date().toISOString()
+                        communicationId: communicationId.toString(),
+                        subject: subject || 'Comunicado',
+                        message: message || '',
+                        timestamp: Date.now().toString()
                     },
-                    token: driver.fcm_token
+                    android: {
+                        priority: 'high'
+                    }
                 };
                 
                 await admin.messaging().send(fcmMessage);
                 sent++;
-             console.log(`✅ Enviado a ${driver.name}`);
+                console.log(`✅ Enviado a ${driver.name}`);
             } catch (fcmError) {
                 failed++;
-               console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
+                console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
             }
         }
-        
-        console.log(`📊 Resultado: ${sent} enviados, ${failed} fallidos`);
         
         res.json({
             success: true,
             message: `Comunicado enviado a ${sent} conductores`,
-            sent: sent,
-            failed: failed,
+            communicationId,
+            sent,
+            failed,
             total: drivers.length
         });
         
     } catch (error) {
         console.error('❌ Error en broadcast:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message 
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Obtener comunicados NO LEÍDOS para un conductor
+app.get('/api/communications/unread/:driverId', async (req, res) => {
+    try {
+        const { driverId } = req.params;
+        
+        const result = await pool.query(`
+            SELECT c.id, c.type, c.subject, c.message, c.created_at
+            FROM communications c
+            WHERE c.id NOT IN (
+                SELECT communication_id FROM communication_reads WHERE driver_id = $1
+            )
+            ORDER BY c.created_at DESC
+        `, [driverId]);
+        
+        res.json({
+            success: true,
+            unread: result.rows,
+            count: result.rows.length
         });
+    } catch (error) {
+        console.error('❌ Error obteniendo comunicados:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Marcar comunicado como leído
+app.post('/api/communications/mark-read', async (req, res) => {
+    try {
+        const { communicationId, driverId } = req.body;
+        
+        await pool.query(
+            'INSERT INTO communication_reads (communication_id, driver_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [communicationId, driverId]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error marcando como leído:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Marcar TODOS los comunicados como leídos
+app.post('/api/communications/mark-all-read', async (req, res) => {
+    try {
+        const { driverId } = req.body;
+        
+        await pool.query(`
+            INSERT INTO communication_reads (communication_id, driver_id)
+            SELECT id, $1 FROM communications
+            WHERE id NOT IN (SELECT communication_id FROM communication_reads WHERE driver_id = $1)
+        `, [driverId]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ Error marcando todos como leídos:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

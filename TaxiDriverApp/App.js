@@ -1917,14 +1917,11 @@ const renderEarnings = () => (
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Conductor App</Text>
-        {isOffline && (
+  {isOffline && (
           <View style={styles.offlineIndicator}>
             <Text style={styles.offlineText}>📡 Offline</Text>
           </View>
         )}
-        <TouchableOpacity onPress={testFCM}>
-          <Text style={styles.headerButton}>🔔</Text>
-        </TouchableOpacity>
       </View>
       
       {/* Contenido */}

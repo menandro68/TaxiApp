@@ -43,6 +43,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
+        // Manejar comunicados masivos (BROADCAST)
+        if ("BROADCAST".equals(type)) {
+            Log.d(TAG, "📢 Comunicado masivo recibido");
+            handleBroadcastMessage(remoteMessage);
+            return;
+        }
+
         if ("NEW_TRIP_REQUEST".equals(type)) {
             Log.d(TAG, "🚕 Nueva solicitud de viaje recibida");
             
@@ -156,6 +163,60 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         } catch (Exception e) {
             Log.e(TAG, "❌ Error: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    // Manejar comunicados masivos con Alert en pantalla
+    private void handleBroadcastMessage(RemoteMessage remoteMessage) {
+        try {
+            Map<String, String> data = remoteMessage.getData();
+            String subject = data.get("subject");
+            String message = data.get("message");
+            
+            if (subject == null) subject = "Comunicado";
+            if (message == null) message = "";
+            
+            // Crear intent para mostrar alerta en la app
+            Intent alertIntent = new Intent("com.taxidriverapp.BROADCAST_ALERT");
+            alertIntent.putExtra("subject", subject);
+            alertIntent.putExtra("message", message);
+            sendBroadcast(alertIntent);
+            
+            // Crear canal específico para comunicados (sin sonido de llamada)
+            createBroadcastNotificationChannel();
+            
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "broadcast_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("📢 " + subject)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setVibrate(new long[]{0, 300});
+            
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.notify(NOTIFICATION_ID + 2, builder.build());
+            
+            Log.d(TAG, "✅ Comunicado broadcast procesado: " + subject);
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error en broadcast: " + e.getMessage());
+        }
+    }
+
+    // Canal de notificaciones para comunicados (sonido corto)
+    private void createBroadcastNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                "broadcast_channel",
+                "Comunicados",
+                NotificationManager.IMPORTANCE_DEFAULT
+            );
+            channel.setDescription("Comunicados del administrador");
+            channel.enableVibration(true);
+            channel.setVibrationPattern(new long[]{0, 300});
+            
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
         }
     }
 
