@@ -2213,7 +2213,7 @@ const resetAppState = async () => {
              selectedVehicleType === 'xl' ? '🚐' : '🏍️'}
           </Text>
           <View style={styles.vehicleSelectorInfo}>
-            <Text style={styles.vehicleSelectorLabel}>Tipo de vehiculo</Text>
+           <Text style={styles.vehicleSelectorLabel}>Tipo de servicio</Text>
             <Text style={styles.vehicleSelectorValue}>
               {selectedVehicleType === 'economy' ? 'Economico' :
                selectedVehicleType === 'comfort' ? 'Confort' :
