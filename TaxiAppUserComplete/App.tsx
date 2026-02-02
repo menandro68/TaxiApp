@@ -2204,26 +2204,30 @@ const resetAppState = async () => {
       <TouchableOpacity
         style={styles.vehicleSelectorButton}
         onPress={() => {
-          if (selectedVehicleType !== 'moto') {
+         if (selectedVehicleType !== 'moto' && selectedVehicleType !== 'paquete_carro' && selectedVehicleType !== 'paquete_moto') {
             setShowVehicleSelector(true);
           }
         }}
       >
         <View style={styles.vehicleSelectorContent}>
           <Text style={styles.vehicleSelectorIcon}>
-            {selectedVehicleType === 'economy' ? '🚗' :
+          {selectedVehicleType === 'economy' ? '🚗' :
              selectedVehicleType === 'comfort' ? '🚙' :
              selectedVehicleType === 'premium' ? '🏎️' :
-             selectedVehicleType === 'xl' ? '🚐' : '🏍️'}
+             selectedVehicleType === 'xl' ? '🚐' :
+             selectedVehicleType === 'paquete_carro' ? '📦' :
+             selectedVehicleType === 'paquete_moto' ? '📦' : '🏍️'}
           </Text>
           <View style={styles.vehicleSelectorInfo}>
            <Text style={styles.vehicleSelectorLabel}>Tipo de servicio</Text>
             <Text style={styles.vehicleSelectorValue}>
-              {selectedVehicleType === 'economy' ? 'Economico' :
+            {selectedVehicleType === 'economy' ? 'Economico' :
                selectedVehicleType === 'comfort' ? 'Confort' :
                selectedVehicleType === 'premium' ? 'Premium' :
                selectedVehicleType === 'xl' ? 'XL (6-7 personas)' :
-               selectedVehicleType === 'moto' ? 'Moto Rapido' : 'Economico'}
+               selectedVehicleType === 'moto' ? 'Moto Rapido' :
+               selectedVehicleType === 'paquete_carro' ? 'Paquete Carro' :
+               selectedVehicleType === 'paquete_moto' ? 'Paquete Moto' : 'Economico'}
               - RD${estimatedPrice || '---'}
             </Text>
           </View>
@@ -3893,9 +3897,9 @@ setThirdPartyInfo(rideData);
       <View style={styles.packageOptionsRow}>
         <TouchableOpacity 
           style={styles.packageOption}
-          onPress={() => {
+        onPress={() => {
             setShowPackageModal(false);
-            handleVehicleTypeChange('economy');
+            handleVehicleTypeChange('paquete_carro');
           }}
         >
           <Text style={styles.packageOptionIcon}>🚗</Text>
@@ -3903,9 +3907,9 @@ setThirdPartyInfo(rideData);
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.packageOption}
-          onPress={() => {
+       onPress={() => {
             setShowPackageModal(false);
-            handleVehicleTypeChange('moto');
+            handleVehicleTypeChange('paquete_moto');
           }}
         >
           <Text style={styles.packageOptionIcon}>🏍️</Text>
