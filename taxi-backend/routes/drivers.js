@@ -7,17 +7,15 @@ const { db } = require('../config/database');
 // REGISTRO DE CONDUCTOR
 router.post('/register', async (req, res) => {
     try {
-       const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicleType } = req.body;
+        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color } = req.body;
         
-    const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
         
-        const driverVehicleType = vehicleType || 'car';
-        
-     const result = await db.query(
-            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type, status, rating, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        const result = await db.query(
+            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
              RETURNING id`,
-            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, driverVehicleType, 'pending', 5.0]
+            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, 'pending', 5.0]
         );
         
         res.json({
