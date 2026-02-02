@@ -80,7 +80,7 @@ const [formData, setFormData] = useState({
 
     try {
       // Llamar al API del backend
-      const response = await fetch('http://192.168.1.28:3000/api/drivers/register', {
+     const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
