@@ -104,6 +104,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [tripRequest, setTripRequest] = useState(null);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
+  const [showPackageModal, setShowPackageModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [routeInfo, setRouteInfo] = useState(null);
@@ -2279,10 +2280,10 @@ const renderRouteInfo = () => {
                 <Text style={styles.servicioIcon}>🏍️</Text>
                 <Text style={styles.servicioLabel}>Moto</Text>
                  </TouchableOpacity>
-                    <TouchableOpacity style={styles.servicioIconContainer}>
-                   <Text style={styles.servicioIcon}>📦</Text>
-                   <Text style={styles.servicioLabel}>Paquete</Text>
-                 </TouchableOpacity>
+                 <TouchableOpacity style={styles.servicioIconContainer} onPress={() => setShowPackageModal(true)}>
+                <Text style={styles.servicioIcon}>📦</Text>
+                <Text style={styles.servicioLabel}>Paquete</Text>
+                </TouchableOpacity>
                </View>
               </View>
             )}
@@ -3878,6 +3879,48 @@ setThirdPartyInfo(rideData);
     }
   }}
 />
+
+{/* MODAL SELECCIÓN PAQUETE */}
+<Modal
+  visible={showPackageModal}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setShowPackageModal(false)}
+>
+  <View style={styles.packageModalOverlay}>
+    <View style={styles.packageModalContainer}>
+      <Text style={styles.packageModalTitle}>¿Cómo envías tu paquete?</Text>
+      <View style={styles.packageOptionsRow}>
+        <TouchableOpacity 
+          style={styles.packageOption}
+          onPress={() => {
+            setShowPackageModal(false);
+            handleVehicleTypeChange('economy');
+          }}
+        >
+          <Text style={styles.packageOptionIcon}>🚗</Text>
+          <Text style={styles.packageOptionLabel}>Carro</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.packageOption}
+          onPress={() => {
+            setShowPackageModal(false);
+            handleVehicleTypeChange('moto');
+          }}
+        >
+          <Text style={styles.packageOptionIcon}>🏍️</Text>
+          <Text style={styles.packageOptionLabel}>Moto</Text>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity 
+        style={styles.packageCancelButton}
+        onPress={() => setShowPackageModal(false)}
+      >
+        <Text style={styles.packageCancelText}>Cancelar</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 {/* MAP PICKER MODAL - DENTRO DEL COMPONENTE */}
 {showMapPicker && (console.log("?? RENDER mapPickerLocation:", mapPickerLocation), true) && (
   <Modal
@@ -4516,6 +4559,61 @@ servicioIcon: {
     color: '#333',
     marginTop: 4,
     fontWeight: '500',
+  },
+  servicioLabel: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  packageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  packageModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+  },
+  packageModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+  },
+  packageOptionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 20,
+  },
+  packageOption: {
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    padding: 20,
+    minWidth: 100,
+  },
+  packageOptionIcon: {
+    fontSize: 40,
+  },
+  packageOptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 8,
+  },
+  packageCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+  },
+  packageCancelText: {
+    fontSize: 16,
+    color: '#666',
   },
   calculatingText: {
     marginLeft: 10,
