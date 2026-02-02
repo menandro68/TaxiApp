@@ -14,12 +14,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PreRegisterScreen = ({ navigation }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    vehicleType: 'car'
   });
   
   const [errors, setErrors] = useState({});
@@ -89,6 +90,7 @@ const PreRegisterScreen = ({ navigation }) => {
           email: formData.email.toLowerCase().trim(),
           phone: formData.phone.replace(/\s/g, ''),
           password: formData.password,
+          vehicleType: formData.vehicleType,
         }),
       });
 
@@ -214,6 +216,39 @@ const PreRegisterScreen = ({ navigation }) => {
             {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>
 
+          {/* Selector Tipo de Vehículo */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tipo de Vehículo</Text>
+            <View style={styles.vehicleTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.vehicleTypeButton,
+                  formData.vehicleType === 'car' && styles.vehicleTypeSelected
+                ]}
+                onPress={() => updateField('vehicleType', 'car')}
+              >
+                <Text style={styles.vehicleTypeIcon}>🚗</Text>
+                <Text style={[
+                  styles.vehicleTypeText,
+                  formData.vehicleType === 'car' && styles.vehicleTypeTextSelected
+                ]}>Carro</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.vehicleTypeButton,
+                  formData.vehicleType === 'moto' && styles.vehicleTypeSelected
+                ]}
+                onPress={() => updateField('vehicleType', 'moto')}
+              >
+                <Text style={styles.vehicleTypeIcon}>🏍️</Text>
+                <Text style={[
+                  styles.vehicleTypeText,
+                  formData.vehicleType === 'moto' && styles.vehicleTypeTextSelected
+                ]}>Moto</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Botón de Submit */}
           <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
@@ -297,6 +332,36 @@ const styles = StyleSheet.create({
     color: '#F44336',
     fontSize: 14,
     marginTop: 5,
+  },
+  vehicleTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  vehicleTypeButton: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  vehicleTypeSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+  },
+  vehicleTypeIcon: {
+    fontSize: 32,
+    marginBottom: 5,
+  },
+  vehicleTypeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  vehicleTypeTextSelected: {
+    color: '#4CAF50',
   },
   submitButton: {
     backgroundColor: '#4CAF50',
