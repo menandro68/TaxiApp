@@ -2271,7 +2271,7 @@ const renderRouteInfo = () => {
                    <Text style={styles.servicioIcon}>🚗</Text>
                    <Text style={styles.servicioLabel}>Viaje</Text>
                  </TouchableOpacity>
-                <TouchableOpacity style={styles.servicioIconContainer}>
+               <TouchableOpacity style={styles.servicioIconContainer} onPress={() => handleVehicleTypeChange('moto')}>
                 <Text style={styles.servicioIcon}>🏍️</Text>
                 <Text style={styles.servicioLabel}>Moto</Text>
                  </TouchableOpacity>
