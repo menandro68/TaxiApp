@@ -2061,10 +2061,19 @@ const renderEarnings = () => (
         animationType="slide"
         onRequestClose={() => setShowPreRegister(false)}
       >
-        <PreRegisterScreen 
+      <PreRegisterScreen
           navigation={{
             navigate: () => {},
-            goBack: () => setShowPreRegister(false),
+            goBack: async () => {
+              setShowPreRegister(false);
+              // Recargar conductor del AsyncStorage
+              const savedDriver = await AsyncStorage.getItem('loggedDriver');
+              if (savedDriver) {
+                const driver = JSON.parse(savedDriver);
+                setLoggedDriver(driver);
+                console.log('✅ Conductor cargado después del registro');
+              }
+            },
             openLogin: () => {
               setShowPreRegister(false);
               setShowLogin(true);

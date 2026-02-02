@@ -20,6 +20,7 @@ const [formData, setFormData] = useState({
     phone: '',
     password: '',
     confirmPassword: '',
+    license: '',
     vehicleType: 'car'
   });
   
@@ -52,6 +53,13 @@ const [formData, setFormData] = useState({
       newErrors.phone = 'El teléfono debe tener 10 dígitos';
     }
     
+    // Validar licencia
+    if (!formData.license.trim()) {
+      newErrors.license = 'La licencia es requerida';
+    } else if (formData.license.length < 5) {
+      newErrors.license = 'La licencia debe tener al menos 5 caracteres';
+    }
+    
     // Validar contraseña
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
@@ -80,7 +88,7 @@ const [formData, setFormData] = useState({
 
     try {
       // Llamar al API del backend
-     const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/register', {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/drivers/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,6 +98,7 @@ const [formData, setFormData] = useState({
           email: formData.email.toLowerCase().trim(),
           phone: formData.phone.replace(/\s/g, ''),
           password: formData.password,
+          license: formData.license.trim(),
           vehicleType: formData.vehicleType,
         }),
       });
@@ -97,7 +106,19 @@ const [formData, setFormData] = useState({
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Guardar datos localmente
+        // Guardar datos del conductor con el mismo formato que el login
+        const driverData = {
+          id: result.driverId,
+          name: formData.name.trim(),
+          email: formData.email.toLowerCase().trim(),
+          phone: formData.phone.replace(/\s/g, ''),
+          vehicle_model: formData.vehicleType === 'moto' ? 'MOTO' : 'AUTO',
+          vehicle_plate: '',
+          rating: '5.00',
+          vehicle_type: formData.vehicleType,
+        };
+        
+        await AsyncStorage.setItem('loggedDriver', JSON.stringify(driverData));
         await AsyncStorage.setItem('driverPreRegister', JSON.stringify({
           ...result,
           timestamp: new Date().toISOString()
@@ -111,6 +132,7 @@ const [formData, setFormData] = useState({
               text: 'Continuar',
               onPress: () => {
                 console.log('Conductor registrado:', result.driverId);
+                navigation.goBack();
               }
             }
           ]
@@ -188,6 +210,19 @@ const [formData, setFormData] = useState({
               maxLength={10}
             />
             {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+          </View>
+
+          {/* Campo Licencia */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Número de Licencia</Text>
+            <TextInput
+              style={[styles.input, errors.license && styles.inputError]}
+              placeholder="Ej: 00112345678"
+              value={formData.license}
+              onChangeText={(text) => updateField('license', text)}
+              autoCapitalize="characters"
+            />
+            {errors.license && <Text style={styles.errorText}>{errors.license}</Text>}
           </View>
 
           {/* Campo Contraseña */}
