@@ -35,16 +35,21 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         console.log(`📡 Buscando conductores en radio de ${radius}km para viaje ${tripId}...`);
         
         // Buscar conductores disponibles que no hayan sido notificados
+        // Filtrar por tipo de vehículo: moto solo notifica a motos, car solo a carros
+        const requestedVehicleType = tripData.vehicle_type || 'car';
         const driversResult = await db.query(
             `SELECT id, name, phone, vehicle_model, vehicle_plate, rating,
-                    current_latitude, current_longitude, fcm_token
-             FROM drivers 
+                    current_latitude, current_longitude, fcm_token, vehicle_type
+             FROM drivers
              WHERE status IN ('available', 'online')
              AND last_seen > NOW() - INTERVAL '60 seconds'
              AND fcm_token IS NOT NULL
-             AND id != ALL($1::int[])`,
-            [notifiedDriverIds]
+             AND id != ALL($1::int[])
+             AND (vehicle_type = $2 OR vehicle_type IS NULL)`,
+            [notifiedDriverIds, requestedVehicleType]
         );
+        
+        console.log(`🚗 Tipo de vehículo solicitado: ${requestedVehicleType}`);
 
         const availableDrivers = driversResult.rows || [];
         console.log(`🔍 Conductores disponibles (no notificados): ${availableDrivers.length}`);
