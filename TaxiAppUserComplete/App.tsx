@@ -2199,10 +2199,14 @@ const resetAppState = async () => {
     
     if (rideStatus !== TRIP_STATES.IDLE) return null;
 
-    return (
+  return (
       <TouchableOpacity
         style={styles.vehicleSelectorButton}
-        onPress={() => setShowVehicleSelector(true)}
+        onPress={() => {
+          if (selectedVehicleType !== 'moto') {
+            setShowVehicleSelector(true);
+          }
+        }}
       >
         <View style={styles.vehicleSelectorContent}>
           <Text style={styles.vehicleSelectorIcon}>
