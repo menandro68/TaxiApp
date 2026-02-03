@@ -155,4 +155,53 @@ router.post('/fcm-token', async (req, res) => {
     }
 });
 
+// ========================================
+// BLOQUEO DE CONDUCTORES
+// ========================================
+
+// Bloquear conductor
+router.post('/block-driver', async (req, res) => {
+    try {
+        const { user_id, driver_id, driver_name, reason } = req.body;
+        if (!user_id || !driver_id) {
+            return res.status(400).json({ success: false, message: 'user_id y driver_id son requeridos' });
+        }
+        await db.query(
+            `INSERT INTO blocked_drivers (user_id, driver_id, driver_name, reason) 
+             VALUES ($1, $2, $3, $4) 
+             ON CONFLICT (user_id, driver_id) DO NOTHING`,
+            [user_id, driver_id, driver_name || 'Conductor', reason || 'Bloqueado por el usuario']
+        );
+        console.log(`🚫 Usuario ${user_id} bloqueó al conductor ${driver_id}`);
+        res.json({ success: true, message: 'Conductor bloqueado exitosamente' });
+    } catch (error) {
+        console.error('❌ Error bloqueando conductor:', error);
+        res.status(500).json({ success: false, message: 'Error al bloquear conductor' });
+    }
+});
+
+// Desbloquear conductor
+router.delete('/block-driver/:userId/:driverId', async (req, res) => {
+    try {
+        const { userId, driverId } = req.params;
+        await db.query('DELETE FROM blocked_drivers WHERE user_id = $1 AND driver_id = $2', [userId, driverId]);
+        res.json({ success: true, message: 'Conductor desbloqueado' });
+    } catch (error) {
+        console.error('❌ Error desbloqueando:', error);
+        res.status(500).json({ success: false, message: 'Error al desbloquear' });
+    }
+});
+
+// Obtener conductores bloqueados por un usuario
+router.get('/blocked-drivers/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const result = await db.query('SELECT * FROM blocked_drivers WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+        res.json({ success: true, blocked: result.rows });
+    } catch (error) {
+        console.error('❌ Error obteniendo bloqueados:', error);
+        res.status(500).json({ success: false, blocked: [] });
+    }
+});
+
 module.exports = router;

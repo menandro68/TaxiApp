@@ -242,6 +242,19 @@ async function initDatabase() {
       )
     `);
 
+   // Tabla de conductores bloqueados por usuarios
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS blocked_drivers (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        driver_id INTEGER NOT NULL,
+        driver_name VARCHAR(255),
+        reason TEXT DEFAULT 'Bloqueado por el usuario',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, driver_id)
+      )
+    `);
+
     // Crear índices para mejor rendimiento
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status)`);
