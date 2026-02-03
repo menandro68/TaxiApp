@@ -259,6 +259,27 @@ const SharedStorage = {
         });
         await storeData('blocked_drivers', blockedDrivers);
         console.log('🚫 Conductor bloqueado:', driverInfo.name);
+
+        // Enviar al backend
+        try {
+          const userData = await getData('user_data');
+          const userId = userData?.id || userData?.user?.id;
+          if (userId) {
+            await fetch('https://web-production-99844.up.railway.app/api/users/block-driver', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: userId,
+                driver_id: driverInfo.id,
+                driver_name: driverInfo.name,
+                reason: driverInfo.reason || 'Bloqueado por el usuario'
+              })
+            });
+            console.log('✅ Bloqueo sincronizado con backend');
+          }
+        } catch (backendError) {
+          console.log('⚠️ Bloqueo local OK, sync pendiente:', backendError.message);
+        }
       }
       return blockedDrivers;
     } catch (error) {
