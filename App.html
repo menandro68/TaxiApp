@@ -1031,10 +1031,16 @@
      <span class="nav-badge" id="driversBadge">12</span>
         </a>
 
-        <a class="nav-item" data-screen="motos" onclick="loadMotos()">
+    <a class="nav-item" data-screen="motos" onclick="loadMotos()">
             <span class="nav-icon">🏍️</span>
             <span class="nav-text">Motos</span>
             <span class="nav-badge" id="motosBadge">0</span>
+        </a>
+
+        <a class="nav-item" data-screen="paquetes" onclick="loadPaquetes()">
+            <span class="nav-icon">📦</span>
+            <span class="nav-text">Paquetes</span>
+            <span class="nav-badge" id="paquetesBadge">0</span>
         </a>
 
         <a class="nav-item" data-screen="communications" onclick="switchScreen('communications')">
@@ -1331,6 +1337,36 @@
                 </tbody>
             </table>
             <div id="motosPaginationControls"></div>
+        </div>
+    </div>
+
+  <!-- Paquetes Screen -->
+    <div id="paquetes" class="screen">
+        <div class="data-table-container">
+            <div class="table-header">
+                <h2 class="table-title">Gestión de Paquetes</h2>
+                <div class="table-actions">
+                    <button class="btn btn-secondary" onclick="exportPaquetes()">📊 Exportar</button>
+                </div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Origen</th>
+                        <th>Destino</th>
+                        <th>Vehículo</th>
+                        <th>Conductor</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="paquetesTableBody">
+                </tbody>
+            </table>
+            <div id="paquetesPaginationControls"></div>
         </div>
     </div>
 
@@ -3792,6 +3828,59 @@ if (screenName === 'vehicles') {
 
     function updateMotosBadge(count) {
         document.getElementById('motosBadge').textContent = count;
+    }
+
+      // ========================================
+        // GESTIÓN DE PAQUETES
+        // ========================================
+
+    async function loadPaquetes() {
+    try {
+        console.log('🔄 Cargando paquetes...');
+        switchScreen('paquetes');
+        const trips = await AdminAPI.getTrips();
+        const paquetes = trips.filter(t => t.vehicle_type === 'paquete_carro' || t.vehicle_type === 'paquete_moto' || t.vehicleType === 'paquete_carro' || t.vehicleType === 'paquete_moto');
+        console.log(`✅ ${paquetes.length} paquetes cargados`);
+        appState.paquetes = paquetes;
+        renderPaquetes(paquetes);
+        updatePaquetesBadge(paquetes.length);
+        NotificationService.success(`${paquetes.length} paquetes cargados`);
+    } catch (error) {
+        console.error('❌ Error loading paquetes:', error);
+        NotificationService.error('Error cargando paquetes: ' + error.message);
+    }
+}
+
+    function renderPaquetes(paquetes) {
+        const tbody = document.getElementById('paquetesTableBody');
+        if (paquetes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#666;">No hay envíos de paquetes registrados</td></tr>';
+            return;
+        }
+        tbody.innerHTML = paquetes.map(p => {
+            const tipo = (p.vehicle_type || p.vehicleType || '').includes('moto') ? '🏍️ Moto' : '🚗 Carro';
+            const estado = p.status || p.estado || 'pending';
+            const precio = p.estimated_price || p.price || p.precio || 0;
+            const fecha = p.created_at || p.createdAt || p.fecha || '';
+            const fechaFormat = fecha ? new Date(fecha).toLocaleDateString('es-DO') : 'N/A';
+            return `
+                <tr>
+                    <td>#${p.id || 0}</td>
+                    <td>${p.user_name || p.userName || p.cliente || 'Cliente'}</td>
+                    <td>${p.pickup_location || p.origin || p.origen || 'N/A'}</td>
+                    <td>${p.destination || p.destino || 'N/A'}</td>
+                    <td><span style="font-weight:600;">${tipo}</span></td>
+                    <td>${p.driver_name || p.driverName || 'Sin asignar'}</td>
+                    <td style="font-weight:bold;color:#007AFF;">RD$${precio}</td>
+                    <td><span class="status-badge status-${estado}">${getStatusText(estado)}</span></td>
+                    <td>${fechaFormat}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updatePaquetesBadge(count) {
+        document.getElementById('paquetesBadge').textContent = count;
     }
 
         // ========================================
