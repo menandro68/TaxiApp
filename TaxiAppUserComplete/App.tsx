@@ -23,6 +23,8 @@ import ShareLocationModal from './src/components/ShareLocationModal';
 import ShareLocationService from './src/services/ShareLocationService';
 import ForgotPasswordScreen from './src/screens/Auth/ForgotPasswordScreen';
 import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RatingSystem from './src/components/RatingSystem';
 import VehicleSelector from './src/components/VehicleSelector';
 import SplashScreen from './src/screens/SplashScreen';
@@ -37,7 +39,6 @@ import TripHistoryScreen from './src/screens/TripHistoryScreen';
 import TripDetailsScreen from './src/screens/TripDetailsScreen';
 import PaymentMethodsScreen from './src/screens/PaymentMethodsScreen';
 import MultipleDestinationsModal from './src/components/MultipleDestinationsModal';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { ValidationUtils } from './src/utils/ValidationUtils';
 import { getBackendUrl } from './src/config/config.js';
 import React, { useState, useEffect, useRef } from 'react';
@@ -57,6 +58,7 @@ import {
   TouchableWithoutFeedback,
 Linking,
   AppState,
+  Image,
 } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { Platform } from 'react-native';
@@ -2276,17 +2278,23 @@ const renderRouteInfo = () => {
               <View style={styles.routeDetailsCompact}>
                <Text style={styles.routeDetailCompact}>Servicio</Text>
                <View style={styles.serviciosIconsRow}>
-               <TouchableOpacity style={styles.servicioIconContainer} onPress={() => setShowVehicleSelector(true)}>
-                   <Text style={styles.servicioIcon}>🚗</Text>
+             <TouchableOpacity style={styles.servicioIconContainer} onPress={() => setShowVehicleSelector(true)}>
+                   <View style={styles.servicioIconCircle}>
+                    <MaterialIcon name="car-side" size={24} color="#8B4513" />
+                   </View>
                    <Text style={styles.servicioLabel}>Viaje</Text>
                  </TouchableOpacity>
                <TouchableOpacity style={styles.servicioIconContainer} onPress={() => handleVehicleTypeChange('moto')}>
-                <Text style={styles.servicioIcon}>🏍️</Text>
-                <Text style={styles.servicioLabel}>Moto</Text>
+                   <View style={styles.servicioIconCircle}>
+                  <MaterialIcon name="moped" size={24} color="#FF0000" />
+                   </View>
+                   <Text style={styles.servicioLabel}>Moto</Text>
                  </TouchableOpacity>
                  <TouchableOpacity style={styles.servicioIconContainer} onPress={() => setShowPackageModal(true)}>
-                <Text style={styles.servicioIcon}>📦</Text>
-                <Text style={styles.servicioLabel}>Paquete</Text>
+                   <View style={styles.servicioIconCircle}>
+                   <MaterialIcon name="package-variant-closed" size={24} color="#1a73e8" />
+                   </View>
+                   <Text style={styles.servicioLabel}>Paquete</Text>
                 </TouchableOpacity>
                </View>
               </View>
@@ -4552,6 +4560,10 @@ routeDetailCompact: {
   },
 servicioIcon: {
     fontSize: 28,
+  },
+servicioIconCircle: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   servicioImageIcon: {
     width: 40,
