@@ -267,7 +267,7 @@ router.post('/create', async (req, res) => {
             `SELECT name, phone FROM users WHERE id = $1`,
             [userIdParsed]
         );
-        const user = userResult.rows[0] || {};
+       const user = { ...userResult.rows[0], user_id: userIdParsed } || {};
 
         // Preparar datos para búsqueda progresiva
         const tripData = {
