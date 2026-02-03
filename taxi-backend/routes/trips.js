@@ -37,6 +37,13 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         // Buscar conductores disponibles que no hayan sido notificados
         // Filtrar por tipo de vehículo: moto solo notifica a motos, car solo a carros
         const requestedVehicleType = tripData.vehicle_type || 'car';
+    // Obtener IDs de conductores bloqueados por este usuario
+        const blockedResult = await db.query(
+            `SELECT driver_id FROM blocked_drivers WHERE user_id = $1`,
+            [userData.user_id]
+        );
+        const blockedIds = blockedResult.rows.map(r => r.driver_id);
+
         const driversResult = await db.query(
             `SELECT id, name, phone, vehicle_model, vehicle_plate, rating,
                     current_latitude, current_longitude, fcm_token, vehicle_type
@@ -45,8 +52,9 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
              AND last_seen > NOW() - INTERVAL '60 seconds'
              AND fcm_token IS NOT NULL
              AND id != ALL($1::int[])
-             AND (vehicle_type = $2 OR vehicle_type IS NULL)`,
-            [notifiedDriverIds, requestedVehicleType]
+             AND id != ALL($2::int[])
+             AND (vehicle_type = $3 OR vehicle_type IS NULL)`,
+            [notifiedDriverIds, blockedIds, requestedVehicleType]
         );
         
         console.log(`🚗 Tipo de vehículo solicitado: ${requestedVehicleType}`);
