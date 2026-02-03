@@ -4122,10 +4122,10 @@ subtitle: {
     flex: 1,
   },
 mapContainer: {
-    height: screenHeight * 0.28,
+    height: screenHeight * 0.22,
     marginHorizontal: scale(10),
-    marginTop: verticalScale(10),
-    marginBottom: 5,
+    marginTop: verticalScale(5),
+    marginBottom: 3,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -4536,11 +4536,11 @@ destinationInputText: {
     marginLeft: 8,
     fontWeight: 'bold',
   },
-  routeDetailsCompact: {
-    paddingVertical: 4,
+routeDetailsCompact: {
+    paddingVertical: 2,
   },
 routeDetailCompact: {
-    fontSize: 27,
+    fontSize: 18,
     color: '#666',
     fontWeight: '900',
     textAlign: 'center',
@@ -4548,15 +4548,15 @@ routeDetailCompact: {
   serviciosIconsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 4,
   },
-  servicioIconContainer: {
+servicioIconContainer: {
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 8,
-    minWidth: 70,
+    borderRadius: 10,
+    padding: 8,
+    marginHorizontal: 6,
+    minWidth: 65,
   },
 servicioIcon: {
     fontSize: 28,
@@ -4699,9 +4699,9 @@ servicioIconCircle: {
   },
 vehicleSelectorButton: {
     backgroundColor: '#fff',
-    borderRadius: scale(12),
-    padding: scale(15),
-    marginBottom: verticalScale(12),
+    borderRadius: scale(10),
+    padding: scale(10),
+    marginBottom: verticalScale(6),
     borderWidth: 1,
     borderColor: '#4CAF50',
     elevation: 2,
