@@ -1028,7 +1028,13 @@
         <a class="nav-item" data-screen="drivers" onclick="loadDrivers()">
             <span class="nav-icon">🚗</span>
             <span class="nav-text">Conductores</span>
-            <span class="nav-badge" id="driversBadge">12</span>
+     <span class="nav-badge" id="driversBadge">12</span>
+        </a>
+
+        <a class="nav-item" data-screen="motos" onclick="loadMotos()">
+            <span class="nav-icon">🏍️</span>
+            <span class="nav-text">Motos</span>
+            <span class="nav-badge" id="motosBadge">0</span>
         </a>
 
         <a class="nav-item" data-screen="communications" onclick="switchScreen('communications')">
@@ -1298,6 +1304,36 @@
    <div id="driversPaginationControls"></div>
     </div>
 </div>
+
+    <!-- Motos Screen -->
+    <div id="motos" class="screen">
+        <div class="data-table-container">
+            <div class="table-header">
+                <h2 class="table-title">Gestión de Motos</h2>
+                <div class="table-actions">
+                    <button class="btn btn-secondary" onclick="exportMotos()">📊 Exportar</button>
+                    <button class="btn btn-primary" onclick="openModal('motoModal')">+ Agregar Moto</button>
+                </div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Conductor</th>
+                        <th>Moto</th>
+                        <th>Calificación</th>
+                        <th>Viajes</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="motosTableBody">
+                    <!-- Moto rows will be loaded dynamically -->
+                </tbody>
+            </table>
+            <div id="motosPaginationControls"></div>
+        </div>
+    </div>
+
     <!-- Suspensions Screen -->
 <div id="suspensions" class="screen">
     <div class="loading">
@@ -1933,6 +1969,31 @@ static async getStats() {
     // Si falla, usar datos simulados
     await this.delay(300);
     return [/* datos simulados anteriores */];
+}
+
+        static async getMotos() {
+    const apiData = await fetchAPI('/drivers?vehicle_type=moto');
+    if (apiData && apiData.drivers) {
+        return apiData.drivers.filter(d => d.vehicleType === 'moto' || d.vehicle_type === 'moto').map(driver => ({
+            id: driver.id,
+            name: driver.name,
+            email: driver.email,
+            phone: driver.phone,
+            license: driver.licenseNumber || 'N/A',
+            vehicle: {
+                make: driver.vehicleMake || 'Sin moto',
+                model: driver.vehicleModel || '',
+                plate: driver.vehiclePlate || 'N/A',
+                color: driver.vehicleColor || 'N/A'
+            },
+            rating: driver.rating || 5.0,
+            totalTrips: driver.totalTrips || 0,
+            status: driver.status || 'pending',
+            joinDate: driver.createdAt || new Date().toISOString()
+        }));
+    }
+    await this.delay(300);
+    return [];
 }
 
             static async getUsers() {
@@ -3670,6 +3731,68 @@ if (screenName === 'vehicles') {
         function updateDriversBadge(count) {
             document.getElementById('driversBadge').textContent = count;
         }
+
+     // ========================================
+        // GESTIÓN DE MOTOS
+        // ========================================
+
+    async function loadMotos() {
+    try {
+        console.log('🔄 Cargando motos...');
+        switchScreen('motos');
+        const motos = await AdminAPI.getMotos();
+        console.log(`✅ ${motos.length} motos cargadas`);
+        appState.motos = motos;
+        renderMotos(motos);
+        updateMotosBadge(motos.length);
+        NotificationService.success(`${motos.length} motos cargadas`);
+    } catch (error) {
+        console.error('❌ Error loading motos:', error);
+        NotificationService.error('Error cargando motos: ' + error.message);
+    }
+}
+
+    function renderMotos(motos) {
+        const tbody = document.getElementById('motosTableBody');
+        tbody.innerHTML = motos.map(moto => {
+            const name = moto.name || 'Sin nombre';
+            const email = moto.email || '';
+            const vehicleMake = moto.vehicle?.make || 'Sin moto';
+            const vehiclePlate = moto.vehicle?.plate || 'Sin placa';
+            const rating = moto.rating || 5.0;
+            const totalTrips = moto.totalTrips || 0;
+            const status = moto.status || 'pending';
+            const id = moto.id;
+            return `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-avatar">${name.split(' ').map(n => n[0]).join('').substring(0,2)}</div>
+                            <div class="user-info">
+                                <div class="user-name">${name}</div>
+                                <div class="user-email">${email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${vehicleMake}<br><small>${vehiclePlate}</small></td>
+                    <td>⭐ ${rating} (${totalTrips})</td>
+                    <td>${totalTrips}</td>
+                    <td><span class="status-badge status-${status}">${getStatusText(status)}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewDriver(${id})" title="Ver">👁️</button>
+                            <button class="action-btn edit" onclick="editDriver(${id})" title="Editar">✏️</button>
+                            <button class="action-btn delete" onclick="deleteDriver(${id})" title="Eliminar">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updateMotosBadge(count) {
+        document.getElementById('motosBadge').textContent = count;
+    }
 
         // ========================================
         // GESTIÓN DE USUARIOS
