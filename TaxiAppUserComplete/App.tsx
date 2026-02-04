@@ -1633,12 +1633,15 @@ const sendTripRequestToBackend = async (tripData) => {
     const data = await response.json();
     console.log('✅ Datos parseados:', data);
     
-    if (data.success) {
-      console.log('✅ Viaje creado:', data.tripId);
-      
+  if (data.success) {
+      console.log('âœ… Viaje creado:', data.tripId);
+      // ACTUALIZAR PRECIO SI HAY PENALIDAD
+      if (data.penaltyApplied && data.finalPrice) {
+        setEstimatedPrice(data.finalPrice);
+        console.log('💰 Penalidad aplicada. Nuevo precio: RD$' + data.finalPrice);
+      }
       // GUARDAR TRIPID EN SHAREDSTORAGE PARA PODER CANCELAR
       await SharedStorage.saveTripRequest({ id: data.tripId, status: 'pending' });
-      
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
  navigation.navigate('DriverSearch', {

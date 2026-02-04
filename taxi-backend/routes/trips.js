@@ -36,8 +36,8 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         
         // Buscar conductores disponibles que no hayan sido notificados
         // Filtrar por tipo de vehÃ­culo: moto solo notifica a motos, car solo a carros
-        // Mapear tipos de vehículo de la app usuario a tipos de conductor en BD
-        // App usuario envía: economy, comfort, premium, moto
+        // Mapear tipos de vehï¿½culo de la app usuario a tipos de conductor en BD
+        // App usuario envï¿½a: economy, comfort, premium, moto
         // BD conductores tiene: car, moto
         const userVehicleType = tripData.vehicle_type || 'economy';
         const VEHICLE_TYPE_MAP = {
@@ -268,8 +268,10 @@ router.post('/create', async (req, res) => {
             `SELECT pending_penalty FROM users WHERE id = $1`,
             [userIdParsed]
         );
+       console.log('DEBUG PENALTY - userIdParsed:', userIdParsed, 'penaltyResult:', JSON.stringify(penaltyResult.rows));
         const pendingPenalty = penaltyResult.rows[0]?.pending_penalty || 0;
         const finalPrice = (estimated_price || 0) + pendingPenalty;
+        console.log('DEBUG PENALTY - pendingPenalty:', pendingPenalty, 'estimated_price:', estimated_price, 'finalPrice:', finalPrice);
 
         // Si tiene penalidad, resetearla
         if (pendingPenalty > 0) {
