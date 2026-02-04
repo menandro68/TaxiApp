@@ -110,8 +110,14 @@ async function initDatabase() {
         phone_encrypted VARCHAR(255),
         password VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        pending_penalty INTEGER DEFAULT 0
       )
+    `);
+
+    // Agregar columna pending_penalty si no existe
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_penalty INTEGER DEFAULT 0
     `);
 
     // Tabla de conductores

@@ -251,12 +251,29 @@ router.post('/create', async (req, res) => {
             });
         }
 
+        // VERIFICAR SI EL USUARIO TIENE PENALIDAD PENDIENTE
+        const penaltyResult = await db.query(
+            `SELECT pending_penalty FROM users WHERE id = $1`,
+            [userIdParsed]
+        );
+        const pendingPenalty = penaltyResult.rows[0]?.pending_penalty || 0;
+        const finalPrice = (estimated_price || 0) + pendingPenalty;
+
+        // Si tiene penalidad, resetearla
+        if (pendingPenalty > 0) {
+            await db.query(
+                `UPDATE users SET pending_penalty = 0 WHERE id = $1`,
+                [userIdParsed]
+            );
+            console.log(`💰 Penalidad de RD$${pendingPenalty} cobrada al usuario ${userIdParsed} en viaje nuevo`);
+        }
+
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
         const tripResult = await db.query(
             `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng)
              VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', estimated_price || 0, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null]
+            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -294,8 +311,13 @@ router.post('/create', async (req, res) => {
         res.json({
             success: true,
             tripId: tripId,
-            message: 'Viaje creado, iniciando búsqueda progresiva de conductores...',
+            message: pendingPenalty > 0 
+                ? `Viaje creado. Se aplicó un cargo de RD$${pendingPenalty} por cancelación anterior. Total: RD$${finalPrice}`
+                : 'Viaje creado, iniciando búsqueda progresiva de conductores...',
             status: 'pending',
+            penaltyApplied: pendingPenalty > 0,
+            penaltyAmount: pendingPenalty,
+            finalPrice: finalPrice,
             searchConfig: {
                 radii: SEARCH_CONFIG.radii,
                 delaySeconds: SEARCH_CONFIG.delayBetweenRounds / 1000,
@@ -576,6 +598,24 @@ router.put('/:tripId/cancel', async (req, res) => {
 
         const trip = tripResult.rows[0];
 
+        // VERIFICAR SI PASARON MÁS DE 5 MINUTOS DESDE LA CREACIÓN
+        const createdAt = new Date(trip.created_at);
+        const now = new Date();
+        const minutesSinceCreation = (now - createdAt) / (1000 * 60);
+        let penaltyApplied = false;
+        const PENALTY_AMOUNT = 50;
+        const PENALTY_MINUTES = 5;
+
+        if (minutesSinceCreation >= PENALTY_MINUTES) {
+            // Aplicar penalidad al usuario
+            await db.query(
+                `UPDATE users SET pending_penalty = pending_penalty + $1 WHERE id = $2`,
+                [PENALTY_AMOUNT, trip.user_id]
+            );
+            penaltyApplied = true;
+            console.log(`💰 Penalidad de RD$${PENALTY_AMOUNT} aplicada al usuario ${trip.user_id} (canceló después de ${minutesSinceCreation.toFixed(1)} min)`);
+        }
+
         // Actualizar estado a cancelado
         await db.query(
             `UPDATE trips SET status = 'cancelled' WHERE id = $1`,
@@ -603,7 +643,14 @@ router.put('/:tripId/cancel', async (req, res) => {
             }
         }
 
-        res.json({ success: true, message: 'Viaje cancelado exitosamente' });
+        res.json({ 
+            success: true, 
+            message: penaltyApplied 
+                ? `Viaje cancelado. Se aplicó una tarifa de cancelación de RD$${PENALTY_AMOUNT} que será cobrada en su próximo viaje.`
+                : 'Viaje cancelado exitosamente',
+            penaltyApplied,
+            penaltyAmount: penaltyApplied ? PENALTY_AMOUNT : 0
+        });
     } catch (error) {
         console.error('Error cancelando viaje:', error);
         res.status(500).json({ error: 'Error al cancelar viaje' });
