@@ -36,7 +36,19 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         
         // Buscar conductores disponibles que no hayan sido notificados
         // Filtrar por tipo de vehÃ­culo: moto solo notifica a motos, car solo a carros
-        const requestedVehicleType = tripData.vehicle_type || 'car';
+        // Mapear tipos de vehículo de la app usuario a tipos de conductor en BD
+        // App usuario envía: economy, comfort, premium, moto
+        // BD conductores tiene: car, moto
+        const userVehicleType = tripData.vehicle_type || 'economy';
+        const VEHICLE_TYPE_MAP = {
+            'economy': 'car',
+            'comfort': 'car',
+            'premium': 'car',
+            'car': 'car',
+            'moto': 'moto',
+            'motorcycle': 'moto'
+        };
+        const requestedVehicleType = VEHICLE_TYPE_MAP[userVehicleType] || 'car';
     // Obtener IDs de conductores bloqueados por este usuario
         const blockedResult = await db.query(
             `SELECT driver_id FROM blocked_drivers WHERE user_id = $1`,
@@ -834,3 +846,4 @@ router.get('/driver-history/:driverId', async (req, res) => {
 });
 
 module.exports = router;
+
