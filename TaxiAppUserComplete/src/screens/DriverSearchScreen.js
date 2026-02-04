@@ -158,7 +158,19 @@ const DriverSearchScreen = ({ navigation, route }) => {
       { text: 'No', style: 'cancel' },
       {
         text: 'Sí',
-        onPress: () => {
+        onPress: async () => {
+          // Cancelar viaje en el servidor
+          if (tripRequestId) {
+            try {
+              const ApiService = require('../services/ApiService').default;
+              const cancelResult = await ApiService.cancelTrip(tripRequestId, 'Cancelado por el usuario');
+              if (cancelResult?.penaltyApplied) {
+                Alert.alert('Tarifa de cancelación', `Se aplicó un cargo de RD$${cancelResult.penaltyAmount} por cancelación tardía. Será cobrado en su próximo viaje.`);
+              }
+            } catch (error) {
+              console.error('Error cancelando viaje:', error);
+            }
+          }
           navigation.navigate('Main', { 
             searchCancelled: true,
             fromDriverSearch: true 

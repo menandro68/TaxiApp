@@ -108,6 +108,8 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCancelWarningModal, setShowCancelWarningModal] = useState(false);
+  const [cancelWarningTime, setCancelWarningTime] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [routeInfo, setRouteInfo] = useState(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
@@ -795,11 +797,21 @@ const setupNotificationHandlers = () => {
       
       await SharedStorage.saveDriverInfo(mockDriverInfo);
       setDriverInfo(mockDriverInfo);
-      setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
+    setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
-      // Cerrar modal de búsqueda
+   // Mostrar modal de penalización inmediata
+      const now = new Date();
+      const limit = new Date(now.getTime() + 5 * 60 * 1000);
+      const hours = limit.getHours();
+      const mins = limit.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      setCancelWarningTime(`${displayHours}:${mins} ${ampm}`);
+      setShowCancelWarningModal(true);
+
+      // Cerrar modal de busqueda
       setSearchModalVisible(false);
-      setIsSearchingDriver(false);
+      
       
       // Obtener ubicacion actual del usuario desde SharedStorage
       const currentUserLocation = await SharedStorage.getUserLocation();
@@ -1808,8 +1820,11 @@ const searchForDriver = () => {
             const tripRequest = await SharedStorage.getTripRequest();
             if (tripRequest?.id) {
               try {
-                await ApiService.cancelTrip(tripRequest.id, 'Cancelado por el usuario');
+              const cancelResult = await ApiService.cancelTrip(tripRequest.id, 'Cancelado por el usuario');
                 console.log('Notificacion de cancelacion enviada al conductor');
+                if (cancelResult?.penaltyApplied) {
+                  Alert.alert('Tarifa de cancelación', `Se aplicó un cargo de RD$${cancelResult.penaltyAmount} por cancelación tardía. Será cobrado en su próximo viaje.`);
+                }
               } catch (apiError) {
                 console.error('Error notificando cancelacion:', apiError);
               }
@@ -3034,6 +3049,13 @@ onPress={() => {
           {/* MOSTRAR INFORMACIÓN DE TRACKING */}
           {renderDriverTracking()}
           
+   {/* AVISO CANCELACIÓN */}
+    {showCancelWarningModal && (
+            <View style={{backgroundColor:'#fff',borderRadius:7,paddingVertical:6,paddingHorizontal:10,elevation:3,shadowColor:'#000',shadowOffset:{width:0,height:1},shadowOpacity:0.2,shadowRadius:2,alignSelf:'center',marginTop:4,marginBottom:4}}>
+              <Text style={{fontSize:10,color:'#333',textAlign:'center'}}>Si cancela después de las {cancelWarningTime} se le cobrará RD$50.</Text>
+            </View>
+          )}
+
           <View style={styles.rideActions}>
             <TouchableOpacity style={styles.cancelButton} onPress={cancelRide}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -3042,6 +3064,7 @@ onPress={() => {
               <Text style={styles.startButtonText}>Iniciar</Text>
     </TouchableOpacity>
           </View>
+
           {/* PANEL DE BRANDING SQUID */}
           <View style={{
             backgroundColor: '#87CEEB',
@@ -3604,8 +3627,11 @@ onPress={() => {
   const tripReq = await SharedStorage.getTripRequest();
   if (tripReq?.id) {
     try {
-      await ApiService.cancelTrip(tripReq.id, 'Cancelado por el usuario');
+    const cancelResult = await ApiService.cancelTrip(tripReq.id, 'Cancelado por el usuario');
       console.log('✅ Viaje cancelado durante búsqueda');
+      if (cancelResult?.penaltyApplied) {
+        Alert.alert('Tarifa de cancelación', `Se aplicó un cargo de RD$${cancelResult.penaltyAmount} por cancelación tardía. Será cobrado en su próximo viaje.`);
+      }
     } catch (error) {
       console.error('Error cancelando viaje:', error);
     }
@@ -4937,7 +4963,7 @@ rideActions: {
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: 20,
-    marginTop: 10,
+    marginTop: 18,
     marginBottom: 15,
   },
   startButton: {
