@@ -847,5 +847,57 @@ router.get('/driver-history/:driverId', async (req, res) => {
     }
 });
 
+// GUARDAR CLAVE DE VERIFICACIÓN DEL VIAJE
+router.put('/trip-code/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  const { trip_code } = req.body;
+
+  if (!trip_code || trip_code.length !== 4) {
+    return res.status(400).json({ error: 'Clave debe ser de 4 dígitos' });
+  }
+
+  try {
+    // Agregar columna si no existe
+    try {
+      await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS trip_code VARCHAR(4)`);
+    } catch (e) {
+      // Columna ya existe, ignorar
+    }
+    await db.query(`UPDATE trips SET trip_code = $1 WHERE id = $2`, [trip_code, tripId]);
+    console.log(`🔑 Clave ${trip_code} guardada para viaje ${tripId}`);
+    res.json({ success: true, message: 'Clave guardada' });
+  } catch (err) {
+    console.error('Error guardando clave:', err);
+    res.status(500).json({ error: 'Error guardando clave' });
+  }
+});
+
+// VALIDAR CLAVE DE VERIFICACIÓN DEL VIAJE
+router.post('/verify-code/:tripId', async (req, res) => {
+  const { tripId } = req.params;
+  const { trip_code } = req.body;
+
+  try {
+    const result = await db.query(`SELECT trip_code FROM trips WHERE id = $1`, [tripId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Viaje no encontrado' });
+    }
+    const trip = result.rows[0];
+    if (!trip.trip_code) {
+      return res.status(400).json({ success: false, error: 'No hay clave asignada' });
+    }
+    if (trip.trip_code === trip_code) {
+      console.log(`✅ Clave verificada para viaje ${tripId}`);
+      res.json({ success: true, message: 'Clave correcta' });
+    } else {
+      console.log(`❌ Clave incorrecta para viaje ${tripId}: ${trip_code} vs ${trip.trip_code}`);
+      res.json({ success: false, message: 'Clave incorrecta' });
+    }
+  } catch (err) {
+    console.error('Error verificando clave:', err);
+    res.status(500).json({ error: 'Error verificando clave' });
+  }
+});
+
 module.exports = router;
 
