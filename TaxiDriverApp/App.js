@@ -93,6 +93,9 @@ export default function DriverApp({ navigation }) {
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [codeError, setCodeError] = useState('');
 
   // Exponer setters globalmente para acceso desde FCM
  globalSetShowRequestModal = setShowRequestModal;
@@ -1625,16 +1628,14 @@ const acceptTrip = async () => {
           body: JSON.stringify({ status: 'arrived' })
         });
         const data = await response.json();
-        if (data.success) {
+     if (data.success) {
           setTripPhase('arrived');
           await stopBackgroundTracking(); // Detener background tracking
-          Alert.alert('✅ Llegada Confirmada', 'El pasajero ha sido notificado');
         }
       } catch (error) {
         console.error('Error notificando llegada:', error);
         setTripPhase('arrived');
         await stopBackgroundTracking(); // Detener background tracking
-        Alert.alert('✅ Llegada Confirmada', 'Esperando que el pasajero suba al vehículo');
       }
     }}
   >
@@ -1642,18 +1643,18 @@ const acceptTrip = async () => {
   </TouchableOpacity>
 )}
           
-        {tripPhase === 'arrived' && (
+     {tripPhase === 'arrived' && (
             <TouchableOpacity 
               style={[styles.completeButton, { backgroundColor: '#3b82f6' }]} 
-              onPress={() => {
-                setTripPhase('started');
-                setActiveTab('map');
+        onPress={() => {
+                setVerificationCode('');
+                setCodeError('');
+                setShowCodeModal(true);
               }}
             >
               <Text style={styles.buttonText}>▶️ Iniciar Viaje</Text>
             </TouchableOpacity>
           )}
-          
           {tripPhase === 'started' && (
             <TouchableOpacity style={styles.completeButton} onPress={completeTrip}>
               <Text style={styles.buttonText}>✅ Completar Viaje</Text>
@@ -2410,6 +2411,88 @@ const renderEarnings = () => (
           </View>
         </SafeAreaView>
    </Modal>
+
+   {/* Modal de Verificación de Clave */}
+      <Modal
+        visible={showCodeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCodeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.requestModal}>
+            <Text style={styles.modalTitle}>🔑 Clave de Verificación</Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 }}>
+              Solicita la clave de 4 dígitos al pasajero
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 2,
+                borderColor: codeError ? '#ef4444' : '#3b82f6',
+                borderRadius: 10,
+                padding: 15,
+                fontSize: 32,
+                textAlign: 'center',
+                letterSpacing: 10,
+                fontWeight: 'bold',
+                marginBottom: 10,
+              }}
+              placeholder="0000"
+              placeholderTextColor="#ccc"
+              keyboardType="numeric"
+              maxLength={4}
+              value={verificationCode}
+              onChangeText={(text) => {
+                setVerificationCode(text);
+                setCodeError('');
+              }}
+              autoFocus={true}
+            />
+            {codeError ? (
+              <Text style={{ color: '#ef4444', textAlign: 'center', marginBottom: 10, fontWeight: 'bold' }}>
+                {codeError}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#6b7280', padding: 15, borderRadius: 10, alignItems: 'center' }}
+                onPress={() => setShowCodeModal(false)}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#22c55e', padding: 15, borderRadius: 10, alignItems: 'center' }}
+                onPress={async () => {
+                  if (verificationCode.length !== 4) {
+                    setCodeError('Ingresa los 4 dígitos');
+                    return;
+                  }
+                  try {
+                    const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/verify-code/${currentTrip.id}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ trip_code: verificationCode })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      setShowCodeModal(false);
+                      setTripPhase('started');
+                      setActiveTab('map');
+                      Alert.alert('✅ Verificado', 'Clave correcta. ¡Viaje iniciado!');
+                    } else {
+                      setCodeError('❌ Clave incorrecta. Intenta de nuevo.');
+                    }
+                  } catch (error) {
+                    setCodeError('Error de conexión. Intenta de nuevo.');
+                  }
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Verificar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Desglose de Ganancias */}
       <Modal

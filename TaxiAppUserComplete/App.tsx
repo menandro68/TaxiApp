@@ -796,7 +796,8 @@ const setupNotificationHandlers = () => {
       };
       
       await SharedStorage.saveDriverInfo(mockDriverInfo);
-      setDriverInfo(mockDriverInfo);
+ setDriverInfo(mockDriverInfo);
+      setTripRequest(prev => ({ ...prev, id: parseInt(driverData.tripId) || prev?.id }));
     setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
       
    // Mostrar modal de penalización inmediata
@@ -1411,8 +1412,29 @@ const startDriverTracking = async (driver, userLoc) => {
         [
               {
                 text: 'Subir al vehículo',
-                onPress: () => {
+          onPress: async () => {
                   const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
+                try {
+                    const storedTrip = await SharedStorage.getTripRequest();
+                    const tripId = storedTrip?.id || tripRequest?.id;
+                    console.log('🔑 DEBUG - tripId:', tripId);
+                    console.log('🔑 DEBUG - storedTrip:', JSON.stringify(storedTrip));
+                    console.log('🔑 DEBUG - tripCode:', tripCode);
+                    console.log('🔑 DEBUG - URL:', `${getBackendUrl()}/trips/trip-code/${tripId}`);
+                    if (tripId) {
+                      const response = await fetch(`${getBackendUrl()}/trips/trip-code/${tripId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ trip_code: tripCode })
+                      });
+                      const data = await response.json();
+                      console.log('🔑 DEBUG - Respuesta backend:', JSON.stringify(data));
+                    } else {
+                      console.log('🔑 DEBUG - NO HAY tripId!');
+                    }
+                  } catch (e) {
+                    console.log('🔑 DEBUG - Error enviando clave:', e.message);
+                  }
                   Alert.alert(
                     '🔑 Clave del viaje',
                     `Tu clave de verificación es: ${tripCode}\n\nComparte esta clave con el conductor para confirmar tu identidad.`,
@@ -1657,7 +1679,8 @@ const sendTripRequestToBackend = async (tripData) => {
         );
       }
       // GUARDAR TRIPID EN SHAREDSTORAGE PARA PODER CANCELAR
-      await SharedStorage.saveTripRequest({ id: data.tripId, status: 'pending' });
+    await SharedStorage.saveTripRequest({ id: data.tripId, status: 'pending' });
+      setTripRequest(prev => ({ ...prev, id: data.tripId }));
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
  navigation.navigate('DriverSearch', {
