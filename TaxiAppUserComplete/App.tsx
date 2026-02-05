@@ -1527,8 +1527,8 @@ const processRideRequest = async () => {
           address: destination,
         };
 
-    const finalPrice = routeInfo ? 
-      parseFloat(routeInfo.price) : 
+ const finalPrice = (routeInfo && routeInfo.price) ? 
+      parseFloat(routeInfo.price) :
       (estimatedPrice || 150);
 
       // Validar que userLocation tiene coordenadas
@@ -1636,9 +1636,13 @@ const sendTripRequestToBackend = async (tripData) => {
   if (data.success) {
       console.log('âœ… Viaje creado:', data.tripId);
       // ACTUALIZAR PRECIO SI HAY PENALIDAD
-      if (data.penaltyApplied && data.finalPrice) {
+   if (data.penaltyApplied && data.finalPrice) {
         setEstimatedPrice(data.finalPrice);
         console.log('💰 Penalidad aplicada. Nuevo precio: RD$' + data.finalPrice);
+        Alert.alert(
+          'Cargo por cancelación',
+          'Se aplicó un cargo de RD$' + data.penaltyAmount + ' por cancelación tardía anterior.\n\nPrecio original: RD$' + (data.finalPrice - data.penaltyAmount) + '\nCargo: RD$' + data.penaltyAmount + '\nTotal: RD$' + data.finalPrice
+        );
       }
       // GUARDAR TRIPID EN SHAREDSTORAGE PARA PODER CANCELAR
       await SharedStorage.saveTripRequest({ id: data.tripId, status: 'pending' });
