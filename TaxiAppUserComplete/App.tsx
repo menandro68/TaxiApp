@@ -1408,10 +1408,22 @@ const startDriverTracking = async (driver, userLoc) => {
           Alert.alert(
             '¡Conductor ha llegado!',
             `${driver.name} está en tu ubicación.`,
-            [
+        [
               {
                 text: 'Subir al vehículo',
-                onPress: () => startRide()
+                onPress: () => {
+                  const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
+                  Alert.alert(
+                    '🔑 Clave del viaje',
+                    `Tu clave de verificación es: ${tripCode}\n\nComparte esta clave con el conductor para confirmar tu identidad.`,
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => startRide()
+                      }
+                    ]
+                  );
+                }
               }
             ]
           );

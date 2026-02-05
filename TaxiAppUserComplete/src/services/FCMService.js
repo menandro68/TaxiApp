@@ -107,8 +107,13 @@ class FCMService {
       // Conductor llegó
       console.log('📍 Conductor llegó');
       this.handleDriverArrived(data);
-    } else if (notification) {
-      // Mostrar alerta para otras notificaciones
+ } else if (notification) {
+      // Filtrar notificaciones de llegada (se manejan en App.tsx)
+      const title = notification.title || '';
+      if (title.includes('conductor llegó') || title.includes('conductor ha llegado') || title.includes('Tu conductor llegó')) {
+        console.log('📍 Notificación de llegada filtrada - se maneja en App.tsx');
+        return;
+      }
       Alert.alert(
         notification.title || 'Notificación',
         notification.body || 'Nueva notificación recibida'
@@ -212,14 +217,8 @@ class FCMService {
     try {
       console.log('📍 Conductor llegó:', data);
 
-      Alert.alert(
-        '📍 ¡Conductor ha llegado!',
-        `${data.driver_name} está esperándote`,
-        [
-          { text: 'Estoy saliendo', style: 'default' },
-          { text: 'Ya voy', style: 'cancel' }
-        ]
-      );
+   // Alert removido - se maneja en App.tsx con clave de verificación
+      console.log('📍 Conductor llegó - Alert manejado en App.tsx');
 
       if (global.handleDriverArrived) {
         global.handleDriverArrived(data);
