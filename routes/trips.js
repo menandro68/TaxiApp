@@ -174,4 +174,51 @@ router.get('/', (req, res) => {
   });
 });
 
+// GUARDAR CLAVE DE VERIFICACIÓN DEL VIAJE
+router.put('/trip-code/:tripId', (req, res) => {
+  const { tripId } = req.params;
+  const { trip_code } = req.body;
+
+  if (!trip_code || trip_code.length !== 4) {
+    return res.status(400).json({ error: 'Clave debe ser de 4 dígitos' });
+  }
+
+  // Agregar columna si no existe
+  db.run(`ALTER TABLE trips ADD COLUMN trip_code VARCHAR(4)`, () => {
+    // Ignorar error si ya existe la columna
+    db.run(`UPDATE trips SET trip_code = ? WHERE id = ?`, [trip_code, tripId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Error guardando clave' });
+      }
+      console.log(`🔑 Clave ${trip_code} guardada para viaje ${tripId}`);
+      res.json({ success: true, message: 'Clave guardada' });
+    });
+  });
+});
+
+// VALIDAR CLAVE DE VERIFICACIÓN DEL VIAJE
+router.post('/verify-code/:tripId', (req, res) => {
+  const { tripId } = req.params;
+  const { trip_code } = req.body;
+
+  db.get(`SELECT trip_code FROM trips WHERE id = ?`, [tripId], (err, trip) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error verificando clave' });
+    }
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Viaje no encontrado' });
+    }
+    if (!trip.trip_code) {
+      return res.status(400).json({ success: false, error: 'No hay clave asignada a este viaje' });
+    }
+    if (trip.trip_code === trip_code) {
+      console.log(`✅ Clave verificada correctamente para viaje ${tripId}`);
+      res.json({ success: true, message: 'Clave correcta' });
+    } else {
+      console.log(`❌ Clave incorrecta para viaje ${tripId}: ${trip_code} vs ${trip.trip_code}`);
+      res.json({ success: false, message: 'Clave incorrecta' });
+    }
+  });
+});
+
 module.exports = router;
