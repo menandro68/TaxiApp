@@ -495,15 +495,18 @@ useEffect(() => {
       setIsOffline(!isOnline);
     });
     
-  // Configurar función global para manejar solicitudes de viaje
+// Configurar función global para manejar solicitudes de viaje
 global.handleNewTripRequest = (tripData) => {
   console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
-  
-  // Si el viaje ya fue cancelado, no procesar
-  if (globalTripCancelled) {
-    console.log('🚫 Viaje ya cancelado, ignorando solicitud');
+
+  // Solo ignorar si es el MISMO viaje que fue cancelado recientemente
+  if (globalCancelledTripId && String(globalCancelledTripId) === String(tripData.id)) {
+    console.log('🚫 Este viaje específico fue cancelado, ignorando:', tripData.id);
     return;
   }
+
+  // Resetear banderas para viaje nuevo (diferente al cancelado)
+  globalTripCancelled = false;
   
 soundCancelledRef.current = false; // Reset para nueva solicitud
   globalSoundCancelled = false; // Reset variable global también
@@ -542,8 +545,21 @@ Sound.setCategory('Playback');
 global.clearCurrentTrip = async () => {
   console.log('🗑️ Limpiando viaje cancelado por el usuario');
 
-  // MARCAR VIAJE COMO CANCELADO
+  // MARCAR VIAJE COMO CANCELADO (guardar ID específico)
   globalTripCancelled = true;
+  const cancelledId = globalSetPendingRequest ? pendingRequest?.id : null;
+  if (cancelledId) {
+    globalCancelledTripId = cancelledId;
+    console.log('🚫 Trip cancelado guardado:', globalCancelledTripId);
+    // Limpiar después de 30 segundos para permitir viajes nuevos
+    setTimeout(() => {
+      if (globalCancelledTripId === cancelledId) {
+        globalCancelledTripId = null;
+        globalTripCancelled = false;
+        console.log('✅ Banderas de cancelación limpiadas automáticamente');
+      }
+    }, 30000);
+  }
 
   // DETENER SONIDO INMEDIATAMENTE usando variables globales
   globalSoundCancelled = true;
@@ -720,19 +736,87 @@ global.autoAcceptTrip = async (tripData) => {
     };
 }, []);
 
-  // useEffect para actualizar ganancias periódicamente (cada 60 segundos)
+ // useEffect para actualizar ganancias periódicamente (cada 60 segundos)
   useEffect(() => {
     if (!loggedDriver?.id || driverStatus === 'offline') return;
-    
+
     const interval = setInterval(() => {
       console.log('🔄 Actualizando ganancias periódicamente...');
       loadRealEarnings(loggedDriver.id);
     }, 60000); // Cada 60 segundos
-    
+
     return () => clearInterval(interval);
   }, [loggedDriver?.id, driverStatus]);
 
- // useEffect para verificar automáticamente la llegada al PICKUP y al DESTINO
+  // useEffect para POLLING de viajes pendientes (respaldo de FCM)
+  useEffect(() => {
+    if (!loggedDriver?.id || driverStatus !== 'online') return;
+    
+    console.log('🔄 Iniciando polling de viajes pendientes...');
+    
+    const pollPendingTrips = async () => {
+      try {
+        // No hacer polling si ya hay un viaje activo o modal abierto
+        if (currentTrip || showRequestModal || pendingRequest) {
+          return;
+        }
+        
+        const response = await fetch(
+          `https://web-production-99844.up.railway.app/api/trips/pending-for-driver/${loggedDriver.id}`
+        );
+        const data = await response.json();
+        
+        if (data.success && data.trip) {
+          const tripData = {
+            id: String(data.trip.id),
+            user: data.trip.user_name || 'Pasajero',
+            phone: data.trip.user_phone || '',
+            pickup: data.trip.pickup_location || '',
+            destination: data.trip.destination || '',
+            estimatedPrice: parseFloat(data.trip.price) || 0,
+            distance: data.trip.distance || '',
+            paymentMethod: data.trip.payment_method || 'cash',
+            vehicleType: data.trip.vehicle_type || 'economy',
+            pickupLat: parseFloat(data.trip.pickup_lat) || null,
+            pickupLng: parseFloat(data.trip.pickup_lng) || null,
+            destinationLat: parseFloat(data.trip.destination_lat) || null,
+            destinationLng: parseFloat(data.trip.destination_lng) || null,
+            tripCode: data.trip.trip_code || null,
+            type: 'NEW_TRIP_REQUEST',
+          };
+          
+          console.log('📡 POLLING: Viaje pendiente encontrado:', tripData.id);
+          
+          // Verificar que no sea el viaje cancelado recientemente
+          if (globalCancelledTripId && String(globalCancelledTripId) === String(tripData.id)) {
+            console.log('🚫 POLLING: Viaje cancelado, ignorando');
+            return;
+          }
+          
+          // Procesar como si llegara de FCM
+          if (global.handleNewTripRequest) {
+            global.handleNewTripRequest(tripData);
+          }
+        }
+      } catch (error) {
+        // Silencioso - no mostrar errores de polling
+        console.log('📡 Polling silencioso:', error.message);
+      }
+    };
+    
+    // Ejecutar inmediatamente y luego cada 10 segundos
+    pollPendingTrips();
+    const interval = setInterval(pollPendingTrips, 10000);
+    
+    return () => {
+      console.log('⏹️ Deteniendo polling de viajes');
+      clearInterval(interval);
+    };
+  }, [loggedDriver?.id, driverStatus, currentTrip, showRequestModal, pendingRequest]);
+
+ // useEffect para verificar automáticamente la llegada al PICKUP y al DESTI
+    
+
 useEffect(() => {
   const interval = setInterval(() => {
     // Verificar llegada al PUNTO DE RECOGIDA (cuando tripPhase está vacío)
