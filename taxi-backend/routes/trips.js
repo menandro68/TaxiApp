@@ -563,6 +563,92 @@ router.post('/reject/:tripId', async (req, res) => {
 });
 
 // =============================================
+// CONDUCTOR CANCELA - REASIGNAR A OTRO CONDUCTOR
+// =============================================
+router.put('/:tripId/driver-cancel', async (req, res) => {
+    try {
+        const { tripId } = req.params;
+        const { driver_id, reason } = req.body;
+
+        console.log(`🔄 Conductor ${driver_id} canceló viaje ${tripId} - Buscando nuevo conductor...`);
+
+        // Obtener info del viaje
+        const tripResult = await db.query(
+            `SELECT t.*, u.name as user_name, u.phone as user_phone, u.fcm_token as user_fcm_token
+             FROM trips t
+             LEFT JOIN users u ON t.user_id = u.id
+             WHERE t.id = $1`,
+            [tripId]
+        );
+
+        if (tripResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Viaje no encontrado', success: false });
+        }
+
+        const trip = tripResult.rows[0];
+        const cancelledDriverId = trip.driver_id || parseInt(driver_id);
+
+        // Volver el viaje a estado PENDING y quitar conductor
+        await db.query(
+            `UPDATE trips SET status = 'pending', driver_id = NULL WHERE id = $1`,
+            [tripId]
+        );
+
+        // Actualizar estado del conductor a disponible
+        await db.query(
+            `UPDATE drivers SET status = 'online' WHERE id = $1`,
+            [cancelledDriverId]
+        );
+
+        console.log(`✅ Viaje ${tripId} vuelto a estado PENDING`);
+
+        // Notificar al usuario
+        if (trip.user_fcm_token) {
+            try {
+                const admin = require('firebase-admin');
+                await admin.messaging().send({
+                    notification: {
+                        title: '🔄 Buscando otro conductor',
+                        body: 'El conductor anterior canceló. Estamos buscando otro conductor para ti.'
+                    },
+                    data: {
+                        type: 'DRIVER_CANCELLED_REASSIGNING',
+                        tripId: tripId.toString()
+                    },
+                    token: trip.user_fcm_token
+                });
+                console.log(`✅ Usuario notificado de reasignación`);
+            } catch (fcmError) {
+                console.error('⚠️ Error notificando:', fcmError.message);
+            }
+        }
+
+        // Reiniciar búsqueda progresiva
+        const pickupCoords = { latitude: trip.pickup_lat, longitude: trip.pickup_lng };
+        const tripData = {
+            pickup_location: trip.pickup_location,
+            destination: trip.destination,
+            estimated_price: trip.price,
+            payment_method: trip.payment_method,
+            vehicle_type: trip.vehicle_type,
+            destination_lat: trip.destination_lat,
+            destination_lng: trip.destination_lng
+        };
+        const userData = { user_id: trip.user_id, name: trip.user_name, phone: trip.user_phone };
+
+        startProgressiveSearch(parseInt(tripId), pickupCoords, tripData, userData)
+            .then(result => console.log(`🏁 Nueva búsqueda completada:`, result))
+            .catch(error => console.error(`❌ Error en búsqueda:`, error));
+
+        res.json({ success: true, message: 'Buscando nuevo conductor...', status: 'pending' });
+
+    } catch (error) {
+        console.error('❌ Error:', error);
+        res.status(500).json({ error: 'Error al reasignar viaje', success: false });
+    }
+});
+
+// =============================================
 // CANCELAR VIAJE - DETENER BÚSQUEDA
 // =============================================
 router.put('/:tripId/cancel', async (req, res) => {
