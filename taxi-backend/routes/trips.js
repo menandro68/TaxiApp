@@ -237,7 +237,7 @@ async function startProgressiveSearch(tripId, pickupCoords, tripData, userData) 
 // =============================================
 router.post('/create', async (req, res) => {
     try {
-        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops } = req.body;
+const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops, trip_code } = req.body;
 
         // VALIDAR user_id
         if (!user_id) {
@@ -284,10 +284,10 @@ router.post('/create', async (req, res) => {
 
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
         const tripResult = await db.query(
-            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng)
-             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)
+`INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null]
+            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null]
         );
 
         const tripId = tripResult.rows[0].id;
