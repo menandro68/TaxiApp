@@ -1745,10 +1745,40 @@ currentTrip={currentTrip}
                 'Continúa al siguiente destino.',
                 [{ text: 'Ir al Siguiente', onPress: () => setActiveTab('map') }]
               );
-            } else {
+     } else {
               setActiveTab('dashboard');
             }
           }}
+        onCancelTrip={() => {
+          Alert.alert(
+            '❌ Cancelar Viaje',
+            '¿Estás seguro que deseas cancelar este viaje?',
+            [
+              { text: 'No', style: 'cancel' },
+              { 
+                text: 'Sí, Cancelar', 
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await fetch(`https://web-production-99844.up.railway.app/api/trips/${currentTrip.id}/cancel`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ reason: 'Cancelado por conductor' })
+                    });
+                    setCurrentTrip(null);
+                    setTripPhase('');
+                    setDriverStatus('online');
+                    setActiveTab('dashboard');
+                    Alert.alert('Viaje Cancelado', 'El viaje ha sido cancelado');
+                  } catch (error) {
+                    console.error('Error cancelando viaje:', error);
+                    Alert.alert('Error', 'No se pudo cancelar el viaje');
+                  }
+                }
+              }
+            ]
+          );
+        }}
       />
       
       {/* GESTOR DE PARADAS MÚLTIPLES */}

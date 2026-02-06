@@ -92,7 +92,7 @@ const getDistanceToRoute = (location, routeCoords) => {
   return minDistance;
 };
 
-const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination }) => {
+  const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination, onCancelTrip }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -875,7 +875,10 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
       {currentTrip && (
         <View style={styles.buttons}>
           {!isNavigating ? (
-            <>
+        <>
+           <TouchableOpacity style={[styles.btn, styles.btnRed, {flex: 0.4, paddingTop: 12, paddingBottom: 8}]} onPress={onCancelTrip}>
+                <Text style={[styles.btnText, {fontSize: 13}]}>Cancelar</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={startNavigation}>
                 <Text style={styles.btnText}>{tripPhase === 'started' ? '🚗 Ir al Destino' : '🚗 Ir Pasajero'}</Text>
               </TouchableOpacity>
