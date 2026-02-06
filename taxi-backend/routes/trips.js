@@ -142,10 +142,10 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
 // =============================================
 // FUNCIÓN: Proceso de búsqueda progresiva
 // =============================================
-async function startProgressiveSearch(tripId, pickupCoords, tripData, userData) {
+async function startProgressiveSearch(tripId, pickupCoords, tripData, userData, excludeDriverIds = []) {
     console.log(`🚀 Iniciando búsqueda progresiva para viaje ${tripId}`);
     
-    const notifiedDriverIds = [];
+    const notifiedDriverIds = [...excludeDriverIds]; // Incluir conductores excluidos desde el inicio
     const allNotifiedDrivers = [];
     
     // Guardar referencia del proceso
@@ -636,7 +636,9 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
         };
         const userData = { user_id: trip.user_id, name: trip.user_name, phone: trip.user_phone };
 
-        startProgressiveSearch(parseInt(tripId), pickupCoords, tripData, userData)
+        // Excluir al conductor que canceló de la nueva búsqueda
+const excludeDrivers = [cancelledDriverId];
+startProgressiveSearch(parseInt(tripId), pickupCoords, tripData, userData, excludeDrivers)
             .then(result => console.log(`🏁 Nueva búsqueda completada:`, result))
             .catch(error => console.error(`❌ Error en búsqueda:`, error));
 
