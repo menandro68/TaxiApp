@@ -1413,7 +1413,7 @@ const startDriverTracking = async (driver, userLoc) => {
               {
                 text: 'Subir al vehículo',
           onPress: async () => {
-                  const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
+                 const tripCode = thirdPartyInfo?.tripCode || Math.floor(1000 + Math.random() * 9000).toString();
                 try {
                     const storedTrip = await SharedStorage.getTripRequest();
                     const tripId = storedTrip?.id || tripRequest?.id;
@@ -1641,7 +1641,8 @@ const sendTripRequestToBackend = async (tripData) => {
           latitude: tripData.destination.latitude,
           longitude: tripData.destination.longitude
         },
-        additional_stops: tripData.additionalDestinations || []
+   additional_stops: tripData.additionalDestinations || [],
+        trip_code: thirdPartyInfo?.tripCode || null
       }
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
