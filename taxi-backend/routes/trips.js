@@ -637,8 +637,8 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
         const userData = { user_id: trip.user_id, name: trip.user_name, phone: trip.user_phone };
 
         // Excluir al conductor que canceló de la nueva búsqueda
-const excludeDrivers = [cancelledDriverId];
-startProgressiveSearch(parseInt(tripId), pickupCoords, tripData, userData, excludeDrivers)
+        const excludeDrivers = [cancelledDriverId];
+        startProgressiveSearch(parseInt(tripId), pickupCoords, tripData, userData, excludeDrivers)
             .then(result => console.log(`🏁 Nueva búsqueda completada:`, result))
             .catch(error => console.error(`❌ Error en búsqueda:`, error));
 
@@ -923,76 +923,112 @@ router.get('/driver-history/:driverId', async (req, res) => {
 
 // =============================================
 // POLLING: VIAJES PENDIENTES PARA CONDUCTOR
+// Versión robusta con validaciones completas
 // =============================================
 router.get('/pending-for-driver/:driverId', async (req, res) => {
     try {
         const { driverId } = req.params;
-        
-        // Obtener ubicación actual del conductor
+        const parsedDriverId = parseInt(driverId);
+
+        // 1. VERIFICAR QUE EL CONDUCTOR EXISTE Y OBTENER SU INFO
         const driverResult = await db.query(
-            `SELECT current_latitude, current_longitude, vehicle_type, status
+            `SELECT id, name, current_latitude, current_longitude, vehicle_type, status
              FROM drivers WHERE id = $1`,
-            [parseInt(driverId)]
+            [parsedDriverId]
         );
-        
+
         if (driverResult.rows.length === 0) {
             return res.json({ success: false, error: 'Conductor no encontrado' });
         }
-        
+
         const driver = driverResult.rows[0];
-        
-        // Verificar que el conductor esté online
+
+        // 2. VERIFICAR QUE EL CONDUCTOR ESTÁ DISPONIBLE (no busy, no offline)
+        if (driver.status === 'busy') {
+            return res.json({ success: true, trip: null, reason: 'driver_busy' });
+        }
+
         if (driver.status !== 'online' && driver.status !== 'available') {
             return res.json({ success: true, trip: null, reason: 'driver_not_online' });
         }
-        
+
+        // 3. VERIFICAR QUE EL CONDUCTOR NO TIENE UN VIAJE ACTIVO
+        const activeTripsResult = await db.query(
+            `SELECT id, status FROM trips 
+             WHERE driver_id = $1 
+             AND status NOT IN ('completed', 'cancelled')
+             LIMIT 1`,
+            [parsedDriverId]
+        );
+
+        if (activeTripsResult.rows.length > 0) {
+            console.log(`🚫 POLLING: Conductor ${driverId} ya tiene viaje activo ${activeTripsResult.rows[0].id}`);
+            return res.json({ 
+                success: true, 
+                trip: null, 
+                reason: 'driver_has_active_trip',
+                activeTripId: activeTripsResult.rows[0].id
+            });
+        }
+
+        // 4. VERIFICAR UBICACIÓN DEL CONDUCTOR
         if (!driver.current_latitude || !driver.current_longitude) {
             return res.json({ success: true, trip: null, reason: 'no_location' });
         }
-        
-        // Mapear tipo de vehículo
-        const VEHICLE_TYPE_MAP = {
-            'economy': 'car',
-            'comfort': 'car', 
-            'premium': 'car',
-            'car': 'car',
-            'moto': 'moto',
-            'motorcycle': 'moto'
-        };
-        const driverVehicleType = driver.vehicle_type || 'car';
-        
-        // Buscar viajes pendientes dentro del radio máximo (3km)
-        const tripsResult = await db.query(
-            `SELECT t.*, u.name as user_name, u.phone as user_phone
-             FROM trips t
-             LEFT JOIN users u ON t.user_id = u.id
-             WHERE t.status = 'pending'
-             AND t.pickup_lat IS NOT NULL
-             AND t.pickup_lng IS NOT NULL
-             AND t.created_at > NOW() - INTERVAL '5 minutes'
-             ORDER BY t.created_at ASC
-             LIMIT 10`
+
+        // 5. OBTENER IDs DE CONDUCTORES BLOQUEADOS
+        const blockedByUsersResult = await db.query(
+            `SELECT DISTINCT user_id FROM blocked_drivers WHERE driver_id = $1`,
+            [parsedDriverId]
         );
+        const usersWhoBlockedThisDriver = blockedByUsersResult.rows.map(r => r.user_id);
+
+        // 6. BUSCAR VIAJES VERDADERAMENTE PENDIENTES
+        // - status = 'pending'
+        // - driver_id IS NULL (no asignados)
+        // - Creados en los últimos 5 minutos
+        // - Con coordenadas válidas
+        // - No de usuarios que bloquearon a este conductor
+        let tripsQuery = `
+            SELECT t.*, u.name as user_name, u.phone as user_phone
+            FROM trips t
+            LEFT JOIN users u ON t.user_id = u.id
+            WHERE t.status = 'pending'
+            AND t.driver_id IS NULL
+            AND t.pickup_lat IS NOT NULL
+            AND t.pickup_lng IS NOT NULL
+            AND t.created_at > NOW() - INTERVAL '5 minutes'
+        `;
         
+        const queryParams = [];
+        
+        if (usersWhoBlockedThisDriver.length > 0) {
+            queryParams.push(usersWhoBlockedThisDriver);
+            tripsQuery += ` AND t.user_id != ALL($${queryParams.length}::int[])`;
+        }
+        
+        tripsQuery += ` ORDER BY t.created_at ASC LIMIT 10`;
+
+        const tripsResult = await db.query(tripsQuery, queryParams);
+
         if (tripsResult.rows.length === 0) {
             return res.json({ success: true, trip: null, reason: 'no_pending_trips' });
         }
-        
-        // Filtrar por distancia y tipo de vehículo
+
+        // 7. FILTRAR POR DISTANCIA (máximo 3km)
         const MAX_RADIUS_KM = 3;
-        
+
         for (const trip of tripsResult.rows) {
-            // Calcular distancia
             const distance = calculateDistance(
                 driver.current_latitude,
                 driver.current_longitude,
                 trip.pickup_lat,
                 trip.pickup_lng
             );
-            
+
             if (distance <= MAX_RADIUS_KM) {
-                console.log(`📡 POLLING: Viaje ${trip.id} encontrado para conductor ${driverId} (${distance.toFixed(2)}km)`);
-                
+                console.log(`📡 POLLING: Viaje ${trip.id} disponible para conductor ${driverId} (${distance.toFixed(2)}km)`);
+
                 return res.json({
                     success: true,
                     trip: {
@@ -1015,10 +1051,10 @@ router.get('/pending-for-driver/:driverId', async (req, res) => {
                 });
             }
         }
-        
+
         // No hay viajes cercanos
         return res.json({ success: true, trip: null, reason: 'no_nearby_trips' });
-        
+
     } catch (error) {
         console.error('❌ Error en polling de viajes:', error);
         res.status(500).json({ success: false, error: 'Error interno' });
