@@ -36,19 +36,7 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         
         // Buscar conductores disponibles que no hayan sido notificados
         // Filtrar por tipo de vehículo: moto solo notifica a motos, car solo a carros
-        // Mapear tipos de veh�culo de la app usuario a tipos de conductor en BD
-        // App usuario env�a: economy, comfort, premium, moto
-        // BD conductores tiene: car, moto
-        const userVehicleType = tripData.vehicle_type || 'economy';
-        const VEHICLE_TYPE_MAP = {
-            'economy': 'car',
-            'comfort': 'car',
-            'premium': 'car',
-            'car': 'car',
-            'moto': 'moto',
-            'motorcycle': 'moto'
-        };
-        const requestedVehicleType = VEHICLE_TYPE_MAP[userVehicleType] || 'car';
+        const requestedVehicleType = tripData.vehicle_type || 'car';
     // Obtener IDs de conductores bloqueados por este usuario
         const blockedResult = await db.query(
             `SELECT driver_id FROM blocked_drivers WHERE user_id = $1`,
@@ -61,7 +49,7 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                     current_latitude, current_longitude, fcm_token, vehicle_type
              FROM drivers
              WHERE status IN ('available', 'online')
-             AND last_seen > NOW() - INTERVAL '5 minutes'
+             AND last_seen > NOW() - INTERVAL '60 seconds'
              AND fcm_token IS NOT NULL
              AND id != ALL($1::int[])
              AND id != ALL($2::int[])
@@ -237,7 +225,7 @@ async function startProgressiveSearch(tripId, pickupCoords, tripData, userData) 
 // =============================================
 router.post('/create', async (req, res) => {
     try {
-const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops, trip_code } = req.body;
+        const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops } = req.body;
 
         // VALIDAR user_id
         if (!user_id) {
@@ -268,10 +256,8 @@ const { user_id, pickup_location, destination, vehicle_type, payment_method, est
             `SELECT pending_penalty FROM users WHERE id = $1`,
             [userIdParsed]
         );
-       console.log('DEBUG PENALTY - userIdParsed:', userIdParsed, 'penaltyResult:', JSON.stringify(penaltyResult.rows));
         const pendingPenalty = penaltyResult.rows[0]?.pending_penalty || 0;
         const finalPrice = (estimated_price || 0) + pendingPenalty;
-        console.log('DEBUG PENALTY - pendingPenalty:', pendingPenalty, 'estimated_price:', estimated_price, 'finalPrice:', finalPrice);
 
         // Si tiene penalidad, resetearla
         if (pendingPenalty > 0) {
@@ -284,10 +270,10 @@ const { user_id, pickup_location, destination, vehicle_type, payment_method, est
 
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
         const tripResult = await db.query(
-`INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code)
-             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10)
+            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null]
+            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -847,57 +833,108 @@ router.get('/driver-history/:driverId', async (req, res) => {
     }
 });
 
-// GUARDAR CLAVE DE VERIFICACIÓN DEL VIAJE
-router.put('/trip-code/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  const { trip_code } = req.body;
-
-  if (!trip_code || trip_code.length !== 4) {
-    return res.status(400).json({ error: 'Clave debe ser de 4 dígitos' });
-  }
-
-  try {
-    // Agregar columna si no existe
+// =============================================
+// POLLING: VIAJES PENDIENTES PARA CONDUCTOR
+// =============================================
+router.get('/pending-for-driver/:driverId', async (req, res) => {
     try {
-      await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS trip_code VARCHAR(4)`);
-    } catch (e) {
-      // Columna ya existe, ignorar
+        const { driverId } = req.params;
+        
+        // Obtener ubicación actual del conductor
+        const driverResult = await db.query(
+            `SELECT current_latitude, current_longitude, vehicle_type, status
+             FROM drivers WHERE id = $1`,
+            [parseInt(driverId)]
+        );
+        
+        if (driverResult.rows.length === 0) {
+            return res.json({ success: false, error: 'Conductor no encontrado' });
+        }
+        
+        const driver = driverResult.rows[0];
+        
+        // Verificar que el conductor esté online
+        if (driver.status !== 'online' && driver.status !== 'available') {
+            return res.json({ success: true, trip: null, reason: 'driver_not_online' });
+        }
+        
+        if (!driver.current_latitude || !driver.current_longitude) {
+            return res.json({ success: true, trip: null, reason: 'no_location' });
+        }
+        
+        // Mapear tipo de vehículo
+        const VEHICLE_TYPE_MAP = {
+            'economy': 'car',
+            'comfort': 'car', 
+            'premium': 'car',
+            'car': 'car',
+            'moto': 'moto',
+            'motorcycle': 'moto'
+        };
+        const driverVehicleType = driver.vehicle_type || 'car';
+        
+        // Buscar viajes pendientes dentro del radio máximo (3km)
+        const tripsResult = await db.query(
+            `SELECT t.*, u.name as user_name, u.phone as user_phone
+             FROM trips t
+             LEFT JOIN users u ON t.user_id = u.id
+             WHERE t.status = 'pending'
+             AND t.pickup_lat IS NOT NULL
+             AND t.pickup_lng IS NOT NULL
+             AND t.created_at > NOW() - INTERVAL '5 minutes'
+             ORDER BY t.created_at ASC
+             LIMIT 10`
+        );
+        
+        if (tripsResult.rows.length === 0) {
+            return res.json({ success: true, trip: null, reason: 'no_pending_trips' });
+        }
+        
+        // Filtrar por distancia y tipo de vehículo
+        const MAX_RADIUS_KM = 3;
+        
+        for (const trip of tripsResult.rows) {
+            // Calcular distancia
+            const distance = calculateDistance(
+                driver.current_latitude,
+                driver.current_longitude,
+                trip.pickup_lat,
+                trip.pickup_lng
+            );
+            
+            if (distance <= MAX_RADIUS_KM) {
+                console.log(`📡 POLLING: Viaje ${trip.id} encontrado para conductor ${driverId} (${distance.toFixed(2)}km)`);
+                
+                return res.json({
+                    success: true,
+                    trip: {
+                        id: trip.id,
+                        user_name: trip.user_name,
+                        user_phone: trip.user_phone,
+                        pickup_location: trip.pickup_location,
+                        destination: trip.destination,
+                        price: trip.price,
+                        pickup_lat: trip.pickup_lat,
+                        pickup_lng: trip.pickup_lng,
+                        destination_lat: trip.destination_lat,
+                        destination_lng: trip.destination_lng,
+                        payment_method: trip.payment_method || 'cash',
+                        vehicle_type: trip.vehicle_type || 'economy',
+                        trip_code: trip.trip_code,
+                        distance: distance.toFixed(2),
+                        created_at: trip.created_at
+                    }
+                });
+            }
+        }
+        
+        // No hay viajes cercanos
+        return res.json({ success: true, trip: null, reason: 'no_nearby_trips' });
+        
+    } catch (error) {
+        console.error('❌ Error en polling de viajes:', error);
+        res.status(500).json({ success: false, error: 'Error interno' });
     }
-    await db.query(`UPDATE trips SET trip_code = $1 WHERE id = $2`, [trip_code, tripId]);
-    console.log(`🔑 Clave ${trip_code} guardada para viaje ${tripId}`);
-    res.json({ success: true, message: 'Clave guardada' });
-  } catch (err) {
-    console.error('Error guardando clave:', err);
-    res.status(500).json({ error: 'Error guardando clave' });
-  }
-});
-
-// VALIDAR CLAVE DE VERIFICACIÓN DEL VIAJE
-router.post('/verify-code/:tripId', async (req, res) => {
-  const { tripId } = req.params;
-  const { trip_code } = req.body;
-
-  try {
-    const result = await db.query(`SELECT trip_code FROM trips WHERE id = $1`, [tripId]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Viaje no encontrado' });
-    }
-    const trip = result.rows[0];
-    if (!trip.trip_code) {
-      return res.status(400).json({ success: false, error: 'No hay clave asignada' });
-    }
-    if (trip.trip_code === trip_code) {
-      console.log(`✅ Clave verificada para viaje ${tripId}`);
-      res.json({ success: true, message: 'Clave correcta' });
-    } else {
-      console.log(`❌ Clave incorrecta para viaje ${tripId}: ${trip_code} vs ${trip.trip_code}`);
-      res.json({ success: false, message: 'Clave incorrecta' });
-    }
-  } catch (err) {
-    console.error('Error verificando clave:', err);
-    res.status(500).json({ error: 'Error verificando clave' });
-  }
 });
 
 module.exports = router;
-
