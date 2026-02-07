@@ -1651,7 +1651,9 @@ const sendTripRequestToBackend = async (tripData) => {
           longitude: tripData.destination.longitude
         },
    additional_stops: tripData.additionalDestinations || [],
-        trip_code: thirdPartyInfo?.tripCode || null
+     trip_code: thirdPartyInfo?.tripCode || null,
+        third_party_name: thirdPartyInfo?.passengerInfo?.name || null,
+        third_party_phone: thirdPartyInfo?.passengerInfo?.phone || null
       }
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
