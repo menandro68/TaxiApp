@@ -279,6 +279,13 @@ router.post('/create', async (req, res) => {
         }
 
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
+      
+        // Asegurar columnas de tercero existan
+        try {
+          await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS third_party_name VARCHAR(100)`);
+          await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS third_party_phone VARCHAR(20)`);
+        } catch(e) {}
+
   const tripResult = await db.query(
             `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code, third_party_name, third_party_phone)
              VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12)
