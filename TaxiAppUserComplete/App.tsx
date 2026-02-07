@@ -1431,7 +1431,7 @@ const startDriverTracking = async (driver, userLoc) => {
                     console.log('🔑 DEBUG - tripCode:', tripCode);
                     console.log('🔑 DEBUG - URL:', `${getBackendUrl()}/trips/trip-code/${tripId}`);
                     if (tripId) {
-                      const response = await fetch(`${getBackendUrl()}/trips/trip-code/${tripId}`, {
+                     const response = await fetch(`${getBackendUrl()}/trips/trip-code/${tripId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ trip_code: tripCode })
