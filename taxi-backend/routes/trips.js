@@ -121,7 +121,9 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                     pickupLng: pickupCoords.longitude.toString(),
                     destinationLat: tripData.destination_lat?.toString() || '',
                     destinationLng: tripData.destination_lng?.toString() || '',
-                    searchRadius: radius.toString()
+                    searchRadius: radius.toString(),
+                    thirdPartyName: tripData.third_party_name || '',
+                    thirdPartyPhone: tripData.third_party_phone || ''
                 },
                 token: driver.fcm_token
             };
@@ -311,7 +313,9 @@ router.post('/create', async (req, res) => {
             payment_method,
             vehicle_type,
             destination_lat: destination_coords?.latitude,
-            destination_lng: destination_coords?.longitude
+            destination_lng: destination_coords?.longitude,
+            third_party_name: third_party_name || null,
+            third_party_phone: third_party_phone || null
         };
 
         // INICIAR BÚSQUEDA PROGRESIVA EN SEGUNDO PLANO
