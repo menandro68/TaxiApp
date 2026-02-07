@@ -72,9 +72,15 @@ class PushNotificationService {
         // Compatibilidad con formato antiguo
         console.log('🚗 Procesando trip_assigned (legacy)...');
         this.handleDriverAssigned(data);
-      } else if (data?.type === 'DRIVER_ARRIVED') {
+   } else if (data?.type === 'DRIVER_ARRIVED') {
         // No mostrar Alert - el usuario ya ve el conductor en el mapa
         console.log('📍 Conductor llegó al punto de recogida');
+      } else if (data?.type === 'DRIVER_CANCELLED_REASSIGNING') {
+        console.log('🔄 Conductor canceló, buscando nuevo...');
+        this.isReassignment = true;
+        if (global.handleDriverCancelledReassigning) {
+          global.handleDriverCancelledReassigning(data);
+        }
       } else {
         // Mostrar notificación genérica
         if (notification?.title) {

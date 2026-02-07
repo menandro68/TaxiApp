@@ -109,6 +109,8 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCancelWarningModal, setShowCancelWarningModal] = useState(false);
+  const [isReassignment, setIsReassignment] = useState(false);
+  useEffect(() => { if (rideStatus === TRIP_STATES.IDLE) setIsReassignment(false); }, [rideStatus]);
   const [cancelWarningTime, setCancelWarningTime] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
   const [routeInfo, setRouteInfo] = useState(null);
@@ -824,6 +826,13 @@ const setupNotificationHandlers = () => {
       } else {
         console.log('�️ No hay ubicacion del usuario, tracking omitido');
       }
+    };
+
+    // Handler para cuando conductor cancela y se busca otro
+    global.handleDriverCancelledReassigning = (data) => {
+      console.log('🔄 Conductor canceló, buscando nuevo conductor...');
+      setIsReassignment(true);
+      Alert.alert('🔄 Buscando nuevo conductor', 'El conductor anterior canceló. Estamos buscando otro conductor para ti.');
     };
     
     // Inicializar PushNotificationService
@@ -3054,7 +3063,7 @@ onPress={() => {
     if (rideStatus === TRIP_STATES.DRIVER_ASSIGNED && driverInfo) {
       return (
         <View style={styles.driverContainer}>
-          <Text style={styles.statusTitle}>Conductor asignado</Text>
+          <Text style={styles.statusTitle}>{isReassignment ? '🔄 NUEVO Conductor Asignado' : 'Conductor asignado'}</Text>
           <Text style={styles.driverName}>{driverInfo.name}</Text>
           <Text style={styles.driverDetails}>{driverInfo.car}</Text>
           <Text style={styles.driverDetails}> {driverInfo.rating}</Text>
