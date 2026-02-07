@@ -235,7 +235,7 @@ async function startProgressiveSearch(tripId, pickupCoords, tripData, userData, 
 // =============================================
 router.post('/create', async (req, res) => {
     try {
-      const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops, trip_code } = req.body;
+     const { user_id, pickup_location, destination, vehicle_type, payment_method, estimated_price, pickup_coords, destination_coords, additional_stops, trip_code, third_party_name, third_party_phone } = req.body;
 
         // VALIDAR user_id
         if (!user_id) {
@@ -279,11 +279,11 @@ router.post('/create', async (req, res) => {
         }
 
         // CREAR VIAJE EN ESTADO "PENDING" (sin conductor asignado)
-     const tripResult = await db.query(
-            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code)
-             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10)
+  const tripResult = await db.query(
+            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code, third_party_name, third_party_phone)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null]
+            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null, third_party_name || null, third_party_phone || null]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -1054,7 +1054,9 @@ router.get('/pending-for-driver/:driverId', async (req, res) => {
                         destination_lng: trip.destination_lng,
                         payment_method: trip.payment_method || 'cash',
                         vehicle_type: trip.vehicle_type || 'economy',
-                        trip_code: trip.trip_code,
+                     trip_code: trip.trip_code,
+                        third_party_name: trip.third_party_name || null,
+                        third_party_phone: trip.third_party_phone || null,
                         distance: distance.toFixed(2),
                         created_at: trip.created_at
                     }
