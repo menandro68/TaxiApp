@@ -279,7 +279,7 @@ class ApiService {
 
   async cancelTrip(tripId, reason) {
     try {
-      return await this.makeRequestWithRetry(`/trips/${tripId}/cancel`, 'PUT', { reason }, true);
+   return await this.makeRequestWithRetry(`/trips/${tripId}/driver-cancel`, 'PUT', { reason }, true);
     } catch (error) {
       console.error('Error cancelando viaje:', error);
       throw error;
