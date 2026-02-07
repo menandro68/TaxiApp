@@ -133,15 +133,12 @@ const DriverSearchScreen = ({ navigation, route }) => {
         }
       );
 
-      if (result.success) {
-        setDriverFound(result.driver);
-        setTimeout(() => {
-          // Navegar de vuelta con el conductor encontrado
-          navigation.navigate('Main', { 
-            driverFound: result.driver,
-            fromDriverSearch: true 
-          });
-        }, 2000);
+   if (result.success) {
+        // Navegar directo sin pantalla intermedia
+        navigation.navigate('Main', { 
+          driverFound: result.driver,
+          fromDriverSearch: true 
+        });
       } else {
         setSearchFailed(true);
       }
