@@ -102,6 +102,12 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         const notifiedDrivers = [];
         const newNotifiedIds = [];
 
+        // Calcular tiempo estimado de viaje (pickup → destino)
+        const tripDistanceKm = (tripData.destination_lat && tripData.destination_lng) 
+            ? calculateDistance(pickupCoords.latitude, pickupCoords.longitude, tripData.destination_lat, tripData.destination_lng)
+            : 0;
+        const estimatedMinutes = Math.max(5, Math.round((tripDistanceKm / 30) * 60)); // 30 km/h promedio ciudad
+
         for (const driver of driversInRadius) {
             const message = {
                 data: {
@@ -123,7 +129,8 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                     destinationLng: tripData.destination_lng?.toString() || '',
                     searchRadius: radius.toString(),
                     thirdPartyName: tripData.third_party_name || '',
-                    thirdPartyPhone: tripData.third_party_phone || ''
+                    thirdPartyPhone: tripData.third_party_phone || '',
+                    estimatedTime: `${estimatedMinutes} min`
                 },
                 token: driver.fcm_token
             };
