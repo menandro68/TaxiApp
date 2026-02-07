@@ -151,7 +151,9 @@ class FCMService {
         pickupLng: parseFloat(data.pickupLng) || null,
         destinationLat: parseFloat(data.destinationLat) || null,
         destinationLng: parseFloat(data.destinationLng) || null,
-        additionalStops: JSON.parse(data.additionalStops || '[]')
+        additionalStops: JSON.parse(data.additionalStops || '[]'),
+        thirdPartyName: data.thirdPartyName || null,
+        thirdPartyPhone: data.thirdPartyPhone || null
       };
 
       console.log('🚕 Procesando solicitud de servicio:', tripData);

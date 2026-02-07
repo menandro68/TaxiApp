@@ -781,7 +781,9 @@ global.autoAcceptTrip = async (tripData) => {
             pickupLng: parseFloat(data.trip.pickup_lng) || null,
             destinationLat: parseFloat(data.trip.destination_lat) || null,
             destinationLng: parseFloat(data.trip.destination_lng) || null,
-            tripCode: data.trip.trip_code || null,
+          tripCode: data.trip.trip_code || null,
+            thirdPartyName: data.trip.third_party_name || null,
+            thirdPartyPhone: data.trip.third_party_phone || null,
             type: 'NEW_TRIP_REQUEST',
           };
           
@@ -1844,11 +1846,11 @@ currentTrip={currentTrip}
                 style: 'destructive',
                 onPress: async () => {
                   try {
-                    await fetch(`https://web-production-99844.up.railway.app/api/trips/${currentTrip.id}/cancel`, {
-                      method: 'PUT',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ reason: 'Cancelado por conductor' })
-                    });
+                  await fetch(`https://web-production-99844.up.railway.app/api/trips/${currentTrip.id}/driver-cancel`, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ driver_id: loggedDriver?.id, reason: 'Cancelado por conductor' })
+});
                     setCurrentTrip(null);
                     setTripPhase('');
                     setDriverStatus('online');
@@ -2063,10 +2065,105 @@ const renderEarnings = () => (
     }
   };
 
+ // Si no hay conductor logueado, mostrar pantalla de bienvenida
+  if (!loggedDriver) {
+    return (
+      <View style={styles.container}>
+        <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#3b82f6', padding: 20 }}>
+          <Text style={{ fontSize: 60, marginBottom: 20 }}>🚕</Text>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 10 }}>TaxiApp Conductor</Text>
+          <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 40 }}>
+            Gana dinero conduciendo con nosotros
+          </Text>
+          
+          <TouchableOpacity
+            style={{ backgroundColor: 'white', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
+            onPress={() => setShowLogin(true)}
+          >
+            <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>Iniciar Sesión</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={{ backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, width: '100%' }}
+            onPress={() => setShowPreRegister(true)}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>Registrarse</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Modal de Pre-Registro */}
+        <Modal visible={showPreRegister} animationType="slide" onRequestClose={() => setShowPreRegister(false)}>
+          <PreRegisterScreen
+            navigation={{
+              navigate: () => {},
+              goBack: async () => {
+                setShowPreRegister(false);
+                const savedDriver = await AsyncStorage.getItem('loggedDriver');
+                if (savedDriver) {
+                  setLoggedDriver(JSON.parse(savedDriver));
+                }
+              },
+              openLogin: () => {
+                setShowPreRegister(false);
+                setShowLogin(true);
+              }
+            }}
+          />
+        </Modal>
+        
+        {/* Modal de Login */}
+        <Modal visible={showLogin} animationType="slide" onRequestClose={() => setShowLogin(false)}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+            <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
+            <View style={{ padding: 20, paddingTop: 40 }}>
+              <TouchableOpacity onPress={() => setShowLogin(false)}>
+                <Text style={{ fontSize: 18, color: 'white', fontWeight: 'bold' }}>← Volver</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flex: 1, backgroundColor: 'white', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 30 }}>
+              <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#1e3a5f', marginBottom: 10 }}>Bienvenido</Text>
+              <Text style={{ fontSize: 16, color: '#64748b', marginBottom: 30 }}>Ingresa tus credenciales</Text>
+              <TextInput
+                style={{ backgroundColor: '#f1f5f9', padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16 }}
+                placeholder="Email"
+                value={loginEmail}
+                onChangeText={setLoginEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={{ backgroundColor: '#f1f5f9', padding: 15, borderRadius: 10, marginBottom: 20, fontSize: 16 }}
+                placeholder="Contraseña"
+                value={loginPassword}
+                onChangeText={setLoginPassword}
+                secureTextEntry
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: '#3b82f6', padding: 15, borderRadius: 10, alignItems: 'center' }}
+                onPress={handleLogin}
+                disabled={loginLoading}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>
+                  {loginLoading ? 'Ingresando...' : 'Iniciar Sesión'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ marginTop: 20, alignItems: 'center' }}
+                onPress={() => { setShowLogin(false); setShowPreRegister(true); }}
+              >
+                <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 16 }}>¿No tienes cuenta? Regístrate</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
-      
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Conductor App</Text>
@@ -2112,13 +2209,13 @@ const renderEarnings = () => (
             
             {pendingRequest && (
               <View style={styles.requestDetails}>
-                <Text style={styles.requestText}>👤 Pasajero: {pendingRequest.user}</Text>
+            <Text style={styles.requestText}>👤 Pasajero: {pendingRequest.thirdPartyName || pendingRequest.user}</Text>
                 <Text style={styles.requestText}>📍 Origen: {pendingRequest.pickup}</Text>
                 <Text style={styles.requestText}>🎯 Destino: {pendingRequest.destination}</Text>
                 <Text style={styles.requestText}>💰 Precio: RD${pendingRequest.estimatedPrice}</Text>
                 <Text style={styles.requestText}>📏 Distancia: {pendingRequest.distance || '5.2 km'}</Text>
                 <Text style={styles.requestText}>⏱️ Tiempo: {pendingRequest.estimatedTime}</Text>
-                <Text style={styles.requestText}>📱 Teléfono: {pendingRequest.phone || '+1-809-555-0199'}</Text>
+                <Text style={styles.requestText}>📱 Teléfono: {pendingRequest.thirdPartyPhone || pendingRequest.phone || '+1-809-555-0199'}</Text>
                 <Text style={styles.requestText}>🚗 Vehículo: {pendingRequest.vehicleType || 'Confort'}</Text>
                <Text style={styles.requestTextBig}>💳 Pago: {pendingRequest.paymentMethod === 'card' ? 'Tarjeta de Crédito' : 'Efectivo'}</Text>
                 
@@ -2144,7 +2241,7 @@ const renderEarnings = () => (
                     fontWeight: 'bold',
                     color: '#451a03'
                   }}>
-                    Preguntar: "¿Viaje para {pendingRequest.user}?"
+                   Preguntar: "¿Viaje para {pendingRequest.thirdPartyName || pendingRequest.user}?"
                   </Text>
                   <Text style={{
                     fontSize: 14,
