@@ -133,9 +133,33 @@ router.get('/', async (req, res) => {
 router.put('/status', async (req, res) => {
     try {
         const { driverId, status, isOnline } = req.body;
-        
+
         console.log('📡 Recibida petición de cambio de estado:', { driverId, status, isOnline });
-        
+
+        // Bloquear si intenta ponerse online estando suspendido
+        if (status === 'online') {
+            // Auto-expirar suspensiones vencidas
+            await db.query(
+                `UPDATE driver_suspensions SET status = 'expired' 
+                 WHERE driver_id = $1 AND status = 'active' AND type = 'temporal' AND expires_at < NOW()`,
+                [driverId]
+            );
+            const suspCheck = await db.query(
+                `SELECT id, reason, expires_at FROM driver_suspensions 
+                 WHERE driver_id = $1 AND status = 'active' LIMIT 1`,
+                [driverId]
+            );
+            if (suspCheck.rows.length > 0) {
+                const susp = suspCheck.rows[0];
+                return res.status(403).json({ 
+                    error: 'Conductor suspendido', 
+                    suspended: true,
+                    reason: susp.reason,
+                    expiresAt: susp.expires_at
+                });
+            }
+        }
+
         const result = await db.query(
             'UPDATE drivers SET status = $1 WHERE id = $2 RETURNING *',
             [status, driverId]
