@@ -236,6 +236,22 @@ async function initDatabase() {
       )
     `);
 
+    // Tabla de cancelaciones de conductor (para penalización progresiva)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_cancellations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        trip_id INTEGER,
+        reason TEXT,
+        cancellation_number INTEGER DEFAULT 1,
+        suspension_hours INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_cancellations_driver_id ON driver_cancellations(driver_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_cancellations_created_at ON driver_cancellations(created_at)`);
+
     // Tabla de logs encriptados
     await pool.query(`
       CREATE TABLE IF NOT EXISTS encrypted_logs (

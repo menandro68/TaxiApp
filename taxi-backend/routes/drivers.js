@@ -294,4 +294,70 @@ router.get('/:id/location', async (req, res) => {
     }
 });
 
+// =============================================
+// VERIFICAR SUSPENSIÓN ACTIVA DEL CONDUCTOR
+// =============================================
+router.get('/check-suspension/:driverId', async (req, res) => {
+    try {
+        const { driverId } = req.params;
+
+        // Primero, auto-levantar suspensiones expiradas
+        await db.query(
+            `UPDATE driver_suspensions SET status = 'expired' 
+             WHERE driver_id = $1 AND status = 'active' AND type = 'temporal' AND expires_at < NOW()`,
+            [driverId]
+        );
+
+        // Si el conductor estaba suspendido pero ya expiró, ponerlo offline
+        const driverResult = await db.query(`SELECT status FROM drivers WHERE id = $1`, [driverId]);
+        if (driverResult.rows.length > 0 && driverResult.rows[0].status === 'suspended') {
+            const activeSuspension = await db.query(
+                `SELECT id FROM driver_suspensions WHERE driver_id = $1 AND status = 'active' LIMIT 1`,
+                [driverId]
+            );
+            if (activeSuspension.rows.length === 0) {
+                await db.query(`UPDATE drivers SET status = 'offline' WHERE id = $1`, [driverId]);
+            }
+        }
+
+        // Buscar suspensión activa
+        const suspensionResult = await db.query(
+            `SELECT id, type, reason, duration_hours, expires_at, suspended_at
+             FROM driver_suspensions 
+             WHERE driver_id = $1 AND status = 'active'
+             ORDER BY created_at DESC LIMIT 1`,
+            [driverId]
+        );
+
+        if (suspensionResult.rows.length > 0) {
+            const suspension = suspensionResult.rows[0];
+            const hoursRemaining = suspension.expires_at 
+                ? Math.max(0, (new Date(suspension.expires_at) - new Date()) / (1000 * 60 * 60))
+                : null;
+
+            // Contar cancelaciones en 24h
+            const cancellationsResult = await db.query(
+                `SELECT COUNT(*) as count FROM driver_cancellations 
+                 WHERE driver_id = $1 AND created_at > NOW() - INTERVAL '24 hours'`,
+                [driverId]
+            );
+
+            return res.json({
+                isSuspended: true,
+                type: suspension.type === 'temporal' ? 'TEMPORARY' : 'PERMANENT',
+                reason: suspension.reason,
+                hoursRemaining: hoursRemaining ? parseFloat(hoursRemaining.toFixed(2)) : null,
+                expiresAt: suspension.expires_at,
+                cancellationsIn24h: parseInt(cancellationsResult.rows[0].count)
+            });
+        }
+
+        res.json({ isSuspended: false });
+
+    } catch (error) {
+        console.error('Error verificando suspensión:', error);
+        res.status(500).json({ error: 'Error verificando suspensión' });
+    }
+});
+
 module.exports = router;

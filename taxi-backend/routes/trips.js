@@ -592,6 +592,8 @@ router.post('/reject/:tripId', async (req, res) => {
 
 // =============================================
 // CONDUCTOR CANCELA - REASIGNAR A OTRO CONDUCTOR
+// CON PENALIZACIÓN PROGRESIVA (24H RESET)
+// 1ra: 1h | 2da: 2h | 3ra: 4h | 4ta: 12h
 // =============================================
 router.put('/:tripId/driver-cancel', async (req, res) => {
     try {
@@ -602,9 +604,11 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
 
         // Obtener info del viaje
         const tripResult = await db.query(
-            `SELECT t.*, u.name as user_name, u.phone as user_phone, u.fcm_token as user_fcm_token
+            `SELECT t.*, u.name as user_name, u.phone as user_phone, u.fcm_token as user_fcm_token,
+                    d.name as driver_name, d.fcm_token as driver_fcm_token
              FROM trips t
              LEFT JOIN users u ON t.user_id = u.id
+             LEFT JOIN drivers d ON t.driver_id = d.id
              WHERE t.id = $1`,
             [tripId]
         );
@@ -615,17 +619,79 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
 
         const trip = tripResult.rows[0];
         const cancelledDriverId = trip.driver_id || parseInt(driver_id);
+        const driverName = trip.driver_name || 'Conductor';
+
+        // =============================================
+        // PENALIZACIÓN PROGRESIVA POR CANCELACIÓN
+        // =============================================
+        const PENALTY_HOURS = [1, 2, 4, 12]; // 1ra, 2da, 3ra, 4ta cancelación
+
+        // Contar cancelaciones en las últimas 24 horas
+        const cancellationsResult = await db.query(
+            `SELECT COUNT(*) as count FROM driver_cancellations 
+             WHERE driver_id = $1 AND created_at > NOW() - INTERVAL '24 hours'`,
+            [cancelledDriverId]
+        );
+        const cancellationsIn24h = parseInt(cancellationsResult.rows[0].count);
+        const cancellationNumber = cancellationsIn24h + 1; // Esta es la cancelación actual
+
+        // Determinar horas de suspensión
+        const penaltyIndex = Math.min(cancellationNumber - 1, PENALTY_HOURS.length - 1);
+        const suspensionHours = PENALTY_HOURS[penaltyIndex];
+
+        console.log(`⚠️ Conductor ${driverName} (ID:${cancelledDriverId}) - Cancelación #${cancellationNumber} en 24h → Suspensión: ${suspensionHours}h`);
+
+        // Registrar la cancelación
+        await db.query(
+            `INSERT INTO driver_cancellations (driver_id, trip_id, reason, cancellation_number, suspension_hours)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [cancelledDriverId, tripId, reason || 'Cancelado por conductor', cancellationNumber, suspensionHours]
+        );
+
+        // Crear suspensión temporal
+        const expiresAt = new Date(Date.now() + suspensionHours * 60 * 60 * 1000);
+        await db.query(
+            `INSERT INTO driver_suspensions (driver_id, driver_name, type, reason, duration_hours, expires_at, status, created_by)
+             VALUES ($1, $2, 'temporal', $3, $4, $5, 'active', 'system_auto_cancellation')`,
+            [cancelledDriverId, driverName, `Cancelación #${cancellationNumber} después de aceptar viaje`, suspensionHours, expiresAt]
+        );
+
+        // Actualizar estado del conductor a SUSPENDIDO (NO online)
+        await db.query(
+            `UPDATE drivers SET status = 'suspended' WHERE id = $1`,
+            [cancelledDriverId]
+        );
+
+        console.log(`🔒 Conductor ${driverName} SUSPENDIDO por ${suspensionHours}h hasta ${expiresAt.toLocaleString()}`);
+
+        // Notificar al conductor de su suspensión
+        if (trip.driver_fcm_token) {
+            try {
+                const admin = require('firebase-admin');
+                await admin.messaging().send({
+                    notification: {
+                        title: `🔒 Suspensión: ${suspensionHours} hora(s)`,
+                        body: `Cancelación #${cancellationNumber} en 24h. Suspendido hasta ${expiresAt.toLocaleTimeString('es-DO')}.`
+                    },
+                    data: {
+                        type: 'DRIVER_SUSPENDED',
+                        suspensionHours: suspensionHours.toString(),
+                        cancellationNumber: cancellationNumber.toString(),
+                        expiresAt: expiresAt.toISOString()
+                    },
+                    token: trip.driver_fcm_token,
+                    android: { priority: 'high' }
+                });
+                console.log(`✅ Conductor notificado de suspensión`);
+            } catch (fcmError) {
+                console.error('⚠️ Error notificando conductor:', fcmError.message);
+            }
+        }
 
         // Volver el viaje a estado PENDING y quitar conductor
         await db.query(
             `UPDATE trips SET status = 'pending', driver_id = NULL WHERE id = $1`,
             [tripId]
-        );
-
-        // Actualizar estado del conductor a disponible
-        await db.query(
-            `UPDATE drivers SET status = 'online' WHERE id = $1`,
-            [cancelledDriverId]
         );
 
         console.log(`✅ Viaje ${tripId} vuelto a estado PENDING`);
@@ -647,7 +713,7 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
                 });
                 console.log(`✅ Usuario notificado de reasignación`);
             } catch (fcmError) {
-                console.error('⚠️ Error notificando:', fcmError.message);
+                console.error('⚠️ Error notificando usuario:', fcmError.message);
             }
         }
 
@@ -670,7 +736,16 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
             .then(result => console.log(`🏁 Nueva búsqueda completada:`, result))
             .catch(error => console.error(`❌ Error en búsqueda:`, error));
 
-        res.json({ success: true, message: 'Buscando nuevo conductor...', status: 'pending' });
+        res.json({ 
+            success: true, 
+            message: 'Buscando nuevo conductor...', 
+            status: 'pending',
+            penalty: {
+                cancellationNumber,
+                suspensionHours,
+                expiresAt: expiresAt.toISOString()
+            }
+        });
 
     } catch (error) {
         console.error('❌ Error:', error);
