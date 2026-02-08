@@ -107,6 +107,9 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [showVehicleSelector, setShowVehicleSelector] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
+  const [showPackageReceiverModal, setShowPackageReceiverModal] = useState(false);
+  const [packageReceiverName, setPackageReceiverName] = useState('');
+  const [packageReceiverPhone, setPackageReceiverPhone] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCancelWarningModal, setShowCancelWarningModal] = useState(false);
   const [isReassignment, setIsReassignment] = useState(false);
@@ -1538,9 +1541,14 @@ const startDriverTracking = async (driver, userLoc) => {
       return;
     }
 
-    // NUEVA LÍNEA: Mostrar modal de métodos de pago
+ // Si es paquete y no tiene receptor, pedir datos
+    if (selectedVehicleType.includes('paquete') && !packageReceiverName) {
+      setShowPackageReceiverModal(true);
+      return;
+    }
+    // Mostrar modal de métodos de pago
     setShowPaymentModal(true);
-    return; // Detener aquí y continuar cuando el usuario seleccione método de pago
+    return;
   };
 
 const processRideRequest = async () => {
@@ -1652,8 +1660,8 @@ const sendTripRequestToBackend = async (tripData) => {
         },
    additional_stops: tripData.additionalDestinations || [],
      trip_code: thirdPartyInfo?.tripCode || null,
-        third_party_name: thirdPartyInfo?.passengerInfo?.name || null,
-        third_party_phone: thirdPartyInfo?.passengerInfo?.phone || null
+       third_party_name: thirdPartyInfo?.passengerInfo?.name || packageReceiverName || null,
+        third_party_phone: thirdPartyInfo?.passengerInfo?.phone || packageReceiverPhone || null
       }
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
@@ -3985,9 +3993,10 @@ setThirdPartyInfo(rideData);
       <View style={styles.packageOptionsRow}>
         <TouchableOpacity 
           style={styles.packageOption}
-        onPress={() => {
+       onPress={() => {
             setShowPackageModal(false);
             handleVehicleTypeChange('paquete_carro');
+            setTimeout(() => setShowPackageReceiverModal(true), 300);
           }}
         >
           <Text style={styles.packageOptionIcon}>🚗</Text>
@@ -3995,9 +4004,10 @@ setThirdPartyInfo(rideData);
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.packageOption}
-       onPress={() => {
+     onPress={() => {
             setShowPackageModal(false);
             handleVehicleTypeChange('paquete_moto');
+            setTimeout(() => setShowPackageReceiverModal(true), 300);
           }}
         >
           <Text style={styles.packageOptionIcon}>🏍️</Text>
@@ -4013,6 +4023,88 @@ setThirdPartyInfo(rideData);
     </View>
   </View>
 </Modal>
+
+{/* MODAL RECEPTOR DE PAQUETE */}
+<Modal
+  visible={showPackageReceiverModal}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setShowPackageReceiverModal(false)}
+>
+  <View style={styles.packageModalOverlay}>
+    <View style={styles.packageModalContainer}>
+      <Text style={styles.packageModalTitle}>¿Quién recibe el paquete?</Text>
+      
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: '#ddd',
+          borderRadius: 10,
+          padding: 12,
+          fontSize: 16,
+          marginBottom: 12,
+          backgroundColor: '#f9f9f9'
+        }}
+        placeholder="Nombre del receptor"
+        value={packageReceiverName}
+        onChangeText={setPackageReceiverName}
+      />
+      
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: '#ddd',
+          borderRadius: 10,
+          padding: 12,
+          fontSize: 16,
+          marginBottom: 20,
+          backgroundColor: '#f9f9f9'
+        }}
+        placeholder="Teléfono del receptor"
+        value={packageReceiverPhone}
+        onChangeText={setPackageReceiverPhone}
+        keyboardType="phone-pad"
+      />
+      
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#1a73e8',
+          padding: 14,
+          borderRadius: 10,
+          alignItems: 'center',
+          marginBottom: 10
+        }}
+     onPress={() => {
+          if (!packageReceiverName.trim() || !packageReceiverPhone.trim()) {
+            Alert.alert('Error', 'Ingresa nombre y teléfono del receptor');
+            return;
+          }
+          const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
+          setThirdPartyInfo({
+            passengerInfo: { name: packageReceiverName.trim(), phone: packageReceiverPhone.trim() },
+            tripCode: tripCode
+          });
+          setShowPackageReceiverModal(false);
+          Alert.alert(
+            'Envío de paquete confirmado',
+            `El conductor contactará a ${packageReceiverName.trim()} al ${packageReceiverPhone.trim()}\n\n🔑 Clave del envío: ${tripCode}\n\nComparta esta clave con el receptor para identificar el paquete.`,
+            [{ text: 'OK', onPress: () => setShowPaymentModal(true) }]
+          );
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Continuar</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={styles.packageCancelButton}
+        onPress={() => setShowPackageReceiverModal(false)}
+      >
+        <Text style={styles.packageCancelText}>Cancelar</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
 {/* MAP PICKER MODAL - DENTRO DEL COMPONENTE */}
 {showMapPicker && (console.log("?? RENDER mapPickerLocation:", mapPickerLocation), true) && (
   <Modal
