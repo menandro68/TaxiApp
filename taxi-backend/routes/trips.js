@@ -671,7 +671,7 @@ router.put('/:tripId/driver-cancel', async (req, res) => {
                 await admin.messaging().send({
                     notification: {
                         title: `🔒 Suspensión: ${suspensionHours} hora(s)`,
-                        body: `Cancelación #${cancellationNumber} en 24h. Suspendido hasta ${expiresAt.toLocaleTimeString('es-DO')}.`
+                 body: `Cancelación #${cancellationNumber}. Suspendido hasta las ${expiresAt.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Santo_Domingo' })}.`
                     },
                     data: {
                         type: 'DRIVER_SUSPENDED',
