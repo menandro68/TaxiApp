@@ -74,10 +74,12 @@ const normalizeTrip = (trip, fcmData = {}) => {
     vehicleType: fcmData.vehicleType || 'economy',
     paymentMethod: fcmData.paymentMethod || 'cash',
     distance: fcmData.distance || '',
-    // Para terceros
+// Para terceros y paquetes
     isForOther: fcmData.isForOther || false,
     passengerInfo: fcmData.passengerInfo || null,
-    tripCode: fcmData.tripCode || null,
+    tripCode: trip.trip_code || fcmData.tripCode || null,
+    thirdPartyName: trip.third_party_name || fcmData.thirdPartyName || null,
+    thirdPartyPhone: trip.third_party_phone || fcmData.thirdPartyPhone || null,
   };
 };
 
@@ -1831,8 +1833,16 @@ currentTrip={currentTrip}
                 'Continúa al siguiente destino.',
                 [{ text: 'Ir al Siguiente', onPress: () => setActiveTab('map') }]
               );
-     } else {
-              setActiveTab('dashboard');
+    } else {
+              if (currentTrip?.vehicleType?.includes('paquete') && currentTrip?.thirdPartyName) {
+                Alert.alert(
+                  '📦 Entrega de Paquete',
+                  `Entregar paquete a: ${currentTrip.thirdPartyName}\n📱 Teléfono: ${currentTrip.thirdPartyPhone || 'N/A'}\n\n🔑 Clave del envío: ${currentTrip.tripCode || 'N/A'}\n\nVerifique la clave con el receptor antes de entregar.`,
+                  [{ text: 'OK', onPress: () => setActiveTab('dashboard') }]
+                );
+              } else {
+                setActiveTab('dashboard');
+              }
             }
           }}
         onCancelTrip={() => {

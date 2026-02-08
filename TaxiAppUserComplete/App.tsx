@@ -109,6 +109,7 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [showPackageReceiverModal, setShowPackageReceiverModal] = useState(false);
   const [packageReceiverName, setPackageReceiverName] = useState('');
+  const packageReceiverNameRef = useRef('');
   const [packageReceiverPhone, setPackageReceiverPhone] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCancelWarningModal, setShowCancelWarningModal] = useState(false);
@@ -1418,12 +1419,14 @@ const startDriverTracking = async (driver, userLoc) => {
           };
           speakArrival();
 
-          Alert.alert(
-            '¡Conductor ha llegado!',
-            `${driver.name} está en tu ubicación.`,
+      Alert.alert(
+ packageReceiverNameRef.current ? '¡Conductor ha llegado!' : '¡Conductor ha llegado!',
+            packageReceiverNameRef.current 
+              ? `${driver.name} está en tu ubicación. Favor entregar el paquete a ${packageReceiverNameRef.current}.`
+              : `${driver.name} está en tu ubicación.`,
         [
               {
-                text: 'Subir al vehículo',
+                text: packageReceiverNameRef.current ? 'Entregar paquete' : 'Subir al vehículo',
           onPress: async () => {
                  const tripCode = thirdPartyInfo?.tripCode || Math.floor(1000 + Math.random() * 9000).toString();
                 try {
@@ -4078,7 +4081,9 @@ setThirdPartyInfo(rideData);
           if (!packageReceiverName.trim() || !packageReceiverPhone.trim()) {
             Alert.alert('Error', 'Ingresa nombre y teléfono del receptor');
             return;
-          }
+          
+         }
+          packageReceiverNameRef.current = packageReceiverName.trim();
           const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
           setThirdPartyInfo({
             passengerInfo: { name: packageReceiverName.trim(), phone: packageReceiverPhone.trim() },
