@@ -131,6 +131,25 @@ export default function DriverApp({ navigation }) {
     acceptanceRate: 100,
     cancellationRate: 0
   });
+
+  const statsLoadedRef = useRef(false);  
+
+  const driverStatsRef = useRef({
+    tripsOffered: 0,
+    tripsAccepted: 0,
+    tripsRejected: 0,
+    tripsCancelled: 0,
+    acceptanceRate: 100,
+    cancellationRate: 0
+  });
+
+// Sincronizar ref con state y persistir
+  React.useEffect(() => {
+    driverStatsRef.current = driverStats;
+    if (statsLoadedRef.current) {
+      AsyncStorage.setItem('@driver_stats', JSON.stringify(driverStats)).catch(() => {});
+    }
+  }, [driverStats]);
   
   const timerRef = useRef(null);
   const soundRef = useRef(null);
@@ -363,6 +382,22 @@ useEffect(() => {
     
     // Ejecutar después de 2 segundos para que la app cargue primero
     setTimeout(checkUnreadCommunications, 2000);
+    
+    // Cargar estadísticas persistidas
+    const loadStats = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('@driver_stats');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+    setDriverStats(parsed);
+          console.log('📊 Stats cargados:', JSON.stringify(parsed));
+          statsLoadedRef.current = true;
+        } else {
+         statsLoadedRef.current = true;
+        }
+      } catch (e) {}
+    };
+    loadStats();
 
     // Verificar si el conductor está suspendido
     const checkDriverStatus = async () => {
@@ -1451,6 +1486,7 @@ const acceptTrip = async () => {
       clearInterval(timerRef.current);
     }
     
+  let penaltyResult = null;
     try {
       // NUEVO: Llamar al endpoint del backend para rechazar el viaje
       const tripId = pendingRequest?.id;
@@ -1494,19 +1530,21 @@ const acceptTrip = async () => {
       });
       
       // Verificar si se deben aplicar penalizaciones
-      const updatedStats = {
-        ...driverStats,
-        tripsRejected: driverStats.tripsRejected + 1,
-        acceptanceRate: driverStats.tripsOffered > 0 
-          ? Math.round((driverStats.tripsAccepted / driverStats.tripsOffered) * 100)
+  const updatedStats = {
+        ...driverStatsRef.current,
+        tripsRejected: driverStatsRef.current.tripsRejected + 1,
+        acceptanceRate: driverStatsRef.current.tripsOffered > 0
+          ? Math.round((driverStatsRef.current.tripsAccepted / driverStatsRef.current.tripsOffered) * 100)
           : 0,
-        cancellationRate: driverStats.tripsOffered > 0
-          ? Math.round(((driverStats.tripsRejected + 1) / driverStats.tripsOffered) * 100)
+        cancellationRate: driverStatsRef.current.tripsOffered > 0
+          ? Math.round(((driverStatsRef.current.tripsRejected + 1) / driverStatsRef.current.tripsOffered) * 100)
           : 0,
         rating: 4.8
       };
       
-    const penaltyResult = await PenaltyService.checkAndApplyPenalties(updatedStats);
+    console.log('📊 PENALTY CHECK - Stats enviados:', JSON.stringify(updatedStats));
+   penaltyResult = await PenaltyService.checkAndApplyPenalties(updatedStats);
+    console.log('📊 PENALTY CHECK - Resultado:', JSON.stringify(penaltyResult));
       
       // Resetear estadísticas después de evaluar bloque de 10
       if (penaltyResult.resetStats || updatedStats.tripsOffered === 10) {
@@ -1526,7 +1564,9 @@ const acceptTrip = async () => {
     
     setShowRequestModal(false);
     setPendingRequest(null);
-    Alert.alert('Viaje Rechazado', 'La solicitud fue rechazada');
+   if (!penaltyResult?.penaltyApplied) {
+      Alert.alert('Viaje Rechazado', 'La solicitud fue rechazada');
+    }
   };
 
  const completeTrip = async () => {

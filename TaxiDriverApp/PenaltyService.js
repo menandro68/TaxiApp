@@ -47,12 +47,12 @@ class PenaltyService {
         });
       }
 
-      // Verificar tasa de cancelación
+ // Verificar tasa de cancelación (siempre advertencia, nunca suspensión directa)
       if (driverStats.cancellationRate > this.THRESHOLDS.MAX_CANCELLATION_RATE) {
         violations.push({
           type: 'HIGH_CANCELLATION',
           message: `Tasa de cancelación muy alta: ${driverStats.cancellationRate}%`,
-          severity: this.calculateSeverity(driverStats.cancellationRate, 10, 20, 30, true)
+          severity: 'WARNING'
         });
       }
 
