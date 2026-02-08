@@ -399,31 +399,39 @@ useEffect(() => {
     };
     loadStats();
 
-    // Verificar si el conductor está suspendido
+// Verificar si el conductor está suspendido (BACKEND)
     const checkDriverStatus = async () => {
-      const suspensionStatus = await PenaltyService.checkSuspensionStatus();
-      if (suspensionStatus.isSuspended) {
-        if (suspensionStatus.type === 'PERMANENT') {
-          Alert.alert(
-            '❌ Cuenta Suspendida',
-            `Tu cuenta está suspendida permanentemente.\nRazón: ${suspensionStatus.reason}\n\nContacta soporte para apelar.`,
-            [{ text: 'OK' }]
-          );
+      try {
+        const suspRes = await fetch(`https://web-production-99844.up.railway.app/api/drivers/check-suspension/${loggedDriver?.id || 1}`);
+        const suspData = await suspRes.json();
+        if (suspData.isSuspended) {
+          const expiraHora = suspData.expiresAt 
+            ? new Date(suspData.expiresAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
+            : '';
+          if (suspData.type === 'PERMANENT') {
+            Alert.alert(
+              '❌ Cuenta Suspendida',
+              `Tu cuenta está suspendida permanentemente.\nRazón: ${suspData.reason}\n\nContacta soporte para apelar.`,
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert(
+              '🔒 Suspensión Temporal',
+              `Suspendido por ${suspData.hoursRemaining?.toFixed(1)} hora(s) más.\nRazón: ${suspData.reason}\n\nPodrás trabajar después de las ${expiraHora}.`,
+              [{ text: 'OK' }]
+            );
+          }
           setDriverStatus('suspended');
-        } else if (suspensionStatus.type === 'TEMPORARY') {
-          Alert.alert(
-            '🔒 Suspensión Temporal',
-            `Tu cuenta está suspendida por ${suspensionStatus.hoursRemaining} horas más.\nRazón: ${suspensionStatus.reason}`,
-            [{ text: 'OK' }]
-          );
-          setDriverStatus('suspended');
+          return;
         }
-      } else if (suspensionStatus.recentlyExpired) {
-        Alert.alert(
-          '✅ Suspensión Terminada',
-          'Tu suspensión temporal ha expirado. Ya puedes trabajar nuevamente.',
-          [{ text: 'OK' }]
-        );
+      } catch (error) {
+        console.log('⚠️ Error verificando suspensión backend, usando local');
+        const suspensionStatus = await PenaltyService.checkSuspensionStatus();
+        if (suspensionStatus.isSuspended) {
+          setDriverStatus('suspended');
+          Alert.alert('🔒 Cuenta Suspendida', 'Tu cuenta está suspendida temporalmente.', [{ text: 'OK' }]);
+          return;
+        }
       }
     };
     
@@ -1277,15 +1285,28 @@ const toggleDriverStatus = async () => {
     }
     
     try {
-      // Verificar suspensión antes de conectarsee
-      const suspensionStatus = await PenaltyService.checkSuspensionStatus();
-      if (suspensionStatus.isSuspended) {
-        Alert.alert(
-          '🔒 No Puedes Conectarte',
-          'Tu cuenta está suspendida. No puedes aceptar viajes en este momento.',
-          [{ text: 'OK' }]
-        );
-        return;
+  // Verificar suspensión desde el BACKEND (no evitable)
+      try {
+        const suspRes = await fetch(`https://web-production-99844.up.railway.app/api/drivers/check-suspension/${loggedDriver?.id || 1}`);
+        const suspData = await suspRes.json();
+        if (suspData.isSuspended) {
+          const expiraHora = suspData.expiresAt 
+            ? new Date(suspData.expiresAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })
+            : '';
+          const mensaje = suspData.type === 'PERMANENT'
+            ? `Tu cuenta está suspendida permanentemente.\nRazón: ${suspData.reason}\n\nContacta soporte para apelar.`
+            : `Suspendido por ${suspData.hoursRemaining?.toFixed(1)} hora(s) más.\nRazón: ${suspData.reason}\n\nPodrás trabajar después de las ${expiraHora}.`;
+          Alert.alert('🔒 No Puedes Conectarte', mensaje, [{ text: 'OK' }]);
+          setDriverStatus('suspended');
+          return;
+        }
+      } catch (suspError) {
+        console.log('⚠️ Error verificando suspensión, continuando con verificación local');
+        const suspensionStatus = await PenaltyService.checkSuspensionStatus();
+        if (suspensionStatus.isSuspended) {
+          Alert.alert('🔒 No Puedes Conectarte', 'Tu cuenta está suspendida.', [{ text: 'OK' }]);
+          return;
+        }
       }
       
       // NUEVO: Notificar al backend que el conductor está online
@@ -1894,18 +1915,36 @@ currentTrip={currentTrip}
               { 
                 text: 'Sí, Cancelar', 
                 style: 'destructive',
-                onPress: async () => {
+onPress: async () => {
                   try {
-                  await fetch(`https://web-production-99844.up.railway.app/api/trips/${currentTrip.id}/driver-cancel`, {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ driver_id: loggedDriver?.id, reason: 'Cancelado por conductor' })
-});
+                 const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/${currentTrip.id}/driver-cancel`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ driver_id: loggedDriver?.id, reason: 'Cancelado por conductor' })
+                    });
+                    const data = await response.json();
+                    
                     setCurrentTrip(null);
                     setTripPhase('');
-                    setDriverStatus('online');
+                    setCurrentStopIndex(0);
+                    setTripStops(null);
                     setActiveTab('dashboard');
-                    Alert.alert('Viaje Cancelado', 'El viaje ha sido cancelado');
+
+                    // Mostrar suspensión si aplica
+                    if (data.penalty) {
+                      const { cancellationNumber, suspensionHours, expiresAt } = data.penalty;
+                    const expiraHora = new Date(expiresAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      
+                      setDriverStatus('suspended');
+                      Alert.alert(
+                        '🔒 Cuenta Suspendida',
+                    `Cancelación #${cancellationNumber}.\n\nSuspendido por ${suspensionHours} hora(s).\nPodrás trabajar después de las ${expiraHora}.`,
+                        [{ text: 'Entendido' }]
+                      );
+                    } else {
+                      setDriverStatus('online');
+                      Alert.alert('Viaje Cancelado', 'El viaje ha sido cancelado');
+                    }
                   } catch (error) {
                     console.error('Error cancelando viaje:', error);
                     Alert.alert('Error', 'No se pudo cancelar el viaje');
