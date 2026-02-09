@@ -1722,22 +1722,20 @@ const acceptTrip = async () => {
     return R * c; // Distancia en metros
   };
 
-  // FUNCIÓN PARA CARGAR DATOS DE BILLETERA
+// FUNCIÓN PARA CARGAR DATOS DE BILLETERA
   const loadWalletData = async () => {
     try {
-      const res = await fetch(`https://web-production-99844.up.railway.app/api/trips/driver-history/${loggedDriver.id}?period=month`);
+      const res = await fetch(`https://web-production-99844.up.railway.app/api/trips/wallet/${loggedDriver.id}`);
       const data = await res.json();
       if (data.success) {
-        const totalEarnings = data.totalEarnings || 0;
-        const commissionRate = 10;
-        const totalCommission = Math.round(totalEarnings * commissionRate / 100);
-        const balance = totalEarnings - totalCommission;
         setWalletData({
-          balance,
-          commission: commissionRate,
-          totalEarnings,
-          totalCommission,
-          trips: data.totalTrips || 0
+          balance: data.balance || 0,
+          commission: 10,
+          totalEarnings: data.totalServices || 0,
+          totalCommission: data.totalCommission || 0,
+          totalDeposits: data.totalDeposits || 0,
+          transactions: data.transactions || [],
+          trips: (data.transactions || []).filter(t => t.type === 'commission').length
         });
       }
     } catch (err) {
@@ -2611,7 +2609,7 @@ const renderEarnings = () => (
         />
       </Modal>
 
-      {/* Modal de Billetera */}
+{/* Modal de Billetera */}
       <Modal visible={showWalletModal} animationType="slide" onRequestClose={() => setShowWalletModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
           <View style={{ backgroundColor: '#10b981', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
@@ -2623,47 +2621,52 @@ const renderEarnings = () => (
               <View style={{ width: 60 }} />
             </View>
             <View style={{ alignItems: 'center', marginTop: 20 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Balance Disponible</Text>
-              <Text style={{ color: 'white', fontSize: 42, fontWeight: 'bold', marginTop: 5 }}>RD${walletData.balance.toLocaleString()}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 5 }}>{walletData.trips} viajes este mes</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Balance Actual</Text>
+              <Text style={{ color: walletData.balance >= 0 ? 'white' : '#fca5a5', fontSize: 42, fontWeight: 'bold', marginTop: 5 }}>RD${walletData.balance?.toLocaleString()}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 5 }}>{walletData.trips || 0} viajes | Comisión: {walletData.commission}%</Text>
             </View>
           </View>
-          <ScrollView style={{ flex: 1, padding: 20 }}>
-            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>📊 Resumen del Mes</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
-                <Text style={{ color: '#6b7280', fontSize: 15 }}>Ingresos Brutos</Text>
-                <Text style={{ color: '#1f2937', fontSize: 15, fontWeight: '600' }}>RD${walletData.totalEarnings.toLocaleString()}</Text>
+          <ScrollView style={{ flex: 1, padding: 15 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 }}>
+              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginRight: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: '#6b7280' }}>Total Servicios</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>RD${walletData.totalEarnings?.toLocaleString()}</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
-                <Text style={{ color: '#ef4444', fontSize: 15 }}>Comisión ({walletData.commission}%)</Text>
-                <Text style={{ color: '#ef4444', fontSize: 15, fontWeight: '600' }}>-RD${walletData.totalCommission.toLocaleString()}</Text>
+              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginHorizontal: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: '#6b7280' }}>Comisiones</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#ef4444' }}>-RD${walletData.totalCommission?.toLocaleString()}</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }}>
-                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>Ganancia Neta</Text>
-                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>RD${walletData.balance.toLocaleString()}</Text>
-              </View>
-            </View>
-            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>💳 Desglose por Período</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                <View style={{ alignItems: 'center', backgroundColor: '#f0fdf4', padding: 15, borderRadius: 12, flex: 1, marginRight: 5 }}>
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Hoy</Text>
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#10b981', marginTop: 4 }}>RD${earnings.today}</Text>
-                </View>
-                <View style={{ alignItems: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, flex: 1, marginHorizontal: 5 }}>
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Semana</Text>
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3b82f6', marginTop: 4 }}>RD${earnings.week}</Text>
-                </View>
-                <View style={{ alignItems: 'center', backgroundColor: '#fdf4ff', padding: 15, borderRadius: 12, flex: 1, marginLeft: 5 }}>
-                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Mes</Text>
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#a855f7', marginTop: 4 }}>RD${earnings.month}</Text>
-                </View>
+              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginLeft: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: '#6b7280' }}>Depósitos</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#10b981' }}>+RD${(walletData.totalDeposits || 0).toLocaleString()}</Text>
               </View>
             </View>
-            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>ℹ️ Información</Text>
-              <Text style={{ color: '#6b7280', fontSize: 14, lineHeight: 22 }}>• Se aplica un {walletData.commission}% de comisión por viaje{'\n'}• Los depósitos se procesan semanalmente{'\n'}• Contacta soporte para retiros anticipados{'\n'}• Las ganancias se actualizan en tiempo real</Text>
+            <View style={{ backgroundColor: 'white', borderRadius: 12, elevation: 2, overflow: 'hidden' }}>
+              <View style={{ flexDirection: 'row', backgroundColor: '#1f2937', paddingVertical: 10, paddingHorizontal: 8 }}>
+                <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold' }}>FECHA</Text>
+                <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>SERVICIO</Text>
+                <Text style={{ flex: 1.5, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>10%</Text>
+                <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>DEPÓSITO</Text>
+                <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>BALANCE</Text>
+              </View>
+              {(walletData.transactions || []).map((tx, idx) => (
+                <View key={tx.id || idx} style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
+                  <Text style={{ flex: 2, fontSize: 10, color: '#374151' }}>{new Date(tx.created_at).toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: '2-digit' })}{'\n'}{new Date(tx.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                  <Text style={{ flex: 2, fontSize: 11, color: '#1f2937', textAlign: 'right', fontWeight: '500' }}>{tx.type === 'commission' ? `RD$${parseFloat(tx.trip_amount).toLocaleString()}` : ''}</Text>
+                  <Text style={{ flex: 1.5, fontSize: 11, color: '#ef4444', textAlign: 'right' }}>{tx.type === 'commission' ? `RD$${parseFloat(tx.commission_amount).toLocaleString()}` : ''}</Text>
+                  <Text style={{ flex: 2, fontSize: 11, color: '#10b981', textAlign: 'right', fontWeight: '600' }}>{tx.type === 'deposit' ? `RD$${parseFloat(tx.deposit_amount).toLocaleString()}` : ''}</Text>
+                  <Text style={{ flex: 2, fontSize: 11, color: parseFloat(tx.balance_after) >= 0 ? '#1f2937' : '#ef4444', textAlign: 'right', fontWeight: 'bold' }}>RD${parseFloat(tx.balance_after).toLocaleString()}</Text>
+                </View>
+              ))}
+              {(!walletData.transactions || walletData.transactions.length === 0) && (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <Text style={{ color: '#9ca3af', fontSize: 14 }}>No hay transacciones aún</Text>
+                </View>
+              )}
+            </View>
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginTop: 15, elevation: 2 }}>
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 }}>ℹ️ Información</Text>
+              <Text style={{ color: '#6b7280', fontSize: 12, lineHeight: 20 }}>• Comisión del {walletData.commission}% por cada viaje{'\n'}• Balance negativo = deuda pendiente{'\n'}• Los depósitos se verifican por administración{'\n'}• Actualización automática en tiempo real</Text>
             </View>
           </ScrollView>
         </SafeAreaView>

@@ -872,8 +872,7 @@ router.put('/status/:tripId', async (req, res) => {
         }
 
         const trip = result.rows[0];
-
-        // LIBERAR CONDUCTOR CUANDO EL VIAJE SE COMPLETA
+// LIBERAR CONDUCTOR CUANDO EL VIAJE SE COMPLETA
         if (status === 'completed' && trip.driver_id) {
             try {
                 await db.query(
@@ -881,6 +880,38 @@ router.put('/status/:tripId', async (req, res) => {
                     [trip.driver_id]
                 );
                 console.log(`✅ Conductor ${trip.driver_id} liberado a status 'online'`);
+
+                // REGISTRAR COMISIÓN EN BILLETERA
+                await db.query(`CREATE TABLE IF NOT EXISTS wallet_transactions (
+                    id SERIAL PRIMARY KEY,
+                    driver_id INTEGER NOT NULL,
+                    type VARCHAR(20) NOT NULL,
+                    trip_amount DECIMAL(10,2) DEFAULT 0,
+                    commission_amount DECIMAL(10,2) DEFAULT 0,
+                    deposit_amount DECIMAL(10,2) DEFAULT 0,
+                    balance_after DECIMAL(10,2) DEFAULT 0,
+                    trip_id INTEGER,
+                    description TEXT,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )`);
+
+                // Obtener balance actual
+                const lastTx = await db.query(
+                    `SELECT balance_after FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 1`,
+                    [trip.driver_id]
+                );
+                const currentBalance = lastTx.rows.length > 0 ? parseFloat(lastTx.rows[0].balance_after) : 0;
+                const tripPrice = parseFloat(trip.price) || 0;
+                const commission = Math.round(tripPrice * 10) / 100;
+                const newBalance = currentBalance - commission;
+
+                await db.query(
+                    `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, trip_id, description)
+                     VALUES ($1, 'commission', $2, $3, 0, $4, $5, $6)`,
+                    [trip.driver_id, tripPrice, commission, newBalance, tripId, `Comisión 10% - Viaje #${tripId}`]
+                );
+                console.log(`💰 Comisión RD$${commission} registrada para conductor ${trip.driver_id}. Balance: RD$${newBalance}`);
+
             } catch (driverError) {
                 console.error('⚠️ Error liberando conductor:', driverError.message);
             }
@@ -1226,6 +1257,94 @@ router.post('/verify-code/:tripId', async (req, res) => {
     console.error('Error verificando clave:', err);
     res.status(500).json({ error: 'Error verificando clave' });
   }
+});
+
+// =============================================
+// BILLETERA: Obtener historial de transacciones
+// =============================================
+router.get('/wallet/:driverId', async (req, res) => {
+    try {
+        const { driverId } = req.params;
+        
+        await db.query(`CREATE TABLE IF NOT EXISTS wallet_transactions (
+            id SERIAL PRIMARY KEY,
+            driver_id INTEGER NOT NULL,
+            type VARCHAR(20) NOT NULL,
+            trip_amount DECIMAL(10,2) DEFAULT 0,
+            commission_amount DECIMAL(10,2) DEFAULT 0,
+            deposit_amount DECIMAL(10,2) DEFAULT 0,
+            balance_after DECIMAL(10,2) DEFAULT 0,
+            trip_id INTEGER,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+        )`);
+
+        const transactions = await db.query(
+            `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 50`,
+            [parseInt(driverId)]
+        );
+
+        const lastTx = transactions.rows.length > 0 ? transactions.rows[0] : null;
+        const currentBalance = lastTx ? parseFloat(lastTx.balance_after) : 0;
+
+        const totals = await db.query(
+            `SELECT 
+                COALESCE(SUM(commission_amount), 0) as total_commission,
+                COALESCE(SUM(deposit_amount), 0) as total_deposits,
+                COALESCE(SUM(trip_amount), 0) as total_services
+             FROM wallet_transactions WHERE driver_id = $1`,
+            [parseInt(driverId)]
+        );
+
+        res.json({
+            success: true,
+            balance: currentBalance,
+            totalCommission: parseFloat(totals.rows[0].total_commission),
+            totalDeposits: parseFloat(totals.rows[0].total_deposits),
+            totalServices: parseFloat(totals.rows[0].total_services),
+            transactions: transactions.rows
+        });
+    } catch (error) {
+        console.error('Error obteniendo billetera:', error);
+        res.status(500).json({ error: 'Error obteniendo billetera' });
+    }
+});
+
+// =============================================
+// BILLETERA: Registrar depósito (desde admin)
+// =============================================
+router.post('/wallet/deposit', async (req, res) => {
+    try {
+        const { driver_id, amount, description } = req.body;
+
+        if (!driver_id || !amount) {
+            return res.status(400).json({ error: 'driver_id y amount requeridos' });
+        }
+
+        const lastTx = await db.query(
+            `SELECT balance_after FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 1`,
+            [driver_id]
+        );
+        const currentBalance = lastTx.rows.length > 0 ? parseFloat(lastTx.rows[0].balance_after) : 0;
+        const newBalance = currentBalance + parseFloat(amount);
+
+        await db.query(
+            `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, description)
+             VALUES ($1, 'deposit', 0, 0, $2, $3, $4)`,
+            [driver_id, amount, newBalance, description || `Depósito verificado RD$${amount}`]
+        );
+
+        console.log(`💵 Depósito RD$${amount} registrado para conductor ${driver_id}. Nuevo balance: RD$${newBalance}`);
+
+        res.json({
+            success: true,
+            message: `Depósito de RD$${amount} registrado`,
+            newBalance
+        });
+    } catch (error) {
+        console.error('Error registrando depósito:', error);
+        res.status(500).json({ error: 'Error registrando depósito' });
+    }
 });
 
 module.exports = router;
