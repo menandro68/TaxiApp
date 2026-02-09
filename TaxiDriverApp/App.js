@@ -95,6 +95,8 @@ export default function DriverApp({ navigation }) {
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [walletData, setWalletData] = useState({ balance: 0, commission: 10, totalEarnings: 0, totalCommission: 0, trips: 0 });
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [codeError, setCodeError] = useState('');
@@ -1720,6 +1722,29 @@ const acceptTrip = async () => {
     return R * c; // Distancia en metros
   };
 
+  // FUNCIÓN PARA CARGAR DATOS DE BILLETERA
+  const loadWalletData = async () => {
+    try {
+      const res = await fetch(`https://web-production-99844.up.railway.app/api/trips/driver-history/${loggedDriver.id}?period=month`);
+      const data = await res.json();
+      if (data.success) {
+        const totalEarnings = data.totalEarnings || 0;
+        const commissionRate = 10;
+        const totalCommission = Math.round(totalEarnings * commissionRate / 100);
+        const balance = totalEarnings - totalCommission;
+        setWalletData({
+          balance,
+          commission: commissionRate,
+          totalEarnings,
+          totalCommission,
+          trips: data.totalTrips || 0
+        });
+      }
+    } catch (err) {
+      console.error('Error cargando billetera:', err);
+    }
+  };
+
   // FUNCIÓN PARA CARGAR HISTORIAL DE GANANCIAS
   const loadEarningsDetail = async (period) => {
     if (!loggedDriver?.id) {
@@ -1889,8 +1914,19 @@ const acceptTrip = async () => {
           <Text style={styles.buttonText}>💬 Soporte 24/7</Text>
         </TouchableOpacity>
       )}
+{/* Botón de Billetera - Oculto, se accede desde tab */}
+      {false && (
+        <TouchableOpacity
+          style={{ backgroundColor: '#10b981', padding: 15, borderRadius: 12, marginHorizontal: 20, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', elevation: 3 }}
+          onPress={() => { loadWalletData(); setShowWalletModal(true); }}
+        >
+          <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>👛 Mi Billetera</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Ganancias */}
+
+  
       <View style={styles.earningsCard}>
         <Text style={styles.sectionTitle}>💰 Ganancias</Text>
         <View style={styles.earningsRow}>
@@ -2575,6 +2611,64 @@ const renderEarnings = () => (
         />
       </Modal>
 
+      {/* Modal de Billetera */}
+      <Modal visible={showWalletModal} animationType="slide" onRequestClose={() => setShowWalletModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
+          <View style={{ backgroundColor: '#10b981', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowWalletModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 22, fontWeight: 'bold' }}>👛 Mi Billetera</Text>
+              <View style={{ width: 60 }} />
+            </View>
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>Balance Disponible</Text>
+              <Text style={{ color: 'white', fontSize: 42, fontWeight: 'bold', marginTop: 5 }}>RD${walletData.balance.toLocaleString()}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 5 }}>{walletData.trips} viajes este mes</Text>
+            </View>
+          </View>
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>📊 Resumen del Mes</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                <Text style={{ color: '#6b7280', fontSize: 15 }}>Ingresos Brutos</Text>
+                <Text style={{ color: '#1f2937', fontSize: 15, fontWeight: '600' }}>RD${walletData.totalEarnings.toLocaleString()}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                <Text style={{ color: '#ef4444', fontSize: 15 }}>Comisión ({walletData.commission}%)</Text>
+                <Text style={{ color: '#ef4444', fontSize: 15, fontWeight: '600' }}>-RD${walletData.totalCommission.toLocaleString()}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }}>
+                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>Ganancia Neta</Text>
+                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>RD${walletData.balance.toLocaleString()}</Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>💳 Desglose por Período</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+                <View style={{ alignItems: 'center', backgroundColor: '#f0fdf4', padding: 15, borderRadius: 12, flex: 1, marginRight: 5 }}>
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Hoy</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#10b981', marginTop: 4 }}>RD${earnings.today}</Text>
+                </View>
+                <View style={{ alignItems: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, flex: 1, marginHorizontal: 5 }}>
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Semana</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#3b82f6', marginTop: 4 }}>RD${earnings.week}</Text>
+                </View>
+                <View style={{ alignItems: 'center', backgroundColor: '#fdf4ff', padding: 15, borderRadius: 12, flex: 1, marginLeft: 5 }}>
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>Mes</Text>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#a855f7', marginTop: 4 }}>RD${earnings.month}</Text>
+                </View>
+              </View>
+            </View>
+            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 18, marginBottom: 15, elevation: 2 }}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 }}>ℹ️ Información</Text>
+              <Text style={{ color: '#6b7280', fontSize: 14, lineHeight: 22 }}>• Se aplica un {walletData.commission}% de comisión por viaje{'\n'}• Los depósitos se procesan semanalmente{'\n'}• Contacta soporte para retiros anticipados{'\n'}• Las ganancias se actualizan en tiempo real</Text>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
       {/* Modal de Chat de Soporte 24/7 */}
       <Modal
         visible={showSupportChat}
@@ -2944,12 +3038,21 @@ const renderEarnings = () => (
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          onPress={() => setActiveTab('earnings')} 
+     <TouchableOpacity
+          onPress={() => setActiveTab('earnings')}
           style={[styles.tabButton, activeTab === 'earnings' && styles.tabButtonActive]}
         >
           <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive]}>
             💰 Ganancias
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => { loadWalletData(); setShowWalletModal(true); }}
+          style={[styles.tabButton]}
+        >
+          <Text style={[styles.tabText]}>
+            👛 Billetera
           </Text>
         </TouchableOpacity>
       </View>
