@@ -71,7 +71,7 @@ const normalizeTrip = (trip, fcmData = {}) => {
     // Otros datos
     price: parseFloat(trip.price) || parseFloat(fcmData.estimatedPrice) || 0,
     status: trip.status || 'assigned',
-    vehicleType: fcmData.vehicleType || 'economy',
+    vehicleType: trip.vehicle_type || fcmData.vehicleType || 'economy',
     paymentMethod: fcmData.paymentMethod || 'cash',
     distance: fcmData.distance || '',
 // Para terceros y paquetes
@@ -98,6 +98,7 @@ export default function DriverApp({ navigation }) {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [codeError, setCodeError] = useState('');
+  const [isDeliveryVerification, setIsDeliveryVerification] = useState(false);
 
   // Exponer setters globalmente para acceso desde FCM
  globalSetShowRequestModal = setShowRequestModal;
@@ -810,6 +811,43 @@ global.autoAcceptTrip = async (tripData) => {
           `https://web-production-99844.up.railway.app/api/trips/pending-for-driver/${loggedDriver.id}`
         );
         const data = await response.json();
+
+        // Si el backend dice que hay viaje activo pero la app no lo tiene, cargarlo
+        if (data.success && !data.trip && data.reason === 'driver_has_active_trip' && data.activeTripId) {
+          console.log('📡 POLLING: Viaje activo detectado pero no cargado en app:', data.activeTripId);
+          try {
+            const tripRes = await fetch(`https://web-production-99844.up.railway.app/api/trips/${data.activeTripId}`);
+            const tripInfo = await tripRes.json();
+            if (tripInfo.success && tripInfo.trip && tripInfo.trip.status === 'assigned') {
+              const t = tripInfo.trip;
+              const tripData = {
+                id: String(t.id),
+                user: t.user_name || 'Pasajero',
+                phone: t.user_phone || '',
+                pickup: t.pickup_location || '',
+                destination: t.destination || '',
+                estimatedPrice: parseFloat(t.price) || 0,
+                distance: t.distance || '',
+                paymentMethod: t.payment_method || 'cash',
+                vehicleType: t.vehicle_type || 'economy',
+                pickupLat: parseFloat(t.pickup_lat) || null,
+                pickupLng: parseFloat(t.pickup_lng) || null,
+                destinationLat: parseFloat(t.destination_lat) || null,
+                destinationLng: parseFloat(t.destination_lng) || null,
+                tripCode: t.trip_code || null,
+                thirdPartyName: t.third_party_name || null,
+                thirdPartyPhone: t.third_party_phone || null,
+                type: 'NEW_TRIP_REQUEST',
+              };
+              if (global.handleNewTripRequest) {
+                global.handleNewTripRequest(tripData);
+              }
+            }
+          } catch (err) {
+            console.log('📡 Error cargando viaje activo:', err.message);
+          }
+          return;
+        }
         
         if (data.success && data.trip) {
           const tripData = {
@@ -1618,7 +1656,7 @@ const acceptTrip = async () => {
       setUserLocation(null); // Limpiar ubicación
       await stopBackgroundTracking(); // Detener background tracking
       
-      Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}`);
+      Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}`, [{ text: 'OK', onPress: () => setActiveTab('dashboard') }]);
       
     } catch (error) {
       console.error('❌ Error completando viaje:', error);
@@ -1628,10 +1666,11 @@ const acceptTrip = async () => {
   // NUEVA FUNCIONALIDAD: Detección automática de llegada al destino
   const checkAutoCompleteTrip = () => {
     if (!currentTrip || !userLocation || tripPhase !== 'started') return;
+    if (currentTrip?.thirdPartyName) return;
     
-    // Calcular distancia al destino
-    const destLat = currentTrip.destinationLocation?.latitude;
-    const destLon = currentTrip.destinationLocation?.longitude;
+   // Calcular distancia al destino
+    const destLat = currentTrip.destinationLat;
+    const destLon = currentTrip.destinationLng;
     
     if (!destLat || !destLon) return;
     
@@ -1648,8 +1687,17 @@ const acceptTrip = async () => {
         [
           { text: 'Aún no', style: 'cancel' },
           { 
-            text: 'Sí, completar',
-            onPress: () => completeTrip()
+     text: 'Sí, completar',
+            onPress: () => {
+              if (currentTrip?.thirdPartyName) {
+                setIsDeliveryVerification(true);
+                setVerificationCode('');
+                setCodeError('');
+                setShowCodeModal(true);
+              } else {
+                completeTrip();
+              }
+            }
           }
         ]
       );
@@ -1895,11 +1943,13 @@ currentTrip={currentTrip}
                 [{ text: 'Ir al Siguiente', onPress: () => setActiveTab('map') }]
               );
     } else {
-              if (currentTrip?.vehicleType?.includes('paquete') && currentTrip?.thirdPartyName) {
+          if (currentTrip?.thirdPartyName) {
                 Alert.alert(
                   '📦 Entrega de Paquete',
                   `Entregar paquete a: ${currentTrip.thirdPartyName}\n📱 Teléfono: ${currentTrip.thirdPartyPhone || 'N/A'}\n\n🔑 Clave del envío: ${currentTrip.tripCode || 'N/A'}\n\nVerifique la clave con el receptor antes de entregar.`,
-                  [{ text: 'OK', onPress: () => setActiveTab('dashboard') }]
+                [{ text: 'OK', onPress: () => {
+    completeTrip();
+  } }]
                 );
               } else {
                 setActiveTab('dashboard');
@@ -2774,11 +2824,17 @@ const renderEarnings = () => (
                       body: JSON.stringify({ trip_code: verificationCode })
                     });
                     const data = await response.json();
-                    if (data.success) {
+               if (data.success) {
                       setShowCodeModal(false);
-                      setTripPhase('started');
-                      setActiveTab('map');
-                      Alert.alert('✅ Verificado', 'Clave correcta. ¡Viaje iniciado!');
+                      if (isDeliveryVerification) {
+                        setIsDeliveryVerification(false);
+                        Alert.alert('✅ Paquete Verificado', 'Clave correcta. ¡Entrega confirmada!');
+                        completeTrip();
+                      } else {
+                        setTripPhase('started');
+                        setActiveTab('map');
+                        Alert.alert('✅ Verificado', 'Clave correcta. ¡Viaje iniciado!');
+                      }
                     } else {
                       setCodeError('❌ Clave incorrecta. Intenta de nuevo.');
                     }
