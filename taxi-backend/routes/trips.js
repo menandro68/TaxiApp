@@ -873,6 +873,19 @@ router.put('/status/:tripId', async (req, res) => {
 
         const trip = result.rows[0];
 
+        // LIBERAR CONDUCTOR CUANDO EL VIAJE SE COMPLETA
+        if (status === 'completed' && trip.driver_id) {
+            try {
+                await db.query(
+                    `UPDATE drivers SET status = 'online' WHERE id = $1`,
+                    [trip.driver_id]
+                );
+                console.log(`✅ Conductor ${trip.driver_id} liberado a status 'online'`);
+            } catch (driverError) {
+                console.error('⚠️ Error liberando conductor:', driverError.message);
+            }
+        }
+
         // NOTIFICAR AL USUARIO CUANDO EL CONDUCTOR LLEGA
         if (status === 'arrived') {
             try {
