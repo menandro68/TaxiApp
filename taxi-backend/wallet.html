@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billetera - TaxiApp Rondon</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; }
+        .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; }
+        .header a { color: white; text-decoration: none; font-size: 14px; opacity: 0.8; }
+        .header a:hover { opacity: 1; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .deposit-form { background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .deposit-form h2 { margin-bottom: 15px; color: #059669; font-size: 18px; }
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
+        .form-group select, .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .btn-deposit { background: #10b981; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; height: 42px; }
+        .btn-deposit:hover { background: #059669; }
+        .btn-deposit:disabled { background: #9ca3af; cursor: not-allowed; }
+        .driver-select { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .driver-card { padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 10px; cursor: pointer; transition: all 0.2s; background: white; }
+        .driver-card:hover { border-color: #10b981; }
+        .driver-card.selected { border-color: #10b981; background: #f0fdf4; }
+        .driver-card .name { font-weight: 600; font-size: 14px; }
+        .driver-card .balance { font-size: 12px; color: #ef4444; }
+        .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .table-header { background: #1e293b; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .table-header h2 { font-size: 16px; }
+        .filter-row { display: flex; gap: 10px; }
+        .filter-row select { padding: 6px 10px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 12px 15px; text-align: left; font-size: 12px; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        tr:hover { background: #f8fafc; }
+        .type-commission { color: #ef4444; font-weight: 600; }
+        .type-deposit { color: #10b981; font-weight: 600; }
+        .balance-negative { color: #ef4444; font-weight: 700; }
+        .balance-positive { color: #10b981; font-weight: 700; }
+        .stats-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 5px; }
+        .stat-card .label { font-size: 13px; color: #64748b; }
+        .msg { padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; display: none; font-size: 14px; }
+        .msg.success { display: block; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .msg.error { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💰 Billetera de Conductores</h1>
+        <a href="App.html">← Volver al Panel</a>
+    </div>
+    <div class="container">
+        <div id="message" class="msg"></div>
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card"><div class="label">Total Comisiones</div><div class="value" id="statCommissions" style="color:#ef4444">RD$0</div></div>
+            <div class="stat-card"><div class="label">Total Depósitos</div><div class="value" id="statDeposits" style="color:#10b981">RD$0</div></div>
+            <div class="stat-card"><div class="label">Deuda Total</div><div class="value" id="statDebt" style="color:#f59e0b">RD$0</div></div>
+            <div class="stat-card"><div class="label">Conductores</div><div class="value" id="statDrivers" style="color:#3b82f6">0</div></div>
+        </div>
+        <div class="deposit-form">
+            <h2>📥 Registrar Depósito</h2>
+            <div class="form-group" style="margin-bottom:10px">
+                <label>Seleccionar Conductor</label>
+            </div>
+            <div class="driver-select" id="driverSelect">Cargando conductores...</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Monto del Depósito (RD$)</label>
+                    <input type="number" id="depositAmount" placeholder="Ej: 500" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="depositDesc" placeholder="Ej: Transferencia bancaria">
+                </div>
+                <button class="btn-deposit" onclick="registerDeposit()">💵 Registrar Depósito</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <div class="table-header">
+                <h2>📋 Historial de Transacciones</h2>
+                <div class="filter-row">
+                    <select id="filterDriver" onchange="loadTransactions()">
+                        <option value="all">Todos los conductores</option>
+                    </select>
+                    <select id="filterType" onchange="loadTransactions()">
+                        <option value="all">Todos los tipos</option>
+                        <option value="commission">Solo Comisiones</option>
+                        <option value="deposit">Solo Depósitos</option>
+                    </select>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Fecha/Hora</th><th>Conductor</th><th>Tipo</th><th>Servicio</th><th>Comisión 10%</th><th>Depósito</th><th>Balance</th></tr>
+                </thead>
+                <tbody id="transactionsBody">
+                    <tr><td colspan="7" style="text-align:center;padding:30px;color:#9ca3af">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<script>
+const API = window.location.origin + '/api';
+let drivers = [];
+let selectedDriverId = null;
+let allTransactions = [];
+
+async function init() {
+    await loadDrivers();
+    await loadAllTransactions();
+}
+
+async function loadDrivers() {
+    try {
+        const res = await fetch(API + '/drivers');
+        const data = await res.json();
+        drivers = data.drivers || data || [];
+        
+        const container = document.getElementById('driverSelect');
+        const filter = document.getElementById('filterDriver');
+        container.innerHTML = '';
+        
+        for (const d of drivers) {
+            let balance = 0;
+            try {
+                const wRes = await fetch(API + '/trips/wallet/' + d.id);
+                const wData = await wRes.json();
+                if (wData.success) balance = wData.balance || 0;
+            } catch(e) {}
+            
+            const card = document.createElement('div');
+            card.className = 'driver-card';
+            card.dataset.id = d.id;
+            card.innerHTML = `<div class="name">${d.name}</div><div class="balance">Balance: RD$${balance.toLocaleString()}</div>`;
+            card.onclick = () => selectDriver(d.id);
+            container.appendChild(card);
+            
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.name;
+            filter.appendChild(opt);
+        }
+    } catch(e) {
+        console.error('Error cargando conductores:', e);
+    }
+}
+
+function selectDriver(id) {
+    selectedDriverId = id;
+    document.querySelectorAll('.driver-card').forEach(c => {
+        c.classList.toggle('selected', c.dataset.id == id);
+    });
+}
+
+async function registerDeposit() {
+    if (!selectedDriverId) return showMsg('Selecciona un conductor', 'error');
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    const desc = document.getElementById('depositDesc').value;
+    if (!amount || amount <= 0) return showMsg('Ingresa un monto válido', 'error');
+    
+    try {
+        const res = await fetch(API + '/trips/wallet/deposit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ driver_id: selectedDriverId, amount, description: desc || undefined })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showMsg(`✅ Depósito de RD$${amount} registrado. Nuevo balance: RD$${data.newBalance}`, 'success');
+            document.getElementById('depositAmount').value = '';
+            document.getElementById('depositDesc').value = '';
+            selectedDriverId = null;
+            await loadDrivers();
+            await loadAllTransactions();
+        } else {
+            showMsg('Error: ' + (data.error || 'Error desconocido'), 'error');
+        }
+    } catch(e) {
+        showMsg('Error de conexión', 'error');
+    }
+}
+
+async function loadAllTransactions() {
+    allTransactions = [];
+    let totalCommissions = 0, totalDeposits = 0;
+    
+    for (const d of drivers) {
+        try {
+            const res = await fetch(API + '/trips/wallet/' + d.id);
+            const data = await res.json();
+            if (data.success && data.transactions) {
+                data.transactions.forEach(tx => {
+                    tx.driver_name = d.name;
+                    allTransactions.push(tx);
+                });
+                totalCommissions += data.totalCommission || 0;
+                totalDeposits += data.totalDeposits || 0;
+            }
+        } catch(e) {}
+    }
+    
+    allTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    document.getElementById('statCommissions').textContent = 'RD$' + totalCommissions.toLocaleString();
+    document.getElementById('statDeposits').textContent = 'RD$' + totalDeposits.toLocaleString();
+    document.getElementById('statDebt').textContent = 'RD$' + (totalCommissions - totalDeposits).toLocaleString();
+    document.getElementById('statDrivers').textContent = drivers.length;
+    
+    loadTransactions();
+}
+
+function loadTransactions() {
+    const filterDriver = document.getElementById('filterDriver').value;
+    const filterType = document.getElementById('filterType').value;
+    
+    let filtered = allTransactions;
+    if (filterDriver !== 'all') filtered = filtered.filter(tx => tx.driver_id == filterDriver);
+    if (filterType !== 'all') filtered = filtered.filter(tx => tx.type === filterType);
+    
+    const tbody = document.getElementById('transactionsBody');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#9ca3af">No hay transacciones</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(tx => {
+        const date = new Date(tx.created_at);
+        const dateStr = date.toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const timeStr = date.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const bal = parseFloat(tx.balance_after);
+        return `<tr>
+            <td>${dateStr}<br><small style="color:#94a3b8">${timeStr}</small></td>
+            <td>${tx.driver_name || 'N/A'}</td>
+            <td class="type-${tx.type}">${tx.type === 'commission' ? '📊 Comisión' : '💵 Depósito'}</td>
+            <td>${tx.type === 'commission' ? 'RD$' + parseFloat(tx.trip_amount).toLocaleString() : '-'}</td>
+            <td class="type-commission">${tx.type === 'commission' ? '-RD$' + parseFloat(tx.commission_amount).toLocaleString() : '-'}</td>
+            <td class="type-deposit">${tx.type === 'deposit' ? '+RD$' + parseFloat(tx.deposit_amount).toLocaleString() : '-'}</td>
+            <td class="${bal >= 0 ? 'balance-positive' : 'balance-negative'}">RD$${bal.toLocaleString()}</td>
+        </tr>`;
+    }).join('');
+}
+
+function showMsg(text, type) {
+    const el = document.getElementById('message');
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    setTimeout(() => el.className = 'msg', 5000);
+}
+
+init();
+</script>
+</body>
+</html>
