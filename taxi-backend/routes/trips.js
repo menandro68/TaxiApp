@@ -1279,12 +1279,12 @@ router.get('/wallet/:driverId', async (req, res) => {
             created_at TIMESTAMP DEFAULT NOW()
         )`);
 
-        const transactions = await db.query(
-            `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 50`,
+      const transactions = await db.query(
+            `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at ASC LIMIT 50`,
             [parseInt(driverId)]
         );
 
-        const lastTx = transactions.rows.length > 0 ? transactions.rows[0] : null;
+        const lastTx = transactions.rows.length > 0 ? transactions.rows[transactions.rows.length - 1] : null;
         const currentBalance = lastTx ? parseFloat(lastTx.balance_after) : 0;
 
         const totals = await db.query(
