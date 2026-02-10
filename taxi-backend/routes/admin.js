@@ -92,7 +92,7 @@ router.post('/users', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await db.run(
+   const result = await db.query(
       `INSERT INTO admins (username, email, password, role, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, username, email, role`,
       [username, email, hashedPassword, role || 'admin']
     );
