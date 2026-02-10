@@ -1645,7 +1645,7 @@ const acceptTrip = async () => {
       await SharedStorage.completeTrip();
       await SharedStorage.clearTripData();
       
-   const tripEarning = currentTrip.estimatedPrice || 180;
+  const tripEarning = currentTrip.price || 0;
       
       // Recargar ganancias reales del servidor (más preciso que sumar localmente)
       if (loggedDriver?.id) {
