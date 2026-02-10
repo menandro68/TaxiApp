@@ -1116,7 +1116,7 @@
     
     <div class="nav-section">
         <div class="nav-section-title">Finanzas</div>
-        <a class="nav-item" onclick="window.location.href='wallet.html'">
+       <a class="nav-item" data-screen="wallet" onclick="switchScreen('wallet')">
             <span>💰</span> Billetera
         </a>
         <a class="nav-item" data-screen="finances" onclick="switchScreen('finances')">
@@ -1529,6 +1529,9 @@
     </div>
 
     <!-- Finances Screen -->
+     <div id="wallet" class="screen">
+    <iframe src="taxi-backend/wallet.html" style="width:100%;height:calc(100vh - 60px);border:none;"></iframe>
+</div>
     <div id="finances" class="screen">
         <!-- El contenido se cargará dinámicamente -->
     </div>
