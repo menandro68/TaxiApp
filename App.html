@@ -5007,5 +5007,74 @@ if (screenName === 'vehicles') {
     <script src="analytics-module.js"></script>
     <script src="vehicles-module.js"></script>
 
+    <script>
+// === SISTEMA DE PERMISOS POR MÓDULO ===
+function applyPermissions() {
+    const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+    if (adminData.role === 'super_admin') return;
+
+    const perms = typeof adminData.permissions === 'string'
+        ? JSON.parse(adminData.permissions || '[]')
+        : (adminData.permissions || []);
+
+    if (perms.length === 0) return;
+
+    const screenMap = {
+        'dashboard': 'dashboard',
+        'command-center': 'command-center',
+        'analytics': 'analytics',
+        'drivers': 'drivers',
+        'motos': 'motos',
+        'paquetes': 'packages',
+        'communications': 'communications',
+        'suspensions': 'suspensions',
+        'users': 'users',
+        'trips': 'trips',
+        'vehicles': 'vehicles',
+        'documents': 'documents',
+        'trips-monitor': 'trips-monitor',
+        'support': 'support',
+        'geofencing': 'geofencing',
+        'wallet': 'wallet',
+        'finances': 'finances',
+        'reportes-automaticos': 'reportes-automaticos',
+        'conciliacion-pagos': 'reconciliation',
+        'facturacion': 'invoicing',
+        'pagos-conductores': 'driver-payments',
+        'pagos': 'payments',
+        'pricing': 'pricing',
+        'settings': 'settings'
+    };
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+        const screen = item.getAttribute('data-screen') || '';
+        const onclick = item.getAttribute('onclick') || '';
+        const text = item.textContent.trim();
+        let perm = null;
+
+        if (screen && screenMap[screen]) {
+            if (screen === 'reports') {
+                perm = text.includes('Avanzados') ? 'reports-advanced' : 'reports';
+            } else {
+                perm = screenMap[screen];
+            }
+        }
+
+        if (!perm) {
+            if (onclick.includes('admins.html')) perm = 'admins';
+            else if (onclick.includes('surge-monitor') || onclick.includes('surge')) perm = 'surge-pricing';
+            else if (onclick.includes('zones.html')) perm = 'zones';
+            else if (onclick.includes('dynamic-pricing')) perm = 'dynamic-rates';
+        }
+
+        if (perm && !perms.includes(perm)) {
+            item.style.display = 'none';
+        }
+    });
+}
+
+applyPermissions();
+</script>
+
 </body>
 </html>
