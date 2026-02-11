@@ -330,8 +330,11 @@ function generateReport() {
         .btn-print { background: #10b981; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-bottom: 20px; }
         @media print { .btn-print { display: none; } }
     </style></head><body>
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
-    <h1>📄 Reporte de Transacciones - Billetera</h1>
+   <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h1>📄 Reporte de Transacciones - Billetera</h1>
+        <h1 style="color:#059669;">${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'Admin'}</h1>
+    </div>
     <div class="info">
       <strong>TaxiApp Rondon</strong> | Admin: ${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'N/A'} | Conductor: ${driverName} | Fecha del reporte: ${fechaReporte} ${horaReporte} | Total registros: ${filtered.length}
     </div>
