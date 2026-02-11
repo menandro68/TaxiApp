@@ -636,7 +636,7 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/api/admin/${selectedAdminId}/role`, {
+               const response = await fetch(`${API_URL}/api/admin/users/${selectedAdminId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': token,
@@ -732,7 +732,7 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/api/admin/${id}`, {
+                const response = await fetch(`${API_URL}/api/admin/users/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': token,
