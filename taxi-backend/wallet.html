@@ -66,6 +66,7 @@
             <h2>📥 Registrar Depósito</h2>
             <div class="form-group" style="margin-bottom:10px">
                 <label>Seleccionar Conductor</label>
+                <input type="text" id="driverSearch" placeholder="🔍 Buscar conductor por nombre..." oninput="filterDriverCards()" style="margin-top:5px;width:100%;max-width:400px;">
             </div>
             <div class="driver-select" id="driverSelect">Cargando conductores...</div>
             <div class="form-row">
@@ -346,6 +347,14 @@ function generateReport() {
     <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
     </body></html>`);
     win.document.close();
+}
+
+function filterDriverCards() {
+    const search = document.getElementById('driverSearch').value.toLowerCase();
+    document.querySelectorAll('.driver-card').forEach(card => {
+        const name = card.querySelector('.name').textContent.toLowerCase();
+        card.style.display = name.includes(search) ? '' : 'none';
+    });
 }
 
 init();
