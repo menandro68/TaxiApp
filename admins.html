@@ -10,12 +10,12 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #f5f5f5;
         }
-        
+
         .header {
             background: white;
             padding: 20px;
@@ -24,11 +24,11 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .header h1 {
             color: #333;
         }
-        
+
         .btn-back {
             padding: 10px 20px;
             background: #667eea;
@@ -36,19 +36,19 @@
             text-decoration: none;
             border-radius: 5px;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 30px auto;
             padding: 0 20px;
         }
-        
+
         .actions {
             margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
         }
-        
+
         .btn {
             padding: 12px 24px;
             background: #667eea;
@@ -58,27 +58,27 @@
             cursor: pointer;
             font-size: 16px;
         }
-        
+
         .btn:hover {
             background: #5a67d8;
         }
-        
+
         .btn-danger {
             background: #e53e3e;
         }
-        
+
         .btn-danger:hover {
             background: #c53030;
         }
-        
+
         .btn-success {
             background: #48bb78;
         }
-        
+
         .btn-success:hover {
             background: #38a169;
         }
-        
+
         table {
             width: 100%;
             background: white;
@@ -86,59 +86,59 @@
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
+
         th {
             background: #667eea;
             color: white;
             padding: 15px;
             text-align: left;
         }
-        
+
         td {
             padding: 15px;
             border-bottom: 1px solid #eee;
         }
-        
+
         tr:last-child td {
             border-bottom: none;
         }
-        
+
         tr:hover {
             background: #f9f9f9;
         }
-        
+
         .role-badge {
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 14px;
             font-weight: 600;
         }
-        
+
         .role-super_admin {
             background: #f687b3;
             color: white;
         }
-        
+
         .role-admin {
             background: #667eea;
             color: white;
         }
-        
+
         .role-supervisor {
             background: #4299e1;
             color: white;
         }
-        
+
         .role-operador {
             background: #48bb78;
             color: white;
         }
-        
+
         .role-viewer {
             background: #ed8936;
             color: white;
         }
-        
+
         .current-user {
             opacity: 0.7;
             font-style: italic;
@@ -169,6 +169,12 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             max-width: 400px;
             width: 90%;
+        }
+
+        .modal-content.wide {
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -216,6 +222,104 @@
         .btn-cancel:hover {
             background: #5a6268;
         }
+
+        /* Permissions Styles */
+        .permissions-section {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+
+        .permissions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .permissions-header label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .permissions-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .permissions-actions button {
+            padding: 4px 10px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .permissions-actions button:hover {
+            background: #eee;
+        }
+
+        .perm-category {
+            margin-bottom: 10px;
+        }
+
+        .perm-category-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #667eea;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .perm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+        }
+
+        .perm-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 0;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .perm-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .perm-item label {
+            cursor: pointer;
+            font-weight: normal;
+            margin: 0;
+        }
+
+        .perm-count {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        .perms-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
     </style>
 </head>
 <body>
@@ -226,32 +330,103 @@
 
     <!-- Modal para nuevo administrador -->
     <div id="newAdminModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content wide">
             <div class="modal-header">
                 <h2>Crear Nuevo Administrador</h2>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="newUsername">Usuario:</label>
-                    <input type="text" id="newUsername" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="newUsername">Usuario:</label>
+                        <input type="text" id="newUsername" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="newEmail">Email:</label>
+                        <input type="email" id="newEmail" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="newEmail">Email:</label>
-                    <input type="email" id="newEmail" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label for="newPassword">Contraseña:</label>
+                        <input type="password" id="newPassword" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="newAdminRole">Rol:</label>
+                        <select id="newAdminRole">
+                            <option value="">-- Seleccionar --</option>
+                            <option value="admin">Administrador</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="operador">Operador</option>
+                            <option value="viewer">Visualizador</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="newPassword">Contraseña:</label>
-                    <input type="password" id="newPassword" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                </div>
-                <div class="form-group">
-                    <label for="newAdminRole">Rol:</label>
-                    <select id="newAdminRole">
-                        <option value="">-- Seleccionar --</option>
-                        <option value="admin">Administrador</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="operador">Operador</option>
-                        <option value="viewer">Visualizador</option>
-                    </select>
+
+                <!-- Permisos de módulos -->
+                <div class="permissions-section">
+                    <div class="permissions-header">
+                        <label>📋 Módulos y Permisos:</label>
+                        <div class="permissions-actions">
+                            <button type="button" onclick="selectAllPerms()">✅ Todos</button>
+                            <button type="button" onclick="deselectAllPerms()">❌ Ninguno</button>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Principal</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="perm_dashboard" value="dashboard"><label for="perm_dashboard">📊 Dashboard</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_command_center" value="command-center"><label for="perm_command_center">🛰️ Centro de Comando</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_analytics" value="analytics"><label for="perm_analytics">📈 Analíticas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Gestión</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="perm_drivers" value="drivers"><label for="perm_drivers">🚗 Conductores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_motos" value="motos"><label for="perm_motos">🏍️ Motos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_packages" value="packages"><label for="perm_packages">📦 Paquetes</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_communications" value="communications"><label for="perm_communications">📢 Comunicados Masivos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_suspensions" value="suspensions"><label for="perm_suspensions">🚨 Suspensiones</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_users" value="users"><label for="perm_users">👥 Usuarios</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_trips" value="trips"><label for="perm_trips">🗺️ Viajes</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_vehicles" value="vehicles"><label for="perm_vehicles">🚙 Vehículos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_documents" value="documents"><label for="perm_documents">📋 Documentos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_trips_monitor" value="trips-monitor"><label for="perm_trips_monitor">🚕 Viajes Activos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_support" value="support"><label for="perm_support">💬 Soporte</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_geofencing" value="geofencing"><label for="perm_geofencing">📍 Geofencing</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_admins" value="admins"><label for="perm_admins">👥 Administradores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_surge_pricing" value="surge-pricing"><label for="perm_surge_pricing">📈 Surge Pricing</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_zones" value="zones"><label for="perm_zones">📍 Gestión de Zonas</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_dynamic_rates" value="dynamic-rates"><label for="perm_dynamic_rates">💰 Tarifas Dinámicas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Finanzas</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="perm_wallet" value="wallet"><label for="perm_wallet">💰 Billetera</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_finances" value="finances"><label for="perm_finances">💰 Pagos y Comisiones</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_reports" value="reports"><label for="perm_reports">📊 Reportes Contables</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_auto_reports" value="reportes-automaticos"><label for="perm_auto_reports">🤖 Reportes Automatizados</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_reconciliation" value="reconciliation"><label for="perm_reconciliation">⚖️ Conciliación de Pagos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_invoicing" value="invoicing"><label for="perm_invoicing">📄 Facturación</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_driver_payments" value="driver-payments"><label for="perm_driver_payments">💸 Pagos a Conductores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_payments" value="payments"><label for="perm_payments">💳 Pagos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_adv_reports" value="reports-advanced"><label for="perm_adv_reports">📊 Reportes Avanzados</label></div>
+                            <div class="perm-item"><input type="checkbox" id="perm_pricing" value="pricing"><label for="perm_pricing">💰 Gestión de Tarifas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Sistema</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="perm_settings" value="settings"><label for="perm_settings">⚙️ Configuración</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-count"><span id="permCount">0</span> / 30 módulos seleccionados</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -260,13 +435,13 @@
             </div>
         </div>
     </div>
-    
+
     <div class="container">
         <div class="actions">
             <h2>Administradores del Sistema</h2>
             <button class="btn btn-success" onclick="openNewAdminModal()">+ Nuevo Administrador</button>
         </div>
-        
+
         <table>
             <thead>
                 <tr>
@@ -274,13 +449,14 @@
                     <th>Usuario</th>
                     <th>Email</th>
                     <th>Rol</th>
+                    <th>Permisos</th>
                     <th>Fecha Creación</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody id="adminsTable">
                 <tr>
-                    <td colspan="6" style="text-align: center;">Cargando...</td>
+                    <td colspan="7" style="text-align: center;">Cargando...</td>
                 </tr>
             </tbody>
         </table>
@@ -318,15 +494,50 @@
         const token = localStorage.getItem('adminToken');
         const adminId = localStorage.getItem('adminId');
         const currentUser = JSON.parse(localStorage.getItem('adminData') || '{}');
-        
+
         let selectedAdminId = null;
-        
+
         // Verificar que sea super_admin
         if (currentUser.role !== 'super_admin') {
             alert('No tienes permisos para acceder a esta página');
             window.location.href = 'App.html';
         }
-        
+
+        // === FUNCIONES DE PERMISOS ===
+        function getPermCheckboxes() {
+            return document.querySelectorAll('.perm-item input[type="checkbox"]');
+        }
+
+        function updatePermCount() {
+            const checked = document.querySelectorAll('.perm-item input[type="checkbox"]:checked').length;
+            document.getElementById('permCount').textContent = checked;
+        }
+
+        function selectAllPerms() {
+            getPermCheckboxes().forEach(cb => cb.checked = true);
+            updatePermCount();
+        }
+
+        function deselectAllPerms() {
+            getPermCheckboxes().forEach(cb => cb.checked = false);
+            updatePermCount();
+        }
+
+        function getSelectedPermissions() {
+            const perms = [];
+            document.querySelectorAll('.perm-item input[type="checkbox"]:checked').forEach(cb => {
+                perms.push(cb.value);
+            });
+            return perms;
+        }
+
+        // Evento para contar checkboxes
+        document.addEventListener('change', function(e) {
+            if (e.target.closest('.perm-item')) {
+                updatePermCount();
+            }
+        });
+
         // Cargar lista de administradores
         async function loadAdmins() {
             try {
@@ -336,37 +547,47 @@
                         'x-admin-id': adminId
                     }
                 });
-                
+
                 if (!response.ok) throw new Error('Error al cargar administradores');
-                
-              const result = await response.json();
-              const admins = result.data || result;
+
+                const result = await response.json();
+                const admins = result.data || result;
                 displayAdmins(admins);
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error al cargar los administradores');
             }
         }
-        
+
         function displayAdmins(admins) {
             const tbody = document.getElementById('adminsTable');
-            
+
             if (admins.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay administradores</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay administradores</td></tr>';
                 return;
             }
-            
+
             tbody.innerHTML = admins.map(admin => {
                 const isCurrentUser = admin.id == adminId;
                 const roleClass = `role-${admin.role}`;
                 const rowClass = isCurrentUser ? 'current-user' : '';
-                
+                let permText = 'Sin asignar';
+                if (admin.role === 'super_admin') {
+                    permText = 'Todos';
+                } else if (admin.permissions) {
+                    try {
+                        const perms = typeof admin.permissions === 'string' ? JSON.parse(admin.permissions) : admin.permissions;
+                        permText = perms.length + '/30';
+                    } catch(e) { permText = 'Sin asignar'; }
+                }
+
                 return `
                     <tr class="${rowClass}">
                         <td>${admin.id}</td>
                         <td>${admin.username} ${isCurrentUser ? '(Tú)' : ''}</td>
                         <td>${admin.email}</td>
                         <td><span class="role-badge ${roleClass}">${getRoleName(admin.role)}</span></td>
+                        <td><span class="perms-badge">${permText}</span></td>
                         <td>${new Date(admin.created_at).toLocaleDateString()}</td>
                         <td>
                             ${!isCurrentUser ? `
@@ -378,7 +599,7 @@
                 `;
             }).join('');
         }
-        
+
         function getRoleName(role) {
             const roles = {
                 'super_admin': 'Super Admin',
@@ -389,7 +610,7 @@
             };
             return roles[role] || role;
         }
-        
+
         // Función para abrir el modal de cambio de rol
         function changeRole(adminId, username, currentRole) {
             selectedAdminId = adminId;
@@ -397,23 +618,23 @@
             document.getElementById('newRole').value = currentRole;
             document.getElementById('roleModal').classList.add('active');
         }
-        
+
         // Función para cerrar el modal
         function closeModal() {
             document.getElementById('roleModal').classList.remove('active');
             selectedAdminId = null;
             document.getElementById('newRole').value = '';
         }
-        
+
         // Función para confirmar el cambio de rol
         async function confirmRoleChange() {
             const newRole = document.getElementById('newRole').value;
-            
+
             if (!newRole) {
                 alert('Por favor selecciona un rol');
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_URL}/api/admin/${selectedAdminId}/role`, {
                     method: 'PUT',
@@ -424,23 +645,23 @@
                     },
                     body: JSON.stringify({ role: newRole })
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Error al cambiar el rol');
                 }
-                
+
                 const result = await response.json();
                 alert(result.message || 'Rol actualizado exitosamente');
                 closeModal();
-                loadAdmins(); // Recargar la lista
-                
+                loadAdmins();
+
             } catch (error) {
                 console.error('Error:', error);
                 alert(error.message || 'Error al cambiar el rol');
             }
         }
-        
+
         // Funciones para nuevo administrador
         function openNewAdminModal() {
             document.getElementById('newAdminModal').classList.add('active');
@@ -448,11 +669,11 @@
 
         function closeNewAdminModal() {
             document.getElementById('newAdminModal').classList.remove('active');
-            // Limpiar campos
             document.getElementById('newUsername').value = '';
             document.getElementById('newEmail').value = '';
             document.getElementById('newPassword').value = '';
             document.getElementById('newAdminRole').value = '';
+            deselectAllPerms();
         }
 
         async function createNewAdmin() {
@@ -460,18 +681,23 @@
             const email = document.getElementById('newEmail').value;
             const password = document.getElementById('newPassword').value;
             const role = document.getElementById('newAdminRole').value;
-            
-            // Validaciones
+            const permissions = getSelectedPermissions();
+
             if (!username || !email || !password || !role) {
                 alert('Todos los campos son obligatorios');
                 return;
             }
-            
+
             if (password.length < 6) {
                 alert('La contraseña debe tener al menos 6 caracteres');
                 return;
             }
-            
+
+            if (permissions.length === 0) {
+                alert('Debes seleccionar al menos un módulo');
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_URL}/api/admin/users`, {
                     method: 'POST',
@@ -480,31 +706,31 @@
                         'x-admin-id': adminId,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, email, password, role })
+                    body: JSON.stringify({ username, email, password, role, permissions: JSON.stringify(permissions) })
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Error al crear administrador');
                 }
-                
+
                 const result = await response.json();
                 alert('Administrador creado exitosamente');
                 closeNewAdminModal();
-                loadAdmins(); // Recargar la lista
-                
+                loadAdmins();
+
             } catch (error) {
                 console.error('Error:', error);
                 alert(error.message || 'Error al crear el administrador');
             }
         }
-        
+
         // Función para eliminar administrador
         async function deleteAdmin(id, username) {
             if (!confirm(`¿Estás seguro de que deseas eliminar al administrador "${username}"?\n\nEsta acción no se puede deshacer.`)) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_URL}/api/admin/${id}`, {
                     method: 'DELETE',
@@ -513,22 +739,22 @@
                         'x-admin-id': adminId
                     }
                 });
-                
+
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Error al eliminar administrador');
                 }
-                
+
                 const result = await response.json();
                 alert(result.message || 'Administrador eliminado exitosamente');
-                loadAdmins(); // Recargar la lista
-                
+                loadAdmins();
+
             } catch (error) {
                 console.error('Error:', error);
                 alert(error.message || 'Error al eliminar el administrador');
             }
         }
-        
+
         // Cargar al iniciar
         loadAdmins();
     </script>
