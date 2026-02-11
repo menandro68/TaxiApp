@@ -336,7 +336,7 @@ function generateReport() {
         <h1 style="color:#059669;">${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'Admin'}</h1>
     </div>
     <div class="info">
-      <strong>TaxiApp Rondon</strong> | Admin: ${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'N/A'} | Conductor: ${driverName} | Fecha del reporte: ${fechaReporte} ${horaReporte} | Total registros: ${filtered.length}
+<strong>TaxiApp Rondon</strong> | Admin: ${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'N/A'} | Conductor: ${driverName} | Desde: ${dateFrom || 'Inicio'} | Hasta: ${dateTo || 'Hoy'} | Fecha del reporte: ${fechaReporte} ${horaReporte} | Total registros: ${filtered.length}
     </div>
     <div class="summary">
         <div class="summary-card"><div class="lbl">Total Comisiones</div><div class="val" style="color:#ef4444">RD$${totalComm.toLocaleString()}</div></div>
