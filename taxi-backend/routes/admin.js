@@ -74,7 +74,7 @@ router.get('/stats', async (req, res) => {
 
 router.get('/users', async (req, res) => {
   try {
-    const admins = await db.getAll('SELECT id, username, email, role, created_at FROM admins');
+    const admins = await db.getAll('SELECT id, username, email, role, permissions, created_at FROM admins');
     return res.json({ success: true, data: admins });
   } catch (error) {
     console.error('Error listando admins:', error);
@@ -84,7 +84,7 @@ router.get('/users', async (req, res) => {
 
 router.post('/users', async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, permissions } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -93,8 +93,8 @@ router.post('/users', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
    const result = await db.query(
-      `INSERT INTO admins (username, email, password, role, created_at, updated_at) VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id, username, email, role`,
-      [username, email, hashedPassword, role || 'admin']
+      `INSERT INTO admins (username, email, password, role, permissions, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING id, username, email, role, permissions`,
+      [username, email, hashedPassword, role || 'admin', permissions || '[]']
     );
 
     return res.status(201).json({
