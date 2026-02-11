@@ -85,6 +85,8 @@
                 <h2>📋 Historial de Transacciones</h2>
                 <div class="filter-row">
                     <button onclick="generateReport()" style="padding:6px 14px;border-radius:6px;border:none;background:#10b981;color:white;font-size:13px;cursor:pointer;font-weight:600;">📄 Reporte</button>
+                    <input type="date" id="filterDateFrom" onchange="loadTransactions()" style="padding:6px 10px;border-radius:6px;border:1px solid #475569;background:#334155;color:white;font-size:13px;">
+                    <input type="date" id="filterDateTo" onchange="loadTransactions()" style="padding:6px 10px;border-radius:6px;border:1px solid #475569;background:#334155;color:white;font-size:13px;">
                     <select id="filterAdmin" onchange="loadTransactions()">
                         <option value="all">Todos los admins</option>
                     </select>
@@ -234,6 +236,10 @@ function loadTransactions() {
     if (filterType !== 'all') filtered = filtered.filter(tx => tx.type === filterType);
     const filterAdmin = document.getElementById('filterAdmin').value;
     if (filterAdmin !== 'all') filtered = filtered.filter(tx => tx.registered_by === filterAdmin);
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+    if (dateFrom) filtered = filtered.filter(tx => new Date(tx.created_at) >= new Date(dateFrom + 'T00:00:00'));
+    if (dateTo) filtered = filtered.filter(tx => new Date(tx.created_at) <= new Date(dateTo + 'T23:59:59'));
     
     const tbody = document.getElementById('transactionsBody');
     if (filtered.length === 0) {
@@ -271,6 +277,12 @@ function generateReport() {
     let filtered = allTransactions;
     if (filterDriver !== 'all') filtered = filtered.filter(tx => tx.driver_id == filterDriver);
     if (filterType !== 'all') filtered = filtered.filter(tx => tx.type === filterType);
+    const filterAdmin = document.getElementById('filterAdmin').value;
+    if (filterAdmin !== 'all') filtered = filtered.filter(tx => tx.registered_by === filterAdmin);
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+    if (dateFrom) filtered = filtered.filter(tx => new Date(tx.created_at) >= new Date(dateFrom + 'T00:00:00'));
+    if (dateTo) filtered = filtered.filter(tx => new Date(tx.created_at) <= new Date(dateTo + 'T23:59:59'));
 
     if (filtered.length === 0) return showMsg('No hay transacciones para reportar', 'error');
 
