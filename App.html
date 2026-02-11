@@ -5082,6 +5082,13 @@ function applyPermissions() {
 }
 
 applyPermissions();
+// Ocultar títulos de sección vacías
+document.querySelectorAll('.nav-section').forEach(section => {
+    const visibleItems = section.querySelectorAll('.nav-item:not([style*="display: none"])');
+    if (visibleItems.length === 0) {
+        section.style.display = 'none';
+    }
+});
 </script>
 </body>
 </html>
