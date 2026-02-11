@@ -5006,8 +5006,7 @@ if (screenName === 'vehicles') {
     <script src="command-center-module.js"></script>
     <script src="analytics-module.js"></script>
     <script src="vehicles-module.js"></script>
-
-    <script>
+<script>
 // === SISTEMA DE PERMISOS POR MÓDULO ===
 function applyPermissions() {
     const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
@@ -5049,9 +5048,11 @@ function applyPermissions() {
     document.querySelectorAll('.nav-item').forEach(item => {
         const screen = item.getAttribute('data-screen') || '';
         const onclick = item.getAttribute('onclick') || '';
+        const href = item.getAttribute('href') || '';
         const text = item.textContent.trim();
         let perm = null;
 
+        // Mapeo por data-screen
         if (screen && screenMap[screen]) {
             if (screen === 'reports') {
                 perm = text.includes('Avanzados') ? 'reports-advanced' : 'reports';
@@ -5060,14 +5061,21 @@ function applyPermissions() {
             }
         }
 
+        // Mapeo por onclick/href para links externos
         if (!perm) {
-            if (onclick.includes('admins.html')) perm = 'admins';
-            else if (onclick.includes('surge-monitor') || onclick.includes('surge')) perm = 'surge-pricing';
-            else if (onclick.includes('zones.html')) perm = 'zones';
-            else if (onclick.includes('dynamic-pricing')) perm = 'dynamic-rates';
+            if (onclick.includes('admins.html') || href.includes('admins.html')) perm = 'admins';
+            else if (onclick.includes('surge-monitor') || onclick.includes('surge') || text.includes('Surge')) perm = 'surge-pricing';
+            else if (onclick.includes('zones.html') || href.includes('zones.html')) perm = 'zones';
+            else if (onclick.includes('dynamic-pricing') || href.includes('dynamic-pricing')) perm = 'dynamic-rates';
         }
 
+        // Si no tiene mapeo, ocultar también (seguridad)
         if (perm && !perms.includes(perm)) {
+            item.style.display = 'none';
+        }
+        // Items sin mapeo que no son secciones - ocultar si no está en permisos
+        if (!perm && screen === 'reports') {
+            // Reportes duplicados sin mapeo claro
             item.style.display = 'none';
         }
     });
@@ -5075,6 +5083,5 @@ function applyPermissions() {
 
 applyPermissions();
 </script>
-
 </body>
 </html>
