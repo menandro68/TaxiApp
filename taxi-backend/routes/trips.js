@@ -1315,7 +1315,7 @@ router.get('/wallet/:driverId', async (req, res) => {
 // =============================================
 router.post('/wallet/deposit', async (req, res) => {
     try {
-        const { driver_id, amount, description } = req.body;
+      const { driver_id, amount, description, registered_by } = req.body;
 
         if (!driver_id || !amount) {
             return res.status(400).json({ error: 'driver_id y amount requeridos' });
@@ -1329,9 +1329,9 @@ router.post('/wallet/deposit', async (req, res) => {
         const newBalance = currentBalance + parseFloat(amount);
 
         await db.query(
-            `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, description)
-             VALUES ($1, 'deposit', 0, 0, $2, $3, $4)`,
-            [driver_id, amount, newBalance, description || `Depósito verificado RD$${amount}`]
+           `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, description, registered_by)
+             VALUES ($1, 'deposit', 0, 0, $2, $3, $4, $5)`,
+            [driver_id, amount, newBalance, description || `Depósito verificado RD$${amount}`, registered_by || 'admin']
         );
 
         console.log(`💵 Depósito RD$${amount} registrado para conductor ${driver_id}. Nuevo balance: RD$${newBalance}`);

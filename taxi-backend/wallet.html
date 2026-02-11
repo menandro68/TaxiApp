@@ -85,6 +85,9 @@
                 <h2>📋 Historial de Transacciones</h2>
                 <div class="filter-row">
                     <button onclick="generateReport()" style="padding:6px 14px;border-radius:6px;border:none;background:#10b981;color:white;font-size:13px;cursor:pointer;font-weight:600;">📄 Reporte</button>
+                    <select id="filterAdmin" onchange="loadTransactions()">
+                        <option value="all">Todos los admins</option>
+                    </select>
                     <select id="filterDriver" onchange="loadTransactions()">
                         <option value="all">Todos los conductores</option>
                     </select>
@@ -168,7 +171,7 @@ async function registerDeposit() {
         const res = await fetch(API + '/trips/wallet/deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ driver_id: selectedDriverId, amount, description: desc || undefined })
+            body: JSON.stringify({ driver_id: selectedDriverId, amount, description: desc || undefined, registered_by: JSON.parse(localStorage.getItem('adminData') || '{}').username || 'admin' })
         });
         const data = await res.json();
         if (data.success) {
@@ -207,6 +210,13 @@ async function loadAllTransactions() {
     
     allTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
+    // Llenar filtro de admins
+    const adminSet = new Set();
+    allTransactions.forEach(tx => { if (tx.registered_by) adminSet.add(tx.registered_by); });
+    const filterAdminEl = document.getElementById('filterAdmin');
+    filterAdminEl.innerHTML = '<option value="all">Todos los admins</option>';
+    adminSet.forEach(name => { filterAdminEl.innerHTML += `<option value="${name}">${name}</option>`; });
+    
     document.getElementById('statCommissions').textContent = 'RD$' + totalCommissions.toLocaleString();
     document.getElementById('statDeposits').textContent = 'RD$' + totalDeposits.toLocaleString();
     document.getElementById('statDebt').textContent = 'RD$' + (totalCommissions - totalDeposits).toLocaleString();
@@ -222,6 +232,8 @@ function loadTransactions() {
     let filtered = allTransactions;
     if (filterDriver !== 'all') filtered = filtered.filter(tx => tx.driver_id == filterDriver);
     if (filterType !== 'all') filtered = filtered.filter(tx => tx.type === filterType);
+    const filterAdmin = document.getElementById('filterAdmin').value;
+    if (filterAdmin !== 'all') filtered = filtered.filter(tx => tx.registered_by === filterAdmin);
     
     const tbody = document.getElementById('transactionsBody');
     if (filtered.length === 0) {
