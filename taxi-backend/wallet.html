@@ -333,7 +333,7 @@ function generateReport() {
     <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
     <h1>📄 Reporte de Transacciones - Billetera</h1>
     <div class="info">
-        <strong>TaxiApp Rondon</strong> | Conductor: ${driverName} | Fecha del reporte: ${fechaReporte} ${horaReporte} | Total registros: ${filtered.length}
+      <strong>TaxiApp Rondon</strong> | Admin: ${JSON.parse(localStorage.getItem('adminData') || '{}').username || 'N/A'} | Conductor: ${driverName} | Fecha del reporte: ${fechaReporte} ${horaReporte} | Total registros: ${filtered.length}
     </div>
     <div class="summary">
         <div class="summary-card"><div class="lbl">Total Comisiones</div><div class="val" style="color:#ef4444">RD$${totalComm.toLocaleString()}</div></div>
