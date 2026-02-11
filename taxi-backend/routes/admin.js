@@ -43,7 +43,8 @@ router.post('/login', async (req, res) => {
       admin: {
         id: admin.id,
         username: admin.username,
-        role: admin.role
+        role: admin.role,
+        permissions: admin.permissions || '[]'
       }
     });
   } catch (error) {
