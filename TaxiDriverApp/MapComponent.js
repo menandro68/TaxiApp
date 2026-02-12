@@ -824,11 +824,12 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
         )}
       </MapView>
 
-      {/* PANEL SUPERIOR - INFO */}
+   {/* PANEL SUPERIOR - INFO - OCULTO
       <View style={styles.infoPanel}>
         <Text style={styles.infoText}>📏 {routeInfo?.distanceText || '...'}</Text>
         <Text style={styles.infoText}>⏱️ {routeInfo?.durationText || '...'}</Text>
       </View>
+      */}
 
       {/* INDICADOR DE DATOS CARGADOS - OCULTO
       <View style={styles.statusPanel}>
