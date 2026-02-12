@@ -1785,15 +1785,15 @@ const acceptTrip = async () => {
   const simulateTrip = () => {
     fcmService.simulateTripRequest();
   };
-
-  const renderDashboard = () => (
-    <ScrollView style={styles.tabContent}>
-      <Text style={styles.title}>🚖 Conductor App</Text>
-      
+const renderDashboard = () => (
+    <>
+  <ScrollView style={styles.tabContent}>
+ <Text style={styles.title}>🚖 Conductor Squid</Text>
       {/* Estado del Conductor */}
-      <View style={styles.statusCard}>
-        <Text style={styles.sectionTitle}>Estado del Conductor</Text>
-        <Text style={[styles.status, { 
+      <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5}]}>
+        <Text style={[styles.sectionTitle, {fontSize: 14, marginBottom: 2}]}>Estado del Conductor</Text>
+      <Text style={[styles.status, { 
+          fontSize: 13, marginBottom: 5,
           color: driverStatus === 'online' ? '#22c55e' : 
                  driverStatus === 'suspended' ? '#ef4444' : '#ef4444' 
         }]}>
@@ -1811,9 +1811,10 @@ const acceptTrip = async () => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
-            style={[styles.button, { 
+          style={[styles.button, { 
+              paddingVertical: 6,
               backgroundColor: driverStatus === 'offline' ? '#22c55e' : '#ef4444' 
-            }]} 
+            }]}
             onPress={toggleDriverStatus}
             disabled={driverStatus === 'busy'}
           >
@@ -1884,6 +1885,7 @@ const acceptTrip = async () => {
       )}
 
       {/* Botón de Registro */}
+   {/* Completar Registro - Oculto
       {!currentTrip && (
         <TouchableOpacity 
           style={styles.registerButton}
@@ -1891,9 +1893,10 @@ const acceptTrip = async () => {
         >
           <Text style={styles.buttonText}>📝 Completar Registro</Text>
         </TouchableOpacity>
-      )}
+      
+    */}
 
-      {/* Botón de Documentos */}
+ {/* Botón de Documentos - Oculto
       {!currentTrip && (
         <TouchableOpacity 
           style={styles.documentsButton}
@@ -1902,17 +1905,19 @@ const acceptTrip = async () => {
           <Text style={styles.buttonText}>📄 Cargar Documentos</Text>
         </TouchableOpacity>
       )}
+*/}
 
-      {/* Botón de Soporte 24/7 */}
-      {!currentTrip && (
+   {/* Botón de Soporte - Movido al tab bar
+   {!currentTrip && (
         <TouchableOpacity 
-          style={styles.supportButton}
+style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignSelf: 'center', borderRadius: 15}]}
           onPress={() => setShowSupportChat(true)}
         >
-          <Text style={styles.buttonText}>💬 Soporte 24/7</Text>
-        </TouchableOpacity>
-      )}
-{/* Botón de Billetera - Oculto, se accede desde tab */}
+       <Text style={[styles.buttonText, {fontSize: 11}]}>💬 Soporte</Text>
+</TouchableOpacity>
+      )
+      */}
+{/* Botón de Billetera- Oculto, se accede desde tab */}
       {false && (
         <TouchableOpacity
           style={{ backgroundColor: '#10b981', padding: 15, borderRadius: 12, marginHorizontal: 20, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', elevation: 3 }}
@@ -1922,31 +1927,36 @@ const acceptTrip = async () => {
         </TouchableOpacity>
       )}
 
-      {/* Ganancias */}
-
-  
-      <View style={styles.earningsCard}>
-        <Text style={styles.sectionTitle}>💰 Ganancias</Text>
-        <View style={styles.earningsRow}>
-          <View style={styles.earningItem}>
-            <Text style={styles.earningLabel}>Hoy</Text>
-            <Text style={styles.earningAmount}>RD${earnings.today}</Text>
-          </View>
-          <View style={styles.earningItem}>
-            <Text style={styles.earningLabel}>Semana</Text>
-            <Text style={styles.earningAmount}>RD${earnings.week}</Text>
-          </View>
-          <View style={styles.earningItem}>
-            <Text style={styles.earningLabel}>Mes</Text>
-            <Text style={styles.earningAmount}>RD${earnings.month}</Text>
-          </View>
+</ScrollView>
+    <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 0, borderRadius: 0}]}>
+      <Text style={[styles.sectionTitle, {fontSize: 14}]}>💰 Ganancias</Text>
+      <View style={styles.earningsRow}>
+        <View style={styles.earningItem}>
+          <Text style={styles.earningLabel}>Hoy</Text>
+          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.today}</Text>
         </View>
-      </View>
-    </ScrollView>
+        <View style={styles.earningItem}>
+          <Text style={styles.earningLabel}>Semana</Text>
+          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.week}</Text>
+        </View>
+        <View style={styles.earningItem}>
+          <Text style={styles.earningLabel}>Mes</Text>
+          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.month}</Text>
+        </View>
+ </View>
+    </View>
+    </>
   );
-
-  const renderMap = () => (
+const renderMap= () => (
     <View style={styles.tabContent}>
+      <View style={{flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5}}>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('dashboard')}
+          style={{backgroundColor: '#f0f9ff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, borderWidth: 1, borderColor: '#3b82f6'}}
+        >
+          <Text style={{fontSize: 14, color: '#3b82f6', fontWeight: '600'}}>← Volver</Text>
+        </TouchableOpacity>
+      </View>
 <MapComponent
 currentTrip={currentTrip}
   tripPhase={tripPhase}
@@ -2155,7 +2165,15 @@ onPress: async () => {
 
 const renderEarnings = () => (
     <ScrollView style={styles.tabContent}>
-      <Text style={styles.title}>📊 Mis Ganancias</Text>
+   <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10}}>
+        <TouchableOpacity 
+          onPress={() => setActiveTab('wallet')}
+          style={{backgroundColor: '#f0f9ff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, borderWidth: 1, borderColor: '#3b82f6'}}
+        >
+        <Text style={{fontSize: 14, color: '#3b82f6', fontWeight: '600'}}>← Volver</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>📊 Mis Ganancias</Text>
+      </View>
 
       <View style={styles.earningsDetailCard}>
         <Text style={styles.sectionTitle}>Resumen Detallado</Text>
@@ -3023,12 +3041,12 @@ const renderEarnings = () => (
       
       {/* Navegación Inferior */}
       <View style={styles.tabBar}>
-        <TouchableOpacity 
-          onPress={() => setActiveTab('dashboard')} 
-          style={[styles.tabButton, activeTab === 'dashboard' && styles.tabButtonActive]}
+      <TouchableOpacity
+          onPress={() => setShowSupportChat(true)}
+          style={[styles.tabButton, styles.tabButtonActive]}
         >
-          <Text style={[styles.tabText, activeTab === 'dashboard' && styles.tabTextActive]}>
-            📊 Dashboard
+          <Text style={[styles.tabText, styles.tabTextActive]}>
+            💬 Soporte
           </Text>
         </TouchableOpacity>
         
