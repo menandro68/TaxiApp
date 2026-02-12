@@ -88,14 +88,7 @@
                     <button onclick="generateReport()" style="padding:6px 14px;border-radius:6px;border:none;background:#10b981;color:white;font-size:13px;cursor:pointer;font-weight:600;">📄 Reporte</button>
                  <div style="display:flex;flex-direction:column;gap:2px;align-items:center;"><span style="color:white;font-size:10px;">Fecha inicial</span><input type="date" id="filterDateFrom" onchange="loadTransactions()" style="padding:4px 8px;border-radius:6px;border:1px solid #475569;background:#334155;color:white;font-size:12px;"></div>
                     <div style="display:flex;flex-direction:column;gap:2px;align-items:center;"><span style="color:white;font-size:10px;">Fecha final</span><input type="date" id="filterDateTo" onchange="loadTransactions()" style="padding:4px 8px;border-radius:6px;border:1px solid #475569;background:#334155;color:white;font-size:12px;"></div>
-```
-
-Guarda, commit y push:
-```
-cd C:\Users\menandro68\Documents\TaxiApp\taxi-backend
-git add -A
-git commit -m "UI: centrar etiquetas fecha en filtros billetera"
-git push origin main
+``
                     <select id="filterAdmin" onchange="loadTransactions()">
                         <option value="all">Todos los admins</option>
                     </select>
