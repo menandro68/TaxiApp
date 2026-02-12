@@ -150,7 +150,22 @@ useEffect(() => {
     if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude) {
       setCurrentLocation(propUserLocation);
     }
-  }, [propUserLocation]);
+}, [propUserLocation]);
+
+  // ✅ Animar mapa a ubicación real del conductor
+  useEffect(() => {
+    if (mapRef.current && currentLocation && currentLocation.latitude) {
+      const timer = setTimeout(() => {
+        mapRef.current.animateToRegion({
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        }, 500);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentLocation]);
 
   // Obtener ubicación GPS - solo una vez al montar
   useEffect(() => {
@@ -817,8 +832,8 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={true}
           >
-            <View style={styles.markerDriver}>
-              <Text style={styles.markerIcon}>🚙</Text>
+           <View style={styles.markerDriver}>
+              <Text style={styles.markerIcon}>🚕</Text>
             </View>
           </Marker>
         )}
