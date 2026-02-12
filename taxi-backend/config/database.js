@@ -301,9 +301,26 @@ async function initDatabase() {
 // ========================================
 // INICIALIZACIÓN CON ADMIN POR DEFECTO
 // ========================================
+async function waitForPostgres() {
+  for (let i = 1; i <= 10; i++) {
+    try {
+      await pool.query('SELECT 1');
+      console.log('✅ PostgreSQL listo');
+      return true;
+    } catch (err) {
+      console.log(`⏳ Esperando PostgreSQL (intento ${i}/10)...`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw new Error('No se pudo conectar a PostgreSQL después de 10 intentos');
+}
+
 (async () => {
   try {
     console.log('🔄 Inicializando base de datos y creando admin...');
+    
+    // Esperar a que PostgreSQL esté listo
+    await waitForPostgres();
     
     // Esperar a que se creen las tablas
     await initDatabase();
