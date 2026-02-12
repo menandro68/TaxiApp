@@ -15,11 +15,11 @@ console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variabl
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: { rejectUnauthorized: false },  // SIEMPRE SSL en Railway
-  max: 20,
-  min: 0,
-  idleTimeoutMillis: 600000,
-  connectionTimeoutMillis: 600000,
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
   application_name: 'taxiapp_backend',
 });
 
@@ -66,12 +66,19 @@ class DatabaseService {
   }
 
   async query(query, params = []) {
-    try {
-      const result = await pool.query(query, params);
-      return result;
-    } catch (error) {
-      console.error('Database query error:', error);
-      throw error;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await pool.query(query, params);
+        return result;
+      } catch (error) {
+        if (attempt < 3 && (error.code === 'ECONNRESET' || error.code === 'EPIPE' || error.code === '57P01')) {
+          console.log(`🔄 Reintentando query (intento ${attempt}/3)...`);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        console.error('Database query error:', error);
+        throw error;
+      }
     }
   }
 
