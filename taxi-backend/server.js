@@ -127,6 +127,51 @@ app.get('/api/config', (req, res) => {
 // ==========================================
 // HEALTH CHECK
 // ==========================================
+ 
+// Política de Privacidad
+app.get('/privacy', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad - TaxiApp Rondon</title>
+<style>body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333}h1{color:#2563eb}h2{color:#1e40af;margin-top:30px}p{line-height:1.6}</style>
+</head>
+<body>
+<h1>Política de Privacidad - TaxiApp Rondon</h1>
+<p><strong>Última actualización:</strong> 12 de febrero de 2026</p>
+
+<h2>1. Información que Recopilamos</h2>
+<p>Recopilamos la siguiente información para proporcionar nuestro servicio de transporte: nombre, número de teléfono, dirección de correo electrónico, ubicación GPS en tiempo real durante el uso de la aplicación, historial de viajes y datos de pago.</p>
+
+<h2>2. Uso de la Información</h2>
+<p>Utilizamos su información para: conectar pasajeros con conductores, calcular rutas y tarifas, procesar pagos, mejorar la seguridad del servicio, enviar notificaciones sobre sus viajes y brindar soporte al cliente.</p>
+
+<h2>3. Ubicación GPS</h2>
+<p>Nuestra aplicación requiere acceso a su ubicación GPS para funcionar correctamente. La ubicación se utiliza únicamente mientras la aplicación está en uso activo para: mostrar conductores cercanos, calcular rutas y distancias, y compartir ubicación en tiempo real durante un viaje activo.</p>
+
+<h2>4. Compartir Información</h2>
+<p>No vendemos ni compartimos su información personal con terceros, excepto: con el conductor o pasajero asignado a su viaje (nombre y ubicación), con proveedores de servicios necesarios para el funcionamiento de la app (Google Maps, Firebase), y cuando sea requerido por ley.</p>
+
+<h2>5. Seguridad</h2>
+<p>Implementamos medidas de seguridad técnicas y organizativas para proteger su información, incluyendo cifrado de datos, acceso restringido y almacenamiento seguro en servidores protegidos.</p>
+
+<h2>6. Retención de Datos</h2>
+<p>Conservamos su información mientras mantenga una cuenta activa. Puede solicitar la eliminación de sus datos contactándonos directamente.</p>
+
+<h2>7. Derechos del Usuario</h2>
+<p>Usted tiene derecho a: acceder a sus datos personales, solicitar corrección de datos inexactos, solicitar eliminación de su cuenta y datos, y retirar su consentimiento en cualquier momento.</p>
+
+<h2>8. Contacto</h2>
+<p>Para preguntas sobre esta política de privacidad, contáctenos a: <strong>menandro1968@gmail.com</strong></p>
+
+<h2>9. Cambios</h2>
+<p>Nos reservamos el derecho de actualizar esta política. Los cambios serán notificados a través de la aplicación.</p>
+</body>
+</html>`);
+});
+
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
