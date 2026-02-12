@@ -723,8 +723,9 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
         provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={initialRegion}
-        showsUserLocation={false}
+     showsUserLocation={false}
         showsMyLocationButton={true}
+        toolbarEnabled={false}
         onMapReady={() => {
           console.log('🗺️ Mapa listo!');
           setTimeout(() => {
