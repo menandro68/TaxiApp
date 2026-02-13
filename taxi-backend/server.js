@@ -125,10 +125,9 @@ app.get('/api/config', (req, res) => {
 });
 
 // ==========================================
-// HEALTH CHECK
+// HEALTH CHECK Y PÁGINAS ESTÁTICAS
 // ==========================================
- 
-// Política de Privacidad
+
 // Página de eliminación de cuenta
 app.get('/delete-account', (req, res) => {
   res.send(`<!DOCTYPE html>
@@ -162,14 +161,8 @@ app.get('/delete-account', (req, res) => {
 </body>
 </html>`);
 });
-```
 
-Guarda, luego haz push:
-```
-cd C:\Users\menandro68\Documents\TaxiApp\taxi-backend
-git add server.js
-git commit -m "feat: agregar página de eliminación de cuenta"
-git push origin main
+// Política de Privacidad
 app.get('/privacy', (req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="es">
