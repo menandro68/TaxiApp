@@ -129,6 +129,47 @@ app.get('/api/config', (req, res) => {
 // ==========================================
  
 // Política de Privacidad
+// Página de eliminación de cuenta
+app.get('/delete-account', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eliminar Cuenta - TaxiApp Rondon</title>
+<style>body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333}h1{color:#dc2626}h2{color:#1e40af;margin-top:30px}p{line-height:1.6}.btn{background:#dc2626;color:white;padding:12px 24px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin-top:10px}.btn:hover{background:#b91c1c}</style>
+</head>
+<body>
+<h1>Solicitud de Eliminación de Cuenta - Squid Apps RD</h1>
+<p><strong>Aplicación:</strong> Squid Conductor / Squid Pasajero</p>
+
+<h2>Cómo solicitar la eliminación de tu cuenta</h2>
+<p>Para solicitar la eliminación de tu cuenta y todos los datos asociados, envía un correo electrónico a:</p>
+<p><strong><a href="mailto:menandro1968@gmail.com?subject=Solicitud de eliminación de cuenta">menandro1968@gmail.com</a></strong></p>
+<p>Incluye en tu correo:</p>
+<p>1. Tu nombre completo registrado en la app<br>
+2. Tu número de teléfono registrado<br>
+3. Tu correo electrónico registrado</p>
+
+<h2>Datos que se eliminan</h2>
+<p>Al procesar tu solicitud, eliminaremos: nombre, correo electrónico, número de teléfono, historial de viajes, datos de ubicación, información de pago y cualquier otro dato personal asociado a tu cuenta.</p>
+
+<h2>Datos que se conservan</h2>
+<p>Por requisitos legales y fiscales de la República Dominicana, podemos conservar registros financieros y de facturación por un período máximo de 10 años.</p>
+
+<h2>Plazo de procesamiento</h2>
+<p>Tu solicitud será procesada en un plazo máximo de 30 días hábiles. Recibirás una confirmación por correo electrónico cuando se complete la eliminación.</p>
+</body>
+</html>`);
+});
+```
+
+Guarda, luego haz push:
+```
+cd C:\Users\menandro68\Documents\TaxiApp\taxi-backend
+git add server.js
+git commit -m "feat: agregar página de eliminación de cuenta"
+git push origin main
 app.get('/privacy', (req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="es">
