@@ -1925,8 +1925,26 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
         >
           <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>👛 Mi Billetera</Text>
         </TouchableOpacity>
-      )}
+)}
 
+      {/* Mini Mapa en Dashboard */}
+      <View style={{height: 350, marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
+        <MapComponent
+          currentTrip={currentTrip}
+          tripPhase={tripPhase}
+          userLocation={userLocation}
+          currentStopIndex={currentStopIndex}
+          tripStops={tripStops}
+          onStartBackgroundTracking={startBackgroundTracking}
+          onLocationUpdate={(location) => {
+            setUserLocation(location);
+          }}
+          onArrivedAtPickup={() => {
+            setTripPhase('arrived');
+          }}
+          onArrivedAtDestination={() => {}}
+        />
+      </View>
 </ScrollView>
     <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 0, borderRadius: 0}]}>
       <Text style={[styles.sectionTitle, {fontSize: 14}]}>💰 Ganancias</Text>

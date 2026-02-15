@@ -1,13 +1,32 @@
 {
   "project_info": {
-    "project_number": "458792478757",
-    "project_id": "taxidriverapp-b1859",
-    "storage_bucket": "taxidriverapp-b1859.firebasestorage.app"
+    "project_number": "55586296093",
+    "project_id": "taxidriverapp-829db",
+    "storage_bucket": "taxidriverapp-829db.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:458792478757:android:d9a3bbc1d24d4e850437cc",
+        "mobilesdk_app_id": "1:55586296093:android:1e333feabd05ff562991f4",
+        "android_client_info": {
+          "package_name": "com.squidappsrd.conductor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbOBsfbeKdS0_bKTuuSjd1fSe8bYBe-Wk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:55586296093:android:eb63895afbc24fbc2991f4",
         "android_client_info": {
           "package_name": "com.taxidriverapp"
         }
@@ -15,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAaUweIs0FEI4xMssSK1xkhB4zAycMPXm0"
+          "current_key": "AIzaSyDbOBsfbeKdS0_bKTuuSjd1fSe8bYBe-Wk"
         }
       ],
       "services": {
