@@ -59,7 +59,7 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                     current_latitude, current_longitude, fcm_token, vehicle_type
              FROM drivers
              WHERE status IN ('available', 'online')
-             AND last_seen > NOW() - INTERVAL '60 seconds'
+             AND last_seen > NOW() - INTERVAL '5 minutes'
              AND fcm_token IS NOT NULL
              AND id != ALL($1::int[])
              AND id != ALL($2::int[])
