@@ -121,6 +121,7 @@ export default function DriverApp({ navigation }) {
   const [showDashcam, setShowDashcam] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
   const [tripStops, setTripStops] = useState(null);
+  const [queuedTrip, setQueuedTrip] = useState(null); // Viaje encolado mientras completa el actual
   const [userLocation, setUserLocation] = useState(null); // NUEVO: Estado para ubicación del usuario
   const [locationInterval, setLocationInterval] = useState(null); // Para controlar el intervalo de ubicación
   const [showEarningsDetail, setShowEarningsDetail] = useState(false);
@@ -1508,48 +1509,72 @@ const acceptTrip = async () => {
 // NORMALIZAR datos combinando servidor + FCM
       const normalizedTrip = normalizeTrip(data.trip, pendingRequest);
       console.log('📦 Trip normalizado:', normalizedTrip);
-      setCurrentTrip(normalizedTrip);
-      
-      // Configurar las paradas del viaje con coordenadas normalizadas
-      const stops = {
-        pickup: {
-          address: normalizedTrip.pickup || 'Punto de recogida',
-          coordinates: normalizedTrip.pickupLat ? {
-            latitude: normalizedTrip.pickupLat,
-            longitude: normalizedTrip.pickupLng
-          } : null
-        },
-        destination: {
-          address: normalizedTrip.destination || 'Destino final',
-          coordinates: normalizedTrip.destinationLat ? {
-            latitude: normalizedTrip.destinationLat,
-            longitude: normalizedTrip.destinationLng
-          } : null
-        },
-        additionalStops: pendingRequest.additionalStops || []
-           };
-      setTripStops(stops);
-      setCurrentStopIndex(0);
-      
-      setDriverStatus('busy');
-      
-      // Cambiar automáticamente a la pestaña del mapa
-      setActiveTab('map');
-      
-      // Mostrar info de tercero si aplica (ANTES de limpiar pendingRequest)
-      if (pendingRequest.isForOther && pendingRequest.passengerInfo) {
-        Alert.alert(
-          '✅ Viaje Aceptado',
-          `Te diriges hacia ${pendingRequest.user}\n\n👤 Pasajero real: ${pendingRequest.passengerInfo.name}\n📱 Tel: ${pendingRequest.passengerInfo.phone}\n🔑 Clave: ${pendingRequest.tripCode}\n\n⚠️ Confirma la clave con el pasajero`
-        );
+// ¿Hay viaje activo en curso? → Encolar el nuevo
+      if (currentTrip && tripPhase === 'started') {
+        console.log('📋 Viaje en curso detectado, encolando nuevo viaje...');
+        const queuedStops = {
+          pickup: {
+            address: normalizedTrip.pickup || 'Punto de recogida',
+            coordinates: normalizedTrip.pickupLat ? {
+              latitude: normalizedTrip.pickupLat,
+              longitude: normalizedTrip.pickupLng
+            } : null
+          },
+          destination: {
+            address: normalizedTrip.destination || 'Destino final',
+            coordinates: normalizedTrip.destinationLat ? {
+              latitude: normalizedTrip.destinationLat,
+              longitude: normalizedTrip.destinationLng
+            } : null
+          },
+          additionalStops: pendingRequest.additionalStops || []
+        };
+        setQueuedTrip({
+          trip: normalizedTrip,
+          stops: queuedStops,
+          isForOther: pendingRequest.isForOther,
+          passengerInfo: pendingRequest.passengerInfo,
+          tripCode: pendingRequest.tripCode
+        });
+        setShowRequestModal(false);
+        setPendingRequest(null);
+        Alert.alert('✅ Viaje Encolado', 'Completa tu viaje actual. El próximo se cargará automáticamente al finalizar.');
       } else {
-        Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${pendingRequest.user}`);
+        // Flujo normal - cargar viaje directamente
+        setCurrentTrip(normalizedTrip);
+        const stops = {
+          pickup: {
+            address: normalizedTrip.pickup || 'Punto de recogida',
+            coordinates: normalizedTrip.pickupLat ? {
+              latitude: normalizedTrip.pickupLat,
+              longitude: normalizedTrip.pickupLng
+            } : null
+          },
+          destination: {
+            address: normalizedTrip.destination || 'Destino final',
+            coordinates: normalizedTrip.destinationLat ? {
+              latitude: normalizedTrip.destinationLat,
+              longitude: normalizedTrip.destinationLng
+            } : null
+          },
+          additionalStops: pendingRequest.additionalStops || []
+        };
+        setTripStops(stops);
+        setCurrentStopIndex(0);
+        setDriverStatus('busy');
+        setActiveTab('map');
+        if (pendingRequest.isForOther && pendingRequest.passengerInfo) {
+          Alert.alert(
+            '✅ Viaje Aceptado',
+            `Te diriges hacia ${pendingRequest.user}\n\n👤 Pasajero real: ${pendingRequest.passengerInfo.name}\n📱 Tel: ${pendingRequest.passengerInfo.phone}\n🔑 Clave: ${pendingRequest.tripCode}\n\n⚠️ Confirma la clave con el pasajero`
+          );
+        } else {
+          Alert.alert('✅ Viaje Aceptado', `Te diriges hacia ${pendingRequest.user}`);
+        }
+        setShowRequestModal(false);
+        setPendingRequest(null);
+        setTripPhase('');
       }
-      
-      // Limpiar DESPUÉS del Alert
-      setShowRequestModal(false);
-      setPendingRequest(null);
-      setTripPhase('');
       
     } catch (error) {
       console.error('❌ Error aceptando viaje:', error);
@@ -1667,15 +1692,38 @@ const acceptTrip = async () => {
       if (loggedDriver?.id) {
         await loadRealEarnings(loggedDriver.id);
       }
-      setCurrentTrip(null);
-      setDriverStatus('online');
-      setTripPhase(''); // Resetear la fase del viaje
-      setIsNavigatingToPickup(false); // RESETEAR flag de navegaci�n
-      setUserLocation(null); // Limpiar ubicación
-      await stopBackgroundTracking(); // Detener background tracking
-      
-      Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}`, [{ text: 'OK', onPress: () => setActiveTab('dashboard') }]);
-      
+   // ¿Hay viaje encolado? → Cargarlo inmediatamente
+      if (queuedTrip) {
+        console.log('📋 Cargando viaje encolado...');
+        const { trip, stops, isForOther, passengerInfo, tripCode } = queuedTrip;
+        setCurrentTrip(trip);
+        setTripStops(stops);
+        setCurrentStopIndex(0);
+        setDriverStatus('busy');
+        setTripPhase('');
+        setIsNavigatingToPickup(false);
+        setQueuedTrip(null);
+        setActiveTab('map');
+        
+        Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}\n\n📋 Cargando siguiente viaje...`, [{ 
+          text: 'Ir al viaje', onPress: () => {
+            if (isForOther && passengerInfo) {
+              Alert.alert(
+                '🚗 Nuevo Viaje',
+                `Te diriges hacia ${trip.user || trip.pickup}\n\n👤 Pasajero: ${passengerInfo.name}\n📱 Tel: ${passengerInfo.phone}\n🔑 Clave: ${tripCode}\n\n⚠️ Confirma la clave con el pasajero`
+              );
+            }
+          }
+        }]);
+      } else {
+        setCurrentTrip(null);
+        setDriverStatus('online');
+        setTripPhase('');
+        setIsNavigatingToPickup(false);
+        setUserLocation(null);
+        await stopBackgroundTracking();
+        Alert.alert('¡Viaje Completado!', `Ganancia: RD$${tripEarning}`, [{ text: 'OK', onPress: () => setActiveTab('dashboard') }]);
+      }
     } catch (error) {
       console.error('❌ Error completando viaje:', error);
     }
