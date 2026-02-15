@@ -46,6 +46,9 @@ let globalSetActiveTab = null;
 let globalSetCurrentTrip = null;
 let globalSetDriverStatus = null;
 let globalTimerRef = null;
+let globalEstimatedMinutes = null;
+let globalTripPhase = '';
+let globalHasCurrentTrip = false;
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
 const { width, height } = Dimensions.get('window');
@@ -110,6 +113,10 @@ export default function DriverApp({ navigation }) {
   globalSetDriverStatus = setDriverStatus;
   const [isOffline, setIsOffline] = useState(false);
   const [tripPhase, setTripPhase] = useState(''); // AGREGADO: '', 'arrived', 'started'
+  const [estimatedMinutes, setEstimatedMinutes] = useState(null);
+  useEffect(() => { globalEstimatedMinutes = estimatedMinutes; }, [estimatedMinutes]);
+  useEffect(() => { globalTripPhase = tripPhase; }, [tripPhase]);
+  useEffect(() => { globalHasCurrentTrip = !!currentTrip; }, [currentTrip]);
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
   const [showDashcam, setShowDashcam] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
@@ -546,7 +553,11 @@ useEffect(() => {
 // Configurar función global para manejar solicitudes de viaje
 global.handleNewTripRequest = (tripData) => {
   console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
-
+  // Bloquear si hay viaje activo y NO está a menos de 7 min del destino
+  if (globalHasCurrentTrip && !(globalTripPhase === 'started' && globalEstimatedMinutes !== null && globalEstimatedMinutes < 7)) {
+    console.log('🚫 Viaje activo, no cerca del destino. Ignorando solicitud.');
+    return;
+  }
   // Solo ignorar si es el MISMO viaje que fue cancelado recientemente
   if (globalCancelledTripId && String(globalCancelledTripId) === String(tripData.id)) {
     console.log('🚫 Este viaje específico fue cancelado, ignorando:', tripData.id);
@@ -805,7 +816,10 @@ global.autoAcceptTrip = async (tripData) => {
     const pollPendingTrips = async () => {
       try {
         // No hacer polling si ya hay un viaje activo o modal abierto
-        if (currentTrip || showRequestModal || pendingRequest) {
+      if (showRequestModal || pendingRequest) {
+          return;
+        }
+        if (currentTrip && !(tripPhase === 'started' && estimatedMinutes !== null && estimatedMinutes < 7)) {
           return;
         }
         
@@ -1942,7 +1956,8 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
           onArrivedAtPickup={() => {
             setTripPhase('arrived');
           }}
-          onArrivedAtDestination={() => {}}
+       onArrivedAtDestination={() => {}}
+          onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
         />
       </View>
 </ScrollView>
@@ -2065,7 +2080,8 @@ onPress: async () => {
               }
             ]
           );
-        }}
+      }}
+        onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
       />
       
       {/* GESTOR DE PARADAS MÚLTIPLES */}

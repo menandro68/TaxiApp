@@ -91,8 +91,7 @@ const getDistanceToRoute = (location, routeCoords) => {
   
   return minDistance;
 };
-
-  const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination, onCancelTrip }) => {
+const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination, onCancelTrip, onRouteInfoUpdate }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -488,10 +487,17 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
         originalRouteRef.current = points;
         consecutiveOffRoute.current = 0; // Reset contador para evitar detección inmediata
         console.log('📌 Ruta original guardada (fetchRoute):', points.length, 'pts');
-        setRouteInfo({
+     setRouteInfo({
           distanceText: leg.distance.text,
           durationText: leg.duration.text
         });
+        if (onRouteInfoUpdate) {
+          onRouteInfoUpdate({
+            distanceText: leg.distance.text,
+            durationText: leg.duration.text,
+            durationMinutes: Math.round(leg.duration.value / 60)
+          });
+        }
 
         // Centrar mapa SOLO si NO estamos navegando
         // Durante navegación, animateCamera ya mantiene el mapa centrado
