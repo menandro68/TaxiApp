@@ -1450,10 +1450,11 @@ const acceptTrip = async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-     body: JSON.stringify({
+   body: JSON.stringify({
           driver_id: driverId,
           driverLat: userLocation?.latitude || null,
-          driverLng: userLocation?.longitude || null
+          driverLng: userLocation?.longitude || null,
+          driverIsFinishing: !!(currentTrip && tripPhase === 'started' && estimatedMinutes < 7)
         })
       });
 
