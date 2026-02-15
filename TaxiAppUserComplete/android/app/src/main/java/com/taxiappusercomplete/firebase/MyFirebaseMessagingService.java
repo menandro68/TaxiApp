@@ -38,10 +38,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             handleDataMessage(remoteMessage);
         }
 
-        if (remoteMessage.getNotification() != null) {
+    if (remoteMessage.getNotification() != null) {
             Log.d(TAG, "🔔 Notificación: " + remoteMessage.getNotification().getBody());
-            showNotification(remoteMessage.getNotification().getTitle(), 
-                           remoteMessage.getNotification().getBody());
+            // No mostrar banner del sistema para DRIVER_ASSIGNED/DRIVER_ARRIVED
+            // ya que la app lo maneja con su propia UI
+            String dataType = remoteMessage.getData().get("type");
+            if (!"DRIVER_ASSIGNED".equals(dataType) && !"DRIVER_ARRIVED".equals(dataType)) {
+                showNotification(remoteMessage.getNotification().getTitle(),
+                               remoteMessage.getNotification().getBody());
+            }
         }
     }
 
