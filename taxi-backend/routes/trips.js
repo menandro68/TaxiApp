@@ -407,7 +407,7 @@ router.get('/search-status/:tripId', async (req, res) => {
 router.post('/accept/:tripId', async (req, res) => {
     try {
         const { tripId } = req.params;
-        const { driver_id, driverLat, driverLng } = req.body;
+       const { driver_id, driverLat, driverLng, driverIsFinishing } = req.body;
 
         console.log(`📥 Recibida solicitud de aceptación: viaje=${tripId}, conductor=${driver_id}`);
 
@@ -470,9 +470,11 @@ router.post('/accept/:tripId', async (req, res) => {
             if (user && user.fcm_token) {
                 const admin = require('firebase-admin');
                 await admin.messaging().send({
-                    notification: {
-                        title: '🚗 Conductor Asignado',
-                        body: `${driver.name} va en camino - ${driver.vehicle_model || 'Vehículo'}`
+                 notification: {
+                        title: driverIsFinishing ? '🚗 Conductor en camino' : '🚗 Conductor Asignado',
+                        body: driverIsFinishing 
+                            ? 'Tu conductor está finalizando un servicio cercano y se dirige a tu ubicación en breve 🚗'
+                            : `${driver.name} va en camino - ${driver.vehicle_model || 'Vehículo'}`
                     },
                     data: {
                         type: 'DRIVER_ASSIGNED',
