@@ -1454,9 +1454,10 @@ const acceptTrip = async () => {
           driver_id: driverId,
           driverLat: userLocation?.latitude || null,
           driverLng: userLocation?.longitude || null,
-          driverIsFinishing: !!(currentTrip && tripPhase === 'started' && estimatedMinutes < 7)
+  driverIsFinishing: !!(currentTrip && tripPhase === 'started' && estimatedMinutes < 7)
         })
       });
+      console.log('🔍 DEBUG driverIsFinishing:', { currentTrip: !!currentTrip, tripPhase, estimatedMinutes, result: !!(currentTrip && tripPhase === 'started' && estimatedMinutes < 7) });
 
       console.log('📥 Response recibido, status:', response.status);
       

@@ -805,7 +805,15 @@ const setupNotificationHandlers = () => {
  setDriverInfo(mockDriverInfo);
       setTripRequest(prev => ({ ...prev, id: parseInt(driverData.tripId) || prev?.id }));
     setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
-      
+    
+    // Mostrar mensaje si el conductor está finalizando otro servicio
+    if (driverData.driverIsFinishing === 'true') {
+      Alert.alert(
+        '🚗 Conductor en camino',
+        'Tu conductor está finalizando un servicio cercano y se dirige a tu ubicación en breve 🚗'
+      );
+    }
+
    // Mostrar modal de penalización inmediata
       const now = new Date();
       const limit = new Date(now.getTime() + 5 * 60 * 1000);

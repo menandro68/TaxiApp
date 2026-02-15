@@ -485,7 +485,8 @@ router.post('/accept/:tripId', async (req, res) => {
                         vehiclePlate: driver.vehicle_plate || '',
                         driverLat: (driverLat || driver.current_latitude || '').toString(),
                         driverId: driver.id.toString(),
-                        driverLng: (driverLng || driver.current_longitude || '').toString()
+                        driverLng: (driverLng || driver.current_longitude || '').toString(),
+                        driverIsFinishing: driverIsFinishing ? 'true' : 'false'
                     },
                     token: user.fcm_token
                 });

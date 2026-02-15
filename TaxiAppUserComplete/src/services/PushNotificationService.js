@@ -65,8 +65,11 @@ class PushNotificationService {
       const { data, notification } = remoteMessage;
       
       // Manejar según el tipo de notificación
-      if (data?.type === 'DRIVER_ASSIGNED') {
+    if (data?.type === 'DRIVER_ASSIGNED') {
         console.log('🚗 Procesando DRIVER_ASSIGNED...');
+        if (notification?.title?.includes('en camino') && !notification?.title?.includes('Asignado')) {
+            data.driverIsFinishing = 'true';
+        }
         this.handleDriverAssigned(data);
       } else if (data?.type === 'trip_assigned') {
         // Compatibilidad con formato antiguo
@@ -121,6 +124,7 @@ class PushNotificationService {
       eta: data.eta || '5 min',
       driverLat: data.driverLat || data.driver_lat || null,
       driverLng: data.driverLng || data.driver_lng || null,
+      driverIsFinishing: data.driverIsFinishing || 'false',
     };
     
     console.log('🚗 Datos del conductor formateados:', driverData);
