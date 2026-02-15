@@ -905,8 +905,12 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
               </TouchableOpacity>
               */}
             </>
-      ) : (
-            tripPhase !== 'started' && (
+ ) : (
+            tripPhase === 'started' ? (
+              <View style={[styles.btn, {backgroundColor: '#1a73e8', flex: 1}]}>
+                <Text style={styles.btnText}>⏱️ Llegada: {routeInfo?.durationText || 'Calculando...'}</Text>
+              </View>
+            ) : (
               <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={() => speakInstruction(navigationSteps[currentStepIndex]?.instruction)}>
                 <Text style={styles.btnText}>🔊 Repetir</Text>
               </TouchableOpacity>
