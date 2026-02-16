@@ -2216,8 +2216,20 @@ onPress: async () => {
               flex: 0.45,
               alignItems: 'center',
             }}
-            onPress={() => {
+       onPress={async () => {
               if (currentTrip?.phone) {
+                // Enviar arrived si no se ha enviado (cobra comisión)
+                if (tripPhase === '') {
+                  try {
+                    await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: 'arrived' })
+                    });
+                    setTripPhase('arrived');
+                    console.log('✅ Status arrived enviado desde WhatsApp');
+                  } catch (e) { console.error('Error enviando arrived:', e); }
+                }
                 const message = encodeURIComponent('Ya llegué, estoy esperando');
                 Linking.openURL(`whatsapp://send?phone=${currentTrip.phone}&text=${message}`);
               }
@@ -2234,8 +2246,20 @@ onPress: async () => {
               flex: 0.45,
               alignItems: 'center',
             }}
-            onPress={() => {
+          onPress={async () => {
               if (currentTrip?.phone) {
+                // Enviar arrived si no se ha enviado (cobra comisión)
+                if (tripPhase === '') {
+                  try {
+                    await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: 'arrived' })
+                    });
+                    setTripPhase('arrived');
+                    console.log('✅ Status arrived enviado desde Llamar');
+                  } catch (e) { console.error('Error enviando arrived:', e); }
+                }
                 Linking.openURL(`tel:${currentTrip.phone}`);
               }
             }}
