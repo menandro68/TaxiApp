@@ -824,7 +824,7 @@ useEffect(() => {
           />
         )}
 
-        {/* MARKER PASAJERO - Custom View */}
+ {/* MARKER PASAJERO - Custom View */}
         {pickupCoord && (
           <Marker
             identifier="pickup"
@@ -841,18 +841,45 @@ useEffect(() => {
           </Marker>
         )}
 
-        {/* MARKER CONDUCTOR - Verde */}
+        {/* MARKER CONDUCTOR */}
         {currentLocation && (
-          <Marker
+   <Marker
             identifier="driver"
             coordinate={currentLocation}
             title="🚗 Tu ubicación"
             zIndex={998}
             anchor={{ x: 0.5, y: 0.5 }}
-            tracksViewChanges={true}
+            flat={true}
+            rotation={currentLocation.heading || 0}
+            tracksViewChanges={false}
           >
-           <View style={styles.markerDriver}>
-              <Text style={styles.markerIcon}>🚕</Text>
+            <View style={{
+              width: 40,
+              height: 40,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              {/* Flecha direccional */}
+              <View style={{
+                width: 0,
+                height: 0,
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderBottomWidth: 16,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderBottomColor: '#1a73e8',
+                marginBottom: -2,
+              }} />
+              {/* Cuerpo del carro */}
+              <View style={{
+                width: 20,
+                height: 22,
+                backgroundColor: '#1a73e8',
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+              }} />
             </View>
           </Marker>
         )}
