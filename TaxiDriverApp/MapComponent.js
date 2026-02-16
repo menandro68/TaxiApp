@@ -428,94 +428,100 @@ useEffect(() => {
     }
   }, [currentLocation, isNavigating, currentStepIndex, navigationSteps, voiceEnabled, navigationTarget, tripPhase]);
 
-  const fetchRoute = async (origin, destination) => {
-    try {
-      console.log('🛣️ API Directions...');
-      // Obtener heading del conductor - usar último válido si actual es 0
-      let heading = origin?.heading || 0;
-      if (heading > 0) {
-        lastValidHeading.current = heading; // Guardar heading válido
-      } else {
-        heading = lastValidHeading.current; // Usar último válido
-      }
-      console.log('🧭 Heading enviado a API:', heading, '(último válido:', lastValidHeading.current, ')');
-      const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
-      const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es${headingParam}&key=${GOOGLE_MAPS_APIKEY}`;
-      const response = await fetch(url);
-      const data = await response.json();
+  const fetchRoute = async (origin, destination, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🛣️ API Directions... (intento ${attempt}/${maxRetries})`);
+        let heading = origin?.heading || 0;
+        if (heading > 0) {
+          lastValidHeading.current = heading;
+        } else {
+          heading = lastValidHeading.current;
+        }
+        console.log('🧭 Heading enviado a API:', heading, '(último válido:', lastValidHeading.current, ')');
+        const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
+        const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es${headingParam}&key=${GOOGLE_MAPS_APIKEY}`;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await response.json();
 
-      if (data.status === 'OK' && data.routes.length > 0) {
-        const route = data.routes[0];
-        const leg = route.legs[0];
-       const points = leg.steps.flatMap(step => decodePolyline(step.polyline.points));
+        if (data.status === 'OK' && data.routes.length > 0) {
+          const route = data.routes[0];
+          const leg = route.legs[0];
+          const points = leg.steps.flatMap(step => decodePolyline(step.polyline.points));
 
-        // VALIDAR que la ruta va en dirección correcta
-        if (heading > 0 && points.length >= 2) {
-          const routeHeading = Math.atan2(
-            points[1].longitude - points[0].longitude,
-            points[1].latitude - points[0].latitude
-          ) * 180 / Math.PI;
-          const normalizedRouteHeading = (routeHeading + 360) % 360;
-          const headingDiff = Math.abs(normalizedRouteHeading - heading);
-          const adjustedDiff = headingDiff > 180 ? 360 - headingDiff : headingDiff;
-          
-          console.log('🧭 Validación ruta - Heading conductor:', heading.toFixed(0), '° | Ruta:', normalizedRouteHeading.toFixed(0), '° | Diferencia:', adjustedDiff.toFixed(0), '°');
-          
-          if (adjustedDiff > 120) {
-            console.log('❌ Ruta descartada - va en dirección opuesta');
-            return null;
+          if (heading > 0 && points.length >= 2) {
+            const routeHeading = Math.atan2(
+              points[1].longitude - points[0].longitude,
+              points[1].latitude - points[0].latitude
+            ) * 180 / Math.PI;
+            const normalizedRouteHeading = (routeHeading + 360) % 360;
+            const headingDiff = Math.abs(normalizedRouteHeading - heading);
+            const adjustedDiff = headingDiff > 180 ? 360 - headingDiff : headingDiff;
+
+            console.log('🧭 Validación ruta - Heading conductor:', heading.toFixed(0), '° | Ruta:', normalizedRouteHeading.toFixed(0), '° | Diferencia:', adjustedDiff.toFixed(0), '°');
+
+            if (adjustedDiff > 120) {
+              console.log('❌ Ruta descartada - va en dirección opuesta');
+              return null;
+            }
           }
-        }
-        
-        // Extraer pasos de navegación
-        const steps = leg.steps.map((step, index) => ({
-          index,
-          instruction: cleanInstruction(step.html_instructions),
-          distance: step.distance.text,
-          endLat: step.end_location.lat,
-          endLng: step.end_location.lng,
-          maneuver: step.maneuver || 'straight'
-        }));
-        
-        console.log('✅ Ruta:', points.length, 'puntos,', steps.length, 'pasos');
 
-        console.log('🔍 PUNTOS 0-9:', JSON.stringify(points.slice(0, 10).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
-console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [p.latitude.toFixed(6), p.longitude.toFixed(6)])));
-        setRouteCoordinates(points);
-        setNavigationSteps(steps);
-        // Guardar ruta original para detección de desvío
-        originalRouteRef.current = points;
-        consecutiveOffRoute.current = 0; // Reset contador para evitar detección inmediata
-        console.log('📌 Ruta original guardada (fetchRoute):', points.length, 'pts');
-     setRouteInfo({
-          distanceText: leg.distance.text,
-          durationText: leg.duration.text
-        });
-        if (onRouteInfoUpdate) {
-          onRouteInfoUpdate({
+          const steps = leg.steps.map((step, index) => ({
+            index,
+            instruction: cleanInstruction(step.html_instructions),
+            distance: step.distance.text,
+            endLat: step.end_location.lat,
+            endLng: step.end_location.lng,
+            maneuver: step.maneuver || 'straight'
+          }));
+
+          console.log('✅ Ruta:', points.length, 'puntos,', steps.length, 'pasos');
+          setRouteCoordinates(points);
+          setNavigationSteps(steps);
+          originalRouteRef.current = points;
+          consecutiveOffRoute.current = 0;
+          console.log('📌 Ruta original guardada (fetchRoute):', points.length, 'pts');
+          setRouteInfo({
             distanceText: leg.distance.text,
-            durationText: leg.duration.text,
-            durationMinutes: Math.round(leg.duration.value / 60)
+            durationText: leg.duration.text
           });
-        }
+          if (onRouteInfoUpdate) {
+            onRouteInfoUpdate({
+              distanceText: leg.distance.text,
+              durationText: leg.duration.text,
+              durationMinutes: Math.round(leg.duration.value / 60)
+            });
+          }
 
-        // Centrar mapa SOLO si NO estamos navegando
-        // Durante navegación, animateCamera ya mantiene el mapa centrado
-        if (!isNavigating) {
-          setTimeout(() => centerMap(), 500);
-        }
+          if (!isNavigating) {
+            setTimeout(() => centerMap(), 500);
+          }
 
-        // Iniciar background tracking
-        if (onStartBackgroundTracking && currentTrip) {
-          onStartBackgroundTracking(currentTrip.id, destination.latitude, destination.longitude);
+          if (onStartBackgroundTracking && currentTrip) {
+            onStartBackgroundTracking(currentTrip.id, destination.latitude, destination.longitude);
+          }
+          return steps;
         }
-        return steps; // Retornar los pasos
+        
+        // API respondió pero sin rutas válidas
+        console.log(`⚠️ API sin rutas (intento ${attempt}), status: ${data.status}`);
+        
+      } catch (error) {
+        console.error(`❌ Error ruta intento ${attempt}:`, error.message || error);
       }
-      return null;
-    } catch (error) {
-      console.error('❌ Error ruta:', error);
-      return null;
+      
+      // Esperar antes de reintentar (2s, 4s)
+      if (attempt < maxRetries) {
+        console.log(`⏳ Reintentando en ${attempt * 2}s...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      }
     }
+    console.log('❌ Todos los intentos de ruta fallaron');
+    return null;
   };
 
   const centerMap = () => {
@@ -670,7 +676,14 @@ console.log('🔍 PUNTOS 10-19:', JSON.stringify(points.slice(10, 20).map(p => [
 
     // Verificar que tenemos ruta
     if (!steps || steps.length === 0) {
-      Alert.alert('Sin conexión', 'No se pudo obtener la ruta. Verifica tu internet y reintenta.');
+      Alert.alert(
+        '⏳ Obteniendo ruta',
+        'No se pudo obtener la ruta. ¿Qué deseas hacer?',
+        [
+          { text: 'Reintentar', onPress: () => startNavigation() },
+          { text: 'Cancelar', style: 'cancel' }
+        ]
+      );
       return;
     }
     
