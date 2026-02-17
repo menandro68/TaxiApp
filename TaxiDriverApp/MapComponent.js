@@ -151,18 +151,16 @@ useEffect(() => {
     }
 }, [propUserLocation]);
 
-  // ✅ Animar mapa a ubicación real del conductor
+ // ✅ Animar mapa siguiendo al conductor en tiempo real
   useEffect(() => {
     if (mapRef.current && currentLocation && currentLocation.latitude) {
-      const timer = setTimeout(() => {
-        mapRef.current.animateToRegion({
+      mapRef.current.animateCamera({
+        center: {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
-        }, 500);
-      }, 2000);
-      return () => clearTimeout(timer);
+        },
+        zoom: 15,
+      }, { duration: 800 });
     }
   }, [currentLocation]);
 
