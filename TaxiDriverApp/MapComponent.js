@@ -867,6 +867,48 @@ useEffect(() => {
             </View>
           </Marker>
         )}
+
+        {/* MARKER DESTINO - Bandera roja */}
+        {destCoord && (
+          <Marker
+            identifier="destination"
+            coordinate={destCoord}
+            title="🏁 Destino"
+            description={currentTrip?.destination || 'Destino del viaje'}
+            zIndex={997}
+            anchor={{ x: 0.5, y: 1 }}
+            tracksViewChanges={true}
+          >
+            <View style={{
+              alignItems: 'center',
+            }}>
+              <View style={{
+                backgroundColor: '#FF3B30',
+                paddingHorizontal: 4,
+                paddingVertical: 2,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: '#fff',
+                elevation: 5,
+              }}>
+                <Text style={{ color: '#fff', fontSize: 7, fontWeight: 'bold' }}>🏁 Destino</Text>
+              </View>
+              <View style={{
+                width: 1.5,
+                height: 5,
+                backgroundColor: '#FF3B30',
+              }} />
+              <View style={{
+                width: 5,
+                height: 5,
+                borderRadius: 2.5,
+                backgroundColor: '#FF3B30',
+                borderWidth: 1,
+                borderColor: '#fff',
+              }} />
+            </View>
+          </Marker>
+        )}
       </MapView>
 
    {/* PANEL SUPERIOR - INFO - OCULTO
