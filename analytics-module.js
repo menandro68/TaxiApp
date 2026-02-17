@@ -16,14 +16,17 @@ const AnalyticsModule = {
                     <h2 style="margin: 0; color: #1e293b; font-size: 24px;">📊 Panel de Analíticas</h2>
                     <p style="margin: 5px 0 0; color: #64748b;">Métricas y tendencias de tu negocio</p>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <select id="analyticsDateRange" onchange="AnalyticsModule.changeDateRange(this.value)" 
-                        style="padding: 10px 15px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; cursor: pointer;">
-                        <option value="7">Últimos 7 días</option>
-                        <option value="30" selected>Últimos 30 días</option>
-                        <option value="90">Últimos 90 días</option>
-                        <option value="365">Último año</option>
-                    </select>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 13px; color: #64748b; font-weight: 500;">Fecha Inicial</label>
+                        <input type="date" id="analyticsDateStart" onchange="AnalyticsModule.filterByDates()"
+                            style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 13px; color: #64748b; font-weight: 500;">Fecha Final</label>
+                        <input type="date" id="analyticsDateEnd" onchange="AnalyticsModule.filterByDates()"
+                            style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    </div>
                     <button onclick="AnalyticsModule.exportReport()" 
                         style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
                         📥 Exportar
@@ -144,6 +147,13 @@ const AnalyticsModule = {
 
     async init() {
         console.log('📊 Inicializando módulo de Analíticas...');
+        // Establecer fechas por defecto (últimos 30 días)
+        const endDate = new Date();
+        const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const startEl = document.getElementById('analyticsDateStart');
+        const endEl = document.getElementById('analyticsDateEnd');
+        if (startEl) startEl.value = startDate.toISOString().split('T')[0];
+        if (endEl) endEl.value = endDate.toISOString().split('T')[0];
         await this.loadData();
         this.initCharts();
         console.log('✅ Módulo de Analíticas iniciado correctamente');
@@ -181,12 +191,13 @@ const AnalyticsModule = {
 
     processData(stats, trips, drivers, days) {
         const now = new Date();
-        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        const startDate = this.customStartDate || new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        const endDate = this.customEndDate || now;
         
         // Filtrar viajes por rango de fechas
         const filteredTrips = Array.isArray(trips) ? trips.filter(trip => {
             const tripDate = new Date(trip.created_at || trip.createdAt);
-            return tripDate >= startDate;
+            return tripDate >= startDate && tripDate <= endDate;
         }) : [];
 
         // Calcular métricas
@@ -477,6 +488,24 @@ const AnalyticsModule = {
         this.dateRange = days;
         await this.loadData();
         this.initCharts();
+    },
+
+    async filterByDates() {
+        const startInput = document.getElementById('analyticsDateStart');
+        const endInput = document.getElementById('analyticsDateEnd');
+        if (!startInput?.value || !endInput?.value) return;
+        
+        const startDate = new Date(startInput.value);
+        const endDate = new Date(endInput.value);
+        const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays > 0) {
+            this.dateRange = diffDays.toString();
+            this.customStartDate = startDate;
+            this.customEndDate = endDate;
+            await this.loadData();
+            this.initCharts();
+        }
     },
 
     exportReport() {
