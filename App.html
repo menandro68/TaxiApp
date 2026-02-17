@@ -1952,7 +1952,7 @@ static async getStats() {
     if (apiData) {
         return {
             activeDrivers: {
-                value: apiData.activeDrivers || apiData.totalDrivers || 0,
+                value: apiData.stats?.totalDrivers || apiData.activeDrivers || apiData.totalDrivers || 0,
                 change: 12,
                 type: 'positive'
             },
