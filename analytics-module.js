@@ -514,35 +514,94 @@ const AnalyticsModule = {
 
     exportReport() {
         const d = this.data;
-        const report = `REPORTE DE ANALÍTICAS - TaxiApp Rondon
-Generado: ${new Date().toLocaleString('es-ES')}
-Período: Últimos ${this.dateRange} días
+        const startDate = document.getElementById('analyticsDateStart')?.value || '';
+        const endDate = document.getElementById('analyticsDateEnd')?.value || '';
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Reporte de Analíticas - TaxiApp Rondon</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 30px; color: #333; }
+                    h1 { color: #1e293b; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+                    h2 { color: #475569; margin-top: 25px; }
+                    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0; }
+                    .kpi-box { background: #f8fafc; border-radius: 8px; padding: 15px; text-align: center; border: 1px solid #e2e8f0; }
+                    .kpi-value { font-size: 24px; font-weight: bold; color: #1e293b; }
+                    .kpi-label { font-size: 12px; color: #64748b; margin-top: 5px; }
+                    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                    th { background: #1e293b; color: white; padding: 10px; text-align: left; }
+                    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+                    tr:nth-child(even) { background: #f8fafc; }
+                    .footer { margin-top: 30px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+                    @media print { body { padding: 10px; } }
+                </style>
+            </head>
+            <body>
+                <h1>📊 Reporte de Analíticas - TaxiApp Rondon</h1>
+                <p><strong>Período:</strong> ${startDate} al ${endDate} | <strong>Generado:</strong> ${new Date().toLocaleString('es-ES')}</p>
+                
+                <h2>📈 Resumen Ejecutivo</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-box">
+                        <div class="kpi-value">$${d.totalRevenue.toLocaleString('es-ES', {minimumFractionDigits: 2})}</div>
+                        <div class="kpi-label">Ingresos Totales</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.totalTrips}</div>
+                        <div class="kpi-label">Total Viajes</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">$${d.avgTrip.toFixed(2)}</div>
+                        <div class="kpi-label">Promedio por Viaje</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.completionRate.toFixed(1)}%</div>
+                        <div class="kpi-label">Tasa Completados</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.completedTrips}</div>
+                        <div class="kpi-label">Viajes Completados</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.activeDrivers}</div>
+                        <div class="kpi-label">Conductores Activos</div>
+                    </div>
+                </div>
 
-=== RESUMEN EJECUTIVO ===
-Ingresos Totales: $${d.totalRevenue.toLocaleString()}
-Total de Viajes: ${d.totalTrips}
-Viajes Completados: ${d.completedTrips}
-Promedio por Viaje: $${d.avgTrip.toFixed(2)}
-Tasa de Completados: ${d.completionRate.toFixed(1)}%
-Conductores Activos: ${d.activeDrivers}
+                <h2>📋 Métricas Detalladas</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.totalDistance.toLocaleString()} km</div>
+                        <div class="kpi-label">Distancia Total</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${Math.round(d.avgDuration)} min</div>
+                        <div class="kpi-label">Duración Promedio</div>
+                    </div>
+                    <div class="kpi-box">
+                        <div class="kpi-value">${d.cancelledTrips}</div>
+                        <div class="kpi-label">Viajes Cancelados</div>
+                    </div>
+                </div>
 
-=== MÉTRICAS DETALLADAS ===
-Distancia Total: ${d.totalDistance.toLocaleString()} km
-Duración Promedio: ${Math.round(d.avgDuration)} min
-Viajes Cancelados: ${d.cancelledTrips}
-Hora Pico: ${d.peakHour}:00
+                <h2>🏆 Top 5 Conductores</h2>
+                <table>
+                    <tr><th>#</th><th>Conductor</th><th>Viajes</th><th>Ingresos</th></tr>
+                    ${d.topDrivers.map((dr, i) => 
+                        '<tr><td>' + (i+1) + '</td><td>' + dr.name + '</td><td>' + dr.trips + '</td><td>$' + dr.revenue.toLocaleString() + '</td></tr>'
+                    ).join('')}
+                </table>
 
-=== TOP 5 CONDUCTORES ===
-${d.topDrivers.map((dr, i) => `${i+1}. ${dr.name} - ${dr.trips} viajes - $${dr.revenue.toLocaleString()}`).join('\n')}
-`;
-
-        const blob = new Blob([report], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_analiticas_${new Date().toISOString().split('T')[0]}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+                <div class="footer">
+                    TaxiApp Rondon - Reporte generado automáticamente
+                </div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.onload = function() { printWindow.print(); };
     }
 };
 
