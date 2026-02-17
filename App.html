@@ -1028,7 +1028,7 @@
         <a class="nav-item" data-screen="drivers" onclick="loadDrivers()">
             <span class="nav-icon">🚗</span>
             <span class="nav-text">Conductores</span>
-     <span class="nav-badge" id="driversBadge">12</span>
+     <span class="nav-badge" id="driversBadge">0</span>
         </a>
 
     <a class="nav-item" data-screen="motos" onclick="loadMotos()">
@@ -3457,6 +3457,7 @@ if (screenName === 'vehicles') {
                 const stats = await AdminAPI.getStats();
                 appState.stats = stats;
                 renderStats(stats);
+                updateDriversBadge(stats.activeDrivers.value);
                 
                 // NUEVO: Iniciar actualización automática
                 updateDashboardMetrics();
