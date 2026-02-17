@@ -160,9 +160,12 @@ const AnalyticsModule = {
                 fetch(`${window.location.origin}/api/drivers`).catch(() => null)
             ]);
 
-            const stats = statsResponse?.ok ? await statsResponse.json() : {};
-            const trips = tripsResponse?.ok ? await tripsResponse.json() : [];
-            const drivers = driversResponse?.ok ? await driversResponse.json() : [];
+            const statsData = statsResponse?.ok ? await statsResponse.json() : {};
+            const stats = statsData.stats || statsData || {};
+            const tripsData = tripsResponse?.ok ? await tripsResponse.json() : {};
+            const trips = tripsData.trips || [];
+            const driversData = driversResponse?.ok ? await driversResponse.json() : {};
+            const drivers = driversData.drivers || [];
 
             // Procesar datos
             this.data = this.processData(stats, trips, drivers, days);
