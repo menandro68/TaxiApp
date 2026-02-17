@@ -499,11 +499,11 @@ const AnalyticsModule = {
         const endInput = document.getElementById('analyticsDateEnd');
         if (!startInput?.value || !endInput?.value) return;
         
-        const startDate = new Date(startInput.value);
-        const endDate = new Date(endInput.value);
-        const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const startDate = new Date(startInput.value + 'T00:00:00');
+        const endDate = new Date(endInput.value + 'T23:59:59');
         
-        if (diffDays > 0) {
+        if (endDate >= startDate) {
+            const diffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
             this.dateRange = diffDays.toString();
             this.customStartDate = startDate;
             this.customEndDate = endDate;
