@@ -27,6 +27,10 @@ const AnalyticsModule = {
                         <input type="date" id="analyticsDateEnd" onchange="AnalyticsModule.filterByDates()"
                             style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                     </div>
+                    <button onclick="AnalyticsModule.filterByDates()"
+                        style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                        🔍 Buscar
+                    </button>
                     <button onclick="AnalyticsModule.exportReport()" 
                         style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
                         📥 Exportar
