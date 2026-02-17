@@ -453,22 +453,8 @@ useEffect(() => {
           const leg = route.legs[0];
           const points = leg.steps.flatMap(step => decodePolyline(step.polyline.points));
 
-          if (heading > 0 && points.length >= 2) {
-            const routeHeading = Math.atan2(
-              points[1].longitude - points[0].longitude,
-              points[1].latitude - points[0].latitude
-            ) * 180 / Math.PI;
-            const normalizedRouteHeading = (routeHeading + 360) % 360;
-            const headingDiff = Math.abs(normalizedRouteHeading - heading);
-            const adjustedDiff = headingDiff > 180 ? 360 - headingDiff : headingDiff;
-
-            console.log('🧭 Validación ruta - Heading conductor:', heading.toFixed(0), '° | Ruta:', normalizedRouteHeading.toFixed(0), '° | Diferencia:', adjustedDiff.toFixed(0), '°');
-
-            if (adjustedDiff > 120) {
-              console.log('❌ Ruta descartada - va en dirección opuesta');
-              return null;
-            }
-          }
+     // Ruta de Google siempre es válida - no descartar por heading
+          console.log('✅ Ruta aceptada:', points.length, 'puntos');
 
           const steps = leg.steps.map((step, index) => ({
             index,

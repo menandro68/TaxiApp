@@ -1652,7 +1652,31 @@ const sendTripRequestToBackend = async (tripData) => {
     const finalEstimatedPrice = isNaN(tripData.price) ? 150 : tripData.price;
     console.log('��� DEBUG: Precio TRANSFORMADO =', finalEstimatedPrice);
     console.log('��� DEBUG: Tipo de precio final =', typeof finalEstimatedPrice);
+
+     // DEBUG: Ver qué tiene destination
+    console.log('🔍 DEBUG DESTINO:', JSON.stringify(tripData.destination));
     
+    
+   // Si el destino no tiene coordenadas, geocodificar la dirección
+    if (!tripData.destination.latitude || !tripData.destination.longitude) {
+      console.log('⚠️ Destino sin coordenadas, geocodificando:', tripData.destination.address);
+      try {
+        const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(tripData.destination.address)}&region=do&key=AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q`;
+        const geoResponse = await fetch(geocodeUrl);
+        const geoData = await geoResponse.json();
+        if (geoData.results && geoData.results.length > 0) {
+          const loc = geoData.results[0].geometry.location;
+          tripData.destination.latitude = loc.lat;
+          tripData.destination.longitude = loc.lng;
+          console.log('✅ Geocodificado:', loc.lat, loc.lng);
+        } else {
+          console.log('❌ No se pudo geocodificar la dirección');
+        }
+      } catch (geoError) {
+        console.log('❌ Error geocodificando:', geoError);
+      }
+    }
+
     // Construir JSON
     const requestBody = {
       user_id: tripData.userId,
@@ -1665,6 +1689,7 @@ const sendTripRequestToBackend = async (tripData) => {
           latitude: tripData.origin.latitude,
           longitude: tripData.origin.longitude
         },
+        
     destination_coords: {
           latitude: tripData.destination.latitude,
           longitude: tripData.destination.longitude
