@@ -1347,8 +1347,17 @@
     <div id="paquetes" class="screen">
         <div class="data-table-container">
             <div class="table-header">
-                <h2 class="table-title">Gestión de Paquetes</h2>
-                <div class="table-actions">
+             <h2 class="table-title">Gestión de Paquetes</h2>
+                <div class="table-actions" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:5px;">
+                        <label style="font-size:13px;color:#64748b;font-weight:500;">Fecha Inicial</label>
+                        <input type="date" id="paquetesDateStart" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;">
+                        <label style="font-size:13px;color:#64748b;font-weight:500;">Fecha Final</label>
+                        <input type="date" id="paquetesDateEnd" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;">
+                    </div>
+                    <button onclick="filterPaquetesByDate()" style="padding:8px 16px;background:#10b981;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:500;">🔍 Buscar</button>
                     <button class="btn btn-secondary" onclick="exportPaquetes()">📊 Exportar</button>
                 </div>
             </div>
@@ -3946,8 +3955,26 @@ if (screenName === 'vehicles') {
         }).join('');
     }
 
-    function updatePaquetesBadge(count) {
+  function updatePaquetesBadge(count) {
         document.getElementById('paquetesBadge').textContent = count;
+    }
+
+    function filterPaquetesByDate() {
+        const startVal = document.getElementById('paquetesDateStart').value;
+        const endVal = document.getElementById('paquetesDateEnd').value;
+        if (!startVal || !endVal) {
+            NotificationService.error('Selecciona ambas fechas');
+            return;
+        }
+        const startDate = new Date(startVal + 'T00:00:00');
+        const endDate = new Date(endVal + 'T23:59:59');
+        const filtered = appState.paquetes.filter(p => {
+            const fecha = new Date(p.created_at || p.createdAt || p.fecha);
+            return fecha >= startDate && fecha <= endDate;
+        });
+        renderPaquetes(filtered);
+        updatePaquetesBadge(filtered.length);
+        NotificationService.success(`${filtered.length} paquetes en rango seleccionado`);
     }
 
         // ========================================
