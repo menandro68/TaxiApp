@@ -295,6 +295,7 @@ router.post('/create', async (req, res) => {
         try {
           await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS third_party_name VARCHAR(100)`);
           await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS third_party_phone VARCHAR(20)`);
+          await db.query(`ALTER TABLE trips ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(30)`);
         } catch(e) {}
 
   const tripResult = await db.query(
