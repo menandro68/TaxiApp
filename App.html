@@ -1818,6 +1818,60 @@
             </div>
         </div>
 
+        <!-- Moto Modal -->
+        <div class="modal-overlay" id="motoModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Agregar Conductor de Moto</h2>
+                    <button class="modal-close" onclick="closeModal('motoModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form id="motoForm">
+                        <div class="form-group">
+                            <label class="form-label">Nombre completo</label>
+                            <input type="text" class="form-input" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" class="form-input" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Licencia de conducir</label>
+                            <input type="text" class="form-input" name="license" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Marca de la moto</label>
+                            <input type="text" class="form-input" name="vehicleMake" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo de la moto</label>
+                            <input type="text" class="form-input" name="vehicleModel" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Año</label>
+                            <input type="number" class="form-input" name="vehicleYear" min="2010" max="2026" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Placa</label>
+                            <input type="text" class="form-input" name="vehiclePlate" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Color</label>
+                            <input type="text" class="form-input" name="vehicleColor" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('motoModal')">Cancelar</button>
+                    <button class="btn btn-primary" onclick="saveMoto()">Guardar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- User Modal -->
         <div class="modal-overlay" id="userModal">
             <div class="modal">
@@ -4105,6 +4159,46 @@ if (screenName === 'vehicles') {
             } catch (error) {
                 console.error('Error saving driver:', error);
                 NotificationService.error('Error al guardar conductor');
+            }
+        }
+
+        async function saveMoto() {
+            try {
+                const form = document.getElementById('motoForm');
+                const formData = new FormData(form);
+                const motoData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    license: formData.get('license'),
+                    vehicle_make: formData.get('vehicleMake'),
+                    vehicle_model: formData.get('vehicleModel'),
+                    vehicle_year: formData.get('vehicleYear'),
+                    vehicle_plate: formData.get('vehiclePlate'),
+                    vehicle_color: formData.get('vehicleColor'),
+                    vehicle_type: 'moto',
+                    password: 'password123'
+                };
+                const response = await fetch(`${API_URL}/admin/drivers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify(motoData)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    closeModal('motoModal');
+                    form.reset();
+                    NotificationService.success('Conductor de moto agregado exitosamente');
+                    await loadMotos();
+                } else {
+                    NotificationService.error(result.error || 'Error al guardar moto');
+                }
+            } catch (error) {
+                console.error('Error saving moto:', error);
+                NotificationService.error('Error al guardar conductor de moto');
             }
         }
 
