@@ -2127,7 +2127,13 @@ static async getStats() {
             status: trip.status || 'pending',
             date: trip.createdAt || new Date().toISOString(),
             duration: trip.duration || 'N/A',
-            distance: trip.distance || 'N/A'
+      distance: trip.distance || 'N/A',
+            vehicle_type: trip.vehicleType || trip.vehicle_type || 'car',
+            user_name: trip.userName || 'Usuario',
+            driver_name: trip.driverName || 'Conductor',
+            pickup_location: trip.pickupLocation || 'Origen',
+            estimated_price: trip.fare || 0,
+            created_at: trip.createdAt || new Date().toISOString()
         }));
     }
     
