@@ -1191,7 +1191,8 @@
                 <div class="top-bar-right">
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" class="search-input" placeholder="Buscar conductor o usuario..." id="searchInput" autocomplete="off">
+                     <input type="text" class="search-input" placeholder="Buscar conductor o usuario..." id="searchInput" autocomplete="off">
+                        <div id="searchSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;margin-top:4px;max-height:250px;overflow-y:auto;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
                     </div>
                     
                     <button class="notification-btn" onclick="showNotifications()">
@@ -4457,34 +4458,68 @@ if (screenName === 'vehicles') {
             });
         }
 
-        function performSearch(query) {
+function performSearch(query) {
+            const sugBox = document.getElementById('searchSuggestions');
             if (!query) {
-                // Restaurar vista original
+                sugBox.style.display = 'none';
                 loadScreenData(appState.currentScreen);
                 return;
             }
-
+            // Recopilar nombres de conductores y usuarios
+            const suggestions = [];
+            if (appState.drivers && appState.drivers.length) {
+                appState.drivers.forEach(d => {
+                    if (d.name && d.name.toLowerCase().includes(query)) {
+                        suggestions.push({name: d.name, type: '🚗 Conductor'});
+                    }
+                });
+            }
+            if (appState.users && appState.users.length) {
+                appState.users.forEach(u => {
+                    if (u.name && u.name.toLowerCase().includes(query)) {
+                        suggestions.push({name: u.name, type: '👤 Usuario'});
+                    }
+                });
+            }
+            // Eliminar duplicados
+            const unique = [];
+            const seen = new Set();
+            suggestions.forEach(s => {
+                const key = s.name.toLowerCase() + s.type;
+                if (!seen.has(key)) { seen.add(key); unique.push(s); }
+            });
+            // Mostrar sugerencias
+            if (unique.length > 0) {
+                sugBox.innerHTML = unique.map(s => 
+                    `<div onclick="selectSuggestion('${s.name.replace(/'/g, "\\'")}')" style="padding:10px 15px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
+                        <span style="font-weight:500;color:#1e293b;">${s.name}</span>
+                        <span style="font-size:12px;color:#94a3b8;">${s.type}</span>
+                    </div>`
+                ).join('');
+                sugBox.style.display = 'block';
+            } else {
+                sugBox.style.display = 'none';
+            }
+            // Filtrar tabla actual
             switch (appState.currentScreen) {
                 case 'drivers':
-                    const filteredDrivers = appState.drivers.filter(driver => 
+                    const filteredDrivers = appState.drivers.filter(driver =>
                         driver.name.toLowerCase().includes(query) ||
                         driver.email.toLowerCase().includes(query) ||
                         driver.vehicle.plate.toLowerCase().includes(query)
                     );
                     renderDrivers(filteredDrivers);
                     break;
-                
                 case 'users':
-                    const filteredUsers = appState.users.filter(user => 
+                    const filteredUsers = appState.users.filter(user =>
                         user.name.toLowerCase().includes(query) ||
                         user.email.toLowerCase().includes(query) ||
                         user.phone.includes(query)
                     );
                     renderUsers(filteredUsers);
                     break;
-                
                 case 'trips':
-                    const filteredTrips = appState.trips.filter(trip => 
+                    const filteredTrips = appState.trips.filter(trip =>
                         trip.passenger.toLowerCase().includes(query) ||
                         trip.driver.toLowerCase().includes(query) ||
                         trip.origin.toLowerCase().includes(query) ||
@@ -4493,8 +4528,27 @@ if (screenName === 'vehicles') {
                     );
                     renderTrips(filteredTrips);
                     break;
+                case 'paquetes':
+                    const filteredPaquetes = appState.paquetes.filter(p =>
+                        (p.user_name || '').toLowerCase().includes(query) ||
+                        (p.driver_name || '').toLowerCase().includes(query)
+                    );
+                    renderPaquetes(filteredPaquetes);
+                    break;
             }
         }
+
+        function selectSuggestion(name) {
+            document.getElementById('searchInput').value = name;
+            document.getElementById('searchSuggestions').style.display = 'none';
+            performSearch(name.toLowerCase().trim());
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-box')) {
+                document.getElementById('searchSuggestions').style.display = 'none';
+            }
+        });
 
         // ========================================
         // FUNCIONES DE GRÁFICOS Y FILTROS
