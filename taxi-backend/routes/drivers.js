@@ -89,15 +89,15 @@ router.post('/login', async (req, res) => {
 // CREAR CONDUCTOR (desde Admin Panel)
 router.post('/', async (req, res) => {
     try {
-        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status } = req.body;
+        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type, status } = req.body;
         
         const hashedPassword = await bcrypt.hash(password, 10);
         
         const result = await db.query(
-            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, status, rating, total_trips, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+            `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type, status, rating, total_trips, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
              RETURNING *`,
-            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, status || 'active', 4.8, 0]
+            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type || 'car', status || 'active', 4.8, 0]
         );
         
         res.json({
