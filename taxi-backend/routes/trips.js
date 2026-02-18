@@ -44,7 +44,9 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
             'premium': 'car',
             'car': 'car',
             'moto': 'moto',
-            'motorcycle': 'moto'
+            'motorcycle': 'moto',
+            'paquete_carro': 'car',
+            'paquete_moto': 'moto'
         };
         const requestedVehicleType = VEHICLE_TYPE_MAP[userVehicleType] || 'car';
     // Obtener IDs de conductores bloqueados por este usuario
@@ -296,10 +298,10 @@ router.post('/create', async (req, res) => {
         } catch(e) {}
 
   const tripResult = await db.query(
-            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code, third_party_name, third_party_phone)
-             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12)
+            `INSERT INTO trips (user_id, pickup_location, destination, status, price, created_at, pickup_lat, pickup_lng, destination_lat, destination_lng, trip_code, third_party_name, third_party_phone, vehicle_type)
+             VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9, $10, $11, $12, $13)
              RETURNING id`,
-            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null, third_party_name || null, third_party_phone || null]
+            [userIdParsed, pickup_location, destination, 'pending', finalPrice, pickup_coords?.latitude || null, pickup_coords?.longitude || null, destination_coords?.latitude || null, destination_coords?.longitude || null, trip_code || null, third_party_name || null, third_party_phone || null, vehicle_type || null]
         );
 
         const tripId = tripResult.rows[0].id;
@@ -1285,11 +1287,11 @@ router.get('/wallet/:driverId', async (req, res) => {
         )`);
 
       const transactions = await db.query(
-           `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 50`,
+            `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at ASC LIMIT 50`,
             [parseInt(driverId)]
         );
 
-        const lastTx = transactions.rows.length > 0 ? transactions.rows[0] : null;
+        const lastTx = transactions.rows.length > 0 ? transactions.rows[transactions.rows.length - 1] : null;
         const currentBalance = lastTx ? parseFloat(lastTx.balance_after) : 0;
 
         const totals = await db.query(
