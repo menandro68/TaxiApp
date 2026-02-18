@@ -2115,25 +2115,25 @@ static async getStats() {
 
             static async getTrips() {
     // Primero intentar con API real
-    const apiData = await fetchAPI('/trips');
+ const apiData = await fetchAPI('/trips');
     if (apiData && apiData.trips) {
         return apiData.trips.map(trip => ({
             id: trip.id,
-            passenger: trip.userName || 'Usuario',
-            driver: trip.driverName || 'Conductor',
-            origin: trip.pickupLocation || 'Origen',
-            destination: trip.dropoffLocation || 'Destino',
-            price: trip.fare || 0,
+            passenger: trip.user_name || trip.userName || 'Usuario',
+            driver: trip.driver_name || trip.driverName || 'Conductor',
+            origin: trip.pickup_location || trip.pickupLocation || 'Origen',
+            destination: trip.destination || trip.dropoffLocation || 'Destino',
+            price: trip.price || trip.fare || 0,
             status: trip.status || 'pending',
-            date: trip.createdAt || new Date().toISOString(),
+            date: trip.created_at || trip.createdAt || new Date().toISOString(),
             duration: trip.duration || 'N/A',
-      distance: trip.distance || 'N/A',
-            vehicle_type: trip.vehicleType || trip.vehicle_type || 'car',
-            user_name: trip.userName || 'Usuario',
-            driver_name: trip.driverName || 'Conductor',
-            pickup_location: trip.pickupLocation || 'Origen',
-            estimated_price: trip.fare || 0,
-            created_at: trip.createdAt || new Date().toISOString()
+            distance: trip.distance || 'N/A',
+            vehicle_type: trip.vehicle_type || trip.vehicleType || 'car',
+            user_name: trip.user_name || trip.userName || 'Usuario',
+            driver_name: trip.driver_name || trip.driverName || 'Conductor',
+            pickup_location: trip.pickup_location || trip.pickupLocation || 'Origen',
+            estimated_price: trip.price || trip.fare || 0,
+            created_at: trip.created_at || trip.createdAt || new Date().toISOString()
         }));
     }
     

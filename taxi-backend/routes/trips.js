@@ -1015,7 +1015,14 @@ router.get('/history/:userId', async (req, res) => {
 // =============================================
 router.get('/', async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM trips ORDER BY created_at DESC');
+        const result = await db.query(`
+            SELECT t.*, u.name as user_name, u.phone as user_phone,
+                   d.name as driver_name, d.phone as driver_phone
+            FROM trips t
+            LEFT JOIN users u ON t.user_id = u.id
+            LEFT JOIN drivers d ON t.driver_id = d.id
+            ORDER BY t.created_at DESC
+        `);
 
         res.json({
             success: true,
