@@ -3975,7 +3975,56 @@ if (screenName === 'vehicles') {
         });
         renderPaquetes(filtered);
         updatePaquetesBadge(filtered.length);
-        NotificationService.success(`${filtered.length} paquetes en rango seleccionado`);
+  NotificationService.success(`${filtered.length} paquetes en rango seleccionado`);
+    }
+
+    function exportPaquetes() {
+        const paquetes = appState.paquetes || [];
+        if (paquetes.length === 0) {
+            NotificationService.error('No hay paquetes para exportar');
+            return;
+        }
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Gestión de Paquetes - TaxiApp Rondon</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h1 { text-align: center; color: #1e293b; }
+                p.date { text-align: center; color: #64748b; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; font-size: 13px; }
+                th { background: #1e293b; color: white; padding: 10px 8px; text-align: left; }
+                td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+                tr:nth-child(even) { background: #f8fafc; }
+                .status { font-weight: bold; }
+                @media print { body { padding: 0; } }
+            </style></head><body>
+            <h1>📦 Gestión de Paquetes - TaxiApp Rondon</h1>
+            <p class="date">Generado: ${new Date().toLocaleString('es-DO')}</p>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Cliente</th><th>Origen</th><th>Destino</th>
+                    <th>Vehículo</th><th>Conductor</th><th>Precio</th><th>Estado</th><th>Fecha</th>
+                </tr></thead>
+                <tbody>${paquetes.map(p => {
+                    const tipo = (p.vehicle_type || '').includes('moto') ? 'Moto' : 'Carro';
+                    const precio = p.estimated_price || p.price || 0;
+                    const fecha = p.created_at || p.createdAt || '';
+                    const fechaF = fecha ? new Date(fecha).toLocaleDateString('es-DO') : 'N/A';
+                    return '<tr>' +
+                        '<td>#' + (p.id || 0) + '</td>' +
+                        '<td>' + (p.user_name || 'Cliente') + '</td>' +
+                        '<td>' + (p.pickup_location || 'N/A') + '</td>' +
+                        '<td>' + (p.destination || 'N/A') + '</td>' +
+                        '<td>' + tipo + '</td>' +
+                        '<td>' + (p.driver_name || 'Sin asignar') + '</td>' +
+                        '<td>RD$' + precio + '</td>' +
+                        '<td>' + (p.status || 'pending') + '</td>' +
+                        '<td>' + fechaF + '</td></tr>';
+                }).join('')}</tbody>
+            </table></body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
     }
 
         // ========================================
