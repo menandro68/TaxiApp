@@ -126,6 +126,10 @@ export default function DriverApp({ navigation }) {
   const [locationInterval, setLocationInterval] = useState(null); // Para controlar el intervalo de ubicación
   const [showEarningsDetail, setShowEarningsDetail] = useState(false);
   const [earningsDetailData, setEarningsDetailData] = useState({ period: '', trips: [], total: 0 });
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatScrollRef = useRef(null);
   const [loadingEarnings, setLoadingEarnings] = useState(false);  
   // Estados para Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -2245,9 +2249,10 @@ onPress: async () => {
               flex: 0.3,
               alignItems: 'center',
             }}
-            onPress={() => {
-              if (currentTrip?.phone) {
-                Linking.openURL(`sms:${currentTrip.phone}?body=Hola, soy tu conductor de TaxiApp Rondon`);
+      onPress={() => {
+              if (currentTrip?.id) {
+                loadDriverChatMessages();
+                setShowChatModal(true);
               }
             }}
           >
@@ -2285,6 +2290,44 @@ onPress: async () => {
       )}
     </View>
   );
+
+const loadDriverChatMessages = async () => {
+    try {
+      const tripId = currentTrip?.id;
+      if (!tripId) return;
+      const response = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/trip/${tripId}`);
+      const data = await response.json();
+      if (data.success) {
+        setChatMessages(data.messages);
+        fetch(`https://web-production-99844.up.railway.app/api/trip-messages/read/${tripId}/driver`, { method: 'PUT' });
+      }
+    } catch (error) {
+      console.error('Error cargando mensajes:', error);
+    }
+  };
+
+  const sendDriverChatMessage = async () => {
+    if (!chatInput.trim() || !currentTrip?.id) return;
+    try {
+      const response = await fetch('https://web-production-99844.up.railway.app/api/trip-messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trip_id: currentTrip.id,
+          sender_type: 'driver',
+          sender_id: loggedDriver?.id || 0,
+          message: chatInput.trim()
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setChatInput('');
+        loadDriverChatMessages();
+      }
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+    }
+  };
 
 const renderEarnings = () => (
     <ScrollView style={styles.tabContent}>
@@ -2811,6 +2854,61 @@ const renderEarnings = () => (
             </View>
           </ScrollView>
         </SafeAreaView>
+      </Modal>
+
+      {/* MODAL CHAT INTERNO CON PASAJERO */}
+      <Modal
+        visible={showChatModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowChatModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '70%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>💬 Chat con {currentTrip?.userName || 'Pasajero'}</Text>
+              <TouchableOpacity onPress={() => setShowChatModal(false)}>
+                <Text style={{ fontSize: 24, color: '#999' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView 
+              ref={chatScrollRef}
+              style={{ flex: 1, padding: 10 }}
+              onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
+            >
+              {chatMessages.length === 0 && (
+                <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>No hay mensajes aún. ¡Envía el primero!</Text>
+              )}
+              {chatMessages.map((msg) => (
+                <View key={msg.id} style={{
+                  alignSelf: msg.sender_type === 'driver' ? 'flex-end' : 'flex-start',
+                  backgroundColor: msg.sender_type === 'driver' ? '#FF9500' : '#E8E8E8',
+                  padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
+                }}>
+                  <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
+                  <Text style={{ color: msg.sender_type === 'driver' ? '#ffe0b2' : '#999', fontSize: 10, marginTop: 3 }}>
+                    {new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' }}>
+              <TextInput
+                style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, fontSize: 15, marginRight: 8 }}
+                placeholder="Escribe un mensaje..."
+                value={chatInput}
+                onChangeText={setChatInput}
+                onSubmitEditing={sendDriverChatMessage}
+              />
+              <TouchableOpacity 
+                onPress={sendDriverChatMessage}
+                style={{ backgroundColor: '#FF9500', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontSize: 18 }}>➤</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       {/* Modal de Chat de Soporte 24/7 */}
