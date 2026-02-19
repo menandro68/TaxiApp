@@ -2249,11 +2249,8 @@ onPress: async () => {
               flex: 0.3,
               alignItems: 'center',
             }}
-      onPress={() => {
-              if (currentTrip?.id) {
-                loadDriverChatMessages();
-                setShowChatModal(true);
-              }
+    onPress={() => {
+              openDriverChat();
             }}
           >
             <Text style={{ color: 'white', fontWeight: 'bold' }}>💬 Chat</Text>
@@ -2290,6 +2287,26 @@ onPress: async () => {
       )}
     </View>
   );
+  
+  const chatIntervalRef = useRef(null);
+
+  const openDriverChat = () => {
+    if (currentTrip?.id) {
+      loadDriverChatMessages();
+      setShowChatModal(true);
+      chatIntervalRef.current = setInterval(() => {
+        loadDriverChatMessages();
+      }, 3000);
+    }
+  };
+
+  const closeDriverChat = () => {
+    setShowChatModal(false);
+    if (chatIntervalRef.current) {
+      clearInterval(chatIntervalRef.current);
+      chatIntervalRef.current = null;
+    }
+  };
 
 const loadDriverChatMessages = async () => {
     try {
@@ -2861,13 +2878,13 @@ const renderEarnings = () => (
         visible={showChatModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowChatModal(false)}
+       onRequestClose={() => closeDriverChat()}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '70%' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold' }}>💬 Chat con {currentTrip?.userName || 'Pasajero'}</Text>
-              <TouchableOpacity onPress={() => setShowChatModal(false)}>
+            <TouchableOpacity onPress={() => closeDriverChat()}>
                 <Text style={{ fontSize: 24, color: '#999' }}>✕</Text>
               </TouchableOpacity>
             </View>
