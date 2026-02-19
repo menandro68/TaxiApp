@@ -1520,19 +1520,11 @@ const startDriverTracking = async (driver, userLoc) => {
     }
   };
 
-// FUNCIÓN: Chat con el conductor via WhatsApp
+// FUNCIÓN: Chat con el conductor via SMS
   const handleChatDriver = () => {
-    const phone = driverInfo?.phone?.replace(/[^0-9]/g, '') || '';
-    if (!phone) {
-      Alert.alert('Error', 'No hay número de teléfono disponible');
-      return;
+    if (driverInfo?.phone) {
+  Linking.openURL(`sms:${driverInfo.phone}?body=Hola, soy tu pasajero de TaxiApp Rondon`);
     }
-    const message = `Hola ${driverInfo.name}, soy tu pasajero. Estoy esperando mi viaje.`;
-    const whatsappUrl = `https://wa.me/1${phone}?text=${encodeURIComponent(message)}`;
-    
-    Linking.openURL(whatsappUrl).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir WhatsApp');
-    });
   };
   // FUNCIÓN: Solicitar viaje usando API real
   const requestRide = async () => {
