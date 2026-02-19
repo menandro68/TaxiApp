@@ -2213,7 +2213,7 @@ onPress: async () => {
               backgroundColor: '#25D366',
               padding: 10,
               borderRadius: 8,
-              flex: 0.45,
+              flex: 0.3,
               alignItems: 'center',
             }}
        onPress={async () => {
@@ -2235,15 +2235,30 @@ onPress: async () => {
               }
             }}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>💬 WhatsApp</Text>
+      <Text style={{ color: 'white', fontWeight: 'bold' }}>💬 WhatsApp</Text>
           </TouchableOpacity>
-          
+          <TouchableOpacity
+            style={{
+              backgroundColor: '#FF9500',
+              padding: 10,
+              borderRadius: 8,
+              flex: 0.3,
+              alignItems: 'center',
+            }}
+            onPress={() => {
+              if (currentTrip?.phone) {
+                Linking.openURL(`sms:${currentTrip.phone}?body=Hola, soy tu conductor de TaxiApp Rondon`);
+              }
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>💬 Chat</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={{
               backgroundColor: '#007AFF',
               padding: 10,
               borderRadius: 8,
-              flex: 0.45,
+              flex: 0.3,
               alignItems: 'center',
             }}
           onPress={async () => {
