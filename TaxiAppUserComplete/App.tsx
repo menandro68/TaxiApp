@@ -1525,15 +1525,28 @@ const startDriverTracking = async (driver, userLoc) => {
   };
 
 // FUNCIÓN: Chat interno con el conductor
+  const chatIntervalRef = useRef(null);
+
   const handleChatDriver = () => {
     if (tripRequest?.id) {
       loadChatMessages();
       setShowChatModal(true);
+      // Auto-refresh cada 3 segundos
+      chatIntervalRef.current = setInterval(() => {
+        loadChatMessages();
+      }, 3000);
     } else {
       Alert.alert('Error', 'No hay viaje activo');
     }
   };
 
+  const closeChatModal = () => {
+    setShowChatModal(false);
+    if (chatIntervalRef.current) {
+      clearInterval(chatIntervalRef.current);
+      chatIntervalRef.current = null;
+    }
+  };
   const loadChatMessages = async () => {
     try {
       const tripId = tripRequest?.id;
@@ -4060,13 +4073,13 @@ setThirdPartyInfo(rideData);
   visible={showChatModal}
   transparent={true}
   animationType="slide"
-  onRequestClose={() => setShowChatModal(false)}
+  onRequestClose={() => closeChatModal()}
 >
   <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
     <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '70%' }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
         <Text style={{ fontSize: 18, fontWeight: 'bold' }}>💬 Chat con {driverInfo?.name || 'Conductor'}</Text>
-        <TouchableOpacity onPress={() => setShowChatModal(false)}>
+      <TouchableOpacity onPress={() => closeChatModal()}>
           <Text style={{ fontSize: 24, color: '#999' }}>✕</Text>
         </TouchableOpacity>
       </View>
