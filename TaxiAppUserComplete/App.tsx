@@ -3120,7 +3120,7 @@ onPress={() => {
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={styles.contactButton}
+           style={[styles.contactButton, { backgroundColor: '#FF9500' }]}
               onPress={() => handleChatDriver()}
             >
               <Icon name="chatbubble" size={24} color="#fff" />
