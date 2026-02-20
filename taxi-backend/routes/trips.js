@@ -380,20 +380,47 @@ router.get('/search-status/:tripId', async (req, res) => {
                 notifiedCount: search.notifiedDriverIds.length
             });
         } else {
-            // Verificar estado del viaje
+            // Verificar estado del viaje CON información del conductor
             const tripResult = await db.query(
-                `SELECT status, driver_id FROM trips WHERE id = $1`,
+                `SELECT t.status, t.driver_id, t.price, t.pickup_location, t.destination,
+                        d.name as driver_name, d.phone as driver_phone, d.vehicle_model, 
+                        d.vehicle_plate, d.rating as driver_rating, d.current_latitude, d.current_longitude
+                 FROM trips t
+                 LEFT JOIN drivers d ON t.driver_id = d.id
+                 WHERE t.id = $1`,
                 [tripId]
             );
-            
             if (tripResult.rows.length > 0) {
                 const trip = tripResult.rows[0];
-                res.json({
+                const response = {
                     success: true,
                     active: false,
                     tripStatus: trip.status,
                     driverAssigned: trip.driver_id !== null
-                });
+                };
+                
+                // Si hay conductor asignado, incluir su información
+                if (trip.driver_id && trip.status === 'assigned') {
+                    response.driver = {
+                        id: trip.driver_id,
+                        name: trip.driver_name || 'Conductor',
+                        phone: trip.driver_phone || '',
+                        vehicle: trip.vehicle_model || 'Vehículo',
+                        plate: trip.vehicle_plate || '',
+                        rating: trip.driver_rating || 4.5,
+                        location: {
+                            latitude: trip.current_latitude || 0,
+                            longitude: trip.current_longitude || 0
+                        }
+                    };
+                    response.trip = {
+                        id: parseInt(tripId),
+                        price: trip.price,
+                        pickup: trip.pickup_location,
+                        destination: trip.destination
+                    };
+                }
+                res.json(response);
             } else {
                 res.status(404).json({ error: 'Viaje no encontrado' });
             }
