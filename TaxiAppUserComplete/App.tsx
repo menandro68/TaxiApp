@@ -1558,10 +1558,10 @@ const startDriverTracking = async (driver, userLoc) => {
         try {
           const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${tripRequest.id}/user`);
           const data = await res.json();
-      if (data.success && data.unread > 0) {
-          (async () => { try { await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultRate(0.5); await Tts.speak('Tienes un mensaje nuevo'); } catch(e) { console.log('Error TTS:', e); } })();
+  if (data.success && data.unread > 0) {
             loadChatMessages();
             setShowChatModal(true);
+            try { await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultRate(0.5); await Tts.speak('Tienes un mensaje nuevo'); } catch(e) { console.log('Error TTS chat:', e); }
             clearInterval(bgChatCheckRef.current);
             bgChatCheckRef.current = null;
             // Iniciar auto-refresh del chat abierto
