@@ -3903,8 +3903,65 @@ if (screenName === 'vehicles') {
         }).join('');
     }
 
-    function updateMotosBadge(count) {
+ function updateMotosBadge(count) {
         document.getElementById('motosBadge').textContent = count;
+    }
+
+    async function exportMotos() {
+        try {
+            const drivers = await AdminAPI.getDrivers();
+            const motos = drivers.filter(d => d.vehicle_type === 'moto' || d.vehicleType === 'moto');
+            
+            if (!motos || motos.length === 0) {
+                NotificationService.error('No hay motos para exportar');
+                return;
+            }
+
+            const now = new Date();
+            const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
+            const horaReporte = now.toLocaleTimeString('es-DO', { hour:'2-digit', minute:'2-digit' });
+
+            const rows = motos.map(d => `
+                <tr>
+                    <td>${d.name || 'N/A'}</td>
+                    <td>${d.email || 'N/A'}</td>
+                    <td>${d.phone || 'N/A'}</td>
+                    <td>${d.vehicle_plate || d.plate || 'N/A'}</td>
+                    <td>${d.rating || '5.00'}</td>
+                    <td>${d.total_trips || d.totalTrips || 0}</td>
+                    <td>${d.status || 'N/A'}</td>
+                </tr>
+            `).join('');
+
+            const win = window.open('', '', 'width=900,height=700');
+            win.document.write(`<!DOCTYPE html><html><head><title>Reporte de Motos - TaxiApp Rondon</title>
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; padding: 30px; color: #1e293b; }
+                h1 { font-size: 22px; color: #f59e0b; margin-bottom: 5px; }
+                .info { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th { background: #f1f5f9; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+                td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+                .footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+                @media print { .no-print { display: none; } }
+            </style></head><body>
+            <h1>🏍️ Reporte de Motos</h1>
+            <div class="info">
+                <strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${motos.length} motos
+            </div>
+            <table>
+                <thead><tr><th>Conductor</th><th>Email</th><th>Teléfono</th><th>Placa</th><th>Calificación</th><th>Viajes</th><th>Estado</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
+            </body></html>`);
+            win.document.close();
+            win.print();
+            NotificationService.success('Reporte generado');
+        } catch (error) {
+            console.error('Error exporting motos:', error);
+            NotificationService.error('Error exportando datos');
+        }
     }
 
       // ========================================
