@@ -4688,8 +4688,9 @@ async function exportUsers() {
                     <tbody>${rows}</tbody>
                 </table>
                 <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
-                </body></html>`);
+             </body></html>`);
                 win.document.close();
+                win.print();
                 NotificationService.success('Reporte generado');
             } catch (error) {
                 console.error('Error exporting users:', error);
