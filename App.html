@@ -3907,10 +3907,9 @@ if (screenName === 'vehicles') {
         document.getElementById('motosBadge').textContent = count;
     }
 
-    async function exportMotos() {
+  async function exportMotos() {
         try {
-            const drivers = await AdminAPI.getDrivers();
-            const motos = drivers.filter(d => d.vehicle_type === 'moto' || d.vehicleType === 'moto');
+            const motos = await AdminAPI.getMotos();
             
             if (!motos || motos.length === 0) {
                 NotificationService.error('No hay motos para exportar');
