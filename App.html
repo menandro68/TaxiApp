@@ -4642,11 +4642,10 @@ function performSearch(query) {
                 NotificationService.error('Error exportando datos');
             }
         }
-
- function exportUsers() {
+async function exportUsers() {
             try {
-                const users = appState.users || [];
-                if (users.length === 0) {
+                const users = await AdminAPI.getUsers();
+                if (!users || users.length === 0) {
                     NotificationService.error('No hay usuarios para exportar');
                     return;
                 }
@@ -4661,7 +4660,7 @@ function performSearch(query) {
                         <td>${u.email || 'N/A'}</td>
                         <td>${u.phone || 'N/A'}</td>
                         <td>${u.rating || 'N/A'}</td>
-                        <td>${u.totalTrips || 0}</td>
+                        <td>${u.totalTrips || u.total_trips || 0}</td>
                         <td>${u.status || 'N/A'}</td>
                     </tr>
                 `).join('');
