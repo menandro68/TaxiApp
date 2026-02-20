@@ -2318,7 +2318,7 @@ onPress: async () => {
           const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${currentTrip.id}/driver`);
           const data = await res.json();
          if (data.success && data.unread > 0) {
-         try { const Speech = require('react-native-tts').default; Speech.setDefaultLanguage('es-ES').then(() => { Speech.speak('Tienes un mensaje nuevo'); }).catch(() => { Speech.speak('Tienes un mensaje nuevo'); }); } catch(e) {}
+        (async () => { try { const Speech = require('react-native-tts').default; await Speech.setDefaultLanguage('es-ES'); await Speech.setDefaultRate(0.5); await Speech.speak('Tienes un mensaje nuevo'); } catch(e) { console.log('Error TTS:', e); } })();
             loadDriverChatMessages();
             setShowChatModal(true);
             clearInterval(bgChatCheckRef.current);
