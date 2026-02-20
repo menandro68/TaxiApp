@@ -2308,6 +2308,35 @@ onPress: async () => {
     }
   };
 
+  // Auto-abrir chat cuando llegan mensajes nuevos
+  const bgChatCheckRef = useRef(null);
+
+  useEffect(() => {
+    if (currentTrip?.id && !showChatModal) {
+      bgChatCheckRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${currentTrip.id}/driver`);
+          const data = await res.json();
+          if (data.success && data.unread > 0) {
+            loadDriverChatMessages();
+            setShowChatModal(true);
+            clearInterval(bgChatCheckRef.current);
+            bgChatCheckRef.current = null;
+            chatIntervalRef.current = setInterval(() => {
+              loadDriverChatMessages();
+            }, 3000);
+          }
+        } catch (e) {}
+      }, 4000);
+    }
+    return () => {
+      if (bgChatCheckRef.current) {
+        clearInterval(bgChatCheckRef.current);
+        bgChatCheckRef.current = null;
+      }
+    };
+  }, [currentTrip?.id, showChatModal]);
+
 const loadDriverChatMessages = async () => {
     try {
       const tripId = currentTrip?.id;
