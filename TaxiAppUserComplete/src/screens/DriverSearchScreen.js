@@ -1,4 +1,4 @@
-// DriverSearchScreen.js - Pantalla de navegación (solución al bug de MapView en Modal)
+// DriverSearchScreen.js - Pantalla de navegación con POLLING ROBUSTO al backend
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -13,15 +13,23 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import DriverSearchService from '../services/DriverSearchService';
+import { getBackendUrl } from '../config/config';
 
 const { width, height } = Dimensions.get('window');
 const RADAR_SIZE = width * 0.9;
 const RADAR_CENTER = RADAR_SIZE / 2;
 
+// CONFIGURACIÓN DE POLLING ROBUSTO
+const POLLING_CONFIG = {
+  intervalMs: 3000,      // Cada 3 segundos
+  maxTimeoutMs: 120000,  // 2 minutos máximo
+};
+
 const DriverSearchScreen = ({ navigation, route }) => {
   const { userLocation, tripRequestId } = route.params || {};
   console.log('📍 DriverSearchScreen userLocation:', JSON.stringify(userLocation));
-  
+  console.log('📍 DriverSearchScreen tripRequestId:', tripRequestId);
+
   const [searchProgress, setSearchProgress] = useState({
     attempt: 0,
     totalAttempts: 5,
@@ -35,6 +43,11 @@ const DriverSearchScreen = ({ navigation, route }) => {
   const [mapReady, setMapReady] = useState(false);
   const [showMarkers, setShowMarkers] = useState(false);
   const mapRef = useRef(null);
+  
+  // Referencias para polling
+  const pollingIntervalRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const isPollingActiveRef = useRef(false);
 
   // Calcular posición del conductor en el overlay
   const getDriverPosition = (driver, index) => {
@@ -72,6 +85,160 @@ const DriverSearchScreen = ({ navigation, route }) => {
     };
   };
 
+  // =============================================
+  // POLLING ROBUSTO AL BACKEND (FUENTE DE VERDAD)
+  // =============================================
+  const checkTripStatus = async () => {
+    if (!tripRequestId || !isPollingActiveRef.current) {
+      return;
+    }
+
+    try {
+      const backendUrl = getBackendUrl();
+      const response = await fetch(`${backendUrl}/trips/search-status/${tripRequestId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 5000,
+      });
+
+      if (!response.ok) {
+        console.log('⚠️ Polling: respuesta no OK', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('📡 Polling status:', data.tripStatus, '| Driver:', data.driverAssigned);
+
+      // Si el viaje fue asignado, navegar con datos del conductor
+      if (data.tripStatus === 'assigned' && data.driverAssigned && data.driver) {
+        console.log('✅ ¡Conductor asignado detectado via polling!', data.driver.name);
+        
+        // Detener polling inmediatamente
+        stopPolling();
+        
+        // Preparar datos del conductor en formato FCM para el handler
+        const driverDataForHandler = {
+          driverId: data.driver.id?.toString(),
+          driverName: data.driver.name || 'Conductor',
+          driverPhone: data.driver.phone || '',
+          vehicleModel: data.driver.vehicle || 'Vehículo',
+          vehiclePlate: data.driver.plate || '',
+          driverRating: data.driver.rating?.toString() || '4.5',
+          driverLat: data.driver.location?.latitude?.toString() || '',
+          driverLng: data.driver.location?.longitude?.toString() || '',
+          tripId: tripRequestId?.toString(),
+          driverIsFinishing: 'false',
+        };
+
+        // Llamar al handler original de App.tsx (igual que FCM)
+        if (global.handleDriverAssigned) {
+          console.log('🚗 Polling: Llamando handler original de App.tsx...');
+          global.handleDriverAssigned(driverDataForHandler);
+        } else {
+          // Fallback: navegar directamente si no hay handler
+          console.log('⚠️ No hay handler, navegando directamente...');
+          navigation.navigate('Main', {
+            driverFound: driverDataForHandler,
+            fromDriverSearch: true,
+            tripId: tripRequestId,
+          });
+        }
+        return;
+      }
+
+      // Si el viaje fue cancelado
+      if (data.tripStatus === 'cancelled') {
+        console.log('❌ Viaje cancelado');
+        stopPolling();
+        setSearchFailed(true);
+        setIsSearching(false);
+        return;
+      }
+
+      // Actualizar progreso visual basado en datos del backend
+      if (data.active && data.currentRound) {
+        setSearchProgress({
+          attempt: data.currentRound,
+          totalAttempts: data.totalRounds || 5,
+          radius: data.currentRadius || 0,
+          message: data.currentRadius < 1 
+            ? `Buscando en ${data.currentRadius * 1000}m...` 
+            : `Buscando en ${data.currentRadius}km...`,
+        });
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error en polling:', error.message);
+      // No detener polling por errores de red temporales
+    }
+  };
+
+  const startPolling = () => {
+    if (isPollingActiveRef.current) {
+      return; // Ya está activo
+    }
+
+    console.log('🚀 Iniciando polling robusto al backend...');
+    isPollingActiveRef.current = true;
+
+    // Polling cada 3 segundos
+    pollingIntervalRef.current = setInterval(() => {
+      checkTripStatus();
+    }, POLLING_CONFIG.intervalMs);
+
+    // Timeout máximo de 2 minutos
+    searchTimeoutRef.current = setTimeout(() => {
+      console.log('⏰ Timeout de búsqueda alcanzado (2 min)');
+      stopPolling();
+      setSearchFailed(true);
+      setIsSearching(false);
+    }, POLLING_CONFIG.maxTimeoutMs);
+
+    // Primera verificación inmediata
+    checkTripStatus();
+  };
+
+  const stopPolling = () => {
+    console.log('🛑 Deteniendo polling...');
+    isPollingActiveRef.current = false;
+
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+  };
+
+  // =============================================
+  // ESCUCHAR FCM COMO RESPALDO
+  // =============================================
+  useEffect(() => {
+    const originalHandler = global.handleDriverAssigned;
+
+    global.handleDriverAssigned = async (driverData) => {
+      console.log('🚗 DriverSearchScreen: Conductor asignado via FCM');
+      
+      // Detener polling
+      stopPolling();
+
+      // Llamar al handler original de App.tsx para que actualice los estados
+      if (originalHandler) {
+        console.log('🚗 Llamando handler original de App.tsx...');
+        await originalHandler(driverData);
+      }
+    };
+
+    return () => {
+      if (originalHandler) {
+        global.handleDriverAssigned = originalHandler;
+      }
+    };
+  }, [navigation]);
+
   // Manejar botón atrás de Android
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -81,15 +248,24 @@ const DriverSearchScreen = ({ navigation, route }) => {
     return () => backHandler.remove();
   }, []);
 
+  // Iniciar búsqueda y polling cuando el componente monta
   useEffect(() => {
-    if (userLocation) {
-      console.log('📍 DriverSearchScreen: Iniciando búsqueda');
+    if (userLocation && tripRequestId) {
+      console.log('📍 DriverSearchScreen: Iniciando búsqueda con tripRequestId:', tripRequestId);
+      setIsSearching(true);
       loadAvailableDrivers();
-      setTimeout(() => {
-        startSearch();
-      }, 100);
+      startPolling();
+    } else if (userLocation && !tripRequestId) {
+      console.log('⚠️ DriverSearchScreen: No hay tripRequestId, usando búsqueda local');
+      loadAvailableDrivers();
+      startSearch();
     }
-  }, [userLocation]);
+
+    // Limpiar al desmontar
+    return () => {
+      stopPolling();
+    };
+  }, [userLocation, tripRequestId]);
 
   // Delay para MapView
   useEffect(() => {
@@ -120,6 +296,7 @@ const DriverSearchScreen = ({ navigation, route }) => {
     }
   };
 
+  // Búsqueda local (fallback si no hay tripRequestId)
   const startSearch = async () => {
     setIsSearching(true);
     setSearchFailed(false);
@@ -133,11 +310,11 @@ const DriverSearchScreen = ({ navigation, route }) => {
         }
       );
 
-   if (result.success) {
+      if (result.success) {
         // Navegar directo sin pantalla intermedia
-        navigation.navigate('Main', { 
+        navigation.navigate('Main', {
           driverFound: result.driver,
-          fromDriverSearch: true 
+          fromDriverSearch: true
         });
       } else {
         setSearchFailed(true);
@@ -156,6 +333,9 @@ const DriverSearchScreen = ({ navigation, route }) => {
       {
         text: 'Sí',
         onPress: async () => {
+          // Detener polling
+          stopPolling();
+          
           // Cancelar viaje en el servidor
           if (tripRequestId) {
             try {
@@ -168,9 +348,9 @@ const DriverSearchScreen = ({ navigation, route }) => {
               console.error('Error cancelando viaje:', error);
             }
           }
-          navigation.navigate('Main', { 
+          navigation.navigate('Main', {
             searchCancelled: true,
-            fromDriverSearch: true 
+            fromDriverSearch: true
           });
         },
       },
@@ -180,7 +360,13 @@ const DriverSearchScreen = ({ navigation, route }) => {
   const handleRetry = () => {
     setSearchFailed(false);
     loadAvailableDrivers();
-    startSearch();
+    
+    if (tripRequestId) {
+      setIsSearching(true);
+      startPolling();
+    } else {
+      startSearch();
+    }
   };
 
   const renderSearching = () => (
@@ -229,7 +415,7 @@ const DriverSearchScreen = ({ navigation, route }) => {
                 <View style={[styles.userPinOverlay, { top: RADAR_CENTER - 13, left: RADAR_CENTER - 13 }]}>
                   <View style={styles.userPinDot} />
                 </View>
-                
+
                 {/* Carritos de conductores */}
                 {availableDrivers.map((driver, index) => {
                   const position = getDriverPosition(driver, index);
