@@ -1558,7 +1558,8 @@ const startDriverTracking = async (driver, userLoc) => {
         try {
           const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${tripRequest.id}/user`);
           const data = await res.json();
-          if (data.success && data.unread > 0) {
+      if (data.success && data.unread > 0) {
+            Tts.speak('Tienes un mensaje nuevo');
             loadChatMessages();
             setShowChatModal(true);
             clearInterval(bgChatCheckRef.current);
