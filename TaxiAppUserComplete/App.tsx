@@ -1547,6 +1547,38 @@ const startDriverTracking = async (driver, userLoc) => {
       chatIntervalRef.current = null;
     }
   };
+ 
+  // Auto-abrir chat cuando llegan mensajes nuevos
+  const bgChatCheckRef = useRef(null);
+  const lastMessageCountRef = useRef(0);
+
+  useEffect(() => {
+    if (tripRequest?.id && !showChatModal) {
+      bgChatCheckRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${tripRequest.id}/user`);
+          const data = await res.json();
+          if (data.success && data.unread > 0) {
+            loadChatMessages();
+            setShowChatModal(true);
+            clearInterval(bgChatCheckRef.current);
+            bgChatCheckRef.current = null;
+            // Iniciar auto-refresh del chat abierto
+            chatIntervalRef.current = setInterval(() => {
+              loadChatMessages();
+            }, 3000);
+          }
+        } catch (e) {}
+      }, 4000);
+    }
+    return () => {
+      if (bgChatCheckRef.current) {
+        clearInterval(bgChatCheckRef.current);
+        bgChatCheckRef.current = null;
+      }
+    };
+  }, [tripRequest?.id, showChatModal]);
+
   const loadChatMessages = async () => {
     try {
       const tripId = tripRequest?.id;
