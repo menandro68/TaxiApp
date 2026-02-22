@@ -13,8 +13,10 @@ import {
   Modal,
   Platform,
   Linking,
-BackHandler,
+  BackHandler,
   ActivityIndicator,
+  Share,
+  Clipboard,
 } from 'react-native';
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
 import BackgroundService from 'react-native-background-actions';
@@ -39,6 +41,9 @@ const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 // Variable global para el sonido (accesible desde cualquier lugar)
 let globalSoundInstance = null;
 let globalSoundCancelled = false;
+let globalNotifSonido = true;
+let globalNotifVibracion = true;
+let globalNotifNuevosViajes = true;
 let globalTripCancelled = false;
 let globalCancelledTripId = null;
 let globalSetShowRequestModal = null;
@@ -106,6 +111,11 @@ export default function DriverApp({ navigation }) {
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [referralStats, setReferralStats] = useState({ totalReferrals: 0, activeReferrals: 0, totalEarnings: 0 });
   const [notifSonido, setNotifSonido] = useState(true);
   const [notifVibracion, setNotifVibracion] = useState(true);
   const [notifNuevosViajes, setNotifNuevosViajes] = useState(true);
@@ -583,19 +593,35 @@ global.handleNewTripRequest = (tripData) => {
     console.log('🚫 Este viaje específico fue cancelado, ignorando:', tripData.id);
     return;
   }
+  
+  // 🔔 Verificar preferencia de nuevos viajes
+  if (!globalNotifNuevosViajes) {
+    console.log('🔕 Notificaciones de nuevos viajes desactivadas');
+    return;
+  }
+  
   // Resetear banderas para viaje nuevo (diferente al cancelado)
   globalTripCancelled = false;
-soundCancelledRef.current = false; // Reset para nueva solicitud
-  globalSoundCancelled = false; // Reset variable global también
+  soundCancelledRef.current = false;
+  globalSoundCancelled = false;
+  
   // 🔔 TRAER APP AL FRENTE (como inDrive)
   if (BringToForeground) {
     BringToForeground.bringAppToForeground();
   }
   setPendingRequest(tripData);
-      setShowRequestModal(true);
-      startRequestTimer(); // Iniciar el timer cuando llega una solicitud
-    // 🔊 NUEVO: Reproducir voz "Nuevo Servicio" 5 veces
-Sound.setCategory('Playback');
+  setShowRequestModal(true);
+  startRequestTimer();
+  
+  // 📳 Vibrar si está activado
+  if (globalNotifVibracion) {
+    Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+    console.log('📳 Vibrando...');
+  }
+  
+  // 🔊 Reproducir sonido si está activado
+  if (globalNotifSonido) {
+    Sound.setCategory('Playback');
       const moneySound = new Sound('money_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
         if (!error) {
           soundRef.current = moneySound; // Guardar referencia
@@ -611,10 +637,11 @@ Sound.setCategory('Playback');
               });
             }
           };
-          playSound();
+   playSound();
         }
       });
-    };
+  }
+};
     // Función para auto-aceptar viaje (desde TripRequestActivity nativa)
      // Función para limpiar viaje cuando el usuario cancela
 global.clearCurrentTrip = async () => {
@@ -1806,11 +1833,62 @@ const saveNotificationPrefs = async (prefs) => {
     try {
       console.log('💾 Guardando preferencias:', prefs);
       await AsyncStorage.setItem('@notification_prefs', JSON.stringify(prefs));
-      console.log('✅ Preferencias guardadas');
-    } catch (e) {
+      // Actualizar variables globales para uso inmediato
+      globalNotifSonido = prefs.sonido !== false;
+      globalNotifVibracion = prefs.vibracion !== false;
+      globalNotifNuevosViajes = prefs.nuevosViajes !== false;
+      console.log('✅ Preferencias guardadas y globales actualizadas');
+} catch (e) {
       console.log('Error guardando preferencias:', e);
     }
   };
+
+// FUNCIONES PARA CÓDIGO DE REFERIDOS
+const generateReferralCode = (driverName, driverId) => {
+  const namePart = (driverName || 'DRIVER').toUpperCase().replace(/\s+/g, '').substring(0, 6);
+  const idPart = String(driverId).padStart(3, '0');
+  return `${namePart}${idPart}`;
+};
+
+const loadReferralData = async () => {
+  if (!loggedDriver?.id) return;
+  
+  const code = generateReferralCode(loggedDriver.name, loggedDriver.id);
+  setReferralCode(code);
+  
+  try {
+    const response = await fetch(`https://web-production-99844.up.railway.app/api/referrals/stats/${loggedDriver.id}`);
+    const data = await response.json();
+    if (data.success) {
+      setReferralStats({
+        totalReferrals: data.totalReferrals || 0,
+        activeReferrals: data.activeReferrals || 0,
+        totalEarnings: data.totalEarnings || 0
+      });
+    }
+  } catch (error) {
+    console.log('Error cargando datos de referidos:', error);
+  }
+};
+
+const shareReferralCode = async () => {
+  const code = referralCode || generateReferralCode(loggedDriver?.name, loggedDriver?.id);
+  const message = `🚗 ¡Únete a TaxiApp Rondon!\n\nUsa mi código de referido: ${code}\n\n✅ Tú recibes RD$200 en tu primer viaje\n✅ Yo recibo RD$500 de bono\n\n¡Descarga la app y empieza a ganar!`;
+  
+  try {
+    await Share.share({
+      message: message,
+      title: 'Código de Referido TaxiApp'
+    });
+  } catch (error) {
+    console.log('Error compartiendo:', error);
+  }
+};
+
+const copyReferralCode = () => {
+  Clipboard.setString(referralCode);
+  Alert.alert('✅ Copiado', 'El código ha sido copiado al portapapeles');
+};
 
 const loadNotificationPrefs = async () => {
     try {
@@ -1823,6 +1901,10 @@ const loadNotificationPrefs = async () => {
         setNotifNuevosViajes(prefs.nuevosViajes ?? true);
         setNotifMensajes(prefs.mensajes ?? true);
         setNotifPagos(prefs.pagos ?? true);
+        // Inicializar variables globales
+        globalNotifSonido = prefs.sonido !== false;
+        globalNotifVibracion = prefs.vibracion !== false;
+        globalNotifNuevosViajes = prefs.nuevosViajes !== false;
       }
       setNotifPrefsLoaded(true);
     } catch (e) {
@@ -2983,7 +3065,10 @@ const renderEarnings = () => (
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}>
+      <TouchableOpacity 
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              onPress={() => setShowVehicleModal(true)}
+            >
               <Text style={{ fontSize: 24, marginRight: 15 }}>🚘</Text>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Datos del Vehículo</Text>
@@ -2992,26 +3077,26 @@ const renderEarnings = () => (
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity 
+       <TouchableOpacity 
               style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
-              onPress={() => { setShowProfileModal(false); setShowDocumentUpload(true); }}
+              onPress={() => setShowReferralModal(true)}
             >
-              <Text style={{ fontSize: 24, marginRight: 15 }}>📄</Text>
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🎁</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Documentos</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Ver y cargar documentos</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Código de Referidos</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Invita amigos y gana bonos</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
-         <TouchableOpacity 
+        <TouchableOpacity
               style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
-              onPress={() => setShowNotificationsModal(true)}
+              onPress={() => setShowStatisticsModal(true)}
             >
-              <Text style={{ fontSize: 24, marginRight: 15 }}>🔔</Text>
+              <Text style={{ fontSize: 24, marginRight: 15 }}>📊</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Notificaciones</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Configurar alertas</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Estadísticas</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Ver tu desempeño</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
@@ -3201,6 +3286,213 @@ const renderEarnings = () => (
                   <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifPagos ? 'flex-end' : 'flex-start' }} />
                 </View>
               </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Estadísticas */}
+      <Modal visible={showStatisticsModal} animationType="slide" onRequestClose={() => setShowStatisticsModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 20, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowStatisticsModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>📊 Estadísticas</Text>
+              <View style={{ width: 60 }} />
+            </View>
+          </View>
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>Resumen de Desempeño</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 15, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Viajes Ofrecidos</Text>
+                <Text style={{ fontWeight: 'bold', color: '#1f2937' }}>{driverStats.tripsOffered}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Viajes Aceptados</Text>
+                <Text style={{ fontWeight: 'bold', color: '#22c55e' }}>{driverStats.tripsAccepted}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Viajes Rechazados</Text>
+                <Text style={{ fontWeight: 'bold', color: '#f59e0b' }}>{driverStats.tripsRejected}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#6b7280' }}>Viajes Cancelados</Text>
+                <Text style={{ fontWeight: 'bold', color: '#ef4444' }}>{driverStats.tripsCancelled}</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>Tasas</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 15, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Tasa de Aceptación</Text>
+                <Text style={{ fontWeight: 'bold', color: driverStats.acceptanceRate >= 80 ? '#22c55e' : '#f59e0b' }}>{driverStats.acceptanceRate.toFixed(1)}%</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#6b7280' }}>Tasa de Cancelación</Text>
+                <Text style={{ fontWeight: 'bold', color: driverStats.cancellationRate <= 10 ? '#22c55e' : '#ef4444' }}>{driverStats.cancellationRate.toFixed(1)}%</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>Ganancias</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Hoy</Text>
+                <Text style={{ fontWeight: 'bold', color: '#22c55e' }}>RD${earnings.today}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Esta Semana</Text>
+                <Text style={{ fontWeight: 'bold', color: '#3b82f6' }}>RD${earnings.week}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#6b7280' }}>Este Mes</Text>
+                <Text style={{ fontWeight: 'bold', color: '#8b5cf6' }}>RD${earnings.month}</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Datos del Vehículo */}
+      <Modal visible={showVehicleModal} animationType="slide" onRequestClose={() => setShowVehicleModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 20, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowVehicleModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>🚘 Mi Vehículo</Text>
+              <View style={{ width: 60 }} />
+            </View>
+          </View>
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 20, elevation: 2 }}>
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 60 }}>🚗</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Marca</Text>
+                <Text style={{ color: '#1f2937', fontSize: 16, fontWeight: 'bold' }}>{loggedDriver?.vehicleBrand || 'No registrada'}</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Modelo</Text>
+                <Text style={{ color: '#1f2937', fontSize: 16, fontWeight: 'bold' }}>{loggedDriver?.vehicleModel || 'No registrado'}</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Año</Text>
+                <Text style={{ color: '#1f2937', fontSize: 16, fontWeight: 'bold' }}>{loggedDriver?.vehicleYear || 'No registrado'}</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Color</Text>
+                <Text style={{ color: '#1f2937', fontSize: 16, fontWeight: 'bold' }}>{loggedDriver?.vehicleColor || 'No registrado'}</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Placa</Text>
+                <Text style={{ color: '#1f2937', fontSize: 18, fontWeight: 'bold', letterSpacing: 2 }}>{loggedDriver?.vehiclePlate || 'No registrada'}</Text>
+              </View>
+              
+              <View style={{ marginBottom: 15 }}>
+                <Text style={{ color: '#6b7280', fontSize: 12, marginBottom: 5 }}>Tipo de Vehículo</Text>
+                <Text style={{ color: '#1f2937', fontSize: 16, fontWeight: 'bold' }}>{loggedDriver?.vehicleType || 'Estándar'}</Text>
+              </View>
+            </View>
+            
+            <Text style={{ color: '#6b7280', fontSize: 12, textAlign: 'center', marginTop: 20 }}>
+              Para actualizar los datos del vehículo, contacta a soporte.
+            </Text>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Código de Referidos */}
+      <Modal visible={showReferralModal} animationType="slide" onRequestClose={() => setShowReferralModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 20, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowReferralModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>🎁 Referidos</Text>
+              <View style={{ width: 60 }} />
+            </View>
+          </View>
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <View style={{ backgroundColor: '#3b82f6', borderRadius: 16, padding: 25, marginBottom: 20, alignItems: 'center' }}>
+              <Text style={{ color: 'white', fontSize: 14, marginBottom: 10 }}>Tu código de referido</Text>
+              <Text style={{ color: 'white', fontSize: 32, fontWeight: 'bold', letterSpacing: 3 }}>{referralCode || generateReferralCode(loggedDriver?.name, loggedDriver?.id)}</Text>
+              <View style={{ flexDirection: 'row', marginTop: 15 }}>
+                <TouchableOpacity 
+                  style={{ backgroundColor: 'white', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, marginRight: 10 }}
+                  onPress={copyReferralCode}
+                >
+                  <Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>📋 Copiar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#22c55e', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 }}
+                  onPress={shareReferralCode}
+                >
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>📤 Compartir</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>¿Cómo funciona?</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 20, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+                <View style={{ backgroundColor: '#dbeafe', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                  <Text style={{ fontSize: 18 }}>1️⃣</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: 'bold', color: '#1f2937' }}>Comparte tu código</Text>
+                  <Text style={{ color: '#6b7280', fontSize: 12 }}>Envía tu código a otros conductores</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+                <View style={{ backgroundColor: '#dbeafe', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                  <Text style={{ fontSize: 18 }}>2️⃣</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: 'bold', color: '#1f2937' }}>Ellos se registran</Text>
+                  <Text style={{ color: '#6b7280', fontSize: 12 }}>Usan tu código al crear su cuenta</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#dbeafe', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                  <Text style={{ fontSize: 18 }}>3️⃣</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: 'bold', color: '#1f2937' }}>¡Ambos ganan!</Text>
+                  <Text style={{ color: '#6b7280', fontSize: 12 }}>Tú: RD$500 | Ellos: RD$200</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>Tus estadísticas</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, elevation: 2 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Conductores referidos</Text>
+                <Text style={{ fontWeight: 'bold', color: '#1f2937' }}>{referralStats.totalReferrals}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ color: '#6b7280' }}>Referidos activos</Text>
+                <Text style={{ fontWeight: 'bold', color: '#22c55e' }}>{referralStats.activeReferrals}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#6b7280' }}>Total ganado por referidos</Text>
+                <Text style={{ fontWeight: 'bold', color: '#3b82f6' }}>RD${referralStats.totalEarnings}</Text>
+              </View>
             </View>
           </ScrollView>
         </SafeAreaView>

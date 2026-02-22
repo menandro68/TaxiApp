@@ -67,6 +67,7 @@ const surgeRouter = require('./routes/surge-engine');
 const trackingRouter = require('./routes/tracking');
 const settingsRoutes = require('./routes/settings');
 const tripMessagesRouter = require('./routes/trip-messages');
+const referralsRouter = require('./routes/referrals');
 
 // ==========================================
 // REGISTRAR RUTAS
@@ -86,6 +87,7 @@ app.use('/api/dynamic-pricing', dynamicPricingRouter);
 app.use('/api/surge', surgeRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/admin/settings', settingsRoutes);
+app.use('/api/referrals', referralsRouter);
 app.use('/api/trip-messages', tripMessagesRouter);
 
 // Ruta para página de tracking en tiempo real
