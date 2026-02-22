@@ -7,23 +7,65 @@ const { db } = require('../config/database');
 // REGISTRO DE CONDUCTOR
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicleType } = req.body;
-        
+        const { name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicleType, referralCode } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
         const driverVehicleType = vehicleType || 'car';
-        
         const result = await db.query(
             `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type, status, rating, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
              RETURNING id`,
             [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, driverVehicleType, 'pending', 5.0]
         );
-        
+
+        const newDriverId = result.rows[0].id;
+        let referralApplied = false;
+
+        // PROCESAR CÓDIGO DE REFERIDO SI EXISTE
+        if (referralCode && referralCode.trim()) {
+            try {
+                // Extraer ID del código (últimos 3 dígitos)
+                const code = referralCode.trim().toUpperCase();
+                const idPart = code.slice(-3);
+                const referrerId = parseInt(idPart);
+
+                if (!isNaN(referrerId) && referrerId !== newDriverId) {
+                    // Verificar que el referidor existe
+                    const referrerCheck = await db.query(
+                        'SELECT id, name FROM drivers WHERE id = $1',
+                        [referrerId]
+                    );
+
+                    if (referrerCheck.rows.length > 0) {
+                        // Crear registro de referido
+                        await db.query(
+                            `INSERT INTO referrals (referrer_id, referred_id, referral_code, status)
+                             VALUES ($1, $2, $3, 'pending')`,
+                            [referrerId, newDriverId, code]
+                        );
+
+                        // Actualizar el conductor con el referidor
+                        await db.query(
+                            'UPDATE drivers SET referred_by = $1 WHERE id = $2',
+                            [referrerId, newDriverId]
+                        );
+
+                        referralApplied = true;
+                        console.log(`✅ Referido registrado: ${newDriverId} fue referido por ${referrerId} (código: ${code})`);
+                    }
+                }
+            } catch (refError) {
+                console.error('⚠️ Error procesando código de referido:', refError.message);
+            }
+        }
+
         res.json({
             success: true,
-            driverId: result.rows[0].id,
+            driverId: newDriverId,
             vehicleType: driverVehicleType,
-            message: 'Conductor registrado exitosamente'
+            referralApplied: referralApplied,
+            message: referralApplied 
+                ? 'Conductor registrado exitosamente. ¡Código de referido aplicado!'
+                : 'Conductor registrado exitosamente'
         });
     } catch (error) {
         console.error('Error en registro de conductor:', error);

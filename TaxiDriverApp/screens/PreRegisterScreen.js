@@ -21,7 +21,8 @@ const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
     license: '',
-    vehicleType: 'car'
+    vehicleType: 'car',
+    referralCode: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -100,6 +101,7 @@ const [formData, setFormData] = useState({
           password: formData.password,
           license: formData.license.trim(),
           vehicleType: formData.vehicleType,
+          referralCode: formData.referralCode.trim() || null,
         }),
       });
 
@@ -124,9 +126,14 @@ const [formData, setFormData] = useState({
           timestamp: new Date().toISOString()
         }));
 
+        // Mensaje de éxito con info de bono si usó código
+        const bonusMsg = result.referralApplied 
+          ? `\n\n🎁 ¡Código de referido aplicado! Recibirás RD$200 de bono en tu primer viaje.`
+          : '';
+
         Alert.alert(
           'Registro Exitoso',
-          `Conductor registrado con ID: ${result.driverId}`,
+          `Conductor registrado con ID: ${result.driverId}${bonusMsg}`,
           [
             {
               text: 'Continuar',
@@ -249,6 +256,22 @@ const [formData, setFormData] = useState({
               secureTextEntry
             />
             {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
+          </View>
+
+          {/* Campo Código de Referido (Opcional) */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Código de Referido (Opcional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: FERNAN003"
+              value={formData.referralCode}
+              onChangeText={(text) => updateField('referralCode', text.toUpperCase())}
+              autoCapitalize="characters"
+              maxLength={15}
+            />
+            <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }}>
+              Si alguien te invitó, ingresa su código y recibe RD$200 de bono
+            </Text>
           </View>
 
           {/* Selector Tipo de Vehículo */}

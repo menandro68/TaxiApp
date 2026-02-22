@@ -1873,7 +1873,7 @@ const loadReferralData = async () => {
 
 const shareReferralCode = async () => {
   const code = referralCode || generateReferralCode(loggedDriver?.name, loggedDriver?.id);
-  const message = `🚗 ¡Únete a TaxiApp Rondon!\n\nUsa mi código de referido: ${code}\n\n✅ Tú recibes RD$200 en tu primer viaje\n✅ Yo recibo RD$500 de bono\n\n¡Descarga la app y empieza a ganar!`;
+const message = `🚗 ¡Únete a TaxiApp Rondon!\n\nUsa mi código de referido: ${code}\n\n✅ Tú recibes RD$200 en tu primer viaje\n✅ Yo recibo RD$500 de bono\n\n📲 Descarga la app aquí:\nhttps://play.google.com/store/apps/details?id=com.squidappsrd.conductor\n\n¡Descarga, ingresa mi código y empieza a ganar!`;
   
   try {
     await Share.share({
