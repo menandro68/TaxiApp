@@ -1850,15 +1850,15 @@ const acceptTrip = async () => {
     fcmService.testNotification();
   };
 
-  const simulateTrip = () => {
+const simulateTrip = () => {
     fcmService.simulateTripRequest();
   };
 const renderDashboard = () => (
-    <>
-  <ScrollView style={styles.tabContent}>
- <Text style={styles.title}>🚖 Conductor Squid</Text>
-      {/* Estado del Conductor */}
-      <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5}]}>
+      <View style={{flex: 1}}>
+      <ScrollView style={{flex: 1, padding: 20}}>
+        <Text style={styles.title}>🚖 Conductor Squid</Text>
+        {/* Estado del Conductor */}
+        <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5}]}>
         <Text style={[styles.sectionTitle, {fontSize: 14, marginBottom: 2}]}>Estado del Conductor</Text>
       <Text style={[styles.status, { 
           fontSize: 13, marginBottom: 5,
@@ -1996,7 +1996,7 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
 )}
 
       {/* Mini Mapa en Dashboard */}
-      <View style={{height: 350, marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
+    <View style={{height: 350, marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
         <MapComponent
           currentTrip={currentTrip}
           tripPhase={tripPhase}
@@ -2010,12 +2010,11 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
           onArrivedAtPickup={() => {
             setTripPhase('arrived');
           }}
-       onArrivedAtDestination={() => {}}
-          onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
-        />
-      </View>
-</ScrollView>
-    <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 0, borderRadius: 0}]}>
+onArrivedAtDestination={() => {}}
+onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
+/>
+</View>
+   <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 70, borderRadius: 8}]}>
       <Text style={[styles.sectionTitle, {fontSize: 14}]}>💰 Ganancias</Text>
       <View style={styles.earningsRow}>
         <View style={styles.earningItem}>
@@ -2030,9 +2029,10 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
           <Text style={styles.earningLabel}>Mes</Text>
           <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.month}</Text>
         </View>
- </View>
+      </View>
     </View>
-    </>
+    </ScrollView>
+    </View>
   );
 const renderMap= () => (
     <View style={styles.tabContent}>
@@ -2578,9 +2578,10 @@ const renderEarnings = () => (
         )}
       </View>
       
-      {/* Contenido */}
-      {renderContent()}
-      
+{/* Contenido */}
+     <View style={{flex: 1}}>
+        {renderContent()}
+      </View>
       {/* Modal de Solicitud de Viaje */}
       <Modal
         visible={showRequestModal}
@@ -3309,8 +3310,8 @@ const renderEarnings = () => (
       
       {/* Navegación Inferior */}
       <View style={styles.tabBar}>
-      <TouchableOpacity
-          onPress={() => setShowSupportChat(true)}
+     <TouchableOpacity
+          onPress={() => { console.log('🔵 TAB SOPORTE PRESSED'); setShowSupportChat(true); }}
           style={[styles.tabButton, styles.tabButtonActive]}
         >
           <Text style={[styles.tabText, styles.tabTextActive]}>
@@ -3318,8 +3319,8 @@ const renderEarnings = () => (
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          onPress={() => setActiveTab('map')} 
+        <TouchableOpacity
+          onPress={() => { console.log('🔵 TAB MAPA PRESSED'); setActiveTab('map'); }}
           style={[styles.tabButton, activeTab === 'map' && styles.tabButtonActive]}
         >
           <Text style={[styles.tabText, activeTab === 'map' && styles.tabTextActive]}>
@@ -3328,7 +3329,7 @@ const renderEarnings = () => (
         </TouchableOpacity>
         
      <TouchableOpacity
-          onPress={() => setActiveTab('earnings')}
+          onPress={() => { console.log('🔵 TAB GANANCIAS PRESSED'); setActiveTab('earnings'); }}
           style={[styles.tabButton, activeTab === 'earnings' && styles.tabButtonActive]}
         >
           <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive]}>
@@ -3336,8 +3337,8 @@ const renderEarnings = () => (
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => { loadWalletData(); setShowWalletModal(true); }}
+      <TouchableOpacity
+          onPress={() => { console.log('🔵 TAB BILLETERA PRESSED'); loadWalletData(); setShowWalletModal(true); }}
           style={[styles.tabButton]}
         >
           <Text style={[styles.tabText]}>
@@ -3382,12 +3383,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  tabBar: {
+tabBar: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     paddingVertical: 10,
+    zIndex: 9999,
+    elevation: 20,
   },
   tabButton: {
     flex: 1,
@@ -3409,7 +3416,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   tabContent: {
-    flex: 1,
     padding: 20,
   },
   title: {
