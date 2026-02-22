@@ -1040,9 +1040,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     textAlign: 'center',
   },
-  buttons: {
+buttons: {
     position: 'absolute',
-    bottom: 25,
+    bottom: 90,
     left: 15,
     right: 15,
     flexDirection: 'row',

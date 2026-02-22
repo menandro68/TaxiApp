@@ -32,6 +32,7 @@ import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import Sound from 'react-native-sound';
+import { Vibration } from 'react-native';
 import { NativeModules, AppState } from 'react-native';
 const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 
@@ -99,6 +100,18 @@ export default function DriverApp({ navigation }) {
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [notifSonido, setNotifSonido] = useState(true);
+  const [notifVibracion, setNotifVibracion] = useState(true);
+  const [notifNuevosViajes, setNotifNuevosViajes] = useState(true);
+  const [notifMensajes, setNotifMensajes] = useState(true);
+  const [notifPagos, setNotifPagos] = useState(true);
+  const [notifPrefsLoaded, setNotifPrefsLoaded] = useState(false);
   const [walletData, setWalletData] = useState({ balance: 0, commission: 10, totalEarnings: 0, totalCommission: 0, trips: 0 });
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
@@ -117,6 +130,7 @@ export default function DriverApp({ navigation }) {
   useEffect(() => { globalEstimatedMinutes = estimatedMinutes; }, [estimatedMinutes]);
   useEffect(() => { globalTripPhase = tripPhase; }, [tripPhase]);
   useEffect(() => { globalHasCurrentTrip = !!currentTrip; }, [currentTrip]);
+  useEffect(() => { if (notifPrefsLoaded) saveNotificationPrefs({ sonido: notifSonido, vibracion: notifVibracion, nuevosViajes: notifNuevosViajes, mensajes: notifMensajes, pagos: notifPagos }); }, [notifSonido, notifVibracion, notifNuevosViajes, notifMensajes, notifPagos, notifPrefsLoaded]);
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
   const [showDashcam, setShowDashcam] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
@@ -259,6 +273,7 @@ useEffect(() => {
           const driver = JSON.parse(savedDriver);
           setLoggedDriver(driver);
           console.log('✅ Conductor cargado desde almacenamiento');
+          loadNotificationPrefs();
           // Cargar ganancias reales del servidor
           loadRealEarnings(driver.id);
         }
@@ -568,21 +583,17 @@ global.handleNewTripRequest = (tripData) => {
     console.log('🚫 Este viaje específico fue cancelado, ignorando:', tripData.id);
     return;
   }
-
   // Resetear banderas para viaje nuevo (diferente al cancelado)
   globalTripCancelled = false;
-  
 soundCancelledRef.current = false; // Reset para nueva solicitud
   globalSoundCancelled = false; // Reset variable global también
   // 🔔 TRAER APP AL FRENTE (como inDrive)
   if (BringToForeground) {
     BringToForeground.bringAppToForeground();
   }
-
   setPendingRequest(tripData);
       setShowRequestModal(true);
       startRequestTimer(); // Iniciar el timer cuando llega una solicitud
-
     // 🔊 NUEVO: Reproducir voz "Nuevo Servicio" 5 veces
 Sound.setCategory('Playback');
       const moneySound = new Sound('money_sound.mp3', Sound.MAIN_BUNDLE, (error) => {
@@ -1790,6 +1801,36 @@ const acceptTrip = async () => {
     return R * c; // Distancia en metros
   };
 
+  // FUNCIONES PARA PREFERENCIAS DE NOTIFICACIONES
+const saveNotificationPrefs = async (prefs) => {
+    try {
+      console.log('💾 Guardando preferencias:', prefs);
+      await AsyncStorage.setItem('@notification_prefs', JSON.stringify(prefs));
+      console.log('✅ Preferencias guardadas');
+    } catch (e) {
+      console.log('Error guardando preferencias:', e);
+    }
+  };
+
+const loadNotificationPrefs = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('@notification_prefs');
+      console.log('📥 Cargando preferencias guardadas:', saved);
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        setNotifSonido(prefs.sonido ?? true);
+        setNotifVibracion(prefs.vibracion ?? true);
+        setNotifNuevosViajes(prefs.nuevosViajes ?? true);
+        setNotifMensajes(prefs.mensajes ?? true);
+        setNotifPagos(prefs.pagos ?? true);
+      }
+      setNotifPrefsLoaded(true);
+    } catch (e) {
+      console.log('Error cargando preferencias:', e);
+      setNotifPrefsLoaded(true);
+    }
+  };
+
 // FUNCIÓN PARA CARGAR DATOS DE BILLETERA
   const loadWalletData = async () => {
     try {
@@ -2904,6 +2945,267 @@ const renderEarnings = () => (
         </SafeAreaView>
       </Modal>
 
+      {/* Modal de Perfil */}
+      <Modal visible={showProfileModal} animationType="slide" onRequestClose={() => setShowProfileModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowProfileModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>👤 Mi Perfil</Text>
+              <View style={{ width: 60 }} />
+            </View>
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 40 }}>👤</Text>
+              </View>
+              <Text style={{ color: 'white', fontSize: 22, fontWeight: 'bold', marginTop: 10 }}>{loggedDriver?.name || 'Conductor'}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{loggedDriver?.phone || ''}</Text>
+            </View>
+          </View>
+          
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+      <TouchableOpacity 
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              onPress={() => { 
+                setEditName(loggedDriver?.name || '');
+                setEditPhone(loggedDriver?.phone || '');
+                setEditEmail(loggedDriver?.email || '');
+                setShowEditProfile(true); 
+              }}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>👤</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Perfil del Conductor</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Editar información personal</Text>
+              </View>
+              <Text style={{ color: '#9ca3af' }}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}>
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🚘</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Datos del Vehículo</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Información del vehículo</Text>
+              </View>
+              <Text style={{ color: '#9ca3af' }}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              onPress={() => { setShowProfileModal(false); setShowDocumentUpload(true); }}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>📄</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Documentos</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Ver y cargar documentos</Text>
+              </View>
+              <Text style={{ color: '#9ca3af' }}>›</Text>
+            </TouchableOpacity>
+            
+         <TouchableOpacity 
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              onPress={() => setShowNotificationsModal(true)}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🔔</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Notificaciones</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Configurar alertas</Text>
+              </View>
+              <Text style={{ color: '#9ca3af' }}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}>
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🌙</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Modo Oscuro</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280' }}>Próximamente</Text>
+              </View>
+              <Text style={{ color: '#9ca3af' }}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: '#fee2e2', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2, marginTop: 20 }}
+              onPress={() => {
+                Alert.alert(
+                  'Cerrar Sesión',
+                  '¿Estás seguro que deseas cerrar sesión?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Sí, cerrar', style: 'destructive', onPress: () => { setShowProfileModal(false); setLoggedDriver(null); } }
+                  ]
+                );
+              }}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🚪</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#dc2626' }}>Cerrar Sesión</Text>
+                <Text style={{ fontSize: 12, color: '#f87171' }}>Salir de la aplicación</Text>
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Edición de Perfil */}
+      <Modal visible={showEditProfile} animationType="slide" onRequestClose={() => setShowEditProfile(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 20, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowEditProfile(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>Editar Perfil</Text>
+              <View style={{ width: 60 }} />
+            </View>
+          </View>
+          
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <View style={{ alignItems: 'center', marginBottom: 30 }}>
+              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#e5e7eb', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 50 }}>👤</Text>
+              </View>
+              <TouchableOpacity style={{ marginTop: 10 }}>
+                <Text style={{ color: '#3b82f6', fontSize: 14 }}>Cambiar foto</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 5 }}>Nombre completo</Text>
+            <TextInput
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16, borderWidth: 1, borderColor: '#e5e7eb' }}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Tu nombre"
+            />
+            
+            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 5 }}>Teléfono</Text>
+            <TextInput
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16, borderWidth: 1, borderColor: '#e5e7eb' }}
+              value={editPhone}
+              onChangeText={setEditPhone}
+              placeholder="Tu teléfono"
+              keyboardType="phone-pad"
+            />
+            
+            <Text style={{ fontSize: 14, color: '#6b7280', marginBottom: 5 }}>Correo electrónico</Text>
+            <TextInput
+              style={{ backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15, fontSize: 16, borderWidth: 1, borderColor: '#e5e7eb' }}
+              value={editEmail}
+              onChangeText={setEditEmail}
+              placeholder="Tu correo"
+              keyboardType="email-address"
+            />
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: '#3b82f6', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 }}
+              onPress={async () => {
+                try {
+                  const response = await fetch(`https://web-production-99844.up.railway.app/api/drivers/${loggedDriver.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: editName, phone: editPhone, email: editEmail })
+                  });
+                  const data = await response.json();
+                  if (data.success) {
+                    setLoggedDriver({ ...loggedDriver, name: editName, phone: editPhone, email: editEmail });
+                    Alert.alert('Éxito', 'Perfil actualizado correctamente');
+                    setShowEditProfile(false);
+                  } else {
+                    Alert.alert('Error', data.error || 'No se pudo actualizar');
+                  }
+                } catch (error) {
+                  Alert.alert('Error', 'Error de conexión');
+                }
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Guardar Cambios</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Modal de Notificaciones */}
+      <Modal visible={showNotificationsModal} animationType="slide" onRequestClose={() => setShowNotificationsModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 20, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
+                <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>🔔 Notificaciones</Text>
+              <View style={{ width: 60 }} />
+            </View>
+          </View>
+          
+          <ScrollView style={{ flex: 1, padding: 20 }}>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15 }}>Preferencias de Alertas</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginRight: 15 }}>🔊</Text>
+                <Text style={{ fontSize: 16, color: '#1f2937' }}>Sonido</Text>
+              </View>
+              <TouchableOpacity onPress={() => setNotifSonido(!notifSonido)}>
+                <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: notifSonido ? '#22c55e' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifSonido ? 'flex-end' : 'flex-start' }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginRight: 15 }}>📳</Text>
+                <Text style={{ fontSize: 16, color: '#1f2937' }}>Vibración</Text>
+              </View>
+              <TouchableOpacity onPress={() => setNotifVibracion(!notifVibracion)}>
+                <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: notifVibracion ? '#22c55e' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifVibracion ? 'flex-end' : 'flex-start' }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 15, marginTop: 20 }}>Tipos de Notificaciones</Text>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginRight: 15 }}>🚗</Text>
+                <Text style={{ fontSize: 16, color: '#1f2937' }}>Nuevos viajes</Text>
+              </View>
+              <TouchableOpacity onPress={() => setNotifNuevosViajes(!notifNuevosViajes)}>
+                <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: notifNuevosViajes ? '#22c55e' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifNuevosViajes ? 'flex-end' : 'flex-start' }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginRight: 15 }}>💬</Text>
+                <Text style={{ fontSize: 16, color: '#1f2937' }}>Mensajes</Text>
+              </View>
+              <TouchableOpacity onPress={() => setNotifMensajes(!notifMensajes)}>
+                <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: notifMensajes ? '#22c55e' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifMensajes ? 'flex-end' : 'flex-start' }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 24, marginRight: 15 }}>💰</Text>
+                <Text style={{ fontSize: 16, color: '#1f2937' }}>Pagos y comisiones</Text>
+              </View>
+              <TouchableOpacity onPress={() => setNotifPagos(!notifPagos)}>
+                <View style={{ width: 50, height: 30, borderRadius: 15, backgroundColor: notifPagos ? '#22c55e' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: 'white', alignSelf: notifPagos ? 'flex-end' : 'flex-start' }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
       {/* MODAL CHAT INTERNO CON PASAJERO */}
       <Modal
         visible={showChatModal}
@@ -3319,12 +3621,12 @@ const renderEarnings = () => (
           </Text>
         </TouchableOpacity>
         
-        <TouchableOpacity
-          onPress={() => { console.log('🔵 TAB MAPA PRESSED'); setActiveTab('map'); }}
-          style={[styles.tabButton, activeTab === 'map' && styles.tabButtonActive]}
+       <TouchableOpacity
+          onPress={() => { console.log('🔵 TAB PERFIL PRESSED'); setShowProfileModal(true); }}
+          style={[styles.tabButton]}
         >
-          <Text style={[styles.tabText, activeTab === 'map' && styles.tabTextActive]}>
-            🗺️ Mapa
+          <Text style={[styles.tabText]}>
+            👤 Perfil
           </Text>
         </TouchableOpacity>
         
@@ -3415,7 +3717,8 @@ tabBar: {
     color: '#3b82f6',
     fontWeight: 'bold',
   },
-  tabContent: {
+tabContent: {
+    flex: 1,
     padding: 20,
   },
   title: {
