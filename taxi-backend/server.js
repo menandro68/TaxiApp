@@ -464,6 +464,104 @@ app.post('/api/communications/mark-all-read', async (req, res) => {
 });
 
 // ==========================================
+// WEBSOCKET - SISTEMA DE TRIPLE REDUNDANCIA
+// ==========================================
+const connectedDrivers = new Map(); // driverId -> { socketId, lastHeartbeat }
+
+io.on('connection', (socket) => {
+  console.log('🔌 Cliente conectado:', socket.id);
+
+  // Conductor se conecta
+  socket.on('driver_connect', (data) => {
+    const { driverId } = data;
+    connectedDrivers.set(String(driverId), {
+      socketId: socket.id,
+      lastHeartbeat: Date.now()
+    });
+    socket.join(`driver-${driverId}`);
+    console.log(`🚗 Conductor ${driverId} conectado via WebSocket`);
+    socket.emit('connection_confirmed', { success: true, driverId });
+  });
+
+  // Heartbeat del conductor
+  socket.on('heartbeat', (data) => {
+    const { driverId } = data;
+    const driver = connectedDrivers.get(String(driverId));
+    if (driver) {
+      driver.lastHeartbeat = Date.now();
+      socket.emit('heartbeat_ack', { timestamp: Date.now() });
+    }
+  });
+
+  // Conductor confirma recepción de solicitud (ACK)
+  socket.on('trip_request_ack', (data) => {
+    const { tripId, driverId } = data;
+    console.log(`✅ Conductor ${driverId} confirmó recepción del viaje ${tripId}`);
+    io.emit('ack_received', { tripId, driverId, timestamp: Date.now() });
+  });
+
+  // Desconexión
+  socket.on('disconnect', () => {
+    for (const [driverId, data] of connectedDrivers.entries()) {
+      if (data.socketId === socket.id) {
+        connectedDrivers.delete(driverId);
+        console.log(`🚗 Conductor ${driverId} desconectado`);
+        break;
+      }
+    }
+  });
+});
+
+// Función para enviar solicitud con Triple Redundancia
+const sendTripRequestToDriver = async (driverId, tripData) => {
+  const results = { websocket: false, fcm: false };
+  
+  // CANAL 1: WebSocket (instantáneo)
+  const driver = connectedDrivers.get(String(driverId));
+  if (driver) {
+    io.to(`driver-${driverId}`).emit('new_trip_request', tripData);
+    results.websocket = true;
+    console.log(`📡 WebSocket enviado a conductor ${driverId}`);
+  }
+
+  // CANAL 2: FCM Push (respaldo)
+  try {
+    const driverResult = await pool.query('SELECT fcm_token, name FROM drivers WHERE id = $1', [driverId]);
+    if (driverResult.rows.length > 0 && driverResult.rows[0].fcm_token) {
+      const admin = require('firebase-admin');
+      await admin.messaging().send({
+        token: driverResult.rows[0].fcm_token,
+        notification: {
+          title: '🚕 Nueva Solicitud de Viaje',
+          body: `Recogida: ${tripData.pickup_address || 'Sin especificar'}`
+        },
+        data: {
+          type: 'new_trip_request',
+          tripId: String(tripData.tripId),
+          pickup: tripData.pickup_address || '',
+          destination: tripData.destination_address || '',
+          price: String(tripData.price || 0)
+        },
+        android: {
+          priority: 'high',
+          notification: { channelId: 'taxi_requests', priority: 'max' }
+        }
+      });
+      results.fcm = true;
+      console.log(`📱 FCM enviado a conductor ${driverId}`);
+    }
+  } catch (fcmError) {
+    console.error('❌ Error FCM:', fcmError.message);
+  }
+
+  return results;
+};
+
+// Exportar función para uso en routes
+global.sendTripRequestToDriver = sendTripRequestToDriver;
+global.connectedDrivers = connectedDrivers;
+
+// ==========================================
 // MANEJO DE ERRORES 404
 // ==========================================
 app.use((req, res) => {
