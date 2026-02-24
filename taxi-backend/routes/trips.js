@@ -137,6 +137,25 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                 token: driver.fcm_token
             };
 
+            // CANAL 1: WebSocket (instantáneo) - Triple Redundancia
+            if (global.io && global.connectedDrivers) {
+                const wsDriver = global.connectedDrivers.get(String(driver.id));
+                if (wsDriver) {
+                    global.io.to(`driver-${driver.id}`).emit('new_trip_request', {
+                        tripId: tripId,
+                        type: 'NEW_TRIP_REQUEST',
+                        user: userData.name || 'Usuario',
+                        pickup: tripData.pickup_location,
+                        destination: tripData.destination,
+                        price: tripData.estimated_price || 0,
+                        distance: driver.distance.toFixed(2)
+                    });
+                    console.log(`📡 WebSocket enviado a ${driver.name}`);
+                }
+            }
+
+            // CANAL 2: FCM Push (respaldo)
+
             try {
                 await admin.messaging().send(message);
                 console.log(`✅ Notificación enviada a ${driver.name} (${driver.distance.toFixed(2)} km) - Radio ${radius}km`);
