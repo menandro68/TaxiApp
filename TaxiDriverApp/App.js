@@ -22,6 +22,7 @@ import SharedStorage, { TRIP_STATES } from './SharedStorage';
 import BackgroundService from 'react-native-background-actions';
 import ApiService from './src/services/ApiService';
 import fcmService from './FCMService';
+import webSocketService from './WebSocketService';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import MapComponent from './MapComponent';
 import PreRegisterScreen from './screens/PreRegisterScreen';
@@ -108,6 +109,7 @@ export default function DriverApp({ navigation }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editName, setEditName] = useState('');
+  const [darkMode, setDarkMode] = useState(false);
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
@@ -284,6 +286,9 @@ useEffect(() => {
           setLoggedDriver(driver);
           console.log('✅ Conductor cargado desde almacenamiento');
           loadNotificationPrefs();
+          // Cargar preferencia de modo oscuro
+          const savedDarkMode = await AsyncStorage.getItem('darkMode');
+          if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
           // Cargar ganancias reales del servidor
           loadRealEarnings(driver.id);
         }
@@ -1422,6 +1427,13 @@ const toggleDriverStatus = async () => {
       if (response.ok) {
         setDriverStatus('online');
         await fcmService.sendTokenToServer((loggedDriver?.id || 1).toString());
+     // Conectar WebSocket para Triple Redundancia
+        webSocketService.connect((loggedDriver?.id || 1).toString());
+        webSocketService.onTripRequest((tripData) => {
+          if (global.handleNewTripRequest) {
+            global.handleNewTripRequest(tripData);
+          }
+        });
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
@@ -1451,6 +1463,7 @@ const toggleDriverStatus = async () => {
       if (response.ok) {
         setDriverStatus('offline');
         stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+        webSocketService.disconnect(); // Desconectar WebSocket
         Alert.alert('Desconectado', 'Ya no recibirás solicitudes de viaje');
         console.log('✅ Estado actualizado en el servidor: OFFLINE');
       }
@@ -1836,7 +1849,7 @@ const saveNotificationPrefs = async (prefs) => {
       // Actualizar variables globales para uso inmediato
       globalNotifSonido = prefs.sonido !== false;
       globalNotifVibracion = prefs.vibracion !== false;
-      globalNotifNuevosViajes = prefs.nuevosViajes !== false;
+     globalNotifNuevosViajes = true; // SIEMPRE activado - crítico para conductores
       console.log('✅ Preferencias guardadas y globales actualizadas');
 } catch (e) {
       console.log('Error guardando preferencias:', e);
@@ -1898,13 +1911,13 @@ const loadNotificationPrefs = async () => {
         const prefs = JSON.parse(saved);
         setNotifSonido(prefs.sonido ?? true);
         setNotifVibracion(prefs.vibracion ?? true);
-        setNotifNuevosViajes(prefs.nuevosViajes ?? true);
+        setNotifNuevosViajes(true); // SIEMPRE activado - crítico para conductores
         setNotifMensajes(prefs.mensajes ?? true);
         setNotifPagos(prefs.pagos ?? true);
         // Inicializar variables globales
         globalNotifSonido = prefs.sonido !== false;
         globalNotifVibracion = prefs.vibracion !== false;
-        globalNotifNuevosViajes = prefs.nuevosViajes !== false;
+       globalNotifNuevosViajes = true; // SIEMPRE activado - crítico para conductores
       }
       setNotifPrefsLoaded(true);
     } catch (e) {
@@ -1978,11 +1991,11 @@ const simulateTrip = () => {
   };
 const renderDashboard = () => (
       <View style={{flex: 1}}>
-      <ScrollView style={{flex: 1, padding: 20}}>
-        <Text style={styles.title}>🚖 Conductor Squid</Text>
+   <ScrollView style={{flex: 1, padding: 20, backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}}>
+        <Text style={[styles.title, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>🚖 Conductor Squid</Text>
         {/* Estado del Conductor */}
-        <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5}]}>
-        <Text style={[styles.sectionTitle, {fontSize: 14, marginBottom: 2}]}>Estado del Conductor</Text>
+       <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5, backgroundColor: darkMode ? '#374151' : 'white'}]}>
+      <Text style={[styles.sectionTitle, {fontSize: 14, marginBottom: 2, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>Estado del Conductor</Text>
       <Text style={[styles.status, { 
           fontSize: 13, marginBottom: 5,
           color: driverStatus === 'online' ? '#22c55e' : 
@@ -2137,20 +2150,20 @@ onArrivedAtDestination={() => {}}
 onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
 />
 </View>
-   <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 70, borderRadius: 8}]}>
-      <Text style={[styles.sectionTitle, {fontSize: 14}]}>💰 Ganancias</Text>
+   <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 70, borderRadius: 8, backgroundColor: darkMode ? '#374151' : 'white'}]}>
+     <Text style={[styles.sectionTitle, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>💰 Ganancias</Text>
       <View style={styles.earningsRow}>
         <View style={styles.earningItem}>
-          <Text style={styles.earningLabel}>Hoy</Text>
-          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.today}</Text>
+        <Text style={[styles.earningLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Hoy</Text>
+          <Text style={[styles.earningAmount, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>RD${earnings.today}</Text>
         </View>
         <View style={styles.earningItem}>
-          <Text style={styles.earningLabel}>Semana</Text>
-          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.week}</Text>
+          <Text style={[styles.earningLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Semana</Text>
+         <Text style={[styles.earningAmount, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>RD${earnings.week}</Text>
         </View>
         <View style={styles.earningItem}>
-          <Text style={styles.earningLabel}>Mes</Text>
-          <Text style={[styles.earningAmount, {fontSize: 14}]}>RD${earnings.month}</Text>
+        <Text style={[styles.earningLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Mes</Text>
+          <Text style={[styles.earningAmount, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>RD${earnings.month}</Text>
         </View>
       </View>
     </View>
@@ -2499,69 +2512,66 @@ const loadDriverChatMessages = async () => {
     }
   };
 
-const renderEarnings = () => (
-    <ScrollView style={styles.tabContent}>
+  const renderEarnings = () => (
+    <ScrollView style={[styles.tabContent, {backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}]}>
    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10}}>
         <TouchableOpacity 
           onPress={() => setActiveTab('wallet')}
-          style={{backgroundColor: '#f0f9ff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, borderWidth: 1, borderColor: '#3b82f6'}}
+        style={{backgroundColor: darkMode ? '#374151' : '#f0f9ff', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, borderWidth: 1, borderColor: darkMode ? '#4b5563' : '#3b82f6'}}
         >
-        <Text style={{fontSize: 14, color: '#3b82f6', fontWeight: '600'}}>← Volver</Text>
+       <Text style={{fontSize: 14, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600'}}>← Volver</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>📊 Mis Ganancias</Text>
+       <Text style={[styles.title, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>📊 Mis Ganancias</Text>
       </View>
 
-      <View style={styles.earningsDetailCard}>
-        <Text style={styles.sectionTitle}>Resumen Detallado</Text>
-        <Text style={{fontSize: 12, color: '#666', marginBottom: 10}}>Toca cualquier campo para ver detalles</Text>
+      <View style={[styles.earningsDetailCard, {backgroundColor: darkMode ? '#374151' : 'white'}]}>
+       <Text style={[styles.sectionTitle, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>Resumen Detallado</Text>
+       <Text style={{fontSize: 12, color: darkMode ? '#9ca3af' : '#666', marginBottom: 10}}>Toca cualquier campo para ver detalles</Text>
 
-        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('today')}>
-          <Text style={styles.statLabel}>Ganancias de hoy:</Text>
+      <TouchableOpacity style={[styles.statRowTouchable, {backgroundColor: darkMode ? '#4b5563' : '#f0f9ff'}]} onPress={() => loadEarningsDetail('today')}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Ganancias de hoy:</Text>
           <Text style={styles.statValueLink}>RD${earnings.today} ›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('week')}>
-          <Text style={styles.statLabel}>Esta semana:</Text>
+        <TouchableOpacity style={[styles.statRowTouchable, {backgroundColor: darkMode ? '#4b5563' : '#f0f9ff'}]} onPress={() => loadEarningsDetail('week')}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Esta semana:</Text>
           <Text style={styles.statValueLink}>RD${earnings.week} ›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.statRowTouchable} onPress={() => loadEarningsDetail('month')}>
-          <Text style={styles.statLabel}>Este mes:</Text>
+        <TouchableOpacity style={[styles.statRowTouchable, {backgroundColor: darkMode ? '#4b5563' : '#f0f9ff'}]} onPress={() => loadEarningsDetail('month')}>
+         <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Este mes:</Text>
           <Text style={styles.statValueLink}>RD${earnings.month} ›</Text>
         </TouchableOpacity>
-
+         <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Viajes completados:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>8</Text>
+        </View>
         <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Viajes completados:</Text>
-          <Text style={styles.statValue}>8</Text>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Promedio por viaje:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>RD${Math.round(earnings.today / 8)}</Text>
+        </View>
+        <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Calificación:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>⭐ 4.8</Text>
+        </View>
+     {/* NUEVO: Métricas de desempeño */}
+        <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Viajes ofrecidos:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>{driverStats.tripsOffered}</Text>
         </View>
 
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Promedio por viaje:</Text>
-          <Text style={styles.statValue}>RD${Math.round(earnings.today / 8)}</Text>
+       <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Viajes aceptados:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>{driverStats.tripsAccepted}</Text>
         </View>
 
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Calificación:</Text>
-          <Text style={styles.statValue}>⭐ 4.8</Text>
-        </View>
-        {/* NUEVO: Métricas de desempeño */}
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Viajes ofrecidos:</Text>
-          <Text style={styles.statValue}>{driverStats.tripsOffered}</Text>
+     <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Viajes rechazados:</Text>
+          <Text style={[styles.statValue, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>{driverStats.tripsRejected}</Text>
         </View>
 
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Viajes aceptados:</Text>
-          <Text style={styles.statValue}>{driverStats.tripsAccepted}</Text>
-        </View>
-
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Viajes rechazados:</Text>
-          <Text style={styles.statValue}>{driverStats.tripsRejected}</Text>
-        </View>
-
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Tasa de aceptación:</Text>
+       <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Tasa de aceptación:</Text>
           <Text style={[styles.statValue, { 
             color: driverStats.acceptanceRate >= 80 ? '#22c55e' : 
                    driverStats.acceptanceRate >= 60 ? '#f59e0b' : '#ef4444' 
@@ -2570,8 +2580,8 @@ const renderEarnings = () => (
           </Text>
         </View>
 
-        <View style={styles.statRow}>
-          <Text style={styles.statLabel}>Tasa de cancelación:</Text>
+      <View style={styles.statRow}>
+          <Text style={[styles.statLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Tasa de cancelación:</Text>
           <Text style={[styles.statValue, { 
             color: driverStats.cancellationRate <= 20 ? '#22c55e' : 
                    driverStats.cancellationRate <= 30 ? '#f59e0b' : '#ef4444' 
@@ -2966,8 +2976,8 @@ const renderEarnings = () => (
 
 {/* Modal de Billetera */}
       <Modal visible={showWalletModal} animationType="slide" onRequestClose={() => setShowWalletModal(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#f0fdf4' }}>
-          <View style={{ backgroundColor: '#10b981', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
+       <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f0fdf4' }}>
+        <View style={{ backgroundColor: darkMode ? '#111827' : '#10b981', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <TouchableOpacity onPress={() => setShowWalletModal(false)}>
                 <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
@@ -2983,20 +2993,20 @@ const renderEarnings = () => (
           </View>
           <ScrollView style={{ flex: 1, padding: 15 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 }}>
-              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginRight: 5, elevation: 2 }}>
-                <Text style={{ fontSize: 11, color: '#6b7280' }}>Total Servicios</Text>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>RD${walletData.totalEarnings?.toLocaleString()}</Text>
+           <View style={{ alignItems: 'center', backgroundColor: darkMode ? '#374151' : 'white', padding: 12, borderRadius: 12, flex: 1, marginRight: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: darkMode ? '#9ca3af' : '#6b7280' }}>Total Servicios</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>RD${walletData.totalEarnings?.toLocaleString()}</Text>
               </View>
-              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginHorizontal: 5, elevation: 2 }}>
-                <Text style={{ fontSize: 11, color: '#6b7280' }}>Comisiones</Text>
+           <View style={{ alignItems: 'center', backgroundColor: darkMode ? '#374151' : 'white', padding: 12, borderRadius: 12, flex: 1, marginHorizontal: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: darkMode ? '#9ca3af' : '#6b7280' }}>Comisiones</Text>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#ef4444' }}>-RD${walletData.totalCommission?.toLocaleString()}</Text>
               </View>
-              <View style={{ alignItems: 'center', backgroundColor: 'white', padding: 12, borderRadius: 12, flex: 1, marginLeft: 5, elevation: 2 }}>
-                <Text style={{ fontSize: 11, color: '#6b7280' }}>Depósitos</Text>
+           <View style={{ alignItems: 'center', backgroundColor: darkMode ? '#374151' : 'white', padding: 12, borderRadius: 12, flex: 1, marginLeft: 5, elevation: 2 }}>
+                <Text style={{ fontSize: 11, color: darkMode ? '#9ca3af' : '#6b7280' }}>Depósitos</Text>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#10b981' }}>+RD${(walletData.totalDeposits || 0).toLocaleString()}</Text>
               </View>
             </View>
-            <View style={{ backgroundColor: 'white', borderRadius: 12, elevation: 2, overflow: 'hidden' }}>
+           <View style={{ backgroundColor: darkMode ? '#374151' : 'white', borderRadius: 12, elevation: 2, overflow: 'hidden' }}>
               <View style={{ flexDirection: 'row', backgroundColor: '#1f2937', paddingVertical: 10, paddingHorizontal: 8 }}>
                 <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold' }}>FECHA</Text>
                 <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>SERVICIO</Text>
@@ -3004,13 +3014,13 @@ const renderEarnings = () => (
                 <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>DEPÓSITO</Text>
                 <Text style={{ flex: 2, color: 'white', fontSize: 11, fontWeight: 'bold', textAlign: 'right' }}>BALANCE</Text>
               </View>
-              {(walletData.transactions || []).map((tx, idx) => (
-                <View key={tx.id || idx} style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
-                  <Text style={{ flex: 2, fontSize: 10, color: '#374151' }}>{new Date(tx.created_at).toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: '2-digit' })}{'\n'}{new Date(tx.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
-                  <Text style={{ flex: 2, fontSize: 11, color: '#1f2937', textAlign: 'right', fontWeight: '500' }}>{tx.type === 'commission' ? `RD$${parseFloat(tx.trip_amount).toLocaleString()}` : ''}</Text>
+             {(walletData.transactions || []).map((tx, idx) => (
+                <View key={tx.id || idx} style={{ flexDirection: 'row', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: darkMode ? '#4b5563' : '#f3f4f6', backgroundColor: darkMode ? (idx % 2 === 0 ? '#374151' : '#4b5563') : (idx % 2 === 0 ? '#ffffff' : '#f9fafb') }}>
+                 <Text style={{ flex: 2, fontSize: 10, color: darkMode ? '#9ca3af' : '#374151' }}>{new Date(tx.created_at).toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: '2-digit' })}{'\n'}{new Date(tx.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
+                 <Text style={{ flex: 2, fontSize: 11, color: darkMode ? '#f3f4f6' : '#1f2937', textAlign: 'right', fontWeight: '500' }}>{tx.type === 'commission' ? `RD$${parseFloat(tx.trip_amount).toLocaleString()}` : ''}</Text>
                   <Text style={{ flex: 1.5, fontSize: 11, color: '#ef4444', textAlign: 'right' }}>{tx.type === 'commission' ? `RD$${parseFloat(tx.commission_amount).toLocaleString()}` : ''}</Text>
                   <Text style={{ flex: 2, fontSize: 11, color: '#10b981', textAlign: 'right', fontWeight: '600' }}>{tx.type === 'deposit' ? `RD$${parseFloat(tx.deposit_amount).toLocaleString()}` : ''}</Text>
-                  <Text style={{ flex: 2, fontSize: 11, color: parseFloat(tx.balance_after) >= 0 ? '#1f2937' : '#ef4444', textAlign: 'right', fontWeight: 'bold' }}>RD${parseFloat(tx.balance_after).toLocaleString()}</Text>
+                 <Text style={{ flex: 2, fontSize: 11, color: parseFloat(tx.balance_after) >= 0 ? (darkMode ? '#f3f4f6' : '#1f2937') : '#ef4444', textAlign: 'right', fontWeight: 'bold' }}>RD${parseFloat(tx.balance_after).toLocaleString()}</Text>
                 </View>
               ))}
               {(!walletData.transactions || walletData.transactions.length === 0) && (
@@ -3019,9 +3029,9 @@ const renderEarnings = () => (
                 </View>
               )}
             </View>
-            <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 15, marginTop: 15, elevation: 2 }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 }}>ℹ️ Información</Text>
-              <Text style={{ color: '#6b7280', fontSize: 12, lineHeight: 20 }}>• Comisión del {walletData.commission}% por cada viaje{'\n'}• Balance negativo = deuda pendiente{'\n'}• Los depósitos se verifican por administración{'\n'}• Actualización automática en tiempo real</Text>
+        <View style={{ backgroundColor: darkMode ? '#374151' : 'white', borderRadius: 12, padding: 15, marginTop: 15, elevation: 2 }}>
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937', marginBottom: 8 }}>ℹ️ Información</Text>
+              <Text style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: 12, lineHeight: 20 }}>• Comisión del {walletData.commission}% por cada viaje{'\n'}• Balance negativo = deuda pendiente{'\n'}• Los depósitos se verifican por administración{'\n'}• Actualización automática en tiempo real</Text>
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -3029,8 +3039,8 @@ const renderEarnings = () => (
 
       {/* Modal de Perfil */}
       <Modal visible={showProfileModal} animationType="slide" onRequestClose={() => setShowProfileModal(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-          <View style={{ backgroundColor: '#3b82f6', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
+       <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f8fafc' }}>
+         <View style={{ backgroundColor: darkMode ? '#1e3a5f' : '#3b82f6', paddingVertical: 25, paddingHorizontal: 20, borderBottomLeftRadius: 25, borderBottomRightRadius: 25 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <TouchableOpacity onPress={() => setShowProfileModal(false)}>
                 <Text style={{ color: 'white', fontSize: 18 }}>← Volver</Text>
@@ -3049,7 +3059,7 @@ const renderEarnings = () => (
           
           <ScrollView style={{ flex: 1, padding: 20 }}>
       <TouchableOpacity 
-              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+             style={{ backgroundColor: darkMode ? '#374151' : 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
               onPress={() => { 
                 setEditName(loggedDriver?.name || '');
                 setEditPhone(loggedDriver?.phone || '');
@@ -3059,59 +3069,67 @@ const renderEarnings = () => (
             >
               <Text style={{ fontSize: 24, marginRight: 15 }}>👤</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Perfil del Conductor</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Editar información personal</Text>
+               <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>Perfil del Conductor</Text>
+               <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#6b7280' }}>Editar información personal</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
       <TouchableOpacity 
-              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+             style={{ backgroundColor: darkMode ? '#374151' : 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
               onPress={() => setShowVehicleModal(true)}
             >
               <Text style={{ fontSize: 24, marginRight: 15 }}>🚘</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Datos del Vehículo</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Información del vehículo</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>Datos del Vehículo</Text>
+               <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#6b7280' }}>Información del vehículo</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
        <TouchableOpacity 
-              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              style={{ backgroundColor: darkMode ? '#374151' : 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
               onPress={() => setShowReferralModal(true)}
             >
               <Text style={{ fontSize: 24, marginRight: 15 }}>🎁</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Código de Referidos</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Invita amigos y gana bonos</Text>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>Código de Referidos</Text>
+               <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#6b7280' }}>Invita amigos y gana bonos</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
             
         <TouchableOpacity
-              style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+             style={{ backgroundColor: darkMode ? '#374151' : 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
               onPress={() => setShowStatisticsModal(true)}
             >
               <Text style={{ fontSize: 24, marginRight: 15 }}>📊</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Estadísticas</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Ver tu desempeño</Text>
+               <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>Estadísticas</Text>
+                <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#6b7280' }}>Ver tu desempeño</Text>
               </View>
               <Text style={{ color: '#9ca3af' }}>›</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity style={{ backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}>
-              <Text style={{ fontSize: 24, marginRight: 15 }}>🌙</Text>
+        <TouchableOpacity 
+              style={{ backgroundColor: darkMode ? '#374151' : 'white', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2 }}
+              onPress={async () => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                await AsyncStorage.setItem('darkMode', JSON.stringify(newMode));
+              }}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>{darkMode ? '☀️' : '🌙'}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1f2937' }}>Modo Oscuro</Text>
-                <Text style={{ fontSize: 12, color: '#6b7280' }}>Próximamente</Text>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937' }}>Modo Oscuro</Text>
+                <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#6b7280' }}>{darkMode ? 'Activado' : 'Desactivado'}</Text>
               </View>
-              <Text style={{ color: '#9ca3af' }}>›</Text>
+              <View style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: darkMode ? '#3b82f6' : '#d1d5db', justifyContent: 'center', padding: 2 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: 'white', alignSelf: darkMode ? 'flex-end' : 'flex-start' }} />
+              </View>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={{ backgroundColor: '#fee2e2', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2, marginTop: 20 }}
+              style={{ backgroundColor: darkMode ? '#374151' : '#fee2e2', padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center', elevation: 2, marginTop: 20 }}
               onPress={() => {
                 Alert.alert(
                   'Cerrar Sesión',
@@ -3125,8 +3143,8 @@ const renderEarnings = () => (
             >
               <Text style={{ fontSize: 24, marginRight: 15 }}>🚪</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#dc2626' }}>Cerrar Sesión</Text>
-                <Text style={{ fontSize: 12, color: '#f87171' }}>Salir de la aplicación</Text>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#dc2626' }}>Cerrar Sesión</Text>
+            <Text style={{ fontSize: 12, color: darkMode ? '#9ca3af' : '#f87171' }}>Salir de la aplicación</Text>
               </View>
             </TouchableOpacity>
           </ScrollView>
@@ -3559,7 +3577,7 @@ const renderEarnings = () => (
         animationType="slide"
         onRequestClose={() => setShowSupportChat(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f8fafc' }}>
           {/* Header del Chat */}
           <View style={{ 
             backgroundColor: '#06b6d4', 
@@ -3588,28 +3606,28 @@ const renderEarnings = () => (
 
           {/* Mensaje de Bienvenida */}
           <ScrollView style={{ flex: 1, padding: 20 }}>
-            <View style={{ 
-              backgroundColor: '#e0f2fe', 
-              padding: 15, 
+         <View style={{
+              backgroundColor: darkMode ? '#374151' : '#e0f2fe',
+              padding: 15,
               borderRadius: 10,
-              marginBottom: 20 
+              marginBottom: 20
             }}>
-              <Text style={{ fontSize: 16, color: '#0c4a6e' }}>
+             <Text style={{ fontSize: 16, color: darkMode ? '#f3f4f6' : '#0c4a6e' }}>
                 ¡Hola! 👋 Estamos aquí para ayudarte 24/7
               </Text>
-              <Text style={{ fontSize: 14, color: '#0c4a6e', marginTop: 5 }}>
+            <Text style={{ fontSize: 14, color: darkMode ? '#9ca3af' : '#0c4a6e', marginTop: 5 }}>
                 ¿En qué podemos asistirte hoy?
               </Text>
             </View>
 
             {/* Opciones Rápidas */}
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
+           <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: darkMode ? '#f3f4f6' : '#1f2937' }}>
               Opciones Rápidas:
             </Text>
             
-            <TouchableOpacity 
+          <TouchableOpacity 
               style={{ 
-                backgroundColor: '#fee2e2', 
+                backgroundColor: darkMode ? '#374151' : '#fee2e2', 
                 padding: 15, 
                 borderRadius: 10,
                 marginBottom: 10 
@@ -3626,17 +3644,17 @@ const renderEarnings = () => (
                 );
               }}
             >
-              <Text style={{ fontSize: 16, color: '#991b1b' }}>
+             <Text style={{ fontSize: 16, color: darkMode ? '#f3f4f6' : '#991b1b' }}>
                 🚨 Emergencia en el viaje
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+        <TouchableOpacity 
               style={{ 
-                backgroundColor: '#fef3c7', 
+                backgroundColor: darkMode ? '#374151' : '#fef3c7', 
                 padding: 15, 
                 borderRadius: 10,
-                marginBottom: 10 
+                marginBottom: 10
               }}
               onPress={() => {
                 Alert.alert(
@@ -3650,17 +3668,17 @@ const renderEarnings = () => (
                 );
               }}
             >
-              <Text style={{ fontSize: 16, color: '#92400e' }}>
+           <Text style={{ fontSize: 16, color: darkMode ? '#f3f4f6' : '#92400e' }}>
                 💰 Problema con el pago
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+        <TouchableOpacity 
               style={{ 
-                backgroundColor: '#dbeafe', 
+             backgroundColor: darkMode ? '#374151' : '#dbeafe', 
                 padding: 15, 
                 borderRadius: 10,
-                marginBottom: 10 
+                marginBottom: 10
               }}
               onPress={() => {
                 Alert.alert(
@@ -3674,17 +3692,17 @@ const renderEarnings = () => (
                 );
               }}
             >
-              <Text style={{ fontSize: 16, color: '#1e40af' }}>
+             <Text style={{ fontSize: 16, color: darkMode ? '#f3f4f6' : '#1e40af' }}>
                 📱 Error en la aplicación
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+         <TouchableOpacity 
               style={{ 
-                backgroundColor: '#e9d5ff', 
+                backgroundColor: darkMode ? '#374151' : '#e9d5ff', 
                 padding: 15, 
                 borderRadius: 10,
-                marginBottom: 10 
+                marginBottom: 10
               }}
               onPress={() => {
                 Alert.alert(
@@ -3698,32 +3716,34 @@ const renderEarnings = () => (
                 );
               }}
             >
-              <Text style={{ fontSize: 16, color: '#6b21a8' }}>
+            <Text style={{ fontSize: 16, color: darkMode ? '#f3f4f6' : '#6b21a8' }}>
                 🚗 Problema con el vehículo
               </Text>
             </TouchableOpacity>
           </ScrollView>
 
           {/* Input para escribir mensaje */}
-          <View style={{ 
+       <View style={{ 
             flexDirection: 'row', 
             padding: 15, 
-            backgroundColor: 'white',
+            backgroundColor: darkMode ? '#374151' : 'white',
             borderTopWidth: 1,
-            borderTopColor: '#e5e7eb'
+            borderTopColor: darkMode ? '#4b5563' : '#e5e7eb'
           }}>
-            <TextInput
+     <TextInput
               style={{ 
                 flex: 1, 
                 borderWidth: 1, 
-                borderColor: '#e5e7eb',
+                borderColor: darkMode ? '#4b5563' : '#e5e7eb',
                 borderRadius: 25,
                 paddingHorizontal: 15,
                 paddingVertical: 10,
-                marginRight: 10
+                marginRight: 10,
+                backgroundColor: darkMode ? '#1f2937' : 'white',
+                color: darkMode ? '#f3f4f6' : '#1f2937'
               }}
               placeholder="Escribe tu mensaje..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={darkMode ? '#9ca3af' : '#9ca3af'}
             />
             <TouchableOpacity style={{ 
               backgroundColor: '#06b6d4',
@@ -3903,12 +3923,12 @@ const renderEarnings = () => (
       </Modal>
       
       {/* Navegación Inferior */}
-      <View style={styles.tabBar}>
-     <TouchableOpacity
+    <View style={[styles.tabBar, {backgroundColor: darkMode ? '#374151' : '#f3f4f6'}]}>
+  <TouchableOpacity
           onPress={() => { console.log('🔵 TAB SOPORTE PRESSED'); setShowSupportChat(true); }}
-          style={[styles.tabButton, styles.tabButtonActive]}
+          style={[styles.tabButton, styles.tabButtonActive, {backgroundColor: darkMode ? '#4b5563' : '#f0f9ff'}]}
         >
-          <Text style={[styles.tabText, styles.tabTextActive]}>
+        <Text style={[styles.tabText, styles.tabTextActive, {color: darkMode ? '#f3f4f6' : '#3b82f6'}]}>
             💬 Soporte
           </Text>
         </TouchableOpacity>
@@ -3917,25 +3937,26 @@ const renderEarnings = () => (
           onPress={() => { console.log('🔵 TAB PERFIL PRESSED'); setShowProfileModal(true); }}
           style={[styles.tabButton]}
         >
-          <Text style={[styles.tabText]}>
+         <Text style={[styles.tabText, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>
             👤 Perfil
           </Text>
         </TouchableOpacity>
         
-     <TouchableOpacity
+   <TouchableOpacity
           onPress={() => { console.log('🔵 TAB GANANCIAS PRESSED'); setActiveTab('earnings'); }}
-          style={[styles.tabButton, activeTab === 'earnings' && styles.tabButtonActive]}
+          style={[styles.tabButton, activeTab === 'earnings' && styles.tabButtonActive, activeTab === 'earnings' && {backgroundColor: darkMode ? '#4b5563' : '#f0f9ff'}]}
         >
-          <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive]}>
+         <Text style={[styles.tabText, activeTab === 'earnings' && styles.tabTextActive, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>
             💰 Ganancias
           </Text>
+
         </TouchableOpacity>
 
       <TouchableOpacity
           onPress={() => { console.log('🔵 TAB BILLETERA PRESSED'); loadWalletData(); setShowWalletModal(true); }}
           style={[styles.tabButton]}
         >
-          <Text style={[styles.tabText]}>
+          <Text style={[styles.tabText, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>
             👛 Billetera
           </Text>
         </TouchableOpacity>
