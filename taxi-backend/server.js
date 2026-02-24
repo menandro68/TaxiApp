@@ -39,6 +39,7 @@ const io = socketIO(server, {
     methods: ["GET", "POST"]
   }
 });
+global.io = io;
 
 // Middleware
 app.use(cors());
