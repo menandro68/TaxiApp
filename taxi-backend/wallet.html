@@ -241,16 +241,16 @@ function loadTransactions() {
     const dateFrom = document.getElementById('filterDateFrom').value;
     const dateTo = document.getElementById('filterDateTo').value;
 if (dateFrom) {
-        const from = new Date(dateFrom + 'T00:00:00');
         filtered = filtered.filter(tx => {
-            const txDate = new Date(tx.created_at);
-            return txDate.toLocaleDateString() >= from.toLocaleDateString() || txDate >= from;
+            const txDate = new Date(tx.created_at).toISOString().split('T')[0];
+            return txDate >= dateFrom;
         });
     }
     if (dateTo) {
-        const to = new Date(dateTo + 'T23:59:59');
-        to.setDate(to.getDate() + 1); // Incluir todo el día en UTC
-        filtered = filtered.filter(tx => new Date(tx.created_at) <= to);
+        filtered = filtered.filter(tx => {
+            const txDate = new Date(tx.created_at).toISOString().split('T')[0];
+            return txDate <= dateTo;
+        });
     }
     
     const tbody = document.getElementById('transactionsBody');
