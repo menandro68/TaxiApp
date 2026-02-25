@@ -1847,7 +1847,7 @@ const saveNotificationPrefs = async (prefs) => {
       console.log('💾 Guardando preferencias:', prefs);
       await AsyncStorage.setItem('@notification_prefs', JSON.stringify(prefs));
       // Actualizar variables globales para uso inmediato
-      globalNotifSonido = prefs.sonido !== false;
+     globalNotifSonido = true; // SIEMPRE activado - crítico para conductores
       globalNotifVibracion = prefs.vibracion !== false;
      globalNotifNuevosViajes = true; // SIEMPRE activado - crítico para conductores
       console.log('✅ Preferencias guardadas y globales actualizadas');
@@ -1915,7 +1915,7 @@ const loadNotificationPrefs = async () => {
         setNotifMensajes(prefs.mensajes ?? true);
         setNotifPagos(prefs.pagos ?? true);
         // Inicializar variables globales
-        globalNotifSonido = prefs.sonido !== false;
+       globalNotifSonido = true; // SIEMPRE activado - crítico para conductores
         globalNotifVibracion = prefs.vibracion !== false;
        globalNotifNuevosViajes = true; // SIEMPRE activado - crítico para conductores
       }
