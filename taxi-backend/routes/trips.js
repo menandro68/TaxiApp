@@ -1336,9 +1336,12 @@ router.get('/wallet/:driverId', async (req, res) => {
             deposit_amount DECIMAL(10,2) DEFAULT 0,
             balance_after DECIMAL(10,2) DEFAULT 0,
             trip_id INTEGER,
-            description TEXT,
+description TEXT,
+            registered_by VARCHAR(100),
             created_at TIMESTAMP DEFAULT NOW()
         )`);
+
+        await db.query(`ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS registered_by VARCHAR(100)`);
 
       const transactions = await db.query(
             `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at ASC LIMIT 50`,
