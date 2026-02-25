@@ -2080,7 +2080,7 @@ const renderDashboard = () => (
               <Text style={styles.buttonText}>▶️ Iniciar Viaje</Text>
             </TouchableOpacity>
           )}
-          {tripPhase === 'started' && (
+        {(tripPhase === 'started' || tripPhase === 'at_destination') && (
             <TouchableOpacity style={styles.completeButton} onPress={completeTrip}>
               <Text style={styles.buttonText}>✅ Completar Viaje</Text>
             </TouchableOpacity>
@@ -2131,8 +2131,9 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
         </TouchableOpacity>
 )}
 
-      {/* Mini Mapa en Dashboard */}
-    <View style={{height: 350, marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
+  {/* Mini Mapa en Dashboard - Ocultar cuando conductor llegó */}
+ {tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
+    <View style={{height: 350,marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
         <MapComponent
           currentTrip={currentTrip}
           tripPhase={tripPhase}
@@ -2150,7 +2151,9 @@ onArrivedAtDestination={() => {}}
 onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
 />
 </View>
-   <View style={[styles.earningsCard, {paddingVertical: 5, paddingHorizontal: 20, marginBottom: 70, borderRadius: 8, backgroundColor: darkMode ? '#374151' : 'white'}]}>
+    )}
+<View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+<View style={[styles.earningsCard,{paddingVertical: 5, paddingHorizontal: 20, borderRadius: 8, backgroundColor: darkMode ? '#374151' : 'white', width: '90%'}]}>
      <Text style={[styles.sectionTitle, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>💰 Ganancias</Text>
       <View style={styles.earningsRow}>
         <View style={styles.earningItem}>
@@ -2165,7 +2168,8 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
         <Text style={[styles.earningLabel, {color: darkMode ? '#9ca3af' : '#6b7280'}]}>Mes</Text>
           <Text style={[styles.earningAmount, {fontSize: 14, color: darkMode ? '#f3f4f6' : '#1f2937'}]}>RD${earnings.month}</Text>
         </View>
-      </View>
+ </View>
+    </View>
     </View>
     </ScrollView>
     </View>
@@ -2195,7 +2199,8 @@ currentTrip={currentTrip}
           setTripPhase('arrived');
           setActiveTab('dashboard');
         }}
-  onArrivedAtDestination={() => {
+onArrivedAtDestination={() => {
+            setTripPhase('at_destination');
             const additionalStops = tripStops?.additionalStops || [];
             const totalStops = additionalStops.length;
             

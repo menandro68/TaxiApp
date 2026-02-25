@@ -720,7 +720,7 @@ useEffect(() => {
     longitudeDelta: 0.1,
   };
 
-  console.log('🎨 RENDER - Route:', routeCoordinates.length, 'Pickup:', !!pickupCoord, 'Location:', !!currentLocation);
+  console.log('🎨 RENDER - Route:', routeCoordinates.length, 'Pickup:', !!pickupCoord, 'Location:', !!currentLocation, 'Phase:', tripPhase);
   
   if (pickupCoord) {
     console.log('📍 MARKER PASAJERO:', pickupCoord.latitude.toFixed(5), pickupCoord.longitude.toFixed(5));
@@ -961,7 +961,7 @@ useEffect(() => {
       */}
 
       {/* BOTONES */}
-      {currentTrip && (
+     {currentTrip && tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
         <View style={styles.buttons}>
           {!isNavigating ? (
         <>
