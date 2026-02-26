@@ -1344,7 +1344,7 @@ description TEXT,
         await db.query(`ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS registered_by VARCHAR(100)`);
 
       const transactions = await db.query(
-            `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at ASC LIMIT 50`,
+          `SELECT * FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC`,
             [parseInt(driverId)]
         );
 
