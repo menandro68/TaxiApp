@@ -2390,7 +2390,19 @@ onPress: async () => {
               flex: 0.3,
               alignItems: 'center',
             }}
-    onPress={() => {
+   onPress={async () => {
+              // Enviar arrived si no se ha enviado (cobra comisión)
+              if (tripPhase === '' && currentTrip?.id) {
+                try {
+                  await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'arrived' })
+                  });
+                  setTripPhase('arrived');
+                  console.log('✅ Status arrived enviado desde Chat');
+                } catch (e) { console.error('Error enviando arrived:', e); }
+              }
               openDriverChat();
             }}
           >

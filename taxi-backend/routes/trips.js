@@ -965,7 +965,7 @@ router.put('/status/:tripId', async (req, res) => {
                 console.error('⚠️ Error notificando llegada:', notifyError.message);
             }
 
-            // REGISTRAR COMISIÓN EN BILLETERA AL LLEGAR
+       // REGISTRAR COMISIÓN EN BILLETERA AL LLEGAR (SOLO UNA VEZ POR VIAJE)
             try {
                 await db.query(`CREATE TABLE IF NOT EXISTS wallet_transactions (
                     id SERIAL PRIMARY KEY,
@@ -980,22 +980,33 @@ router.put('/status/:tripId', async (req, res) => {
                     created_at TIMESTAMP DEFAULT NOW()
                 )`);
 
-                const lastTx = await db.query(
-                    `SELECT balance_after FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 1`,
-                    [trip.driver_id]
+                // VERIFICAR SI YA SE COBRÓ COMISIÓN PARA ESTE VIAJE
+                const existingCommission = await db.query(
+                    `SELECT id FROM wallet_transactions WHERE trip_id = $1 AND type = 'commission'`,
+                    [tripId]
                 );
-                const currentBalance = lastTx.rows.length > 0 ? parseFloat(lastTx.rows[0].balance_after) : 0;
-                const tripPrice = parseFloat(trip.price) || 0;
-                const commissionAmount = Math.round(tripPrice * 10) / 100;
-                const newBalance = currentBalance - commissionAmount;
 
-                await db.query(
-                    `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, trip_id, description)
-                     VALUES ($1, 'commission', $2, $3, 0, $4, $5, $6)`,
-                    [trip.driver_id, tripPrice, commissionAmount, newBalance, tripId, `Comisión 10% - Viaje #${tripId}`]
-                );
-                console.log(`💰 Comisión RD$${commissionAmount} registrada al llegar. Balance: RD$${newBalance}`);
-            } catch (walletError) {
+                if (existingCommission.rows.length === 0) {
+                    // NO existe comisión para este viaje, registrarla
+                    const lastTx = await db.query(
+                        `SELECT balance_after FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 1`,
+                        [trip.driver_id]
+                    );
+                    const currentBalance = lastTx.rows.length > 0 ? parseFloat(lastTx.rows[0].balance_after) : 0;
+                    const tripPrice = parseFloat(trip.price) || 0;
+                    const commissionAmount = Math.round(tripPrice * 10) / 100;
+                    const newBalance = currentBalance - commissionAmount;
+
+                    await db.query(
+                        `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, trip_id, description)
+                         VALUES ($1, 'commission', $2, $3, 0, $4, $5, $6)`,
+                        [trip.driver_id, tripPrice, commissionAmount, newBalance, tripId, `Comisión 10% - Viaje #${tripId}`]
+                    );
+                    console.log(`💰 Comisión RD$${commissionAmount} registrada al llegar. Balance: RD$${newBalance}`);
+                } else {
+                    console.log(`⚠️ Comisión ya cobrada para viaje #${tripId}, ignorando duplicado`);
+                }
+      } catch (walletError) {
                 console.error('⚠️ Error registrando comisión:', walletError.message);
             }
         }
