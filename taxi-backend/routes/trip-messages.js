@@ -27,15 +27,45 @@ initTable();
 router.post('/send', async (req, res) => {
   try {
     const { trip_id, sender_type, sender_id, message } = req.body;
-    
     if (!trip_id || !sender_type || !sender_id || !message) {
       return res.status(400).json({ success: false, error: 'Faltan campos requeridos' });
     }
-
     const result = await pool.query(
       'INSERT INTO trip_messages (trip_id, sender_type, sender_id, message) VALUES ($1, $2, $3, $4) RETURNING *',
       [trip_id, sender_type, sender_id, message]
     );
+
+    // Si el conductor envió el mensaje, notificar al usuario via FCM
+    if (sender_type === 'driver') {
+      try {
+        const tripResult = await pool.query(
+          `SELECT t.user_id, u.fcm_token 
+           FROM trips t 
+           JOIN users u ON t.user_id = u.id 
+           WHERE t.id = $1`,
+          [trip_id]
+        );
+        
+        if (tripResult.rows[0]?.fcm_token) {
+          const admin = require('firebase-admin');
+          await admin.messaging().send({
+            token: tripResult.rows[0].fcm_token,
+            data: {
+              type: 'NEW_CHAT_MESSAGE',
+              tripId: trip_id.toString(),
+              message: message,
+              senderType: 'driver'
+            },
+            android: {
+              priority: 'high'
+            }
+          });
+          console.log('✅ Notificación de chat enviada al usuario');
+        }
+      } catch (fcmError) {
+        console.error('⚠️ Error enviando notificación de chat:', fcmError.message);
+      }
+    }
 
     res.json({ success: true, message: result.rows[0] });
   } catch (error) {
