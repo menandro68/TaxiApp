@@ -50,6 +50,10 @@ router.post('/send', async (req, res) => {
           const admin = require('firebase-admin');
           await admin.messaging().send({
             token: tripResult.rows[0].fcm_token,
+            notification: {
+              title: '💬 Nuevo mensaje',
+              body: message
+            },
             data: {
               type: 'NEW_CHAT_MESSAGE',
               tripId: trip_id.toString(),
@@ -57,7 +61,13 @@ router.post('/send', async (req, res) => {
               senderType: 'driver'
             },
             android: {
-              priority: 'high'
+              priority: 'high',
+              notification: {
+                channelId: 'chat_messages',
+                priority: 'max',
+                defaultSound: true,
+                defaultVibrateTimings: true
+              }
             }
           });
           console.log('✅ Notificación de chat enviada al usuario');
