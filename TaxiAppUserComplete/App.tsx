@@ -839,8 +839,8 @@ const setupNotificationHandlers = () => {
       // Iniciar tracking solo si tenemos la ubicacion
       if (currentUserLocation && currentUserLocation.latitude) {
         startDriverTracking(mockDriverInfo, currentUserLocation);
-      } else {
-        console.log('�️ No hay ubicacion del usuario, tracking omitido');
+} else {
+        console.log('⚠️ No hay ubicacion del usuario, tracking omitido');
       }
     };
 
@@ -850,7 +850,14 @@ const setupNotificationHandlers = () => {
       setIsReassignment(true);
       Alert.alert('🔄 Buscando nuevo conductor', 'El conductor anterior canceló. Estamos buscando otro conductor para ti.');
     };
-    
+
+    // Handler para nuevo mensaje de chat del conductor
+    global.handleNewChatMessage = (data) => {
+      console.log('💬 Nuevo mensaje de chat recibido:', data);
+      setShowChatModal(true);
+      loadChatMessages();
+    };
+
     // Inicializar PushNotificationService
     // Ya se inicializa automáticamente al importar
     console.log('PushNotificationService inicializado');

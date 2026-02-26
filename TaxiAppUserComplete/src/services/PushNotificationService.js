@@ -84,6 +84,21 @@ class PushNotificationService {
         if (global.handleDriverCancelledReassigning) {
           global.handleDriverCancelledReassigning(data);
         }
+      } else if (data?.type === 'NEW_CHAT_MESSAGE') {
+        console.log('💬 Nuevo mensaje de chat del conductor');
+        // Reproducir voz
+        try {
+          const Tts = require('react-native-tts').default;
+          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultRate(0.5);
+          await Tts.speak('Tienes un mensaje nuevo');
+        } catch (e) {
+          console.log('Error TTS:', e);
+        }
+        // Abrir chat
+        if (global.handleNewChatMessage) {
+          global.handleNewChatMessage(data);
+        }
       } else {
         // Mostrar notificación genérica
         if (notification?.title) {
@@ -104,6 +119,10 @@ class PushNotificationService {
         // Guardar datos para procesarlos cuando la app vuelva al foreground
         await AsyncStorage.setItem('pending_driver_assignment', JSON.stringify(data));
         console.log('💾 Datos de conductor guardados para procesar después');
+      } else if (data?.type === 'NEW_CHAT_MESSAGE') {
+        // Guardar mensaje pendiente para cuando la app vuelva al foreground
+        await AsyncStorage.setItem('pending_chat_message', JSON.stringify(data));
+        console.log('💾 Mensaje de chat guardado para procesar después');
       }
     });
   }
@@ -156,6 +175,33 @@ class PushNotificationService {
       }
     } catch (error) {
       console.error('❌ Error verificando asignación pendiente:', error);
+    }
+  }
+
+  // Verificar si hay mensaje de chat pendiente (para cuando la app vuelve del background)
+  async checkPendingChatMessage() {
+    try {
+      const pendingData = await AsyncStorage.getItem('pending_chat_message');
+      if (pendingData) {
+        console.log('💬 Procesando mensaje de chat pendiente...');
+        const data = JSON.parse(pendingData);
+        // Reproducir voz
+        try {
+          const Tts = require('react-native-tts').default;
+          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultRate(0.5);
+          await Tts.speak('Tienes un mensaje nuevo');
+        } catch (e) {
+          console.log('Error TTS:', e);
+        }
+        // Abrir chat
+        if (global.handleNewChatMessage) {
+          global.handleNewChatMessage(data);
+        }
+        await AsyncStorage.removeItem('pending_chat_message');
+      }
+    } catch (error) {
+      console.error('❌ Error verificando mensaje pendiente:', error);
     }
   }
 
