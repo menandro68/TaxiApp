@@ -2144,8 +2144,8 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
           onLocationUpdate={(location) => {
             setUserLocation(location);
           }}
-          onArrivedAtPickup={() => {
-            setTripPhase('arrived');
+onArrivedAtPickup={() => {
+            handleArrivedAtPickup();
           }}
 onArrivedAtDestination={() => {}}
 onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
@@ -2195,9 +2195,8 @@ currentTrip={currentTrip}
           console.log('📍 Ubicación actualizada:', location);
           setUserLocation(location);
         }}
-        onArrivedAtPickup={() => {
-          setTripPhase('arrived');
-          setActiveTab('dashboard');
+onArrivedAtPickup={() => {
+          handleArrivedAtPickup();
         }}
 onArrivedAtDestination={() => {
             setTripPhase('at_destination');
