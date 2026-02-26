@@ -1348,7 +1348,7 @@ description TEXT,
             [parseInt(driverId)]
         );
 
-        const lastTx = transactions.rows.length > 0 ? transactions.rows[transactions.rows.length - 1] : null;
+       const lastTx = transactions.rows.length > 0 ? transactions.rows[0] : null;
         const currentBalance = lastTx ? parseFloat(lastTx.balance_after) : 0;
 
         const totals = await db.query(
