@@ -2389,21 +2389,21 @@ onPress: async () => {
               flex: 0.3,
               alignItems: 'center',
             }}
-   onPress={async () => {
-              // Enviar arrived si no se ha enviado (cobra comisión)
-              if (tripPhase === '' && currentTrip?.id) {
-                try {
-                  await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'arrived' })
-                  });
-                  setTripPhase('arrived');
-                  console.log('✅ Status arrived enviado desde Chat');
-                } catch (e) { console.error('Error enviando arrived:', e); }
-              }
-              openDriverChat();
-            }}
+  onPress={async () => {
+  // Enviar arrived si no se ha enviado (cobra comisión)
+  if (tripPhase === '' && currentTrip?.id) {
+    try {
+      await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'arrived' })
+      });
+      // setTripPhase('arrived');  // COMENTADO - No ocultar mapa al abrir chat
+      console.log('✅ Status arrived enviado desde Chat');
+    } catch (e) { console.error('Error enviando arrived:', e); }
+  }
+  openDriverChat();
+}}
           >
             <Text style={{ color: 'white', fontWeight: 'bold' }}>💬 Chat</Text>
           </TouchableOpacity>
@@ -2415,7 +2415,7 @@ onPress: async () => {
               flex: 0.3,
               alignItems: 'center',
             }}
-          onPress={async () => {
+      onPress={async () => {
               if (currentTrip?.phone) {
                 // Enviar arrived si no se ha enviado (cobra comisión)
                 if (tripPhase === '') {
@@ -2425,7 +2425,7 @@ onPress: async () => {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ status: 'arrived' })
                     });
-                    setTripPhase('arrived');
+                    // setTripPhase('arrived');  // COMENTADO - No ocultar mapa al llamar
                     console.log('✅ Status arrived enviado desde Llamar');
                   } catch (e) { console.error('Error enviando arrived:', e); }
                 }
