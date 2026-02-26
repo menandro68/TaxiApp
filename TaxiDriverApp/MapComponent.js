@@ -235,6 +235,41 @@ useEffect(() => {
     }
   }, [tripPhase]);
 
+  // ACTUALIZAR TIEMPO ESTIMADO CADA 30 SEGUNDOS
+  useEffect(() => {
+    if (!currentTrip || !currentLocation || !navigationTarget) return;
+    
+    const updateInterval = setInterval(async () => {
+      try {
+        const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
+        const dest = `${navigationTarget.latitude},${navigationTarget.longitude}`;
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&key=AIzaSyCijgRjWqhJdJfGUaKoqVCxHF8xdRcd6_c&language=es`
+        );
+        const data = await response.json();
+        if (data.routes && data.routes[0] && data.routes[0].legs) {
+          const leg = data.routes[0].legs[0];
+          setRouteInfo({
+            distanceText: leg.distance.text,
+            durationText: leg.duration.text
+          });
+          if (onRouteInfoUpdate) {
+            onRouteInfoUpdate({
+              distanceText: leg.distance.text,
+              durationText: leg.duration.text,
+              durationMinutes: Math.round(leg.duration.value / 60)
+            });
+          }
+          console.log('⏱️ Tiempo actualizado:', leg.duration.text);
+        }
+      } catch (error) {
+        console.log('⚠️ Error actualizando tiempo:', error.message);
+      }
+    }, 30000); // Cada 30 segundos
+
+    return () => clearInterval(updateInterval);
+  }, [currentTrip, currentLocation, navigationTarget, onRouteInfoUpdate]);
+
   // Actualizar paso de navegación en tiempo real
   useEffect(() => {
     if (!isNavigating || !currentLocation || navigationSteps.length === 0 || !navigationTarget) return;
