@@ -56,9 +56,11 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
-Linking,
+  Linking,
   AppState,
   Image,
+DeviceEventEmitter,
+  NativeModules,
 } from 'react-native';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import { Platform } from 'react-native';
@@ -79,6 +81,51 @@ const scale = (size) => (screenWidth / 375) * size;
 const verticalScale = (size) => (screenHeight / 812) * size;
 const DRAWER_WIDTH = screenWidth * 0.75;
 
+// Módulo de permisos nativos
+const { PermissionsModule } = NativeModules;
+
+// Función para solicitar permisos de pantalla completa
+const requestScreenPermissions = async () => {
+  if (Platform.OS !== 'android') return;
+  
+  try {
+    // Verificar si ya tiene el permiso
+    const canOverlay = await PermissionsModule.canDrawOverlays();
+    if (canOverlay) {
+      console.log('✅ Permiso de overlay ya concedido');
+      return;
+    }
+    
+    // Verificar si ya pedimos antes
+    const alreadyAsked = await AsyncStorage.getItem('overlay_permission_asked');
+    if (alreadyAsked === 'true') {
+      console.log('⏭️ Permiso de overlay ya fue solicitado anteriormente');
+      return;
+    }
+    
+    // Primera vez: mostrar diálogo
+    Alert.alert(
+      'Permiso Requerido',
+      'Para recibir mensajes del conductor cuando la pantalla está apagada, necesitamos el permiso de "Mostrar sobre otras apps".',
+      [
+        { 
+          text: 'Ahora no', 
+          style: 'cancel',
+          onPress: () => AsyncStorage.setItem('overlay_permission_asked', 'true')
+        },
+        { 
+          text: 'Configurar', 
+          onPress: () => {
+            AsyncStorage.setItem('overlay_permission_asked', 'true');
+            PermissionsModule.requestOverlayPermission();
+          }
+        }
+      ]
+    );
+  } catch (error) {
+    console.log('Error verificando permisos:', error);
+  }
+};
   const App = ({ navigation, route }) =>  {
   const [destination, setDestination] = useState('');
   const [selectedDestination, setSelectedDestination] = useState(null);
@@ -135,7 +182,13 @@ const DRAWER_WIDTH = screenWidth * 0.75;
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showPopularLocations, setShowPopularLocations] = useState(false);
   const [locationSource, setLocationSource] = useState(null);
-  const [showChatModal, setShowChatModal] = useState(false);
+const [showChatModal, setShowChatModal] = useState(false);
+  
+  // DEBUG: Verificar cambios en showChatModal
+  useEffect(() => {
+    console.log('🔍 DEBUG showChatModal cambió a:', showChatModal);
+  }, [showChatModal]);
+  
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
@@ -201,15 +254,18 @@ const DRAWER_WIDTH = screenWidth * 0.75;
     const interval = setInterval(checkInternet, 10000);
     return () => clearInterval(interval);
   }, []);
-  // Detectar cuando el usuario regresa a la app después de ir a Configuración
+// Detectar cuando el usuario regresa a la app después de ir a Configuración
   useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
-      if (nextAppState === 'active') {
+    const handleAppStateChange = async (nextAppState) => {
+if (nextAppState === 'active') {
         console.log('📱 App volvió al primer plano, verificando ubicación...');
+        console.log('🔍 Verificando mensajes de chat pendientes...');
         // Resetear para permitir nuevo intento de GPS
         gpsObtainedRef.current = false;
         // Reintentar obtener ubicación
         initializeLocationService();
+        // Verificar si hay mensajes de chat pendientes
+        PushNotificationService.checkPendingChatMessage();
       }
     };
 
@@ -457,10 +513,12 @@ useEffect(() => {
 const initializeApp = async () => {
   try {
     console.log('Inicializando TaxiApp Usuario...');
-    setIsLoading(true);
-
-// 1. Obtener ubicacion con geocoding (esto actualizará la dirección correctamente)
-    initializeLocationService();
+    // Limpiar flag de chat pendiente de sesiones anteriores
+    await AsyncStorage.removeItem('open_chat_now');
+    // Permisos de overlay se piden despues de ubicacion en requestLocationPermissions()
+      setIsLoading(true);
+  // 1. Obtener ubicacion con geocoding (esto actualizar� la direcci�n correctamente)
+      initializeLocationService();
   
   // 2. Verificar si el usuario está autenticado
   const authToken = await SharedStorage.getAuthToken();
@@ -843,8 +901,7 @@ const setupNotificationHandlers = () => {
         console.log('⚠️ No hay ubicacion del usuario, tracking omitido');
       }
     };
-
-    // Handler para cuando conductor cancela y se busca otro
+// Handler para cuando conductor cancela y se busca otro
     global.handleDriverCancelledReassigning = (data) => {
       console.log('🔄 Conductor canceló, buscando nuevo conductor...');
       setIsReassignment(true);
@@ -852,11 +909,14 @@ const setupNotificationHandlers = () => {
     };
 
     // Handler para nuevo mensaje de chat del conductor
-    global.handleNewChatMessage = (data) => {
+    global.handleNewChatMessage = async (data) => {
       console.log('💬 Nuevo mensaje de chat recibido:', data);
-      setShowChatModal(true);
-      loadChatMessages();
+      // Guardar flag para que el useEffect abra el chat
+      await AsyncStorage.setItem('open_chat_now', 'true');
+      console.log('💾 Flag open_chat_now guardado');
     };
+
+    
 
     // Inicializar PushNotificationService
     // Ya se inicializa automáticamente al importar
@@ -1153,9 +1213,11 @@ const loadUserState = async () => {
       console.log('Resultado de permisos:', fine);
       
       if (fine === RESULTS.GRANTED) {
-        console.log('Permisos de ubicacion concedidos');
-        setLocationPermissionStatus('granted');
-        return true;
+          console.log('Permisos de ubicacion concedidos');
+          setLocationPermissionStatus('granted');
+          // Pedir permiso de overlay inmediatamente despues de ubicacion
+          await requestScreenPermissions();
+          return true;
       } else if (fine === RESULTS.DENIED) {
         console.log('Permisos de ubicacion denegados');
         setLocationPermissionStatus('denied');
@@ -1533,6 +1595,7 @@ const startDriverTracking = async (driver, userLoc) => {
 
 // FUNCIÓN: Chat interno con el conductor
   const chatIntervalRef = useRef(null);
+    const chatJustClosedRef = useRef(false);
 
   const handleChatDriver = () => {
     if (tripRequest?.id) {
@@ -1547,37 +1610,93 @@ const startDriverTracking = async (driver, userLoc) => {
     }
   };
 
-  const closeChatModal = () => {
+const closeChatModal = () => {
+    console.log('closeChatModal LLAMADO');
     setShowChatModal(false);
+    chatJustClosedRef.current = true;
+    setTimeout(() => { chatJustClosedRef.current = false; }, 5000);
+    if (tripRequest?.id) {
+      fetch('https://web-production-99844.up.railway.app/api/trip-messages/read/' + tripRequest.id + '/user', { method: 'PUT' });
+    }
     if (chatIntervalRef.current) {
       clearInterval(chatIntervalRef.current);
       chatIntervalRef.current = null;
     }
   };
- 
+
+// Listener para evento OPEN_CHAT_FROM_NATIVE (cuando pantalla estaba apagada)
+    useEffect(() => {
+      const subscription = DeviceEventEmitter.addListener('OPEN_CHAT_FROM_NATIVE', (tripId) => {
+        console.log('📱 Evento OPEN_CHAT_FROM_NATIVE recibido, tripId:', tripId);
+        if (chatJustClosedRef.current) { console.log('Chat recien cerrado, ignorando'); return; }
+        loadChatMessages();
+        setShowChatModal(true);
+      });
+      return () => subscription.remove();
+    }, []);
+
+// Listener para evento OPEN_CHAT_NOW desde FCM background
+    useEffect(() => {
+      const subscription = DeviceEventEmitter.addListener('OPEN_CHAT_NOW', (data) => {
+      console.log('📢 Evento OPEN_CHAT_NOW recibido en App.tsx:', data);
+      console.log('📢 tripRequest?.id actual:', tripRequest?.id);
+      console.log('📢 rideStatus actual:', rideStatus);
+      // Solo abrir chat si ya tenemos conductor asignado (no durante búsqueda)
+      if (rideStatus !== TRIP_STATES.DRIVER_ASSIGNED && rideStatus !== TRIP_STATES.IN_RIDE) {
+        console.log('⏳ Conductor no asignado aún, guardando para después...');
+        return; // El bgChatCheckRef se encargará de abrir cuando sea apropiado
+      }
+      const tripId = tripRequest?.id || data?.tripId;
+      console.log('📢 tripId a usar:', tripId);
+      if (tripId) {
+        if (chatJustClosedRef.current) { console.log('Chat recien cerrado, ignorando OPEN_CHAT_NOW'); return; }
+          console.log('? Abriendo chat modal...');
+          loadChatMessages();
+          setShowChatModal(true);
+      } else {
+        console.log('❌ No hay tripId disponible');
+      }
+    });
+    
+    return () => {
+      subscription.remove();
+    };
+  }, [tripRequest?.id, rideStatus]);
+
   // Auto-abrir chat cuando llegan mensajes nuevos
   const bgChatCheckRef = useRef(null);
   const lastMessageCountRef = useRef(0);
-
   useEffect(() => {
     if (tripRequest?.id && !showChatModal) {
       bgChatCheckRef.current = setInterval(async () => {
         try {
-          const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${tripRequest.id}/user`);
-          const data = await res.json();
-  if (data.success && data.unread > 0) {
-            loadChatMessages();
-            setShowChatModal(true);
+          // Verificar si hay flag para abrir chat inmediatamente (desde FCM)
+          const openNow = await AsyncStorage.getItem('open_chat_now');
+          if (openNow === 'true') {
+            console.log('🔔 Flag open_chat_now detectado, abriendo chat...');
+            await AsyncStorage.removeItem('open_chat_now');
+              if (chatJustClosedRef.current) { console.log('Chat recien cerrado, ignorando open_chat_now'); return; }
+              loadChatMessages();
+              setShowChatModal(true);
             try { await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultRate(0.5); await Tts.speak('Tienes un mensaje nuevo'); } catch(e) { console.log('Error TTS chat:', e); }
             clearInterval(bgChatCheckRef.current);
             bgChatCheckRef.current = null;
-            // Iniciar auto-refresh del chat abierto
-            chatIntervalRef.current = setInterval(() => {
+            chatIntervalRef.current = setInterval(() => { loadChatMessages(); }, 3000);
+            return;
+          }
+          // Verificar mensajes no leídos en backend
+          const res = await fetch(`https://web-production-99844.up.railway.app/api/trip-messages/unread/${tripRequest.id}/user`);
+          const data = await res.json();
+          if (data.success && data.unread > 0 && !chatJustClosedRef.current) {
               loadChatMessages();
-            }, 3000);
+              setShowChatModal(true);
+            try { await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultRate(0.5); await Tts.speak('Tienes un mensaje nuevo'); } catch(e) { console.log('Error TTS chat:', e); }
+            clearInterval(bgChatCheckRef.current);
+            bgChatCheckRef.current = null;
+            chatIntervalRef.current = setInterval(() => { loadChatMessages(); }, 3000);
           }
         } catch (e) {}
-      }, 4000);
+      }, 1000);
     }
     return () => {
       if (bgChatCheckRef.current) {
@@ -1586,7 +1705,6 @@ const startDriverTracking = async (driver, userLoc) => {
       }
     };
   }, [tripRequest?.id, showChatModal]);
-
   const loadChatMessages = async () => {
     try {
       const tripId = tripRequest?.id;
@@ -3796,10 +3914,37 @@ onPress={() => {
         {/* NUEVO: Modal de perfil de usuario */}
         <UserProfile
           visible={showUserProfile}
-          onClose={() => setShowUserProfile(false)}
-        />
-        
-        {/* MODAL DE CALCULADORA DE TARIFAS */}
+      onClose={() => setShowUserProfile(false)}
+          />
+          
+ {/* MODAL CHAT PEQUENO CENTRADO */}
+      {showChatModal && (
+        <Modal visible={true} transparent={true} animationType="fade" onRequestClose={() => closeChatModal()}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: 15, padding: 20, width: '85%', maxHeight: '60%' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>💬 Chat con {driverInfo?.name || 'Conductor'}</Text>
+                <TouchableOpacity onPress={() => closeChatModal()}><Text style={{ fontSize: 20, color: '#999' }}>✕</Text></TouchableOpacity>
+              </View>
+              <ScrollView ref={chatScrollRef} style={{ maxHeight: 200, marginBottom: 15 }} onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}>
+                {chatMessages.length === 0 && (<Text style={{ textAlign: 'center', color: '#999' }}>No hay mensajes</Text>)}
+                {chatMessages.map((msg) => (
+                  <View key={msg.id} style={{ alignSelf: msg.sender_type === 'user' ? 'flex-end' : 'flex-start', backgroundColor: msg.sender_type === 'user' ? '#FF9500' : '#E8E8E8', padding: 8, borderRadius: 10, marginVertical: 2, maxWidth: '80%' }}>
+                    <Text style={{ color: msg.sender_type === 'user' ? '#fff' : '#333', fontSize: 14 }}>{msg.message}</Text>
+                    <Text style={{ color: msg.sender_type === 'user' ? '#ffe0b2' : '#999', fontSize: 9 }}>{new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TextInput style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, fontSize: 14, marginRight: 8 }} placeholder="Escribe..." value={chatInput} onChangeText={setChatInput} onSubmitEditing={sendChatMessage} />
+                <TouchableOpacity onPress={sendChatMessage} style={{ backgroundColor: '#FF9500', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: '#fff', fontSize: 16 }}>➤</Text></TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+          {/* MODAL DE CALCULADORA DE TARIFAS */}
         <FareEstimator
           visible={showFareCalculator}
           onClose={() => setShowFareCalculator(false)}
@@ -3838,6 +3983,9 @@ userLocation={tripRequest?.origin || userLocation}
         {/* MODAL DE MÉTODOS DE PAGO */}
         {showPaymentModal && (
           <Modal
+
+
+
             visible={showPaymentModal}
             animationType="slide"
             transparent={true}
@@ -4107,61 +4255,6 @@ setThirdPartyInfo(rideData);
     }
   }}
 />
-
-{/* MODAL CHAT INTERNO */}
-<Modal
-  visible={showChatModal}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => closeChatModal()}
->
-  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-    <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '70%' }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>💬 Chat con {driverInfo?.name || 'Conductor'}</Text>
-      <TouchableOpacity onPress={() => closeChatModal()}>
-          <Text style={{ fontSize: 24, color: '#999' }}>✕</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView 
-        ref={chatScrollRef}
-        style={{ flex: 1, padding: 10 }}
-        onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
-      >
-        {chatMessages.length === 0 && (
-          <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>No hay mensajes aún. ¡Envía el primero!</Text>
-        )}
-        {chatMessages.map((msg) => (
-          <View key={msg.id} style={{
-            alignSelf: msg.sender_type === 'user' ? 'flex-end' : 'flex-start',
-            backgroundColor: msg.sender_type === 'user' ? '#FF9500' : '#E8E8E8',
-            padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
-          }}>
-            <Text style={{ color: msg.sender_type === 'user' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
-            <Text style={{ color: msg.sender_type === 'user' ? '#ffe0b2' : '#999', fontSize: 10, marginTop: 3 }}>
-              {new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-      <View style={{ flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' }}>
-        <TextInput
-          style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, fontSize: 15, marginRight: 8 }}
-          placeholder="Escribe un mensaje..."
-          value={chatInput}
-          onChangeText={setChatInput}
-          onSubmitEditing={sendChatMessage}
-        />
-        <TouchableOpacity 
-          onPress={sendChatMessage}
-          style={{ backgroundColor: '#FF9500', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}
-        >
-          <Text style={{ color: '#fff', fontSize: 18 }}>➤</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
 
 {/* MODAL SELECCIÓN PAQUETE */}
 <Modal

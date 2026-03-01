@@ -1,6 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { Alert, DeviceEventEmitter } from 'react-native';
 import SecureStorage from './SecureStorage';
 
 class PushNotificationService {
@@ -123,6 +123,21 @@ class PushNotificationService {
         // Guardar mensaje pendiente para cuando la app vuelva al foreground
         await AsyncStorage.setItem('pending_chat_message', JSON.stringify(data));
         console.log('💾 Mensaje de chat guardado para procesar después');
+        // Reproducir voz
+        try {
+          const Tts = require('react-native-tts').default;
+          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultRate(0.5);
+          await Tts.speak('Tienes un mensaje nuevo');
+        } catch (e) {
+          console.log('Error TTS background:', e);
+        }
+        // Guardar flag y emitir evento para abrir chat
+        await AsyncStorage.setItem('open_chat_now', 'true');
+        console.log('💾 Flag open_chat_now guardado');
+        // Emitir evento para que la UI lo capture inmediatamente
+        DeviceEventEmitter.emit('OPEN_CHAT_NOW', data);
+        console.log('📢 Evento OPEN_CHAT_NOW emitido');
       }
     });
   }
