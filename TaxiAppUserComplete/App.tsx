@@ -1,4 +1,6 @@
 import 'react-native-get-random-values';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
+import { PermissionsAndroid } from 'react-native';
 import PushNotificationService from './src/services/PushNotificationService';
 import Tts from 'react-native-tts';
 import SecureStorage from './src/services/SecureStorage';
@@ -126,6 +128,42 @@ const requestScreenPermissions = async () => {
     console.log('Error verificando permisos:', error);
   }
 };
+
+// Función para solicitar exclusión de optimización de batería
+  const requestBatteryOptimization = async () => {
+    if (Platform.OS !== 'android') return;
+    
+    try {
+      const alreadyAsked = await AsyncStorage.getItem('battery_optimization_asked');
+      if (alreadyAsked === 'true') {
+        console.log('⏭️ Exclusión de batería ya fue solicitada');
+        return;
+      }
+
+      const isIgnoring = await PermissionsModule.isIgnoringBatteryOptimizations();
+      if (isIgnoring) {
+        console.log('✅ Ya está excluido de optimización de batería');
+        return;
+      }
+
+      // Guardar que ya preguntamos
+      await AsyncStorage.setItem('battery_optimization_asked', 'true');
+
+      Alert.alert(
+        'Optimización de Batería',
+        'Para recibir notificaciones de forma confiable, necesitamos desactivar la optimización de batería para esta app.',
+        [
+          { text: 'Ahora no', style: 'cancel' },
+          { 
+            text: 'Permitir', 
+            onPress: () => PermissionsModule.requestBatteryOptimizationExemption()
+          }
+        ]
+      );
+    } catch (error) {
+      console.log('Error verificando batería:', error);
+    }
+  };
   const App = ({ navigation, route }) =>  {
   const [destination, setDestination] = useState('');
   const [selectedDestination, setSelectedDestination] = useState(null);
@@ -192,6 +230,10 @@ const [showChatModal, setShowChatModal] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
+    const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordTime, setRecordTime] = useState('00:00');
+    const [isPlayingAudio, setIsPlayingAudio] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showFareCalculator, setShowFareCalculator] = useState(false);
@@ -1217,6 +1259,7 @@ const loadUserState = async () => {
           setLocationPermissionStatus('granted');
           // Pedir permiso de overlay inmediatamente despues de ubicacion
           await requestScreenPermissions();
+          await requestBatteryOptimization();
           return true;
       } else if (fine === RESULTS.DENIED) {
         console.log('Permisos de ubicacion denegados');
@@ -1744,6 +1787,75 @@ const closeChatModal = () => {
       console.error('Error enviando mensaje:', error);
     }
   };
+
+  // FUNCIONES DE NOTA DE VOZ
+  const requestAudioPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        { title: 'Permiso de Micrófono', message: 'Necesitamos acceso al micrófono para enviar notas de voz', buttonPositive: 'Permitir' }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) { return false; }
+  };
+
+  const startRecording = async () => {
+    const hasPermission = await requestAudioPermission();
+    if (!hasPermission) { Alert.alert('Error', 'Se requiere permiso de micrófono'); return; }
+    try {
+      setIsRecording(true);
+      const path = Platform.OS === 'android' ? `${Date.now()}.mp3` : 'voice.m4a';
+      await audioRecorderPlayer.startRecorder(path);
+      audioRecorderPlayer.addRecordBackListener((e) => {
+        const minutes = Math.floor(e.currentPosition / 60000);
+        const seconds = Math.floor((e.currentPosition % 60000) / 1000);
+        setRecordTime(`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`);
+      });
+    } catch (error) { console.error('Error grabando:', error); setIsRecording(false); }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+      setIsRecording(false);
+      setRecordTime('00:00');
+      if (result) { await sendVoiceMessage(result); }
+    } catch (error) { console.error('Error deteniendo:', error); setIsRecording(false); }
+  };
+
+  const sendVoiceMessage = async (audioPath) => {
+    if (!tripRequest?.id) return;
+    try {
+      const storedUserId = await SharedStorage.getUserId();
+      const formData = new FormData();
+      formData.append('audio', { uri: audioPath, type: 'audio/mp3', name: 'voice.mp3' });
+      formData.append('trip_id', tripRequest.id);
+      formData.append('sender_type', 'user');
+      formData.append('sender_id', parseInt(storedUserId) || 123);
+      const response = await fetch('https://web-production-99844.up.railway.app/api/trip-messages/send-voice', {
+        method: 'POST', body: formData, headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = await response.json();
+      if (data.success) { loadChatMessages(); }
+    } catch (error) { console.error('Error enviando audio:', error); }
+  };
+
+  const playVoiceMessage = async (audioUrl, msgId) => {
+    try {
+      if (isPlayingAudio === msgId) {
+        await audioRecorderPlayer.stopPlayer();
+        setIsPlayingAudio(null);
+      } else {
+        setIsPlayingAudio(msgId);
+        await audioRecorderPlayer.startPlayer(audioUrl);
+        audioRecorderPlayer.addPlayBackListener((e) => {
+          if (e.currentPosition >= e.duration) { setIsPlayingAudio(null); audioRecorderPlayer.stopPlayer(); }
+        });
+      }
+    } catch (error) { console.error('Error reproduciendo:', error); setIsPlayingAudio(null); }
+  };
+
   // FUNCIÓN: Solicitar viaje usando API real
   const requestRide = async () => {
     if (!destination || (typeof destination === 'string' && !destination.trim())) {
@@ -3936,9 +4048,28 @@ onPress={() => {
                 ))}
               </ScrollView>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TextInput style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, fontSize: 14, marginRight: 8 }} placeholder="Escribe..." value={chatInput} onChangeText={setChatInput} onSubmitEditing={sendChatMessage} />
-                <TouchableOpacity onPress={sendChatMessage} style={{ backgroundColor: '#FF9500', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: '#fff', fontSize: 16 }}>➤</Text></TouchableOpacity>
-              </View>
+  {isRecording ? (
+    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffebee', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8 }}>
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#f44336', marginRight: 8 }} />
+      <Text style={{ color: '#f44336', fontSize: 14, fontWeight: 'bold' }}>Grabando {recordTime}</Text>
+    </View>
+  ) : (
+    <TextInput style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, fontSize: 14, marginRight: 8 }} placeholder="Escribe..." value={chatInput} onChangeText={setChatInput} onSubmitEditing={sendChatMessage} />
+  )}
+  {isRecording ? (
+    <TouchableOpacity onPress={stopRecording} style={{ backgroundColor: '#f44336', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 14 }}>⬛</Text>
+    </TouchableOpacity>
+  ) : chatInput.trim() ? (
+    <TouchableOpacity onPress={sendChatMessage} style={{ backgroundColor: '#FF9500', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 16 }}>➤</Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity onPress={startRecording} style={{ backgroundColor: '#4CAF50', width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 16 }}>🎤</Text>
+    </TouchableOpacity>
+  )}
+</View>
             </View>
           </View>
         </Modal>

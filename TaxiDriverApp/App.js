@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import {
   View,
   Text,
@@ -13,6 +14,7 @@ import {
   Modal,
   Platform,
   Linking,
+  PermissionsAndroid,
   BackHandler,
   ActivityIndicator,
   Share,
@@ -156,6 +158,10 @@ export default function DriverApp({ navigation }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatScrollRef = useRef(null);
+  const audioRecorderPlayer = useRef(new AudioRecorderPlayer()).current;
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordTime, setRecordTime] = useState('00:00');
+  const [isPlayingAudio, setIsPlayingAudio] = useState(null);
   const [loadingEarnings, setLoadingEarnings] = useState(false);  
   // Estados para Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -2528,6 +2534,73 @@ const loadDriverChatMessages = async () => {
     }
   };
 
+  // FUNCIONES DE NOTA DE VOZ
+  const requestAudioPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        { title: 'Permiso de Micrófono', message: 'Necesitamos acceso al micrófono para enviar notas de voz', buttonPositive: 'Permitir' }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) { return false; }
+  };
+
+  const startRecording = async () => {
+    const hasPermission = await requestAudioPermission();
+    if (!hasPermission) { Alert.alert('Error', 'Se requiere permiso de micrófono'); return; }
+    try {
+      setIsRecording(true);
+      const path = Platform.OS === 'android' ? `${Date.now()}.mp3` : 'voice.m4a';
+      await audioRecorderPlayer.startRecorder(path);
+      audioRecorderPlayer.addRecordBackListener((e) => {
+        const minutes = Math.floor(e.currentPosition / 60000);
+        const seconds = Math.floor((e.currentPosition % 60000) / 1000);
+        setRecordTime(`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`);
+      });
+    } catch (error) { console.error('Error grabando:', error); setIsRecording(false); }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const result = await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
+      setIsRecording(false);
+      setRecordTime('00:00');
+      if (result) { await sendVoiceMessage(result); }
+    } catch (error) { console.error('Error deteniendo:', error); setIsRecording(false); }
+  };
+
+  const sendVoiceMessage = async (audioPath) => {
+    if (!currentTrip?.id) return;
+    try {
+      const formData = new FormData();
+      formData.append('audio', { uri: audioPath, type: 'audio/mp3', name: 'voice.mp3' });
+      formData.append('trip_id', currentTrip.id);
+      formData.append('sender_type', 'driver');
+      formData.append('sender_id', loggedDriver?.id || 0);
+      const response = await fetch('https://web-production-99844.up.railway.app/api/trip-messages/send-voice', {
+        method: 'POST', body: formData, headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const data = await response.json();
+      if (data.success) { loadDriverChatMessages(); }
+    } catch (error) { console.error('Error enviando audio:', error); }
+  };
+
+  const playVoiceMessage = async (audioUrl, msgId) => {
+    try {
+      if (isPlayingAudio === msgId) {
+        await audioRecorderPlayer.stopPlayer();
+        setIsPlayingAudio(null);
+      } else {
+        setIsPlayingAudio(msgId);
+        await audioRecorderPlayer.startPlayer(audioUrl);
+        audioRecorderPlayer.addPlayBackListener((e) => {
+          if (e.currentPosition >= e.duration) { setIsPlayingAudio(null); audioRecorderPlayer.stopPlayer(); }
+        });
+      }
+    } catch (error) { console.error('Error reproduciendo:', error); setIsPlayingAudio(null); }
+  };
+
   const renderEarnings = () => (
     <ScrollView style={[styles.tabContent, {backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}]}>
    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10}}>
@@ -3568,21 +3641,35 @@ const loadDriverChatMessages = async () => {
                 </View>
               ))}
             </ScrollView>
-            <View style={{ flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' }}>
-              <TextInput
-                style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, fontSize: 15, marginRight: 8 }}
-                placeholder="Escribe un mensaje..."
-                value={chatInput}
-                onChangeText={setChatInput}
-                onSubmitEditing={sendDriverChatMessage}
-              />
-              <TouchableOpacity 
-                onPress={sendDriverChatMessage}
-                style={{ backgroundColor: '#FF9500', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ color: '#fff', fontSize: 18 }}>➤</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={{ flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' }}>
+  {isRecording ? (
+    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffebee', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, marginRight: 8 }}>
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#f44336', marginRight: 8 }} />
+      <Text style={{ color: '#f44336', fontSize: 14, fontWeight: 'bold' }}>Grabando {recordTime}</Text>
+    </View>
+  ) : (
+    <TextInput
+      style={{ flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, fontSize: 15, marginRight: 8 }}
+      placeholder="Escribe un mensaje..."
+      value={chatInput}
+      onChangeText={setChatInput}
+      onSubmitEditing={sendDriverChatMessage}
+    />
+  )}
+  {isRecording ? (
+    <TouchableOpacity onPress={stopRecording} style={{ backgroundColor: '#f44336', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 14 }}>⬛</Text>
+    </TouchableOpacity>
+  ) : chatInput.trim() ? (
+    <TouchableOpacity onPress={sendDriverChatMessage} style={{ backgroundColor: '#FF9500', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 18 }}>➤</Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity onPress={startRecording} style={{ backgroundColor: '#4CAF50', width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: 16 }}>🎤</Text>
+    </TouchableOpacity>
+  )}
+</View>
           </View>
         </View>
       </Modal>

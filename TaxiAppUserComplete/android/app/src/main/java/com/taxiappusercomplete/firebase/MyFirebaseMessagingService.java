@@ -78,20 +78,67 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void startWakeService(Map<String, String> data) {
         try {
+            // Método 1: WakeScreenService (funciona en la mayoría de dispositivos)
             Intent serviceIntent = new Intent(this, WakeScreenService.class);
             serviceIntent.putExtra("tripId", data.get("tripId"));
             serviceIntent.putExtra("message", data.get("message"));
             serviceIntent.putExtra("senderType", data.get("senderType"));
-            
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent);
             } else {
                 startService(serviceIntent);
             }
             Log.d(TAG, "WakeScreenService iniciado");
-            
+
+            // Método 2: Full Screen Intent (fallback universal para Samsung y otros)
+            showFullScreenNotification(data);
+
         } catch (Exception e) {
             Log.e(TAG, "Error iniciando servicio: " + e.getMessage());
+            // Si falla el servicio, usar solo la notificación
+            showFullScreenNotification(data);
+        }
+    }
+
+    private void showFullScreenNotification(Map<String, String> data) {
+        try {
+            Intent chatIntent = new Intent(this, ChatActivity.class);
+            chatIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            chatIntent.putExtra("tripId", data.get("tripId"));
+            chatIntent.putExtra("message", data.get("message"));
+            chatIntent.putExtra("fromNotification", true);
+
+            PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                this, 1, chatIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            PendingIntent contentIntent = PendingIntent.getActivity(
+                this, 2, chatIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHAT_CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("💬 Mensaje del Conductor")
+                .setContentText(data.get("message"))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setFullScreenIntent(fullScreenPendingIntent, true)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .setSound(soundUri)
+                .setVibrate(new long[]{0, 500, 200, 500, 200, 500})
+                .setOngoing(false);
+
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.notify(CHAT_NOTIFICATION_ID, builder.build());
+            Log.d(TAG, "FullScreenNotification mostrada");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error showFullScreenNotification: " + e.getMessage());
         }
     }
 

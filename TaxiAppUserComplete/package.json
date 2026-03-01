@@ -38,6 +38,7 @@
     "react": "19.1.0",
     "react-i18next": "^15.7.3",
     "react-native": "0.80.2",
+    "react-native-audio-recorder-player": "^3.6.11",
     "react-native-bootsplash": "^6.3.10",
     "react-native-geocoding": "^0.5.0",
     "react-native-gesture-handler": "^2.28.0",

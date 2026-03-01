@@ -91,38 +91,20 @@ public class ChatActivity extends AppCompatActivity {
 
         mainLayout.addView(cardLayout);
 
-        // Botón para abrir chat completo
-        Button openChatBtn = new Button(this);
-        openChatBtn.setText("Abrir Chat");
-        openChatBtn.setTextColor(Color.WHITE);
-        openChatBtn.setBackgroundColor(Color.parseColor("#4CAF50"));
-        openChatBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        openChatBtn.setPadding(60, 30, 60, 30);
-        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        btnParams.setMargins(0, 20, 0, 20);
-        openChatBtn.setLayoutParams(btnParams);
-        openChatBtn.setOnClickListener(v -> openMainApp());
-        mainLayout.addView(openChatBtn);
-
-        // Botón para cerrar
-        Button closeBtn = new Button(this);
-        closeBtn.setText("Cerrar");
-        closeBtn.setTextColor(Color.WHITE);
-        closeBtn.setBackgroundColor(Color.parseColor("#666666"));
-        closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        LinearLayout.LayoutParams closeBtnParams = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        closeBtnParams.setMargins(0, 10, 0, 0);
-        closeBtn.setLayoutParams(closeBtnParams);
-        closeBtn.setOnClickListener(v -> finish());
-        mainLayout.addView(closeBtn);
+        // Texto de "Abriendo chat..."
+        TextView loadingText = new TextView(this);
+        loadingText.setText("Abriendo chat...");
+        loadingText.setTextColor(Color.parseColor("#888888"));
+        loadingText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        loadingText.setGravity(Gravity.CENTER);
+        mainLayout.addView(loadingText);
 
         setContentView(mainLayout);
+
+        // Abrir chat automáticamente después de 1.5 segundos
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            openMainApp();
+        }, 1500);
     }
 
     private void openMainApp() {
