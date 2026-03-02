@@ -101,7 +101,7 @@ router.post('/send-voice', uploadAudio.single('audio'), async (req, res) => {
       return res.status(400).json({ success: false, error: 'Faltan campos o archivo de audio' });
     }
     
-    const audioUrl = `${req.protocol}://${req.get('host')}/uploads/audio/${req.file.filename}`;
+  const audioUrl = `https://${req.get('host')}/uploads/audio/${req.file.filename}`;
     
     const result = await pool.query(
       'INSERT INTO trip_messages (trip_id, sender_type, sender_id, message, audio_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
