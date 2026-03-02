@@ -2587,19 +2587,23 @@ const loadDriverChatMessages = async () => {
     } catch (error) { console.error('Error enviando audio:', error); }
   };
 
-  const playVoiceMessage = async (audioUrl, msgId) => {
+const playVoiceMessage = async (audioUrl, msgId) => {
+    console.log('🎵 playVoiceMessage llamado - URL:', audioUrl, 'msgId:', msgId);
     try {
       if (isPlayingAudio === msgId) {
+        console.log('🛑 Deteniendo reproducción');
         await audioRecorderPlayer.stopPlayer();
         setIsPlayingAudio(null);
       } else {
+        console.log('▶️ Iniciando reproducción...');
         setIsPlayingAudio(msgId);
         await audioRecorderPlayer.startPlayer(audioUrl);
+        console.log('✅ Reproducción iniciada');
         audioRecorderPlayer.addPlayBackListener((e) => {
           if (e.currentPosition >= e.duration) { setIsPlayingAudio(null); audioRecorderPlayer.stopPlayer(); }
         });
       }
-    } catch (error) { console.error('Error reproduciendo:', error); setIsPlayingAudio(null); }
+    } catch (error) { console.error('❌ Error reproduciendo:', error); setIsPlayingAudio(null); }
   };
 
   const renderEarnings = () => (
@@ -3629,17 +3633,28 @@ const loadDriverChatMessages = async () => {
               {chatMessages.length === 0 && (
                 <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>No hay mensajes aún. ¡Envía el primero!</Text>
               )}
-              {chatMessages.map((msg) => (
-                <View key={msg.id} style={{
-                  alignSelf: msg.sender_type === 'driver' ? 'flex-end' : 'flex-start',
-                  backgroundColor: msg.sender_type === 'driver' ? '#FF9500' : '#E8E8E8',
-                  padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
-                }}>
-                  <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
+         {chatMessages.map((msg) => (
+                <TouchableOpacity 
+                  key={msg.id} 
+                  onPress={() => msg.audio_url ? playVoiceMessage(msg.audio_url, msg.id) : null}
+                  activeOpacity={msg.audio_url ? 0.7 : 1}
+                  style={{
+                    alignSelf: msg.sender_type === 'driver' ? 'flex-end' : 'flex-start',
+                    backgroundColor: msg.sender_type === 'driver' ? '#FF9500' : '#E8E8E8',
+                    padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
+                  }}>
+                  {msg.audio_url ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 20, marginRight: 8 }}>{isPlayingAudio === msg.id ? '⏹️' : '▶️'}</Text>
+                      <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>Nota de voz</Text>
+                    </View>
+                  ) : (
+                    <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
+                  )}
                   <Text style={{ color: msg.sender_type === 'driver' ? '#ffe0b2' : '#999', fontSize: 10, marginTop: 3 }}>
                     {new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
                   </Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           <View style={{ flexDirection: 'row', padding: 10, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center' }}>
