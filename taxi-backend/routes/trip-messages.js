@@ -1,6 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configurar multer para guardar audios
+const audioStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '../uploads/audio');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `voice_${Date.now()}.mp3`);
+  }
+});
+const uploadAudio = multer({ storage: audioStorage });
 
 // Crear tabla al iniciar (si no existe)
 const initTable = async () => {
@@ -11,12 +27,15 @@ const initTable = async () => {
         trip_id INTEGER NOT NULL,
         sender_type VARCHAR(10) NOT NULL CHECK(sender_type IN ('user', 'driver')),
         sender_id INTEGER NOT NULL,
-        message TEXT NOT NULL,
+        message TEXT,
+        audio_url TEXT,
         is_read BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Tabla trip_messages verificada');
+    // Agregar columna audio_url si no existe
+    await pool.query(`ALTER TABLE trip_messages ADD COLUMN IF NOT EXISTS audio_url TEXT`);
+    console.log('✅ Tabla trip_messages verificada con audio_url');
   } catch (error) {
     console.error('❌ Error creando tabla trip_messages:', error.message);
   }
@@ -68,9 +87,52 @@ router.post('/send', async (req, res) => {
     }
 
     res.json({ success: true, message: result.rows[0] });
-  } catch (error) {
+} catch (error) {
     console.error('Error enviando mensaje:', error);
     res.status(500).json({ success: false, error: 'Error enviando mensaje' });
+  }
+});
+
+// ENVIAR NOTA DE VOZ
+router.post('/send-voice', uploadAudio.single('audio'), async (req, res) => {
+  try {
+    const { trip_id, sender_type, sender_id } = req.body;
+    if (!trip_id || !sender_type || !sender_id || !req.file) {
+      return res.status(400).json({ success: false, error: 'Faltan campos o archivo de audio' });
+    }
+    
+    const audioUrl = `${req.protocol}://${req.get('host')}/uploads/audio/${req.file.filename}`;
+    
+    const result = await pool.query(
+      'INSERT INTO trip_messages (trip_id, sender_type, sender_id, message, audio_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [trip_id, sender_type, sender_id, '🎤 Nota de voz', audioUrl]
+    );
+
+    // Si el conductor envió, notificar al usuario
+    if (sender_type === 'driver') {
+      try {
+        const tripResult = await pool.query(
+          `SELECT t.user_id, u.fcm_token FROM trips t JOIN users u ON t.user_id = u.id WHERE t.id = $1`,
+          [trip_id]
+        );
+        if (tripResult.rows[0]?.fcm_token) {
+          const admin = require('firebase-admin');
+          await admin.messaging().send({
+            token: tripResult.rows[0].fcm_token,
+            data: { type: 'NEW_CHAT_MESSAGE', tripId: trip_id.toString(), message: '🎤 Nota de voz', senderType: 'driver' },
+            android: { priority: 'high' }
+          });
+          console.log('✅ Notificación de nota de voz enviada al usuario');
+        }
+      } catch (fcmError) {
+        console.error('⚠️ Error enviando notificación:', fcmError.message);
+      }
+    }
+
+    res.json({ success: true, message: result.rows[0] });
+  } catch (error) {
+    console.error('Error enviando nota de voz:', error);
+    res.status(500).json({ success: false, error: 'Error enviando nota de voz' });
   }
 });
 
