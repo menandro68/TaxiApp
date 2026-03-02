@@ -29,6 +29,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RatingSystem from './src/components/RatingSystem';
 import VehicleSelector from './src/components/VehicleSelector';
+import RNFS from 'react-native-fs';
 import SplashScreen from './src/screens/SplashScreen';
 import { ErrorBoundary, GlobalErrorHandler } from './src/utils/errorHandling';
 import TestEncryption from './src/utils/TestEncryption';
@@ -1804,7 +1805,7 @@ const closeChatModal = () => {
     if (!hasPermission) { Alert.alert('Error', 'Se requiere permiso de micrófono'); return; }
     try {
       setIsRecording(true);
-      const path = Platform.OS === 'android' ? `${Date.now()}.mp3` : 'voice.m4a';
+     const path = Platform.OS === 'android' ? `${RNFS.CachesDirectoryPath}/${Date.now()}.mp3` : `${RNFS.CachesDirectoryPath}/voice.m4a`;
       await audioRecorderPlayer.startRecorder(path);
       audioRecorderPlayer.addRecordBackListener((e) => {
         const minutes = Math.floor(e.currentPosition / 60000);

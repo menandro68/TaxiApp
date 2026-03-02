@@ -235,40 +235,85 @@ useEffect(() => {
     }
   }, [tripPhase]);
 
-  // ACTUALIZAR TIEMPO ESTIMADO CADA 30 SEGUNDOS
+  // ACTUALIZAR TIEMPO ESTIMADO CADA 15 SEGUNDOS
+  const currentLocationRef = useRef(currentLocation);
+  const onRouteInfoUpdateRef = useRef(onRouteInfoUpdate);
+  const navigationTargetRef = useRef(navigationTarget);
+  const etaIntervalRef = useRef(null);
+  
+  useEffect(() => { currentLocationRef.current = currentLocation; }, [currentLocation]);
+  useEffect(() => { onRouteInfoUpdateRef.current = onRouteInfoUpdate; }, [onRouteInfoUpdate]);
+  useEffect(() => { navigationTargetRef.current = navigationTarget; }, [navigationTarget]);
+  
   useEffect(() => {
-    if (!currentTrip || !currentLocation || !navigationTarget) return;
+    if (!currentTrip || !navigationTarget) return;
     
-    const updateInterval = setInterval(async () => {
+    // Evitar múltiples intervalos
+    if (etaIntervalRef.current) {
+      console.log('🕐 ETA intervalo ya existe, ignorando');
+      return;
+    }
+    
+    console.log('🕐 CREANDO intervalo ETA');
+    
+    const updateETA = async () => {
+      const loc = currentLocationRef.current;
+      const target = navigationTargetRef.current;
+      console.log('🕐 updateETA - loc:', !!loc, 'target:', !!target);
+      
+      if (!loc || !loc.latitude) {
+        console.log('❌ ETA: Sin ubicación');
+        return;
+      }
+      if (!target || !target.latitude) {
+        console.log('❌ ETA: Sin destino');
+        return;
+      }
+      
       try {
-        const origin = `${currentLocation.latitude},${currentLocation.longitude}`;
-        const dest = `${navigationTarget.latitude},${navigationTarget.longitude}`;
+        const origin = `${loc.latitude},${loc.longitude}`;
+        const dest = `${target.latitude},${target.longitude}`;
+        console.log('🌐 ETA fetch:', origin, '->', dest);
+        
         const response = await fetch(
-          `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&key=AIzaSyCijgRjWqhJdJfGUaKoqVCxHF8xdRcd6_c&language=es`
+          `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&key=${GOOGLE_MAPS_APIKEY}&language=es`
         );
         const data = await response.json();
+        console.log('📡 ETA response status:', data.status);
+        
         if (data.routes && data.routes[0] && data.routes[0].legs) {
           const leg = data.routes[0].legs[0];
           setRouteInfo({
             distanceText: leg.distance.text,
             durationText: leg.duration.text
           });
-          if (onRouteInfoUpdate) {
-            onRouteInfoUpdate({
+          if (onRouteInfoUpdateRef.current) {
+            onRouteInfoUpdateRef.current({
               distanceText: leg.distance.text,
               durationText: leg.duration.text,
               durationMinutes: Math.round(leg.duration.value / 60)
             });
           }
-          console.log('⏱️ Tiempo actualizado:', leg.duration.text);
+          console.log('⏱️ ETA actualizado:', leg.duration.text);
+        } else {
+          console.log('⚠️ ETA: Sin rutas en respuesta');
         }
       } catch (error) {
-        console.log('⚠️ Error actualizando tiempo:', error.message);
+        console.log('❌ ETA error:', error.message);
       }
-    }, 30000); // Cada 30 segundos
+    };
+    
+    updateETA(); // Ejecutar inmediatamente
+    etaIntervalRef.current = setInterval(updateETA, 15000);
 
-    return () => clearInterval(updateInterval);
-  }, [currentTrip, currentLocation, navigationTarget, onRouteInfoUpdate]);
+    return () => {
+      if (etaIntervalRef.current) {
+        clearInterval(etaIntervalRef.current);
+        etaIntervalRef.current = null;
+        console.log('🕐 Intervalo ETA limpiado');
+      }
+    };
+  }, [currentTrip?.id, navigationTarget?.latitude]); // ← DEPENDENCIAS SIMPLIFICADAS
 
   // Actualizar paso de navegación en tiempo real
   useEffect(() => {

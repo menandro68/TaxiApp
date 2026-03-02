@@ -37,6 +37,7 @@ import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import Sound from 'react-native-sound';
+import RNFS from 'react-native-fs';
 import { Vibration } from 'react-native';
 import { NativeModules, AppState } from 'react-native';
 const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
@@ -2550,7 +2551,7 @@ const loadDriverChatMessages = async () => {
     if (!hasPermission) { Alert.alert('Error', 'Se requiere permiso de micrófono'); return; }
     try {
       setIsRecording(true);
-      const path = Platform.OS === 'android' ? `${Date.now()}.mp3` : 'voice.m4a';
+      const path = Platform.OS === 'android' ? `${RNFS.CachesDirectoryPath}/${Date.now()}.mp3` : `${RNFS.CachesDirectoryPath}/voice.m4a`;
       await audioRecorderPlayer.startRecorder(path);
       audioRecorderPlayer.addRecordBackListener((e) => {
         const minutes = Math.floor(e.currentPosition / 60000);
