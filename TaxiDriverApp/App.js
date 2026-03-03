@@ -3643,12 +3643,14 @@ const playVoiceMessage = async (audioUrl, msgId) => {
                     backgroundColor: msg.sender_type === 'driver' ? '#FF9500' : '#E8E8E8',
                     padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
                   }}>
-                  {msg.audio_url ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={{ fontSize: 20, marginRight: 8 }}>{isPlayingAudio === msg.id ? '⏹️' : '▶️'}</Text>
-                      <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>Nota de voz</Text>
-                    </View>
-                  ) : (
+               {msg.audio_url ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+                          <Text style={{ color: '#fff', fontSize: 12 }}>{isPlayingAudio === msg.id ? '■' : '▶'}</Text>
+                        </View>
+                        <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>Nota de voz</Text>
+                      </View>
+                    ) : (
                     <Text style={{ color: msg.sender_type === 'driver' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
                   )}
                   <Text style={{ color: msg.sender_type === 'driver' ? '#ffe0b2' : '#999', fontSize: 10, marginTop: 3 }}>

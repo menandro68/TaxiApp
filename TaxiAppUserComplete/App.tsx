@@ -4041,11 +4041,30 @@ onPress={() => {
               </View>
               <ScrollView ref={chatScrollRef} style={{ maxHeight: 200, marginBottom: 15 }} onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}>
                 {chatMessages.length === 0 && (<Text style={{ textAlign: 'center', color: '#999' }}>No hay mensajes</Text>)}
-                {chatMessages.map((msg) => (
-                  <View key={msg.id} style={{ alignSelf: msg.sender_type === 'user' ? 'flex-end' : 'flex-start', backgroundColor: msg.sender_type === 'user' ? '#FF9500' : '#E8E8E8', padding: 8, borderRadius: 10, marginVertical: 2, maxWidth: '80%' }}>
-                    <Text style={{ color: msg.sender_type === 'user' ? '#fff' : '#333', fontSize: 14 }}>{msg.message}</Text>
-                    <Text style={{ color: msg.sender_type === 'user' ? '#ffe0b2' : '#999', fontSize: 9 }}>{new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}</Text>
-                  </View>
+           {chatMessages.map((msg) => (
+                  <TouchableOpacity 
+                    key={msg.id} 
+                    onPress={() => msg.audio_url ? playVoiceMessage(msg.audio_url, msg.id) : null}
+                    activeOpacity={msg.audio_url ? 0.7 : 1}
+                    style={{
+                      alignSelf: msg.sender_type === 'user' ? 'flex-end' : 'flex-start',
+                      backgroundColor: msg.sender_type === 'user' ? '#FF9500' : '#E8E8E8',
+                      padding: 10, borderRadius: 15, marginVertical: 3, maxWidth: '75%'
+                    }}>
+                {msg.audio_url ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+                          <Text style={{ color: '#fff', fontSize: 12 }}>{isPlayingAudio === msg.id ? '■' : '▶'}</Text>
+                        </View>
+                        <Text style={{ color: msg.sender_type === 'user' ? '#fff' : '#333', fontSize: 15 }}>Nota de voz</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ color: msg.sender_type === 'user' ? '#fff' : '#333', fontSize: 15 }}>{msg.message}</Text>
+                    )}
+                    <Text style={{ color: msg.sender_type === 'user' ? '#ffe0b2' : '#999', fontSize: 10, marginTop: 3 }}>
+                      {new Date(msg.created_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </TouchableOpacity>
                 ))}
               </ScrollView>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
