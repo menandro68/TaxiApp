@@ -211,10 +211,10 @@ const requestScreenPermissions = async () => {
   const [driverETA, setDriverETA] = useState('');
   const [isDriverMoving, setIsDriverMoving] = useState(false);
   const [trackingActive, setTrackingActive] = useState(false);
- const [showThirdPartyModal, setShowThirdPartyModal] = useState(false);
+  const [showThirdPartyModal, setShowThirdPartyModal] = useState(false);
   const [thirdPartyInfo, setThirdPartyInfo] = useState(null);
-  const [thirdPartyOrigin, setThirdPartyOrigin] = useState('');
-  const [thirdPartyDestination, setThirdPartyDestination] = useState('');
+  const [thirdPartyOrigin, setThirdPartyOrigin] = useState(null);
+  const [thirdPartyDestination, setThirdPartyDestination] = useState(null);
   const [thirdPartyLocationField, setThirdPartyLocationField] = useState(null);
   const [locationPermissionStatus, setLocationPermissionStatus] = useState('unknown');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -366,11 +366,19 @@ useEffect(() => {
        }
 
           // Si es para modal de terceros
-          if (thirdPartyLocationField) {
+ if (thirdPartyLocationField) {
             if (thirdPartyLocationField === 'origen') {
-              setThirdPartyOrigin(favoriteAddress.address);
+              setThirdPartyOrigin({
+                address: favoriteAddress.address,
+                latitude: favoriteAddress.coordinates?.lat || null,
+                longitude: favoriteAddress.coordinates?.lng || null
+              });
             } else if (thirdPartyLocationField === 'destino') {
-              setThirdPartyDestination(favoriteAddress.address);
+              setThirdPartyDestination({
+                address: favoriteAddress.address,
+                latitude: favoriteAddress.coordinates?.lat || null,
+                longitude: favoriteAddress.coordinates?.lng || null
+              });
             }
             setThirdPartyLocationField(null);
             setTimeout(() => setShowThirdPartyModal(true), 300);
@@ -1303,12 +1311,20 @@ const loadUserState = async () => {
       console.log('Nueva ubicacion seleccionada:', location);
 
       // Si es para modal de terceros, actualizar y regresar
-      if (thirdPartyLocationField) {
-        const address = location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
+     if (thirdPartyLocationField) {
+        const address = location.address || `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;     
         if (thirdPartyLocationField === 'origen') {
-          setThirdPartyOrigin(address);
+          setThirdPartyOrigin({
+            address: address,
+            latitude: location.latitude,
+            longitude: location.longitude
+          });
         } else if (thirdPartyLocationField === 'destino') {
-          setThirdPartyDestination(address);
+          setThirdPartyDestination({
+            address: address,
+            latitude: location.latitude,
+            longitude: location.longitude
+          });
         }
         setThirdPartyLocationField(null);
         setShowLocationModal(false);
@@ -2992,13 +3008,23 @@ onPress={() => {
             setShowDestinationSelectorForAdd(false);
             setShowLocationModal(false);
 
-            // Si es para modal de terceros
+        // Si es para modal de terceros
             if (thirdPartyLocationField) {
               const address = place.name || place.address;
+              const lat = place.coordinates?.lat || place.location?.latitude || null;
+              const lng = place.coordinates?.lng || place.location?.longitude || null;
               if (thirdPartyLocationField === 'origen') {
-                setThirdPartyOrigin(address);
+                setThirdPartyOrigin({
+                  address: address,
+                  latitude: lat,
+                  longitude: lng
+                });
               } else if (thirdPartyLocationField === 'destino') {
-                setThirdPartyDestination(address);
+                setThirdPartyDestination({
+                  address: address,
+                  latitude: lat,
+                  longitude: lng
+                });
               }
               setThirdPartyLocationField(null);
               setTimeout(() => setShowThirdPartyModal(true), 300);
@@ -4373,10 +4399,10 @@ userLocation={tripRequest?.origin || userLocation}
       {/* Modal de viajes para terceros */}
 <ThirdPartyRide
   visible={showThirdPartyModal}
-  onClose={() => {
+onClose={() => {
     setShowThirdPartyModal(false);
-    setThirdPartyOrigin('');
-    setThirdPartyDestination('');
+    setThirdPartyOrigin(null);
+    setThirdPartyDestination(null);
     setThirdPartyLocationField(null);
   }}
   onSelectLocation={(field) => {
@@ -4400,18 +4426,25 @@ onConfirm={(rideData) => {
 setThirdPartyInfo(rideData);
     setShowThirdPartyModal(false);
     
-    if (rideData.isForOther) {
+if (rideData.isForOther) {
       // Actualizar campos de pantalla principal SOLO para terceros
-      if (rideData.passengerInfo?.origen) {
-        setUserLocation(prevLocation => ({
-          latitude: prevLocation?.latitude || 18.4861,
-          longitude: prevLocation?.longitude || -69.9312,
-          address: rideData.passengerInfo.origen,
+      if (thirdPartyOrigin) {
+        setUserLocation({
+          latitude: thirdPartyOrigin.latitude || 18.4861,
+          longitude: thirdPartyOrigin.longitude || -69.9312,
+          address: thirdPartyOrigin.address || rideData.passengerInfo.origen,
           source: 'third_party'
-        }));
+        });
       }
-      if (rideData.passengerInfo?.destino) {
-        setDestination(rideData.passengerInfo.destino);
+      if (thirdPartyDestination) {
+        setDestination(thirdPartyDestination.address || rideData.passengerInfo.destino);
+        setSelectedDestination({
+          name: thirdPartyDestination.address,
+          location: {
+            latitude: thirdPartyDestination.latitude,
+            longitude: thirdPartyDestination.longitude
+          }
+        });
       }
       
       Alert.alert(
@@ -4649,12 +4682,22 @@ onPress={() => {
       return;
  }
 
-    // Si es para modal de terceros
+// Si es para modal de terceros
+    console.log('📍 DEBUG MapPicker Confirmar - thirdPartyLocationField:', thirdPartyLocationField);
     if (thirdPartyLocationField) {
+      console.log('📍 DEBUG - Guardando origen/destino tercero:', address);
       if (thirdPartyLocationField === 'origen') {
-        setThirdPartyOrigin(address);
+        setThirdPartyOrigin({
+          address: address,
+          latitude: mapPickerLocation.latitude,
+          longitude: mapPickerLocation.longitude
+        });
       } else if (thirdPartyLocationField === 'destino') {
-        setThirdPartyDestination(address);
+        setThirdPartyDestination({
+          address: address,
+          latitude: mapPickerLocation.latitude,
+          longitude: mapPickerLocation.longitude
+        });
       }
       setThirdPartyLocationField(null);
       setShowMapPicker(false);

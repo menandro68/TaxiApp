@@ -19,16 +19,16 @@ const ThirdPartyRide = ({ visible, onClose, onConfirm, onSelectLocation, selecte
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState({});
 
-  // Actualizar cuando se seleccione ubicación externa
+// Actualizar cuando se seleccione ubicación externa
   useEffect(() => {
     if (selectedOrigin) {
-      setPuntoOrigen(selectedOrigin);
+      setPuntoOrigen(selectedOrigin.address || selectedOrigin);
     }
   }, [selectedOrigin]);
 
   useEffect(() => {
     if (selectedDestination) {
-      setDestinoViaje(selectedDestination);
+      setDestinoViaje(selectedDestination.address || selectedDestination);
     }
   }, [selectedDestination]);
 
