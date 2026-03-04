@@ -91,7 +91,7 @@ const getDistanceToRoute = (location, routeCoords) => {
   
   return minDistance;
 };
-const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination, onCancelTrip, onRouteInfoUpdate }) => {
+const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, navPreference = 'integrada', currentStopIndex, tripStops, onLocationUpdate, onStartBackgroundTracking, onArrivedAtPickup, onArrivedAtDestination, onCancelTrip, onRouteInfoUpdate }) => {
   const mapRef = useRef(null);
   const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
   const [routeInfo, setRouteInfo] = useState(null);
@@ -647,9 +647,11 @@ useEffect(() => {
     });
   };
 
-  const startNavigation = async () => {
+const startNavigation = async () => {
     console.log('🚀 startNavigation INICIADO');
+    console.log('📱 Preferencia de navegación:', navPreference);
 
+    
     // Verificar que tenemos destino
     const target = navigationTarget || pickupCoord || destCoord;
     if (!target) {
@@ -658,6 +660,31 @@ useEffect(() => {
       return;
     }
     console.log('✅ Target:', target.latitude, target.longitude);
+
+// Si el usuario prefiere Google Maps o Waze, abrir directamente
+    if (navPreference === 'google') {
+      console.log('📍 Abriendo Google Maps...');
+      openExternalNavigation(target, 'google');
+      // Iniciar background tracking para detectar llegada
+      if (onStartBackgroundTracking && currentTrip?.id) {
+        const targetType = tripPhase === 'started' ? 'destination' : 'pickup';
+        onStartBackgroundTracking(currentTrip.id, target.latitude, target.longitude, targetType);
+      }
+      return;
+    }
+    if (navPreference === 'waze') {
+      console.log('🚗 Abriendo Waze...');
+      openExternalNavigation(target, 'waze');
+      // Iniciar background tracking para detectar llegada
+      if (onStartBackgroundTracking && currentTrip?.id) {
+        const targetType = tripPhase === 'started' ? 'destination' : 'pickup';
+        onStartBackgroundTracking(currentTrip.id, target.latitude, target.longitude, targetType);
+      }
+      return;
+    }
+
+    // Navegación integrada - continuar con el flujo normal
+    console.log('🗺️ Usando navegación integrada...');
 
     // ESTRATEGIA ROBUSTA: Múltiples fuentes de ubicación
     let location = currentLocation || propUserLocation;

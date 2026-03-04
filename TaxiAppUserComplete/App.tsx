@@ -883,16 +883,31 @@ const setupNotificationHandlers = () => {
    global.handleDriverAssigned = async (driverData) => {
       console.log('Conductor asignado via notificacion:', driverData);
       
- // Navegar de vuelta a Main ANTES de cambiar estados (evita crash en DriverSearchScreen)
-      if (global.navigationRef?.isReady()) {
-    console.log('🔙 Navegando de DriverSearchScreen a Main...');
-        global.navigationRef.goBack();
-        // Esperar a que la navegación complete antes de actualizar estados
-        const { InteractionManager } = require('react-native');
-        await new Promise(resolve => InteractionManager.runAfterInteractions(resolve));
-        console.log('✅ Navegación completada, actualizando estados...');
+// Navegar de vuelta a Main con reset robusto (evita congelamiento)
+      try {
+        if (global.navigationRef?.isReady()) {
+          console.log('🔙 Navegando de DriverSearchScreen a Main (reset robusto)...');
+          
+          // Usar reset en lugar de goBack para garantizar navegación
+          global.navigationRef.reset({
+            index: 0,
+            routes: [{ name: 'Main', params: { driverAssigned: true } }],
+          });
+          
+          // Esperar navegación con timeout de seguridad
+          const { InteractionManager } = require('react-native');
+          await Promise.race([
+            new Promise(resolve => InteractionManager.runAfterInteractions(resolve)),
+            new Promise(resolve => setTimeout(resolve, 2000)) // Timeout 2s
+          ]);
+          console.log('✅ Navegación completada, actualizando estados...');
+        } else {
+          console.log('⚠️ NavigationRef no ready, continuando sin navegación...');
+        }
+      } catch (navError) {
+        console.error('❌ Error en navegación:', navError);
+        // Continuar de todos modos para actualizar estados
       }
-
       const mockDriverInfo = {
         id: driverData.driverId || 'driver_001',
         name: driverData.driverName || 'Conductor',

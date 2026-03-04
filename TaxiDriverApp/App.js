@@ -39,6 +39,7 @@ import Geolocation from '@react-native-community/geolocation';
 import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
 import { Vibration } from 'react-native';
+import { DeviceEventEmitter } from 'react-native';
 import { NativeModules, AppState } from 'react-native';
 const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 
@@ -102,13 +103,15 @@ export default function DriverApp({ navigation }) {
   const [pendingRequest, setPendingRequest] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, map, earnings
   const [earnings, setEarnings] = useState({ today: 420, week: 2100, month: 8500 });
- const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [showPreRegister, setShowPreRegister] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showGPSModal, setShowGPSModal] = useState(false);
+  const [navPreference, setNavPreference] = useState('integrada');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editName, setEditName] = useState('');
@@ -296,6 +299,9 @@ useEffect(() => {
           // Cargar preferencia de modo oscuro
           const savedDarkMode = await AsyncStorage.getItem('darkMode');
           if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+          // Cargar preferencia de navegación GPS
+          const savedNavPref = await AsyncStorage.getItem('@nav_preference');
+          if (savedNavPref) setNavPreference(savedNavPref);
           // Cargar ganancias reales del servidor
           loadRealEarnings(driver.id);
         }
@@ -995,10 +1001,23 @@ useEffect(() => {
         }
       }
     }
-    
-    // Verificar llegada al DESTINO (cuando tripPhase es 'started')
+// Verificar llegada al DESTINO (cuando tripPhase es 'started')
     checkAutoCompleteTrip();
-  }, 5000); // Verificar cada 5 segundos
+    
+    // DETECCIÓN RÁPIDA: Verificar variables globales del background tracking
+    if (global.arrivedAtDestination && tripPhase === 'started') {
+      global.arrivedAtDestination = false;
+      console.log('🎯 LLEGADA AL DESTINO DETECTADA VIA BACKGROUND!');
+      Alert.alert(
+        '📍 Llegada al Destino',
+        '¿Has llegado al destino? El viaje se completará automáticamente.',
+        [
+          { text: 'Aún no', style: 'cancel' },
+          { text: 'Sí, completar', onPress: () => completeTrip() }
+        ]
+      );
+    }
+}, 1500); // Verificar cada 1.5 segundo para detección rápida
 
   return () => clearInterval(interval);
 }, [currentTrip, userLocation, tripPhase]);
@@ -1036,7 +1055,10 @@ const backgroundOptions = {
 const backgroundTask = async (taskData) => {
   console.log('🔄 BACKGROUND TASK EJECUTANDO...');
   console.log('🔍 taskData recibido:', JSON.stringify(taskData));
-  const { pickupLat, pickupLng, tripId } = taskData.parameters || taskData;
+  const { targetLat, targetLng, targetType = 'pickup', tripId } = taskData.parameters || taskData;
+  // Compatibilidad con llamadas antiguas
+  const destLat = targetLat || taskData.parameters?.pickupLat;
+  const destLng = targetLng || taskData.parameters?.pickupLng;
   
   while (BackgroundService.isRunning()) {
     // SOLO pedir GPS si la app está en BACKGROUND
@@ -1057,31 +1079,38 @@ const backgroundTask = async (taskData) => {
       const { latitude, longitude } = position.coords;
       console.log(`📍 Background: ${latitude}, ${longitude}`);
 
-      // Calcular distancia al pickup
+  // Calcular distancia al destino (pickup o destination)
       const R = 6371e3;
       const φ1 = latitude * Math.PI / 180;
-      const φ2 = pickupLat * Math.PI / 180;
-      const Δφ = (pickupLat - latitude) * Math.PI / 180;
-      const Δλ = (pickupLng - longitude) * Math.PI / 180;
+      const φ2 = destLat * Math.PI / 180;
+      const Δφ = (destLat - latitude) * Math.PI / 180;
+      const Δλ = (destLng - longitude) * Math.PI / 180;
       const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
                 Math.cos(φ1) * Math.cos(φ2) *
                 Math.sin(Δλ/2) * Math.sin(Δλ/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
       const distance = R * c;
 
-      console.log(`📍 Distancia al pickup: ${distance.toFixed(0)} metros`);
+console.log(`📍 Distancia al ${targetType}: ${distance.toFixed(0)} metros`);
 
       // Si está a menos de 50 metros
       if (distance < 50) {
-        console.log('✅ Llegada detectada en background!');
+   console.log(`✅ Llegada al ${targetType} detectada en background!`);
         
-        // Notificar al backend
+        // MARCAR LLEGADA PARA QUE LA UI REACCIONE INMEDIATAMENTE
+        if (targetType === 'destination') {
+          global.arrivedAtDestination = true;
+        } else {
+          global.arrivedAtPickup = true;
+        }
+        
+        // Notificar al backend según el tipo
+        const newStatus = targetType === 'destination' ? 'completed' : 'arrived';
         await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'arrived' })
+          body: JSON.stringify({ status: newStatus })
         });
-
         // Detener el servicio
         await BackgroundService.stop();
         break;
@@ -1100,18 +1129,21 @@ const backgroundTask = async (taskData) => {
 };
 
 // Iniciar tracking en background
-const startBackgroundTracking = async (tripId, pickupLat, pickupLng) => {
+const startBackgroundTracking = async (tripId, targetLat, targetLng, targetType = 'pickup') => {
   try {
     if (BackgroundService.isRunning()) {
       await BackgroundService.stop();
     }
     
-    await BackgroundService.start(backgroundTask, {
+await BackgroundService.start(backgroundTask, {
       ...backgroundOptions,
-      parameters: { tripId, pickupLat, pickupLng },
+      taskDesc: targetType === 'destination' ? 'Navegando hacia el destino...' : 'Navegando hacia el pasajero...',
+      parameters: { tripId, targetLat, targetLng, targetType },
     });
-    setIsNavigatingToPickup(true); // ACTIVAR detecci�n de llegada
-    console.log('? Background tracking iniciado');
+    if (targetType === 'pickup') {
+      setIsNavigatingToPickup(true);
+    }
+    console.log(`🚀 Background tracking iniciado hacia ${targetType}`);
   } catch (error) {
     console.error('Error iniciando background tracking:', error);
   }
@@ -2141,10 +2173,11 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
   {/* Mini Mapa en Dashboard - Ocultar cuando conductor llegó */}
  {tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
     <View style={{height: 350,marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
-        <MapComponent
+     <MapComponent
           currentTrip={currentTrip}
           tripPhase={tripPhase}
           userLocation={userLocation}
+          navPreference={navPreference}
           currentStopIndex={currentStopIndex}
           tripStops={tripStops}
           onStartBackgroundTracking={startBackgroundTracking}
@@ -2178,6 +2211,32 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
  </View>
     </View>
     </View>
+    
+{/* Botón de Configuración GPS */}
+    <TouchableOpacity
+      style={{
+        backgroundColor: darkMode ? '#4b5563' : '#f0f9ff',
+    paddingVertical: 6,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        marginTop: -25,
+        marginBottom: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+  borderColor: darkMode ? '#6b7280' : '#3b82f6',
+        width: '50%',
+        alignSelf: 'center',
+      }}
+
+      onPress={() => setShowGPSModal(true)}
+    >
+     <Text style={{ fontSize: 13, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600' }}>
+        ⚙️ GPS
+      </Text>
+    </TouchableOpacity>
+    
     </ScrollView>
     </View>
   );
@@ -2195,6 +2254,7 @@ const renderMap= () => (
 currentTrip={currentTrip}
   tripPhase={tripPhase}
   userLocation={userLocation}
+  navPreference={navPreference}
   currentStopIndex={currentStopIndex}
   tripStops={tripStops}
   onStartBackgroundTracking={startBackgroundTracking}
@@ -3688,6 +3748,74 @@ const playVoiceMessage = async (audioUrl, msgId) => {
     </TouchableOpacity>
   )}
 </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Configuración GPS */}
+      <Modal visible={showGPSModal} animationType="slide" transparent={true} onRequestClose={() => setShowGPSModal(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: darkMode ? '#1f2937' : 'white', borderRadius: 20, padding: 25, width: '85%', maxWidth: 350 }}>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: darkMode ? '#f3f4f6' : '#1f2937', textAlign: 'center', marginBottom: 20 }}>
+              ⚙️ Navegación GPS
+            </Text>
+            <Text style={{ fontSize: 14, color: darkMode ? '#9ca3af' : '#6b7280', textAlign: 'center', marginBottom: 20 }}>
+              Selecciona tu app de navegación preferida:
+            </Text>
+            
+            <TouchableOpacity
+              style={{ backgroundColor: navPreference === 'integrada' ? '#3b82f6' : (darkMode ? '#374151' : '#f3f4f6'), padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => setNavPreference('integrada')}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🗺️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: navPreference === 'integrada' ? 'white' : (darkMode ? '#f3f4f6' : '#1f2937') }}>Navegación Integrada</Text>
+                <Text style={{ fontSize: 12, color: navPreference === 'integrada' ? '#e0e7ff' : (darkMode ? '#9ca3af' : '#6b7280') }}>Con voz, dentro de la app</Text>
+              </View>
+              {navPreference === 'integrada' && <Text style={{ color: 'white', fontSize: 18 }}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ backgroundColor: navPreference === 'google' ? '#3b82f6' : (darkMode ? '#374151' : '#f3f4f6'), padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => setNavPreference('google')}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>📍</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: navPreference === 'google' ? 'white' : (darkMode ? '#f3f4f6' : '#1f2937') }}>Google Maps</Text>
+                <Text style={{ fontSize: 12, color: navPreference === 'google' ? '#e0e7ff' : (darkMode ? '#9ca3af' : '#6b7280') }}>Abre Google Maps externo</Text>
+              </View>
+              {navPreference === 'google' && <Text style={{ color: 'white', fontSize: 18 }}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ backgroundColor: navPreference === 'waze' ? '#3b82f6' : (darkMode ? '#374151' : '#f3f4f6'), padding: 15, borderRadius: 12, marginBottom: 20, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => setNavPreference('waze')}
+            >
+              <Text style={{ fontSize: 24, marginRight: 15 }}>🚗</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: navPreference === 'waze' ? 'white' : (darkMode ? '#f3f4f6' : '#1f2937') }}>Waze</Text>
+                <Text style={{ fontSize: 12, color: navPreference === 'waze' ? '#e0e7ff' : (darkMode ? '#9ca3af' : '#6b7280') }}>Abre Waze externo</Text>
+              </View>
+              {navPreference === 'waze' && <Text style={{ color: 'white', fontSize: 18 }}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ backgroundColor: '#10b981', padding: 15, borderRadius: 12, alignItems: 'center' }}
+              onPress={async () => {
+                await AsyncStorage.setItem('@nav_preference', navPreference);
+                setShowGPSModal(false);
+                Alert.alert('✅ Guardado', `Navegación configurada: ${navPreference === 'integrada' ? 'Integrada' : navPreference === 'google' ? 'Google Maps' : 'Waze'}`);
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Guardar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ marginTop: 10, padding: 10, alignItems: 'center' }}
+              onPress={() => setShowGPSModal(false)}
+            >
+              <Text style={{ color: darkMode ? '#9ca3af' : '#6b7280', fontSize: 14 }}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
