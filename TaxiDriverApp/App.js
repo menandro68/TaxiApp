@@ -2216,7 +2216,7 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
     <TouchableOpacity
       style={{
         backgroundColor: darkMode ? '#4b5563' : '#f0f9ff',
-    paddingVertical: 6,
+        paddingVertical: 6,
         paddingHorizontal: 15,
         borderRadius: 20,
         marginTop: -25,
@@ -2225,15 +2225,17 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-  borderColor: darkMode ? '#6b7280' : '#3b82f6',
+        borderColor: darkMode ? '#6b7280' : '#3b82f6',
         width: '50%',
         alignSelf: 'center',
       }}
-
       onPress={() => setShowGPSModal(true)}
     >
-     <Text style={{ fontSize: 13, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600' }}>
-        ⚙️ GPS
+      <Text style={{ fontSize: 13, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600', marginRight: 5 }}>
+        ⚙️
+      </Text>
+      <Text style={{ fontSize: 13, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600' }}>
+        Navegación
       </Text>
     </TouchableOpacity>
     
