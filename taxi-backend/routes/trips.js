@@ -486,11 +486,14 @@ router.post('/accept/:tripId', async (req, res) => {
 
         // Asignar conductor y cambiar estado a "assigned"
         const result = await db.query(
-            `UPDATE trips SET driver_id = $1, status = 'assigned' WHERE id = $2 RETURNING *`,
+          `UPDATE trips SET driver_id = $1, status = 'assigned' WHERE id = $2 AND status = 'pending' RETURNING *`,
             [driver_id, tripId]
         );
 
         const trip = result.rows[0];
+        if (!trip) {
+            return res.status(400).json({ error: 'Viaje no disponible o ya fue tomado', success: false });
+        }
         console.log(`✅ Viaje ${tripId} actualizado a status=assigned, driver_id=${driver_id}`);
 
         // Obtener info del conductor
