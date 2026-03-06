@@ -153,11 +153,16 @@ global.handleDriverArrivedConfirmation = (data) => {
   console.log('✅ Llegada confirmada por backend vía FCM - mostrando alerta');
   setTripPhase('arrived');
   stopBackgroundTracking();
-  Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
-    { text: 'OK', onPress: () => setActiveTab('dashboard') }
-  ]);
+  // Traer app al frente si Google Maps está abierto
+  if (BringToForeground) {
+    BringToForeground.bringAppToForeground();
+  }
+  setTimeout(() => {
+    Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
+      { text: 'OK', onPress: () => setActiveTab('dashboard') }
+    ]);
+  }, 500);
 };
-
   useEffect(() => { globalHasCurrentTrip = !!currentTrip; }, [currentTrip]);
   useEffect(() => { if (notifPrefsLoaded) saveNotificationPrefs({ sonido: notifSonido, vibracion: notifVibracion, nuevosViajes: notifNuevosViajes, mensajes: notifMensajes, pagos: notifPagos }); }, [notifSonido, notifVibracion, notifNuevosViajes, notifMensajes, notifPagos, notifPrefsLoaded]);
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'
