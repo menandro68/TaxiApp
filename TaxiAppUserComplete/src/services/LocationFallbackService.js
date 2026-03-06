@@ -14,7 +14,7 @@ const AddressCache = {
     MIN_DISTANCE_FOR_UPDATE: 100,        // 100 metros mínimo para actualizar
     COORDINATE_PRECISION: 3,             // 3 decimales (~100m de grid)
     STORAGE_KEY: 'address_cache_v2',     // Clave para AsyncStorage
-    INSTANT_CACHE_MAX_AGE: 300 * 1000   // 60 segundos para cache instantaneo (sin GPS)
+    INSTANT_CACHE_MAX_AGE: 3600 * 1000   // 60 segundos para cache instantaneo (sin GPS)
   },
   
   // Estado interno
@@ -326,6 +326,28 @@ class LocationFallbackService {
           });
         }
       }, TOTAL_TIMEOUT);
+
+      // Intentar obtener última posición del OS al instante (como Uber/InDrive)
+      Geolocation.getCurrentPosition(
+        (pos) => {
+          const accuracy = pos.coords.accuracy;
+          console.log('⚡ Posición instantánea del OS:', accuracy.toFixed(1), 'm');
+          if (!bestLocation || accuracy < (bestLocation?.accuracy ?? 9999)) {
+            bestLocation = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: accuracy,
+              timestamp: pos.timestamp
+            };
+          }
+          if (accuracy <= MIN_ACCURACY) {
+            clearTimeout(timeoutId);
+            finishWatch({ available: true, reason: 'success', message: 'GPS disponible', location: bestLocation });
+          }
+        },
+        () => { console.log('⚡ Sin posición instantánea, continuando con watchPosition...'); },
+        { enableHighAccuracy: false, timeout: 2000, maximumAge: 60000 }
+      );
 
       // Iniciar watchPosition
       console.log('Iniciando watchPosition progresivo...');
