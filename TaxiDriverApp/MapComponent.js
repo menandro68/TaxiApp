@@ -635,18 +635,42 @@ useEffect(() => {
     Tts.speak(text);
   };
 
-  // Función para abrir navegación externa (Google Maps o Waze)
-  const openExternalNavigation = (targetCoord, app = 'google') => {
+// Función para abrir navegación externa (Google Maps o Waze)
+  const openExternalNavigation = (targetCoord, app = 'google', addressName = '') => {
     const { latitude, longitude } = targetCoord;
-    const url = app === 'waze' 
-      ? `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`
-      : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
     
-    Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir la aplicación de navegación');
-    });
+    // Obtener nombre de dirección del trip actual
+    const pickupAddr = currentTrip?.pickup || currentTrip?.pickupAddress || '';
+    const destAddr = currentTrip?.destination || currentTrip?.destinationAddress || '';
+    const destinationName = addressName || (tripPhase === 'started' ? destAddr : pickupAddr) || 'Destino';
+    const encodedName = encodeURIComponent(destinationName);
+    
+    if (app === 'waze') {
+      // Waze: incluir nombre del destino
+      const wazeUrl = `waze://?ll=${latitude},${longitude}&q=${encodedName}&navigate=yes`;
+      const wazeWebUrl = `https://waze.com/ul?ll=${latitude},${longitude}&q=${encodedName}&navigate=yes`;
+      
+      console.log('🚗 Abriendo Waze con destino:', destinationName, latitude, longitude);
+      
+      Linking.canOpenURL(wazeUrl).then((supported) => {
+        if (supported) {
+          Linking.openURL(wazeUrl);
+        } else {
+          Linking.openURL(wazeWebUrl).catch(() => {
+            Alert.alert('Error', 'No se pudo abrir Waze. ¿Está instalado?');
+          });
+        }
+      });
+    } else {
+      // Google Maps
+      const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=&travelmode=driving`;
+      console.log('📍 Abriendo Google Maps con destino:', destinationName, latitude, longitude);
+      
+      Linking.openURL(googleUrl).catch(() => {
+        Alert.alert('Error', 'No se pudo abrir Google Maps');
+      });
+    }
   };
-
 const startNavigation = async () => {
     console.log('🚀 startNavigation INICIADO');
     console.log('📱 Preferencia de navegación:', navPreference);

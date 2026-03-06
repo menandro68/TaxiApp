@@ -993,9 +993,8 @@ useEffect(() => {
         );
         
         console.log(`📍 Distancia al pickup: ${distance.toFixed(0)} metros`);
-        
-        // Si está a menos de 50 metros del punto de recogida
-        if (distance < 50) {
+   // Si está a menos de 50 metros del punto de recogida (y no hay detección background pendiente)
+     if (distance < 50 && !global.arrivedAtPickup && !global.pickupAlertPending) {
           console.log('✅ Llegada al punto de recogida detectada automáticamente');
           handleArrivedAtPickup();
         }
@@ -1003,9 +1002,38 @@ useEffect(() => {
     }
 // Verificar llegada al DESTINO (cuando tripPhase es 'started')
     checkAutoCompleteTrip();
+
+// DETECCIÓN RÁPIDA PICKUP: Mostrar Alert cuando llegamos al pasajero via background
+    if (global.arrivedAtPickup && tripPhase === '' && currentTrip && !global.pickupAlertPending) {
+      global.arrivedAtPickup = false;
+      global.pickupAlertPending = true;
+      console.log('🎯 LLEGADA AL PICKUP DETECTADA VIA BACKGROUND!');
+      
+      // Reproducir voz TTS
+      try {
+        const Tts = require('react-native-tts').default;
+        Tts.speak('Has llegado al punto de recogida del pasajero');
+      } catch (e) {
+        console.log('TTS no disponible');
+      }
+      
+  // Delay para asegurar que el Alert se muestre después de estabilizar estado
+      setTimeout(() => {
+        Alert.alert(
+          '✅ Llegaste',
+          'Has llegado al punto de recogida del pasajero',
+       [{ text: 'OK', onPress: () => {
+          global.pickupAlertPending = false;
+          handleArrivedAtPickup();
+        }}]
+        );
+      }, 300);
+    }
     
     // DETECCIÓN RÁPIDA: Verificar variables globales del background tracking
     if (global.arrivedAtDestination && tripPhase === 'started') {
+    
+ 
       global.arrivedAtDestination = false;
       console.log('🎯 LLEGADA AL DESTINO DETECTADA VIA BACKGROUND!');
       Alert.alert(
@@ -1104,13 +1132,18 @@ console.log(`📍 Distancia al ${targetType}: ${distance.toFixed(0)} metros`);
           global.arrivedAtPickup = true;
         }
         
-        // Notificar al backend según el tipo
+     // Notificar al backend según el tipo
         const newStatus = targetType === 'destination' ? 'completed' : 'arrived';
-        await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
-        });
+        try {
+          await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+          });
+          console.log(`✅ Backend notificado: ${newStatus}`);
+        } catch (fetchError) {
+          console.log('⚠️ Error notificando backend (se manejará en foreground):', fetchError.message);
+        }
         // Detener el servicio
         await BackgroundService.stop();
         break;
@@ -2854,6 +2887,7 @@ const playVoiceMessage = async (audioUrl, msgId) => {
     );
   }
 
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
@@ -2862,7 +2896,7 @@ const playVoiceMessage = async (audioUrl, msgId) => {
         <Text style={styles.headerTitle}>Conductor App</Text>
   {isOffline && (
           <View style={styles.offlineIndicator}>
-            <Text style={styles.offlineText}>📡 Offline</Text>
+            <Text style={styles.offlineText}>revisa tu conexion a internet</Text>
           </View>
         )}
       </View>
