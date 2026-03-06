@@ -116,7 +116,17 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
       tripId: data.tripId,
       timestamp: Date.now()
     }));
-    await showArrivedNotification();
+    // Traer app al frente PRIMERO, independiente de la notificación
+    try {
+      if (BringToForeground) {
+        BringToForeground.bringAppToForeground();
+        console.log('📱 bringAppToForeground ejecutado');
+      }
+    } catch (e) {
+      console.log('⚠️ Error bringAppToForeground:', e.message);
+    }
+    // Notificación aparte (puede fallar sin afectar lo anterior)
+    await showArrivedNotification().catch(e => console.log('⚠️ Notif error:', e.message));
   }
 });
 
