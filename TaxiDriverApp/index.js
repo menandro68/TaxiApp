@@ -1,12 +1,14 @@
 /**
  * @format
  */
-import { AppRegistry } from 'react-native';
+import { AppRegistry, NativeModules } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AndroidImportance, AndroidVisibility } from '@notifee/react-native';
 import App from './App';
 import { name as appName } from './app.json';
+
+const { BringToForeground } = NativeModules;
 
 // Crear canal de notificación con máxima prioridad
 async function createNotificationChannel() {
@@ -27,7 +29,6 @@ async function createNotificationChannel() {
 async function showWakeNotification(tripData) {
   try {
     await createNotificationChannel();
-    
     await notifee.displayNotification({
       title: '🚕 ¡Nuevo Viaje Disponible!',
       body: `${tripData.user} - ${tripData.pickup}`,
@@ -44,22 +45,49 @@ async function showWakeNotification(tripData) {
         ongoing: false,
       },
     });
-    
     console.log('🔔 Notificación wake mostrada');
   } catch (error) {
     console.log('❌ Error mostrando notificación:', error);
   }
 }
 
+// Mostrar notificación de llegada y traer app al frente
+async function showArrivedNotification() {
+  try {
+    await createNotificationChannel();
+    await notifee.displayNotification({
+      title: '✅ Llegaste',
+      body: 'Has llegado al punto de recogida del pasajero',
+      android: {
+        channelId: 'trip_requests',
+        importance: AndroidImportance.HIGH,
+        pressAction: { id: 'default' },
+        fullScreenAction: { id: 'default' },
+        sound: 'default',
+        vibrationPattern: [300, 500],
+        smallIcon: 'ic_notification',
+        autoCancel: true,
+        ongoing: false,
+      },
+    });
+    console.log('✅ Notificación llegada mostrada');
+    // Traer app al frente
+    if (BringToForeground) {
+      BringToForeground.bringToForeground();
+      console.log('📱 App traída al frente');
+    }
+  } catch (error) {
+    console.log('❌ Error en notificación llegada:', error);
+  }
+}
+
 // Handler para mensajes en BACKGROUND
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('📨 Mensaje recibido en BACKGROUND:', remoteMessage);
-
   const { data } = remoteMessage;
 
   if (data?.type === 'NEW_TRIP_REQUEST') {
     console.log('🚕 Nueva solicitud en background - Guardando datos...');
-
     const tripData = {
       id: data.tripId,
       user: data.user || 'Usuario',
@@ -77,12 +105,18 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
       type: 'NEW_TRIP_REQUEST',
       timestamp: Date.now()
     };
-
     await AsyncStorage.setItem('pending_trip_request', JSON.stringify(tripData));
     console.log('✅ Datos del viaje guardados:', tripData.pickup);
-    
-    // MOSTRAR NOTIFICACIÓN QUE DESPIERTA LA PANTALLA
     await showWakeNotification(tripData);
+  }
+
+  if (data?.type === 'DRIVER_ARRIVED_CONFIRMATION') {
+    console.log('✅ BACKGROUND: Conductor llegó al pickup - trayendo app al frente');
+    await AsyncStorage.setItem('driver_arrived_pending', JSON.stringify({
+      tripId: data.tripId,
+      timestamp: Date.now()
+    }));
+    await showArrivedNotification();
   }
 });
 

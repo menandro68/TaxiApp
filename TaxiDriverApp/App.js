@@ -404,10 +404,28 @@ useEffect(() => {
   // Listener para verificar viaje pendiente cuando app vuelve al foreground DESDE BACKGROUND
     const appStateListener = AppState.addEventListener('change', (nextAppState) => {
       // Solo ejecutar si viene de background/inactive a active
-      if (nextAppState === 'active' && appStateRef.current.match(/inactive|background/)) {
-        console.log('📱 App volvió al foreground desde background, verificando viaje pendiente...');
-        checkPendingTrip();
+   if (nextAppState === 'active' && appStateRef.current.match(/inactive|background/)) {
+  console.log('📱 App volvió al foreground desde background, verificando viaje pendiente...');
+  checkPendingTrip();
+  // Verificar si hay llegada pendiente (cuando app estaba en background con Google Maps)
+  AsyncStorage.getItem('driver_arrived_pending').then(arrivedData => {
+    if (arrivedData) {
+      const arrived = JSON.parse(arrivedData);
+      const age = Date.now() - arrived.timestamp;
+      if (age < 60000 && currentTripRef.current) { // Máximo 1 minuto de antigüedad
+        console.log('✅ Llegada pendiente detectada al volver al foreground');
+        AsyncStorage.removeItem('driver_arrived_pending');
+        setTripPhase('arrived');
+        stopBackgroundTracking();
+        Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
+          { text: 'OK', onPress: () => setActiveTab('dashboard') }
+        ]);
+      } else {
+        AsyncStorage.removeItem('driver_arrived_pending');
       }
+    }
+  }).catch(() => {});
+}
       appStateRef.current = nextAppState;
     });
     
