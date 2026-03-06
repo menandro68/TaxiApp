@@ -316,10 +316,59 @@ router.post('/location', async (req, res) => {
             return res.status(404).json({ error: 'Conductor no encontrado' });
         }
         
+        const driver = result.rows[0];
+
+        // DETECCIÓN DE LLEGADA EN BACKEND
+        try {
+            const tripResult = await db.query(
+                `SELECT id, pickup_lat, pickup_lng, user_id FROM trips 
+                 WHERE driver_id = $1 AND status = 'assigned'
+                 LIMIT 1`,
+                [driverId]
+            );
+            if (tripResult.rows.length > 0) {
+                const trip = tripResult.rows[0];
+                if (trip.pickup_lat && trip.pickup_lng) {
+                    const R = 6371000;
+                    const dLat = (trip.pickup_lat - latitude) * Math.PI / 180;
+                    const dLon = (trip.pickup_lng - longitude) * Math.PI / 180;
+                    const a = Math.sin(dLat/2)**2 + Math.cos(latitude * Math.PI/180) * Math.cos(trip.pickup_lat * Math.PI/180) * Math.sin(dLon/2)**2;
+                    const distanceMeters = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    console.log(`📍 Conductor ${driverId} a ${distanceMeters.toFixed(0)}m del pickup`);
+                    if (distanceMeters < 80) {
+                        // Actualizar viaje a 'arrived'
+                        await db.query(`UPDATE trips SET status = 'arrived' WHERE id = $1 AND status = 'assigned'`, [trip.id]);
+                        const admin = require('firebase-admin');
+                        // FCM al conductor
+                        const driverFcm = await db.query(`SELECT fcm_token, name FROM drivers WHERE id = $1`, [driverId]);
+                        if (driverFcm.rows[0]?.fcm_token) {
+                            await admin.messaging().send({
+                                notification: { title: '✅ Llegaste', body: 'Has llegado al punto de recogida del pasajero' },
+                                data: { type: 'DRIVER_ARRIVED_CONFIRMATION', tripId: trip.id.toString() },
+                                token: driverFcm.rows[0].fcm_token
+                            }).catch(e => console.error('FCM conductor:', e.message));
+                        }
+                        // FCM al pasajero
+                        const userFcm = await db.query(`SELECT fcm_token, name FROM users WHERE id = $1`, [trip.user_id]);
+                        if (userFcm.rows[0]?.fcm_token) {
+                            await admin.messaging().send({
+                                notification: { title: '🚗 ¡Tu conductor llegó!', body: 'Tu conductor está esperándote' },
+                                data: { type: 'DRIVER_ARRIVED', tripId: trip.id.toString() },
+                                token: userFcm.rows[0].fcm_token
+                            }).catch(e => console.error('FCM usuario:', e.message));
+                        }
+                        console.log(`✅ Llegada detectada por backend para viaje ${trip.id}`);
+                    }
+                }
+            }
+        } catch (arrivalError) {
+            console.error('⚠️ Error detección llegada:', arrivalError.message);
+        }
+
         res.json({
             success: true,
             message: 'Ubicación actualizada',
-            driver: result.rows[0]
+            driver: driver
         });
     } catch (error) {
         console.error('Error actualizando ubicación:', error);
