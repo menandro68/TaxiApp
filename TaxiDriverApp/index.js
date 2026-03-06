@@ -73,7 +73,7 @@ async function showArrivedNotification() {
     console.log('✅ Notificación llegada mostrada');
     // Traer app al frente
     if (BringToForeground) {
-      BringToForeground.bringToForeground();
+      BringToForeground.bringAppToForeground();
       console.log('📱 App traída al frente');
     }
   } catch (error) {
