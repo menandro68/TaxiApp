@@ -147,6 +147,16 @@ export default function DriverApp({ navigation }) {
   const [estimatedMinutes, setEstimatedMinutes] = useState(null);
   useEffect(() => { globalEstimatedMinutes = estimatedMinutes; }, [estimatedMinutes]);
   useEffect(() => { globalTripPhase = tripPhase; }, [tripPhase]);
+  // Confirmación de llegada vía FCM desde backend (para navegadores externos)
+global.handleDriverArrivedConfirmation = (data) => {
+  if (tripPhase !== '' || !currentTrip) return; // Ya procesado
+  console.log('✅ Llegada confirmada por backend vía FCM');
+  setTripPhase('arrived');
+  stopBackgroundTracking();
+  Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
+    { text: 'OK', onPress: () => setActiveTab('dashboard') }
+  ]);
+};
   useEffect(() => { globalHasCurrentTrip = !!currentTrip; }, [currentTrip]);
   useEffect(() => { if (notifPrefsLoaded) saveNotificationPrefs({ sonido: notifSonido, vibracion: notifVibracion, nuevosViajes: notifNuevosViajes, mensajes: notifMensajes, pagos: notifPagos }); }, [notifSonido, notifVibracion, notifNuevosViajes, notifMensajes, notifPagos, notifPrefsLoaded]);
   const [isNavigatingToPickup, setIsNavigatingToPickup] = useState(false); // NUEVO: Solo detectar llegada despu�s de presionar 'Al pasajero'

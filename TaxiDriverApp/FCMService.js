@@ -107,6 +107,11 @@ class FCMService {
       // Compatibilidad con formato anterior
       console.log('🚗 Nueva solicitud de viaje recibida (formato antiguo)');
       this.handleTripRequest(data);
+    } else if (data && data.type === 'DRIVER_ARRIVED_CONFIRMATION') {
+      console.log('✅ Confirmación de llegada recibida vía FCM (backend)');
+      if (global.handleDriverArrivedConfirmation) {
+        global.handleDriverArrivedConfirmation(data);
+      }
     } else if (data && data.type === 'trip_cancelled') {
       // Usuario canceló el viaje
       console.log('❌ Viaje cancelado por el usuario');
@@ -127,6 +132,10 @@ class FCMService {
     if (data && data.type === 'NEW_TRIP_REQUEST') {
       console.log('🚕 Usuario tocó notificación de nuevo servicio');
       this.handleNewServiceRequest(data);
+    } else if (data && data.type === 'DRIVER_ARRIVED_CONFIRMATION') {
+      if (global.handleDriverArrivedConfirmation) {
+        global.handleDriverArrivedConfirmation(data);
+      }
     } else if (data && data.type === 'trip_request') {
       console.log('🚗 Usuario tocó notificación de viaje');
       this.handleTripRequest(data);
