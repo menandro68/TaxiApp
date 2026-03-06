@@ -964,8 +964,35 @@ router.put('/status/:tripId', async (req, res) => {
                     });
                     console.log(`✅ Usuario ${user.name} notificado: conductor llegó`);
                 }
+                
             } catch (notifyError) {
                 console.error('⚠️ Error notificando llegada:', notifyError.message);
+            }
+
+            // NOTIFICAR AL CONDUCTOR QUE LLEGÓ (confirmación redundante vía FCM)
+            try {
+                const driverResult = await db.query(
+                    `SELECT fcm_token, name FROM drivers WHERE id = $1`,
+                    [trip.driver_id]
+                );
+                const driver = driverResult.rows[0];
+                if (driver && driver.fcm_token) {
+                    const admin = require('firebase-admin');
+                    await admin.messaging().send({
+                        notification: {
+                            title: '✅ Llegaste',
+                            body: 'Has llegado al punto de recogida del pasajero'
+                        },
+                        data: {
+                            type: 'DRIVER_ARRIVED_CONFIRMATION',
+                            tripId: tripId.toString()
+                        },
+                        token: driver.fcm_token
+                    });
+                    console.log(`✅ Conductor ${driver.name} notificado: llegó al punto de recogida`);
+                }
+            } catch (driverNotifyError) {
+                console.error('⚠️ Error notificando conductor llegada:', driverNotifyError.message);
             }
 
        // REGISTRAR COMISIÓN EN BILLETERA AL LLEGAR (SOLO UNA VEZ POR VIAJE)
