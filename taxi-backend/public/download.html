@@ -7,15 +7,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --amarillo: #F5C518;
       --negro: #0A0A0A;
       --gris: #1A1A1A;
       --blanco: #F9F9F9;
-      --rojo: #E63946;
     }
-
     body {
       background: var(--negro);
       color: var(--blanco);
@@ -23,34 +20,24 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-
-    /* FONDO DECORATIVO */
     body::before {
       content: '';
       position: fixed;
-      top: -30%;
-      left: -20%;
-      width: 600px;
-      height: 600px;
+      top: -30%; left: -20%;
+      width: 600px; height: 600px;
       background: radial-gradient(circle, rgba(245,197,24,0.12) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      pointer-events: none; z-index: 0;
     }
     body::after {
       content: '';
       position: fixed;
-      bottom: -20%;
-      right: -10%;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      bottom: -20%; right: -10%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(78,205,196,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
     }
-
     .container {
-      position: relative;
-      z-index: 1;
+      position: relative; z-index: 1;
       max-width: 480px;
       margin: 0 auto;
       padding: 48px 24px 64px;
@@ -59,41 +46,25 @@
       align-items: center;
       min-height: 100vh;
     }
-
-    /* LOGO / MARCA */
     .brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 48px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 12px; margin-bottom: 40px;
       animation: fadeDown 0.6s ease both;
     }
-
     .brand-icon {
-      width: 72px;
-      height: 72px;
+      width: 72px; height: 72px;
       background: var(--amarillo);
       border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 36px;
       box-shadow: 0 8px 32px rgba(245,197,24,0.35);
     }
-
     .brand-name {
       font-family: 'Syne', sans-serif;
-      font-size: 28px;
-      font-weight: 800;
+      font-size: 28px; font-weight: 800;
       letter-spacing: -0.5px;
-      color: var(--blanco);
     }
-
-    .brand-name span {
-      color: var(--amarillo);
-    }
-
+    .brand-name span { color: var(--amarillo); }
     .brand-sub {
       font-size: 14px;
       color: rgba(249,249,249,0.45);
@@ -101,114 +72,86 @@
       text-transform: uppercase;
     }
 
-    /* TITULO */
-    .headline {
-      text-align: center;
-      margin-bottom: 40px;
-      animation: fadeDown 0.6s 0.1s ease both;
-    }
+    /* PANTALLAS */
+    .screen { width: 100%; display: none; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
 
+    .headline {
+      text-align: center; margin-bottom: 36px;
+      animation: fadeDown 0.5s 0.1s ease both;
+    }
     .headline h1 {
       font-family: 'Syne', sans-serif;
-      font-size: 32px;
-      font-weight: 800;
-      line-height: 1.15;
-      margin-bottom: 10px;
+      font-size: 30px; font-weight: 800;
+      line-height: 1.2; margin-bottom: 10px;
     }
-
     .headline p {
       font-size: 15px;
       color: rgba(249,249,249,0.5);
       line-height: 1.6;
     }
 
-    /* CARDS DE DESCARGA */
-    .cards {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+    .cards { width: 100%; display: flex; flex-direction: column; gap: 16px; }
 
     .card {
       background: var(--gris);
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 20px;
       padding: 28px 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      animation: fadeUp 0.5s ease both;
+      display: flex; align-items: center; gap: 20px;
       cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      animation: fadeUp 0.5s ease both;
     }
+    .card:nth-child(1) { animation-delay: 0.15s; }
+    .card:nth-child(2) { animation-delay: 0.3s; }
+    .card:hover { transform: translateY(-3px); }
 
-    .card:nth-child(1) { animation-delay: 0.2s; }
-    .card:nth-child(2) { animation-delay: 0.35s; }
-
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    .card.android:hover {
+      border-color: #4ECDC4;
+      box-shadow: 0 16px 48px rgba(78,205,196,0.2);
     }
-
+    .card.iphone:hover {
+      border-color: #aaa;
+      box-shadow: 0 16px 48px rgba(180,180,180,0.15);
+    }
     .card.pasajero:hover {
       border-color: var(--amarillo);
       box-shadow: 0 16px 48px rgba(245,197,24,0.2);
     }
-
     .card.conductor:hover {
       border-color: #4ECDC4;
       box-shadow: 0 16px 48px rgba(78,205,196,0.2);
     }
 
     .card-icon {
-      width: 60px;
-      height: 60px;
+      width: 60px; height: 60px;
       border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; flex-shrink: 0;
     }
+    .card.android .card-icon { background: rgba(78,205,196,0.15); }
+    .card.iphone .card-icon { background: rgba(180,180,180,0.1); }
+    .card.pasajero .card-icon { background: rgba(245,197,24,0.15); }
+    .card.conductor .card-icon { background: rgba(78,205,196,0.15); }
 
-    .card.pasajero .card-icon {
-      background: rgba(245,197,24,0.15);
-    }
-
-    .card.conductor .card-icon {
-      background: rgba(78,205,196,0.15);
-    }
-
-    .card-info {
-      flex: 1;
-    }
-
+    .card-info { flex: 1; }
     .card-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
       margin-bottom: 4px;
     }
-
+    .card.android .card-label { color: #4ECDC4; }
+    .card.iphone .card-label { color: #aaa; }
     .card.pasajero .card-label { color: var(--amarillo); }
     .card.conductor .card-label { color: #4ECDC4; }
 
     .card-title {
       font-family: 'Syne', sans-serif;
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 20px; font-weight: 700;
       margin-bottom: 4px;
     }
-
-    .card-desc {
-      font-size: 13px;
-      color: rgba(249,249,249,0.45);
-      line-height: 1.4;
-    }
+    .card-desc { font-size: 13px; color: rgba(249,249,249,0.45); line-height: 1.4; }
 
     .card-arrow {
       font-size: 20px;
@@ -216,124 +159,89 @@
       transition: color 0.2s, transform 0.2s;
       flex-shrink: 0;
     }
+    .card:hover .card-arrow { transform: translateX(4px); color: rgba(249,249,249,0.7); }
 
-    .card:hover .card-arrow {
-      transform: translateX(4px);
-      color: rgba(249,249,249,0.7);
-    }
-
-    /* BADGE DESCARGA */
     .download-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      display: inline-flex; align-items: center; gap: 6px;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 11px; color: rgba(249,249,249,0.5);
+      margin-top: 8px;
+    }
+
+    /* PRÓXIMAMENTE */
+    .pronto-box {
+      width: 100%;
+      background: rgba(180,180,180,0.07);
+      border: 1px solid rgba(180,180,180,0.2);
       border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: rgba(249,249,249,0.5);
-      margin-top: 8px;
-    }
-
-    /* ESTADO DE DESCARGA */
-    .download-status {
-      display: none;
-      width: 100%;
-      background: rgba(78,205,196,0.1);
-      border: 1px solid rgba(78,205,196,0.3);
-      border-radius: 12px;
-      padding: 16px 20px;
+      padding: 40px 24px;
       text-align: center;
+      animation: fadeUp 0.4s ease both;
+    }
+    .pronto-icon { font-size: 56px; margin-bottom: 16px; }
+    .pronto-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px; font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .pronto-desc {
       font-size: 14px;
-      color: #4ECDC4;
-      margin-top: 8px;
-      animation: fadeUp 0.3s ease both;
+      color: rgba(249,249,249,0.5);
+      line-height: 1.7;
+      margin-bottom: 28px;
     }
-
-    /* FOOTER */
-    .footer {
-      margin-top: 48px;
-      text-align: center;
-      font-size: 12px;
-      color: rgba(249,249,249,0.25);
-      line-height: 1.8;
-      animation: fadeUp 0.5s 0.5s ease both;
+    .btn-volver {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 14px; font-weight: 600;
+      color: var(--blanco);
+      cursor: pointer;
+      transition: background 0.2s;
     }
+    .btn-volver:hover { background: rgba(255,255,255,0.12); }
 
-    .footer a {
-      color: var(--amarillo);
-      text-decoration: none;
-    }
-
-    /* DIVIDER */
     .divider {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 4px 0;
-      animation: fadeUp 0.5s 0.3s ease both;
+      width: 100%; display: flex; align-items: center;
+      gap: 12px; margin: 4px 0;
+      animation: fadeUp 0.5s 0.25s ease both;
     }
-
     .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
+      content: ''; flex: 1; height: 1px;
       background: rgba(255,255,255,0.07);
     }
+    .divider span { font-size: 12px; color: rgba(249,249,249,0.3); white-space: nowrap; }
 
-    .divider span {
-      font-size: 12px;
-      color: rgba(249,249,249,0.3);
-      white-space: nowrap;
+    .footer {
+      margin-top: 48px; text-align: center;
+      font-size: 12px; color: rgba(249,249,249,0.25);
+      line-height: 1.8;
     }
+    .footer a { color: var(--amarillo); text-decoration: none; }
 
-    /* ANIMACIONES */
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* LOADING OVERLAY */
+    /* LOADING */
     .loading-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(10,10,10,0.85);
-      z-index: 100;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      display: none; position: fixed; inset: 0;
+      background: rgba(10,10,10,0.85); z-index: 100;
+      flex-direction: column; align-items: center; justify-content: center; gap: 16px;
     }
-
-    .loading-overlay.active {
-      display: flex;
-    }
-
+    .loading-overlay.active { display: flex; }
     .spinner {
-      width: 48px;
-      height: 48px;
+      width: 48px; height: 48px;
       border: 3px solid rgba(255,255,255,0.1);
       border-top-color: var(--amarillo);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
+    .loading-text { font-size: 15px; color: rgba(249,249,249,0.7); }
 
-    .loading-text {
-      font-size: 15px;
-      color: rgba(249,249,249,0.7);
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin     { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -351,47 +259,80 @@
     <div class="brand-sub">República Dominicana</div>
   </div>
 
-  <div class="headline">
-    <h1>¿Cómo vas<br>a usar la app?</h1>
-    <p>Selecciona tu perfil para descargar<br>la versión correcta</p>
+  <!-- PANTALLA 1: ELEGIR SISTEMA -->
+  <div class="screen active" id="screen1">
+    <div class="headline">
+      <h1>¿Qué tipo de<br>celular tienes?</h1>
+      <p>Selecciona tu dispositivo para<br>descargar la versión correcta</p>
+    </div>
+    <div class="cards">
+      <div class="card android" onclick="elegirSistema('android')">
+        <div class="card-icon">🤖</div>
+        <div class="card-info">
+          <div class="card-label">Samsung, Xiaomi, Huawei…</div>
+          <div class="card-title">Android</div>
+          <div class="card-desc">Descarga directa del APK</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+      <div class="divider"><span>o</span></div>
+      <div class="card iphone" onclick="elegirSistema('iphone')">
+        <div class="card-icon">🍎</div>
+        <div class="card-info">
+          <div class="card-label">iPhone / iPad</div>
+          <div class="card-title">iPhone</div>
+          <div class="card-desc">iOS App Store</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
+    </div>
   </div>
 
-  <div class="cards">
-
-    <!-- PASAJERO -->
-    <div class="card pasajero" onclick="descargar('pasajero')">
-      <div class="card-icon">👤</div>
-      <div class="card-info">
-        <div class="card-label">Para viajar</div>
-        <div class="card-title">Soy Pasajero</div>
-        <div class="card-desc">Solicita viajes, motos y paquetes</div>
-        <div class="download-badge">
-          <span>⬇</span> Squid Pasajero
-        </div>
-      </div>
-      <div class="card-arrow">→</div>
+  <!-- PANTALLA 2: ELEGIR PERFIL (ANDROID) -->
+  <div class="screen" id="screen2">
+    <div class="headline">
+      <h1>¿Cómo vas<br>a usar la app?</h1>
+      <p>Selecciona tu perfil para descargar<br>la versión correcta</p>
     </div>
-
-    <div class="divider"><span>o</span></div>
-
-    <!-- CONDUCTOR -->
-    <div class="card conductor" onclick="descargar('conductor')">
-      <div class="card-icon">🚗</div>
-      <div class="card-info">
-        <div class="card-label">Para trabajar</div>
-        <div class="card-title">Soy Conductor</div>
-        <div class="card-desc">Acepta viajes y gestiona tus ganancias</div>
-        <div class="download-badge">
-          <span>⬇</span> Squid Conductor
+    <div class="cards">
+      <div class="card pasajero" onclick="descargar('pasajero')">
+        <div class="card-icon">👤</div>
+        <div class="card-info">
+          <div class="card-label">Para viajar</div>
+          <div class="card-title">Soy Pasajero</div>
+          <div class="card-desc">Solicita viajes, motos y paquetes</div>
+          <div class="download-badge"><span>⬇</span> Squid Pasajero</div>
         </div>
+        <div class="card-arrow">→</div>
       </div>
-      <div class="card-arrow">→</div>
+      <div class="divider"><span>o</span></div>
+      <div class="card conductor" onclick="descargar('conductor')">
+        <div class="card-icon">🚗</div>
+        <div class="card-info">
+          <div class="card-label">Para trabajar</div>
+          <div class="card-title">Soy Conductor</div>
+          <div class="card-desc">Acepta viajes y gestiona tus ganancias</div>
+          <div class="download-badge"><span>⬇</span> Squid Conductor</div>
+        </div>
+        <div class="card-arrow">→</div>
+      </div>
     </div>
-
+    <br>
+    <div class="btn-volver" onclick="volver()">← Volver</div>
   </div>
 
-  <div id="downloadStatus" class="download-status">
-    ✅ Descarga iniciada. Si no comienza, <a href="#" id="manualLink" style="color:#4ECDC4">toca aquí</a>.
+  <!-- PANTALLA 3: PRÓXIMAMENTE (iPhone) -->
+  <div class="screen" id="screen3">
+    <div class="pronto-box">
+      <div class="pronto-icon">🍎</div>
+      <div class="pronto-title">Próximamente<br>en iPhone</div>
+      <div class="pronto-desc">
+        Estamos trabajando para llevar<br>
+        TaxiApp Rondón al App Store.<br><br>
+        ¡Muy pronto disponible!
+      </div>
+      <div class="btn-volver" onclick="volver()">← Volver</div>
+    </div>
   </div>
 
   <div class="footer">
@@ -409,13 +350,27 @@
     conductor: 'https://drive.google.com/uc?export=download&id=1_xKEJID8cQBhNhD-1LdJj95IgCwO-4Cp'
   };
 
+  function mostrar(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function elegirSistema(sistema) {
+    if (sistema === 'android') mostrar('screen2');
+    else mostrar('screen3');
+  }
+
+  function volver() {
+    mostrar('screen1');
+  }
+
   function descargar(tipo) {
-    const url = URLS[tipo];
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.add('active');
     setTimeout(() => {
       overlay.classList.remove('active');
-      window.location.href = url;
+      window.location.href = URLS[tipo];
     }, 1000);
   }
 </script>
