@@ -293,8 +293,8 @@ class LocationFallbackService {
       let bestLocation = null;
       let resolved = false;
       const startTime = Date.now();
-      const TOTAL_TIMEOUT = 15000;
-      const MIN_ACCURACY = highAccuracy ? 200 : 500;
+      const TOTAL_TIMEOUT = 8000;
+      const MIN_ACCURACY = highAccuracy ? 500 : 1000;
 
       // Función para resolver y limpiar
       const finishWatch = (result) => {
@@ -408,7 +408,7 @@ class LocationFallbackService {
       console.log('Obteniendo ubicacion con fallback...');
       
       // Reintentar GPS hasta 3 veces si hay baja precision
-      const MAX_RETRIES = 3;
+      const MAX_RETRIES = 1;
       let lastGpsCheck = null;
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -459,7 +459,7 @@ class LocationFallbackService {
         // Si es baja precision o timeout y no es el ultimo intento, reintentar
         if ((gpsCheck.reason === 'low_accuracy' || gpsCheck.reason === 'timeout') && attempt < MAX_RETRIES) {
           console.log('Esperando 2s antes de reintentar...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 500));
           continue;
         }
         
