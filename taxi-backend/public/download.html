@@ -398,12 +398,12 @@
     <p>Versión actual · Android 7.0+</p>
     <p>Permite instalar apps de fuentes externas<br>en Configuración → Seguridad</p>
     <br>
-    <p>© 2025 Squid Apps RD · <a href="/cdn-cgi/l/email-protection#63100c130c1117062317021b0a021313110c0d070c0d4d000c0e">Soporte</a></p>
+    <p>© 2025 Squid Apps RD · <a href="mailto:soporte@squidappsrd.com">Soporte</a></p>
   </div>
 
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
   const URLS = {
     pasajero: 'https://drive.google.com/uc?export=download&id=1Dd0KrMkYwIOVj-WkzncH28oEJkQ1LVy0',
     conductor: 'https://drive.google.com/uc?export=download&id=1_xKEJID8cQBhNhD-1LdJj95IgCwO-4Cp'
@@ -412,19 +412,13 @@
   function descargar(tipo) {
     const url = URLS[tipo];
     const overlay = document.getElementById('loadingOverlay');
-    const status = document.getElementById('downloadStatus');
-    const manualLink = document.getElementById('manualLink');
-
-    // Mostrar loading
     overlay.classList.add('active');
-
     setTimeout(() => {
       overlay.classList.remove('active');
+      window.location.href = url;
+    }, 1000);
+  }
+</script>
 
-      // Iniciar descarga
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = tipo === 'pasajero' ? 'SquidPasajero.apk' : 'SquidConductor.apk';
-      document.body.appendChild(a);
-      a.click();
-      document.bo
+</body>
+</html>
