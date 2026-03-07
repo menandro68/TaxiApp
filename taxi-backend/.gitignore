@@ -8,3 +8,5 @@ firebase-admin-key.json
 .idea
 dist/
 build/
+
+public/apks/

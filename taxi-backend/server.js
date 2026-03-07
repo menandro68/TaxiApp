@@ -97,6 +97,11 @@ app.get('/track/:shareId', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'track.html'));
 });
 
+// Página de descarga de apps
+app.get('/descargar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'download.html'));
+});
+
 // ==========================================
 // PÁGINA PRINCIPAL
 // ==========================================
