@@ -1907,7 +1907,14 @@ const acceptTrip = async () => {
     );
     
     // Si está a menos de 50 metros del destino
-    if (distance < 50) {
+  if (distance < 50) {
+      // Traer app al frente si Google Maps/Waze está abierto
+      try {
+        if (BringToForeground) {
+          BringToForeground.bringAppToForeground();
+        }
+      } catch (e) {}
+      setTimeout(() => {
       Alert.alert(
         '📍 Llegada al Destino',
         '¿Has llegado al destino? El viaje se completará automáticamente.',
@@ -1926,11 +1933,11 @@ const acceptTrip = async () => {
               }
             }
           }
-        ]
+ ]
       );
+      }, 500);
     }
   };
-
   // Función auxiliar para calcular distancia (Fórmula de Haversine)
   const getDistance = (point1, point2) => {
     const R = 6371e3; // Radio de la Tierra en metros
