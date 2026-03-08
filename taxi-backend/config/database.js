@@ -299,7 +299,7 @@ await pool.query(`
     id SERIAL PRIMARY KEY,
     driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
     document_type VARCHAR(100) NOT NULL,
-    document_url VARCHAR(500) NOT NULL,
+   document_url TEXT NOT NULL,
     document_name VARCHAR(255),
     status VARCHAR(50) DEFAULT 'pending',
     expiry_date DATE,
@@ -310,6 +310,7 @@ await pool.query(`
   )
 `);
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)`);
+await pool.query(`ALTER TABLE driver_documents ALTER COLUMN document_url TYPE TEXT`);
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)`);
     console.log('✅ Tablas de base de datos inicializadas');
   } catch (error) {
