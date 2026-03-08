@@ -50,7 +50,7 @@
                         <input type="date" id="doc-date-to" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; color:#1e293b;" />
                     </div>
                     <button onclick="DocumentsModule.searchByDate()" style="padding:7px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;">🔍 Buscar</button>
-                    <button onclick="DocumentsModule.clearDateFilter()" style="padding:7px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; cursor:pointer; font-size:14px;">✕ Limpiar</button>
+                   <button onclick="DocumentsModule.clearDateFilter()" style="display:none; padding:7px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; cursor:pointer; font-size:14px;">✕ Limpiar</button>
                 </div>
 
                 <!-- Filtros estado -->
