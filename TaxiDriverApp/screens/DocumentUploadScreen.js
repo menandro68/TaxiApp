@@ -44,8 +44,14 @@ const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
     );
   };
 
-  const openCamera = () => {
-    launchCamera(imageOptions, handleImageResponse);
+const openCamera = async () => {
+    const { request, PERMISSIONS, RESULTS } = require('react-native-permissions');
+    const result = await request(PERMISSIONS.ANDROID.CAMERA);
+    if (result === RESULTS.GRANTED) {
+      launchCamera(imageOptions, handleImageResponse);
+    } else {
+      Alert.alert('Permiso requerido', 'Necesitas permitir el acceso a la cámara en Configuración');
+    }
   };
 
   const openGallery = () => {
