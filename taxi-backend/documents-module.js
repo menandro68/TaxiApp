@@ -180,7 +180,7 @@
                         ${driver.docs.map(doc => `
                         <div style="background:#f8fafc; border-radius:10px; padding:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                             ${doc.document_url && doc.document_url.startsWith('data:image') ?
-                                `<img src="${doc.document_url}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; cursor:pointer; flex-shrink:0;" onclick="DocumentsModule.viewImage('${doc.id}')" />`
+                               `<div onclick="DocumentsModule.viewImage('${doc.id}')" style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; cursor:pointer;" title="Click para ver">🖼️</div>`
                                 : `<div style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">📄</div>`
                             }
                             <div style="flex:1; min-width:140px;">
