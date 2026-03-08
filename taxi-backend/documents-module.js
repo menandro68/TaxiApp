@@ -223,21 +223,46 @@
         exportDocs() {
             const docs = this.documents;
             if (!docs.length) { alert('No hay documentos para exportar'); return; }
-            const headers = ['ID','Conductor','Teléfono','Tipo','Estado','Fecha'];
-            const rows = docs.map(d => [
-                d.id,
-                d.driver_name || 'Conductor #' + d.driver_id,
-                d.driver_phone || '-',
-                d.document_type,
-                d.status,
-                new Date(d.uploaded_at).toLocaleDateString('es-DO')
-            ]);
-            const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'documentos.csv'; a.click();
-            URL.revokeObjectURL(url);
+
+            const now = new Date();
+            const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
+            const horaReporte = now.toLocaleTimeString('es-DO', { hour:'2-digit', minute:'2-digit' });
+
+            const typeNames = { cedula:'Cédula', licencia:'Licencia', matricula:'Matrícula', foto_vehiculo:'Foto Vehículo', seguro:'Seguro', foto_perfil:'Foto Perfil' };
+            const statusLabels = { pending:'Pendiente', approved:'Aprobado', rejected:'Rechazado' };
+
+            const rows = docs.map(d => `
+                <tr>
+                    <td>${d.id}</td>
+                    <td>${d.driver_name || 'Conductor #' + d.driver_id}</td>
+                    <td>${d.driver_phone || '-'}</td>
+                    <td>${typeNames[d.document_type] || d.document_type}</td>
+                    <td>${statusLabels[d.status] || d.status}</td>
+                    <td>${new Date(d.uploaded_at).toLocaleDateString('es-DO')}</td>
+                </tr>`).join('');
+
+            const win = window.open('', '', 'width=900,height=700');
+            win.document.write(`<!DOCTYPE html><html><head><title>Reporte de Documentos - TaxiApp Rondon</title>
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; padding: 30px; color: #1e293b; }
+                h1 { font-size: 22px; color: #3b82f6; margin-bottom: 5px; }
+                .info { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th { background: #f1f5f9; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+                td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+                .footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+                @media print { .no-print { display: none; } }
+            </style></head><body>
+            <h1>📋 Reporte de Documentos</h1>
+            <div class="info"><strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${docs.length} documentos</div>
+            <table>
+                <thead><tr><th>ID</th><th>Conductor</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Fecha</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
+            </body></html>`);
+            win.document.close();
+            win.print();
         },
 
         toggleDriver(id) {
