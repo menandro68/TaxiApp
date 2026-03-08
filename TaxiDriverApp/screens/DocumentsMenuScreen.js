@@ -15,6 +15,15 @@ const DocumentsMenuScreen = ({ navigation }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   const documents = [
+    
+    {
+      id: 'foto_perfil',
+      title: 'Foto de Perfil',
+      icon: '🤳',
+      color: '#E91E63',
+      description: 'Foto de rostro de frente'
+    },
+
     {
       id: 'cedula',
       title: 'Cédula y/o Pasaporte',
