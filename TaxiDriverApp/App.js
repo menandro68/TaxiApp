@@ -2864,19 +2864,7 @@ const playVoiceMessage = async (audioUrl, msgId) => {
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>📄 Cargar Documentos</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
-            style={{ backgroundColor: 'white', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
-            onPress={() => setShowLogin(true)}
-          >
-            <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>Iniciar Sesión</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={{ backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, width: '100%' }}
-onPress={() => setShowPreRegister(true)}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>Registrarse</Text>
-          </TouchableOpacity>
+ 
         </View>
         
         {/* Modal de Pre-Registro */}
