@@ -39,7 +39,21 @@
                     </div>
                 </div>
 
-                <!-- Filtros -->
+                <!-- Filtros fecha -->
+                <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="color:#64748b; font-size:14px;">Fecha Inicial</label>
+                        <input type="date" id="doc-date-from" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; color:#1e293b;" />
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="color:#64748b; font-size:14px;">Fecha Final</label>
+                        <input type="date" id="doc-date-to" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; color:#1e293b;" />
+                    </div>
+                    <button onclick="DocumentsModule.searchByDate()" style="padding:7px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;">🔍 Buscar</button>
+                    <button onclick="DocumentsModule.clearDateFilter()" style="padding:7px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; cursor:pointer; font-size:14px;">✕ Limpiar</button>
+                </div>
+
+                <!-- Filtros estado -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                     <button onclick="DocumentsModule.filterDocs('all')" id="filter-all"
                         style="padding: 8px 18px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">
@@ -115,7 +129,6 @@
             document.getElementById('doc-pending').textContent = pending;
             document.getElementById('doc-approved').textContent = approved;
             document.getElementById('doc-rejected').textContent = rejected;
-            // Actualizar badge del menú
             const badge = document.getElementById('documentsBadge');
             if (badge) badge.textContent = pending;
         },
@@ -142,7 +155,6 @@
             const statusColors = { pending: '#ffc107', approved: '#22c55e', rejected: '#ef4444' };
             const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 
-            // Agrupar por conductor
             const byDriver = {};
             docs.forEach(doc => {
                 const key = doc.driver_id;
@@ -156,7 +168,6 @@
                 const total = driver.docs.length;
                 return `
                 <div style="background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; margin-bottom:4px;">
-                    <!-- Cabecera conductor -->
                     <div onclick="DocumentsModule.toggleDriver('driver-${driverId}')"
                         style="padding:16px 20px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; user-select:none;">
                         <div style="display:flex; align-items:center; gap:12px;">
@@ -174,13 +185,11 @@
                             <span style="color:#94a3b8; font-size:18px;">▼</span>
                         </div>
                     </div>
-
-                    <!-- Documentos expandibles -->
-                    <div id="driver-${driverId}" style="display:none; border-top:1px solid #f1f5f9; padding:12px 16px; display:flex; flex-direction:column; gap:10px;">
+                    <div id="driver-${driverId}" style="display:none; border-top:1px solid #f1f5f9; padding:12px 16px; flex-direction:column; gap:10px;">
                         ${driver.docs.map(doc => `
                         <div style="background:#f8fafc; border-radius:10px; padding:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
                             ${doc.document_url && doc.document_url.startsWith('data:image') ?
-                               `<div onclick="DocumentsModule.viewImage('${doc.id}')" style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; cursor:pointer;" title="Click para ver">🖼️</div>`
+                                `<div onclick="DocumentsModule.viewImage('${doc.id}')" style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; cursor:pointer;" title="Click para ver">🖼️</div>`
                                 : `<div style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">📄</div>`
                             }
                             <div style="flex:1; min-width:140px;">
@@ -203,7 +212,6 @@
                 </div>`;
             }).join('');
 
-            // Expandir automáticamente si solo hay un conductor
             if (Object.keys(byDriver).length === 1) {
                 const id = 'driver-' + Object.keys(byDriver)[0];
                 const el = document.getElementById(id);
@@ -217,9 +225,23 @@
             el.style.display = el.style.display === 'none' ? 'flex' : 'none';
         },
 
+        searchByDate() {
+            const from = document.getElementById('doc-date-from').value;
+            const to = document.getElementById('doc-date-to').value;
+            let filtered = this.currentFilter === 'all' ? this.documents : this.documents.filter(d => d.status === this.currentFilter);
+            if (from) filtered = filtered.filter(d => new Date(d.uploaded_at) >= new Date(from));
+            if (to) filtered = filtered.filter(d => new Date(d.uploaded_at) <= new Date(to + 'T23:59:59'));
+            this.renderDocs(filtered);
+        },
+
+        clearDateFilter() {
+            document.getElementById('doc-date-from').value = '';
+            document.getElementById('doc-date-to').value = '';
+            this.filterDocs(this.currentFilter);
+        },
+
         filterDocs(filter) {
             this.currentFilter = filter;
-            // Actualizar botones
             ['all','pending','approved','rejected'].forEach(f => {
                 const btn = document.getElementById(`filter-${f}`);
                 if (!btn) return;
@@ -244,7 +266,6 @@
             document.getElementById('doc-image-preview').src = doc.document_url;
             const modal = document.getElementById('doc-image-modal');
             modal.style.display = 'flex';
-            // Mostrar/ocultar botones según estado
             document.getElementById('modal-approve-btn').style.display = doc.status === 'pending' ? 'block' : 'none';
             document.getElementById('modal-reject-btn').style.display = doc.status === 'pending' ? 'block' : 'none';
         },
@@ -272,7 +293,7 @@
                     body: JSON.stringify({ reviewed_by: 1 })
                 });
                 const data = await res.json();
-          if (data.success) {
+                if (data.success) {
                     if (data.all_approved && data.driver_phone) {
                         const phone = data.driver_phone.replace(/\D/g, '');
                         const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
