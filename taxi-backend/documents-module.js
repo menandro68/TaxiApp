@@ -272,8 +272,17 @@
                     body: JSON.stringify({ reviewed_by: 1 })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    alert('✅ Documento aprobado');
+          if (data.success) {
+                    if (data.all_approved && data.driver_phone) {
+                        const phone = data.driver_phone.replace(/\D/g, '');
+                        const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
+                        const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/descargar`);
+                        if (confirm(`✅ Todos los documentos de ${data.driver_name} aprobados.\n¿Enviar WhatsApp al conductor?`)) {
+                            window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
+                        }
+                    } else {
+                        alert('✅ Documento aprobado');
+                    }
                     this.loadDocuments();
                 } else {
                     alert('Error: ' + data.error);

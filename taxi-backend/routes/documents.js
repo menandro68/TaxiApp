@@ -80,7 +80,33 @@ router.put('/:id/approve', async (req, res) => {
   try {
     const result = await DocumentModel.updateStatus(req.params.id, 'approved', req.body.reviewed_by || 1);
     if (!result) return res.status(404).json({ success: false, error: 'Documento no encontrado' });
-    res.json({ success: true, message: 'Documento aprobado exitosamente' });
+
+    // Verificar si todos los documentos del conductor están aprobados
+    const { pool } = require('../config/database');
+    const docInfo = await pool.query(
+      `SELECT d.driver_id, dr.name, dr.phone 
+       FROM driver_documents d 
+       JOIN drivers dr ON dr.id = d.driver_id 
+       WHERE d.id = $1`, [req.params.id]
+    );
+
+    let all_approved = false;
+    let driver_phone = null;
+    let driver_name = null;
+
+    if (docInfo.rows.length > 0) {
+      const { driver_id, name, phone } = docInfo.rows[0];
+      driver_name = name;
+      driver_phone = phone;
+
+      const pending = await pool.query(
+        `SELECT COUNT(*) FROM driver_documents WHERE driver_id = $1 AND status != 'approved'`,
+        [driver_id]
+      );
+      all_approved = parseInt(pending.rows[0].count) === 0;
+    }
+
+    res.json({ success: true, message: 'Documento aprobado exitosamente', all_approved, driver_phone, driver_name });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
