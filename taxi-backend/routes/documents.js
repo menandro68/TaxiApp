@@ -110,4 +110,32 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Registrar conductor temporal para subir documentos
+router.post('/register-temp', async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    if (!name || !phone) return res.status(400).json({ success: false, error: 'Nombre y teléfono requeridos' });
+
+    const pool = require('../config/database').pool;
+
+    // Verificar si ya existe
+    const existing = await pool.query('SELECT id FROM drivers WHERE phone = $1', [phone]);
+    if (existing.rows.length > 0) {
+      return res.json({ success: true, driver_id: existing.rows[0].id, existing: true });
+    }
+
+    const email = `temp_${phone}@squid.temp`;
+    const password = Math.random().toString(36).slice(-8);
+
+    const result = await pool.query(
+      `INSERT INTO drivers (name, email, phone, password, status) VALUES ($1, $2, $3, $4, 'pending_docs') RETURNING id`,
+      [name, email, phone, password]
+    );
+
+    res.json({ success: true, driver_id: result.rows[0].id, existing: false });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
