@@ -2838,8 +2838,15 @@ const playVoiceMessage = async (audioUrl, msgId) => {
     }
   };
 
- // Si no hay conductor logueado, mostrar pantalla de bienvenida
+// Si no hay conductor logueado, mostrar pantalla de bienvenida
   if (!loggedDriver) {
+    if (showDocumentUpload) {
+      return (
+        <DocumentsMenuScreen
+          navigation={{ goBack: () => setShowDocumentUpload(false) }}
+        />
+      );
+    }
     return (
       <View style={styles.container}>
         <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
