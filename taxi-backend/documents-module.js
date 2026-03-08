@@ -246,6 +246,8 @@
                     <td>${new Date(driver.docs[0].uploaded_at).toLocaleDateString('es-DO')}</td>
                 </tr>`).join('');
 
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+            const adminName = adminData.name || adminData.username || 'Administrador';
             const win = window.open('', '', 'width=900,height=700');
             win.document.write(`<!DOCTYPE html><html><head><title>Reporte de Documentos - TaxiApp Rondon</title>
             <style>
@@ -259,7 +261,7 @@
                 @media print { .no-print { display: none; } }
             </style></head><body>
             <h1>📋 Reporte de Documentos</h1>
-            <div class="info"><strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${docs.length} documentos</div>
+            <div class="info"><strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${docs.length} documentos | Generado por: ${adminName}</div>
             <table>
                 <thead><tr><th>Conductor</th><th>Teléfono</th><th>Documentos</th><th>Estado</th><th>Fecha</th></tr></thead>
                 <tbody>${rows}</tbody>
