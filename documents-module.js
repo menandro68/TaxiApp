@@ -237,7 +237,7 @@
                 if (!byDriver[key]) byDriver[key] = { name: d.driver_name || 'Conductor #' + d.driver_id, phone: d.driver_phone || '-', docs: [] };
                 byDriver[key].docs.push(d);
             });
-            const rows = Object.values(byDriver).map(driver => `
+           const rows = Object.values(byDriver).filter(driver => driver.docs.every(d => d.status === 'approved')).map(driver => `
                 <tr>
                     <td style="font-weight:700;">${driver.name}</td>
                     <td>${driver.phone}</td>
