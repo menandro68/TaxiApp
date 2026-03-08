@@ -50,6 +50,7 @@
                         <input type="date" id="doc-date-to" style="padding:7px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:14px; color:#1e293b;" />
                     </div>
                     <button onclick="DocumentsModule.searchByDate()" style="padding:7px 20px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;">🔍 Buscar</button>
+                    <button onclick="DocumentsModule.exportDocs()" style="padding:7px 20px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;">📊 Exportar</button>
                    <button onclick="DocumentsModule.clearDateFilter()" style="display:none; padding:7px 16px; background:#f1f5f9; color:#64748b; border:none; border-radius:8px; cursor:pointer; font-size:14px;">✕ Limpiar</button>
                 </div>
 
@@ -217,6 +218,26 @@
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'flex';
             }
+        },
+
+        exportDocs() {
+            const docs = this.documents;
+            if (!docs.length) { alert('No hay documentos para exportar'); return; }
+            const headers = ['ID','Conductor','Teléfono','Tipo','Estado','Fecha'];
+            const rows = docs.map(d => [
+                d.id,
+                d.driver_name || 'Conductor #' + d.driver_id,
+                d.driver_phone || '-',
+                d.document_type,
+                d.status,
+                new Date(d.uploaded_at).toLocaleDateString('es-DO')
+            ]);
+            const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'documentos.csv'; a.click();
+            URL.revokeObjectURL(url);
         },
 
         toggleDriver(id) {
