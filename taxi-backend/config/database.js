@@ -292,6 +292,25 @@ async function initDatabase() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_suspensions_driver_id ON driver_suspensions(driver_id)`);
 
+
+    // Tabla de documentos de conductores
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS driver_documents (
+    id SERIAL PRIMARY KEY,
+    driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+    document_type VARCHAR(100) NOT NULL,
+    document_url VARCHAR(500) NOT NULL,
+    document_name VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'pending',
+    expiry_date DATE,
+    rejection_reason TEXT,
+    reviewed_by INTEGER,
+    reviewed_at TIMESTAMP,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)`);
     console.log('✅ Tablas de base de datos inicializadas');
   } catch (error) {
     console.error('Error inicializando base de datos:', error);
