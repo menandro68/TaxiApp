@@ -70,55 +70,40 @@ const DocumentUploadScreen = ({ navigation, documentType }) => {
       Alert.alert('Error', `Por favor carga una imagen de ${currentDocument.title.toLowerCase()}`);
       return;
     }
-
     setLoading(true);
-
     try {
-      // Obtener datos del pre-registro
-      const preRegisterData = await AsyncStorage.getItem('driverPreRegister');
-      const driverData = preRegisterData ? JSON.parse(preRegisterData) : {};
+      const savedDriver = await AsyncStorage.getItem('loggedDriver');
+      if (!savedDriver) throw new Error('No se encontró datos del conductor');
+      const driver = JSON.parse(savedDriver);
 
-      // Obtener documentos existentes o crear nuevo objeto
-      const existingDocuments = driverData.documents || {};
+      const formData = new FormData();
+      formData.append('document', {
+        uri: licenseImage,
+        type: 'image/jpeg',
+        name: `${currentDocument.id}_${Date.now()}.jpg`
+      });
+      formData.append('document_type', currentDocument.id);
 
-      // Agregar información del documento actual
-      const updatedData = {
-        ...driverData,
-        documents: {
-          ...existingDocuments,
-          [currentDocument.id]: {
-            uri: licenseImage,
-            uploadedAt: new Date().toISOString(),
-            status: 'pending_verification',
-            documentName: currentDocument.title
-          }
-        },
-        registrationStep: 'documents'
-      };
-
-      // Guardar actualización
-      await AsyncStorage.setItem('driverPreRegister', JSON.stringify(updatedData));
+      const response = await fetch(
+        `https://web-production-99844.up.railway.app/api/documents/driver/${driver.id}/upload`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'multipart/form-data' },
+          body: formData
+        }
+      );
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
 
       Alert.alert(
-        'Documento Cargado',
-        `${currentDocument.title} ha sido cargado exitosamente. Será verificado pronto.`,
-        [
-          {
-            text: 'Continuar',
-            onPress: () => {
-              console.log('Documento guardado:', currentDocument.title);
-              if (navigation && navigation.goBack) {
-                navigation.goBack();
-              }
-            }
-          }
-        ]
+        'Documento Enviado',
+        `${currentDocument.title} fue enviado para verificación.`,
+        [{ text: 'OK', onPress: () => navigation && navigation.goBack && navigation.goBack() }]
       );
-
       setUploadStatus('verified');
     } catch (error) {
-      console.error('Error guardando documento:', error);
-      Alert.alert('Error', 'No se pudo guardar el documento');
+      console.error('Error subiendo documento:', error);
+      Alert.alert('Error', 'No se pudo enviar el documento: ' + error.message);
     } finally {
       setLoading(false);
     }

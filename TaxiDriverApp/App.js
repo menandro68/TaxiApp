@@ -309,6 +309,12 @@ useEffect(() => {
         const savedDriver = await AsyncStorage.getItem('loggedDriver');
     if (savedDriver) {
           const driver = JSON.parse(savedDriver);
+          // Mostrar documentos la primera vez
+        const docsPrompted = await AsyncStorage.getItem('@docs_prompted');
+          if (!docsPrompted) {
+            setTimeout(() => setShowDocumentUpload(true), 1500);
+            await AsyncStorage.setItem('@docs_prompted', 'true');
+         }
           setLoggedDriver(driver);
           console.log('✅ Conductor cargado desde almacenamiento');
           loadNotificationPrefs();
