@@ -248,7 +248,8 @@
 
             const from = document.getElementById('doc-date-from') ? document.getElementById('doc-date-from').value : '';
             const to = document.getElementById('doc-date-to') ? document.getElementById('doc-date-to').value : '';
-            const rangoFecha = (from || to) ? ` | Período: ${from ? new Date(from).toLocaleDateString('es-DO') : '...'} → ${to ? new Date(to).toLocaleDateString('es-DO') : '...'}` : '';
+            const formatDate = (d) => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
+            const rangoFecha = (from || to) ? ` | Período: ${from ? formatDate(from) : '...'} → ${to ? formatDate(to) : '...'}` : '';
             const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
             const adminName = adminData.name || adminData.username || 'Administrador';
             const win = window.open('', '', 'width=900,height=700');
