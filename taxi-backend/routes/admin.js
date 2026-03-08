@@ -115,14 +115,14 @@ router.post('/users', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, role } = req.body;
+    const { role, permissions } = req.body;
 
-    const result = await db.run(
-      `UPDATE admins SET username = $1, email = $2, role = $3, updated_at = NOW() WHERE id = $4 RETURNING id, username, email, role`,
-      [username, email, role, id]
+    const result = await db.query(
+      `UPDATE admins SET role = $1, permissions = $2, updated_at = NOW() WHERE id = $3 RETURNING id, username, email, role, permissions`,
+      [role, permissions || '[]', id]
     );
 
-    if (result.changes === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({ error: 'Admin no encontrado' });
     }
 
