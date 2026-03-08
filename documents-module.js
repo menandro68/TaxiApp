@@ -136,65 +136,85 @@
                 licencia: '🚗 Licencia',
                 matricula: '📋 Matrícula',
                 foto_vehiculo: '📸 Foto Vehículo',
-                seguro: '🛡️ Seguro'
+                seguro: '🛡️ Seguro',
+                foto_perfil: '🤳 Foto Perfil'
             };
+            const statusColors = { pending: '#ffc107', approved: '#22c55e', rejected: '#ef4444' };
+            const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', rejected: 'Rechazado' };
 
-            const statusColors = {
-                pending: '#ffc107',
-                approved: '#22c55e',
-                rejected: '#ef4444'
-            };
-            const statusLabels = {
-                pending: 'Pendiente',
-                approved: 'Aprobado',
-                rejected: 'Rechazado'
-            };
+            // Agrupar por conductor
+            const byDriver = {};
+            docs.forEach(doc => {
+                const key = doc.driver_id;
+                if (!byDriver[key]) byDriver[key] = { name: doc.driver_name || 'Conductor #' + doc.driver_id, phone: doc.driver_phone || '-', docs: [] };
+                byDriver[key].docs.push(doc);
+            });
 
-            container.innerHTML = docs.map(doc => `
-                <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-                    <!-- Miniatura -->
-                    <div style="flex-shrink:0;">
-                        ${doc.document_url && doc.document_url.startsWith('data:image') ?
-                            `<img src="${doc.document_url}" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="DocumentsModule.viewImage('${doc.id}')" />`
-                            : `<div style="width:70px; height:70px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px;">📄</div>`
-                        }
+            container.innerHTML = Object.entries(byDriver).map(([driverId, driver]) => {
+                const pending = driver.docs.filter(d => d.status === 'pending').length;
+                const approved = driver.docs.filter(d => d.status === 'approved').length;
+                const total = driver.docs.length;
+                return `
+                <div style="background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; margin-bottom:4px;">
+                    <!-- Cabecera conductor -->
+                    <div onclick="DocumentsModule.toggleDriver('driver-${driverId}')"
+                        style="padding:16px 20px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; user-select:none;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:42px; height:42px; background:#3b82f6; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:18px;">
+                                ${driver.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div style="font-weight:700; font-size:16px; color:#1e293b;">${driver.name}</div>
+                                <div style="color:#94a3b8; font-size:13px;">📞 ${driver.phone}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${pending > 0 ? `<span style="background:#ffc10720; color:#ffc107; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600;">${pending} pendiente${pending>1?'s':''}</span>` : ''}
+                            <span style="background:#f1f5f9; color:#64748b; padding:3px 10px; border-radius:20px; font-size:12px;">${approved}/${total} aprobados</span>
+                            <span style="color:#94a3b8; font-size:18px;">▼</span>
+                        </div>
                     </div>
 
-                    <!-- Info -->
-                    <div style="flex:1; min-width:180px;">
-                        <div style="font-weight:700; font-size:16px; color:#1e293b;">${typeNames[doc.document_type] || doc.document_type}</div>
-                        <div style="color:#475569; font-size:14px; margin-top:2px;">👤 ${doc.driver_name || 'Conductor #' + doc.driver_id}</div>
-                        <div style="color:#94a3b8; font-size:12px; margin-top:2px;">📞 ${doc.driver_phone || '-'} · ${new Date(doc.uploaded_at).toLocaleDateString('es-DO')}</div>
-                        ${doc.rejection_reason ? `<div style="color:#ef4444; font-size:12px; margin-top:4px;">Razón: ${doc.rejection_reason}</div>` : ''}
+                    <!-- Documentos expandibles -->
+                    <div id="driver-${driverId}" style="display:none; border-top:1px solid #f1f5f9; padding:12px 16px; display:flex; flex-direction:column; gap:10px;">
+                        ${driver.docs.map(doc => `
+                        <div style="background:#f8fafc; border-radius:10px; padding:14px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                            ${doc.document_url && doc.document_url.startsWith('data:image') ?
+                               `<div onclick="DocumentsModule.viewImage('${doc.id}')" style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; cursor:pointer;" title="Click para ver">🖼️</div>`
+                                : `<div style="width:60px; height:60px; background:#e2e8f0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">📄</div>`
+                            }
+                            <div style="flex:1; min-width:140px;">
+                                <div style="font-weight:700; color:#1e293b;">${typeNames[doc.document_type] || doc.document_type}</div>
+                                <div style="color:#94a3b8; font-size:12px;">${new Date(doc.uploaded_at).toLocaleDateString('es-DO')}</div>
+                            </div>
+                            <span style="background:${statusColors[doc.status]}20; color:${statusColors[doc.status]}; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600;">
+                                ${statusLabels[doc.status]}
+                            </span>
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                ${doc.document_url && doc.document_url.startsWith('data:image') ?
+                                    `<button onclick="DocumentsModule.viewImage('${doc.id}')" style="padding:5px 12px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">👁 Ver</button>` : ''
+                                }
+                                ${doc.status === 'pending' ? `
+                                <button onclick="DocumentsModule.approve(${doc.id})" style="padding:5px 12px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">✅ Aprobar</button>
+                                <button onclick="DocumentsModule.reject(${doc.id})" style="padding:5px 12px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-size:12px;">❌ Rechazar</button>` : ''}
+                            </div>
+                        </div>`).join('')}
                     </div>
+                </div>`;
+            }).join('');
 
-                    <!-- Estado -->
-                    <div style="flex-shrink:0;">
-                        <span style="background:${statusColors[doc.status]}20; color:${statusColors[doc.status]}; padding:4px 12px; border-radius:20px; font-size:13px; font-weight:600;">
-                            ${statusLabels[doc.status]}
-                        </span>
-                    </div>
+            // Expandir automáticamente si solo hay un conductor
+            if (Object.keys(byDriver).length === 1) {
+                const id = 'driver-' + Object.keys(byDriver)[0];
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'flex';
+            }
+        },
 
-                    <!-- Acciones -->
-                    <div style="display:flex; gap:8px; flex-shrink:0;">
-                        ${doc.document_url && doc.document_url.startsWith('data:image') ?
-                            `<button onclick="DocumentsModule.viewImage('${doc.id}')"
-                                style="padding:6px 14px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
-                                👁 Ver
-                            </button>` : ''
-                        }
-                        ${doc.status === 'pending' ? `
-                        <button onclick="DocumentsModule.approve(${doc.id})"
-                            style="padding:6px 14px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
-                            ✅ Aprobar
-                        </button>
-                        <button onclick="DocumentsModule.reject(${doc.id})"
-                            style="padding:6px 14px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
-                            ❌ Rechazar
-                        </button>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        toggleDriver(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = el.style.display === 'none' ? 'flex' : 'none';
         },
 
         filterDocs(filter) {
