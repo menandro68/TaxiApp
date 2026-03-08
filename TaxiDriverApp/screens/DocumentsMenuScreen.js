@@ -225,6 +225,14 @@ const DocumentsMenuScreen = ({ navigation }) => {
         </View>
 
         {/* Instructions */}
+        {uploadedDocs.length === documents.length && (
+          <TouchableOpacity
+            style={{ backgroundColor: '#22c55e', padding: 18, borderRadius: 12, margin: 20, marginBottom: 0, alignItems: 'center' }}
+            onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.')}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>📤 Enviar Documentos</Text>
+          </TouchableOpacity>
+        )}
         <View style={styles.instructionsCard}>
           <Text style={styles.instructionsTitle}>ℹ️ Información Importante</Text>
           <Text style={styles.instructionText}>
