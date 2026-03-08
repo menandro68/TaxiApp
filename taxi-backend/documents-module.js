@@ -231,14 +231,19 @@
             const typeNames = { cedula:'Cédula', licencia:'Licencia', matricula:'Matrícula', foto_vehiculo:'Foto Vehículo', seguro:'Seguro', foto_perfil:'Foto Perfil' };
             const statusLabels = { pending:'Pendiente', approved:'Aprobado', rejected:'Rechazado' };
 
-            const rows = docs.map(d => `
+            const byDriver = {};
+            docs.forEach(d => {
+                const key = d.driver_id;
+                if (!byDriver[key]) byDriver[key] = { name: d.driver_name || 'Conductor #' + d.driver_id, phone: d.driver_phone || '-', docs: [] };
+                byDriver[key].docs.push(d);
+            });
+            const rows = Object.values(byDriver).map(driver => `
                 <tr>
-                    <td>${d.id}</td>
-                    <td>${d.driver_name || 'Conductor #' + d.driver_id}</td>
-                    <td>${d.driver_phone || '-'}</td>
-                    <td>${typeNames[d.document_type] || d.document_type}</td>
-                    <td>${statusLabels[d.status] || d.status}</td>
-                    <td>${new Date(d.uploaded_at).toLocaleDateString('es-DO')}</td>
+                    <td style="font-weight:700;">${driver.name}</td>
+                    <td>${driver.phone}</td>
+                    <td>${driver.docs.map(d => typeNames[d.document_type] || d.document_type).join(', ')}</td>
+                    <td>${driver.docs.map(d => statusLabels[d.status] || d.status).join(', ')}</td>
+                    <td>${new Date(driver.docs[0].uploaded_at).toLocaleDateString('es-DO')}</td>
                 </tr>`).join('');
 
             const win = window.open('', '', 'width=900,height=700');
@@ -256,7 +261,7 @@
             <h1>📋 Reporte de Documentos</h1>
             <div class="info"><strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${docs.length} documentos</div>
             <table>
-                <thead><tr><th>ID</th><th>Conductor</th><th>Teléfono</th><th>Tipo</th><th>Estado</th><th>Fecha</th></tr></thead>
+                <thead><tr><th>Conductor</th><th>Teléfono</th><th>Documentos</th><th>Estado</th><th>Fecha</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
             <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
