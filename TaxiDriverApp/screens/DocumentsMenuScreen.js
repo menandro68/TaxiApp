@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,13 +6,61 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Modal
+  Modal,
+  TextInput,
+  ActivityIndicator
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DocumentUploadScreen from './DocumentUploadScreen';
+
+const API_URL = 'https://web-production-99844.up.railway.app/api';
 
 const DocumentsMenuScreen = ({ navigation }) => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [driverInfo, setDriverInfo] = useState(null);
+  const [showInfoForm, setShowInfoForm] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+
+  useEffect(() => { checkDriverInfo(); }, []);
+
+  const checkDriverInfo = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('@temp_driver_info');
+      if (saved) { const info = JSON.parse(saved); setDriverInfo(info); loadUploadedDocs(info.id); }
+      else { setShowInfoForm(true); }
+    } catch (e) { setShowInfoForm(true); }
+    finally { setLoading(false); }
+  };
+
+  const loadUploadedDocs = async (driverId) => {
+    try {
+      const res = await fetch(`${API_URL}/documents/driver/${driverId}`);
+      const data = await res.json();
+      if (data.success) setUploadedDocs(data.documents.map(d => d.document_type));
+    } catch (e) {}
+  };
+
+  const handleSaveInfo = async () => {
+    if (!formName.trim() || !formPhone.trim()) { Alert.alert('Error', 'Por favor completa nombre y teléfono'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/documents/register-temp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName.trim(), phone: formPhone.trim() })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+      const info = { id: data.driver_id, name: formName.trim(), phone: formPhone.trim() };
+      await AsyncStorage.setItem('@temp_driver_info', JSON.stringify(info));
+      setDriverInfo(info); setShowInfoForm(false); loadUploadedDocs(data.driver_id);
+    } catch (e) { Alert.alert('Error', e.message); }
+    finally { setSaving(false); }
+  };
 
   const documents = [
     
@@ -62,6 +110,7 @@ const DocumentsMenuScreen = ({ navigation }) => {
   ];
 
   const handleDocumentPress = (doc) => {
+    if (!driverInfo) { setShowInfoForm(true); return; }
     setSelectedDocument(doc);
     setShowUploadModal(true);
   };
@@ -69,29 +118,53 @@ const DocumentsMenuScreen = ({ navigation }) => {
   const handleCloseModal = () => {
     setShowUploadModal(false);
     setSelectedDocument(null);
+    if (driverInfo) loadUploadedDocs(driverInfo.id);
   };
 
-  const getDocumentStatus = (docId) => {
-    // Aquí puedes verificar el estado real desde AsyncStorage
-    // Por ahora retornamos 'pending' para todos
-    return 'pending';
-  };
+  const getDocumentStatus = (docId) => uploadedDocs.includes(docId) ? 'uploaded' : 'pending';
 
   const renderStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { text: 'Pendiente', color: '#FFA500' },
-      uploaded: { text: 'Cargado', color: '#4CAF50' },
-      verified: { text: 'Verificado', color: '#2196F3' }
-    };
-
-    const config = statusConfig[status] || statusConfig.pending;
-
+    const config = status === 'uploaded'
+      ? { text: 'Cargado ✓', color: '#4CAF50' }
+      : { text: 'Pendiente', color: '#FFA500' };
     return (
       <View style={[styles.statusBadge, { backgroundColor: config.color }]}>
         <Text style={styles.statusText}>{config.text}</Text>
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+
+  if (showInfoForm) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#4CAF50' }}>
+        <View style={{ paddingTop: 60, paddingHorizontal: 30, paddingBottom: 30 }}>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 8 }}>👋 Bienvenido</Text>
+          <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>Antes de subir tus documentos, necesitamos tu información básica</Text>
+        </View>
+        <View style={{ flex: 1, backgroundColor: 'white', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 30 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 24 }}>Tus datos</Text>
+          <Text style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>Nombre completo</Text>
+          <TextInput style={styles.input} placeholder="Ej: Juan Pérez" value={formName} onChangeText={setFormName} autoCapitalize="words" />
+          <Text style={{ fontSize: 14, color: '#666', marginBottom: 6, marginTop: 16 }}>Teléfono</Text>
+          <TextInput style={styles.input} placeholder="Ej: 8091234567" value={formPhone} onChangeText={setFormPhone} keyboardType="phone-pad" maxLength={10} />
+          <TouchableOpacity style={[styles.btnPrimary, { marginTop: 30 }]} onPress={handleSaveInfo} disabled={saving}>
+            {saving ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>Continuar →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 16, alignItems: 'center' }} onPress={() => navigation && navigation.goBack()}>
+            <Text style={{ color: '#999', fontSize: 14 }}>← Volver</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -106,6 +179,12 @@ const DocumentsMenuScreen = ({ navigation }) => {
         <Text style={styles.headerTitle}>Cargar Documentos</Text>
         <View style={styles.backButton} />
       </View>
+
+      {driverInfo && (
+        <View style={{ backgroundColor: '#E8F5E9', padding: 12, paddingHorizontal: 20 }}>
+          <Text style={{ color: '#2e7d32', fontSize: 13 }}>👤 {driverInfo.name} · 📞 {driverInfo.phone}</Text>
+        </View>
+      )}
 
       {/* Subtitle */}
       <View style={styles.subtitleContainer}>
@@ -140,9 +219,9 @@ const DocumentsMenuScreen = ({ navigation }) => {
         <View style={styles.progressCard}>
           <Text style={styles.progressTitle}>📊 Progreso de Documentación</Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '20%' }]} />
+            <View style={[styles.progressFill, { width: `${(uploadedDocs.length / documents.length) * 100}%` }]} />
           </View>
-          <Text style={styles.progressText}>1 de 5 documentos completados</Text>
+          <Text style={styles.progressText}>{uploadedDocs.length} de {documents.length} documentos completados</Text>
         </View>
 
         {/* Instructions */}
@@ -176,6 +255,7 @@ const DocumentsMenuScreen = ({ navigation }) => {
             </View>
             <DocumentUploadScreen 
               documentType={selectedDocument}
+              driverId={driverInfo?.id}
               navigation={{
                 goBack: handleCloseModal
               }}
@@ -343,6 +423,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFF',
   },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 14, fontSize: 16, backgroundColor: '#f9f9f9' },
+  btnPrimary: { backgroundColor: '#4CAF50', padding: 16, borderRadius: 12, alignItems: 'center' },
 });
 
 export default DocumentsMenuScreen;

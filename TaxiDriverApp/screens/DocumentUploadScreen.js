@@ -13,7 +13,7 @@ import {
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DocumentUploadScreen = ({ navigation, documentType }) => {
+const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
   const [licenseImage, setLicenseImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('pending'); // pending, uploaded, verified
@@ -72,9 +72,8 @@ const DocumentUploadScreen = ({ navigation, documentType }) => {
     }
     setLoading(true);
     try {
-      const savedDriver = await AsyncStorage.getItem('loggedDriver');
-      if (!savedDriver) throw new Error('No se encontró datos del conductor');
-      const driver = JSON.parse(savedDriver);
+      const driver = driverId ? { id: driverId } : JSON.parse(await AsyncStorage.getItem('loggedDriver'));
+      if (!driver) throw new Error('No se encontró datos del conductor');
 
       const formData = new FormData();
       formData.append('document', {
