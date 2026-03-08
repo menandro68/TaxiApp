@@ -79,6 +79,14 @@
             background: #38a169;
         }
 
+        .btn-edit {
+            background: #ed8936;
+        }
+
+        .btn-edit:hover {
+            background: #dd6b20;
+        }
+
         table {
             width: 100%;
             background: white;
@@ -436,6 +444,98 @@
         </div>
     </div>
 
+    <!-- Modal para editar permisos -->
+    <div id="editPermsModal" class="modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h2>✏️ Editar Permisos</h2>
+                <p id="editAdminInfo" style="color: #666; font-size: 14px;"></p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editAdminRole">Rol:</label>
+                    <select id="editAdminRole">
+                        <option value="">-- Seleccionar --</option>
+                        <option value="admin">Administrador</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="operador">Operador</option>
+                        <option value="viewer">Visualizador</option>
+                    </select>
+                </div>
+
+                <div class="permissions-section">
+                    <div class="permissions-header">
+                        <label>📋 Módulos y Permisos:</label>
+                        <div class="permissions-actions">
+                            <button type="button" onclick="selectAllEditPerms()">✅ Todos</button>
+                            <button type="button" onclick="deselectAllEditPerms()">❌ Ninguno</button>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Principal</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_dashboard" value="dashboard"><label for="edit_perm_dashboard">📊 Dashboard</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_command_center" value="command-center"><label for="edit_perm_command_center">🛰️ Centro de Comando</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_analytics" value="analytics"><label for="edit_perm_analytics">📈 Analíticas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Gestión</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_drivers" value="drivers"><label for="edit_perm_drivers">🚗 Conductores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_motos" value="motos"><label for="edit_perm_motos">🏍️ Motos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_packages" value="packages"><label for="edit_perm_packages">📦 Paquetes</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_communications" value="communications"><label for="edit_perm_communications">📢 Comunicados Masivos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_suspensions" value="suspensions"><label for="edit_perm_suspensions">🚨 Suspensiones</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_users" value="users"><label for="edit_perm_users">👥 Usuarios</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_trips" value="trips"><label for="edit_perm_trips">🗺️ Viajes</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_vehicles" value="vehicles"><label for="edit_perm_vehicles">🚙 Vehículos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_documents" value="documents"><label for="edit_perm_documents">📋 Documentos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_trips_monitor" value="trips-monitor"><label for="edit_perm_trips_monitor">🚕 Viajes Activos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_support" value="support"><label for="edit_perm_support">💬 Soporte</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_geofencing" value="geofencing"><label for="edit_perm_geofencing">📍 Geofencing</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_admins" value="admins"><label for="edit_perm_admins">👥 Administradores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_surge_pricing" value="surge-pricing"><label for="edit_perm_surge_pricing">📈 Surge Pricing</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_zones" value="zones"><label for="edit_perm_zones">📍 Gestión de Zonas</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_dynamic_rates" value="dynamic-rates"><label for="edit_perm_dynamic_rates">💰 Tarifas Dinámicas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Finanzas</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_wallet" value="wallet"><label for="edit_perm_wallet">💰 Billetera</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_finances" value="finances"><label for="edit_perm_finances">💰 Pagos y Comisiones</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_reports" value="reports"><label for="edit_perm_reports">📊 Reportes Contables</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_auto_reports" value="reportes-automaticos"><label for="edit_perm_auto_reports">🤖 Reportes Automatizados</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_reconciliation" value="reconciliation"><label for="edit_perm_reconciliation">⚖️ Conciliación de Pagos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_invoicing" value="invoicing"><label for="edit_perm_invoicing">📄 Facturación</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_driver_payments" value="driver-payments"><label for="edit_perm_driver_payments">💸 Pagos a Conductores</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_payments" value="payments"><label for="edit_perm_payments">💳 Pagos</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_adv_reports" value="reports-advanced"><label for="edit_perm_adv_reports">📊 Reportes Avanzados</label></div>
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_pricing" value="pricing"><label for="edit_perm_pricing">💰 Gestión de Tarifas</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-category">
+                        <div class="perm-category-title">Sistema</div>
+                        <div class="perm-grid">
+                            <div class="perm-item"><input type="checkbox" id="edit_perm_settings" value="settings"><label for="edit_perm_settings">⚙️ Configuración</label></div>
+                        </div>
+                    </div>
+
+                    <div class="perm-count"><span id="editPermCount">0</span> / 30 módulos seleccionados</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeEditPermsModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="saveEditPerms()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="actions">
             <h2>Administradores del Sistema</h2>
@@ -496,6 +596,7 @@
         const currentUser = JSON.parse(localStorage.getItem('adminData') || '{}');
 
         let selectedAdminId = null;
+        let editAdminId = null;
 
         // Verificar que sea super_admin
         if (currentUser.role !== 'super_admin') {
@@ -503,13 +604,13 @@
             window.location.href = 'App.html';
         }
 
-        // === FUNCIONES DE PERMISOS ===
+        // === FUNCIONES DE PERMISOS (modal nuevo) ===
         function getPermCheckboxes() {
-            return document.querySelectorAll('.perm-item input[type="checkbox"]');
+            return document.querySelectorAll('#newAdminModal .perm-item input[type="checkbox"]');
         }
 
         function updatePermCount() {
-            const checked = document.querySelectorAll('.perm-item input[type="checkbox"]:checked').length;
+            const checked = document.querySelectorAll('#newAdminModal .perm-item input[type="checkbox"]:checked').length;
             document.getElementById('permCount').textContent = checked;
         }
 
@@ -525,7 +626,7 @@
 
         function getSelectedPermissions() {
             const perms = [];
-            document.querySelectorAll('.perm-item input[type="checkbox"]:checked').forEach(cb => {
+            document.querySelectorAll('#newAdminModal .perm-item input[type="checkbox"]:checked').forEach(cb => {
                 perms.push(cb.value);
             });
             return perms;
@@ -533,8 +634,11 @@
 
         // Evento para contar checkboxes
         document.addEventListener('change', function(e) {
-            if (e.target.closest('.perm-item')) {
+            if (e.target.closest('#newAdminModal .perm-item')) {
                 updatePermCount();
+            }
+            if (e.target.closest('#editPermsModal .perm-item')) {
+                updateEditPermCount();
             }
         });
 
@@ -592,6 +696,7 @@
                         <td>
                             ${!isCurrentUser ? `
                                 <button class="btn" onclick="changeRole(${admin.id}, '${admin.username}', '${admin.role}')" style="padding: 5px 10px; font-size: 14px;">Cambiar Rol</button>
+                                <button class="btn btn-edit" onclick="openEditPerms(${admin.id}, '${admin.username}', '${admin.role}', ${JSON.stringify(admin.permissions || '[]').replace(/"/g, '&quot;')})" style="padding: 5px 10px; font-size: 14px; margin-left: 5px;">✏️ Editar</button>
                                 <button class="btn btn-danger" onclick="deleteAdmin(${admin.id}, '${admin.username}')" style="padding: 5px 10px; font-size: 14px; margin-left: 5px;">Eliminar</button>
                             ` : '<span style="color: #999;">No puedes modificarte</span>'}
                         </td>
@@ -609,6 +714,92 @@
                 'viewer': 'Visualizador'
             };
             return roles[role] || role;
+        }
+
+        // === FUNCIONES MODAL EDITAR PERMISOS ===
+        function openEditPerms(id, username, role, permissionsRaw) {
+            editAdminId = id;
+            document.getElementById('editAdminInfo').textContent = `Usuario: ${username} - Rol actual: ${getRoleName(role)}`;
+            document.getElementById('editAdminRole').value = role;
+
+            // Desmarcar todos primero
+            deselectAllEditPerms();
+
+            // Marcar los permisos actuales
+            try {
+                const perms = typeof permissionsRaw === 'string' ? JSON.parse(permissionsRaw) : permissionsRaw;
+                if (Array.isArray(perms)) {
+                    perms.forEach(perm => {
+                        const cb = document.querySelector(`#editPermsModal input[value="${perm}"]`);
+                        if (cb) cb.checked = true;
+                    });
+                }
+            } catch(e) {}
+
+            updateEditPermCount();
+            document.getElementById('editPermsModal').classList.add('active');
+        }
+
+        function closeEditPermsModal() {
+            document.getElementById('editPermsModal').classList.remove('active');
+            editAdminId = null;
+            document.getElementById('editAdminRole').value = '';
+            deselectAllEditPerms();
+        }
+
+        function selectAllEditPerms() {
+            document.querySelectorAll('#editPermsModal .perm-item input[type="checkbox"]').forEach(cb => cb.checked = true);
+            updateEditPermCount();
+        }
+
+        function deselectAllEditPerms() {
+            document.querySelectorAll('#editPermsModal .perm-item input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateEditPermCount();
+        }
+
+        function updateEditPermCount() {
+            const checked = document.querySelectorAll('#editPermsModal .perm-item input[type="checkbox"]:checked').length;
+            document.getElementById('editPermCount').textContent = checked;
+        }
+
+        async function saveEditPerms() {
+            const newRole = document.getElementById('editAdminRole').value;
+            const perms = [];
+            document.querySelectorAll('#editPermsModal .perm-item input[type="checkbox"]:checked').forEach(cb => perms.push(cb.value));
+
+            if (!newRole) {
+                alert('Por favor selecciona un rol');
+                return;
+            }
+            if (perms.length === 0) {
+                alert('Debes seleccionar al menos un módulo');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/users/${editAdminId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': token,
+                        'x-admin-id': adminId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: newRole, permissions: JSON.stringify(perms) })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error al guardar cambios');
+                }
+
+                alert('Permisos actualizados exitosamente');
+                closeEditPermsModal();
+                loadAdmins();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Error al guardar los cambios');
+            }
         }
 
         // Función para abrir el modal de cambio de rol
