@@ -221,8 +221,9 @@
         },
 
         exportDocs() {
-            const docs = this.documents;
-            if (!docs.length) { alert('No hay documentos para exportar'); return; }
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+            const docs = this.documents.filter(d => d.status === 'approved' && String(d.reviewed_by) === String(adminData.id));
+            if (!docs.length) { alert('No hay documentos aprobados por ti para exportar'); return; }
 
             const now = new Date();
             const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -250,7 +251,6 @@
             const to = document.getElementById('doc-date-to') ? document.getElementById('doc-date-to').value : '';
             const formatDate = (d) => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
             const rangoFecha = (from || to) ? ` | Período: ${from ? formatDate(from) : '...'} → ${to ? formatDate(to) : '...'}` : '';
-            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
             const adminName = adminData.name || adminData.username || 'Administrador';
             const win = window.open('', '', 'width=900,height=700');
             win.document.write(`<!DOCTYPE html><html><head><title>Reporte de Documentos - TaxiApp Rondon</title>
@@ -347,7 +347,7 @@
                 const res = await fetch(`${this.API_URL}/documents/${docId}/approve`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reviewed_by: 1 })
+                    body: JSON.stringify({ reviewed_by: (JSON.parse(localStorage.getItem('adminData') || '{}').id || 1) })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -377,7 +377,7 @@
                 const res = await fetch(`${this.API_URL}/documents/${docId}/reject`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reviewed_by: 1, rejection_reason: reason })
+                    body: JSON.stringify({ reviewed_by: (JSON.parse(localStorage.getItem('adminData') || '{}').id || 1), rejection_reason: reason })
                 });
                 const data = await res.json();
                 if (data.success) {
