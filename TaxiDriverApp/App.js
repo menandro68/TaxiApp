@@ -2856,6 +2856,13 @@ const playVoiceMessage = async (audioUrl, msgId) => {
           <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 40 }}>
             Gana dinero conduciendo con nosotros
           </Text>
+
+          <TouchableOpacity
+            style={{ backgroundColor: '#f59e0b', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
+            onPress={() => setShowDocumentUpload(true)}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>📄 Cargar Documentos</Text>
+          </TouchableOpacity>
           
           <TouchableOpacity
             style={{ backgroundColor: 'white', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
