@@ -1,280 +1,287 @@
-// MÓDULO DE GESTIÓN DE DOCUMENTOS - COMPLETAMENTE INDEPENDIENTE
-// Este módulo NO modifica ninguna funcionalidad existente del panel
+// documents-module.js - Módulo de Verificación de Documentos
+(function() {
+    'use strict';
 
-const DocumentsModule = {
-    // URL del backend
-    API_URL: `${window.location.origin}/api`,
-    
-    // Estado del módulo
-    currentFilter: 'all',
-    documents: [],
-    
-    // Inicializar el módulo
-    init() {
-        console.log('📄 Módulo de documentos inicializado');
-    },
-    
-    // Crear el HTML de la sección de documentos
-    getDocumentsHTML() {
-        return `
-            <div class="documents-section" style="padding: 20px;">
-                <div class="documents-header" style="margin-bottom: 30px;">
-                    <h2 style="color: #333; font-size: 28px; margin-bottom: 10px;">
-                        📋 Verificación de Documentos
-                    </h2>
-                    <p style="color: #666;">Revisa y aprueba los documentos de los conductores</p>
+    window.DocumentsModule = {
+        currentFilter: 'all',
+        documents: [],
+        API_URL: window.location.origin + '/api',
+
+        init() {
+            console.log('📄 Módulo de documentos inicializado');
+        },
+
+        getDocumentsHTML() {
+            return `
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 24px;">
+                    <h2 style="font-size: 24px; color: #1e293b; margin-bottom: 6px;">📋 Verificación de Documentos</h2>
+                    <p style="color: #64748b;">Revisa y aprueba los documentos de los conductores</p>
                 </div>
-                
+
                 <!-- Estadísticas -->
-                <div class="documents-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white;">
-                        <div style="font-size: 32px; font-weight: bold;" id="total-docs">0</div>
-                        <div style="font-size: 14px; opacity: 0.9;">Total Documentos</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 20px; border-radius: 12px; color: white; text-align: center;">
+                        <div style="font-size: 28px; font-weight: bold;" id="doc-total">0</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Total Documentos</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 10px; color: white;">
-                        <div style="font-size: 32px; font-weight: bold;" id="pending-docs">0</div>
-                        <div style="font-size: 14px; opacity: 0.9;">Pendientes</div>
+                    <div style="background: linear-gradient(135deg, #f093fb, #f5576c); padding: 20px; border-radius: 12px; color: white; text-align: center;">
+                        <div style="font-size: 28px; font-weight: bold;" id="doc-pending">0</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Pendientes</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 20px; border-radius: 10px; color: white;">
-                        <div style="font-size: 32px; font-weight: bold;" id="approved-docs">0</div>
-                        <div style="font-size: 14px; opacity: 0.9;">Aprobados</div>
+                    <div style="background: linear-gradient(135deg, #4facfe, #00f2fe); padding: 20px; border-radius: 12px; color: white; text-align: center;">
+                        <div style="font-size: 28px; font-weight: bold;" id="doc-approved">0</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Aprobados</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 20px; border-radius: 10px; color: white;">
-                        <div style="font-size: 32px; font-weight: bold;" id="rejected-docs">0</div>
-                        <div style="font-size: 14px; opacity: 0.9;">Rechazados</div>
+                    <div style="background: linear-gradient(135deg, #43e97b, #38f9d7); padding: 20px; border-radius: 12px; color: white; text-align: center;">
+                        <div style="font-size: 28px; font-weight: bold;" id="doc-rejected">0</div>
+                        <div style="font-size: 13px; opacity: 0.9;">Rechazados</div>
                     </div>
                 </div>
-                
+
                 <!-- Filtros -->
-                <div style="margin-bottom: 20px;">
-                    <button onclick="DocumentsModule.filterDocuments('all')" class="filter-btn" style="padding: 10px 20px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; background: #6c757d; color: white;">
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button onclick="DocumentsModule.filterDocs('all')" id="filter-all"
+                        style="padding: 8px 18px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600;">
                         Todos
                     </button>
-                    <button onclick="DocumentsModule.filterDocuments('pending')" class="filter-btn" style="padding: 10px 20px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; background: #ffc107; color: black;">
+                    <button onclick="DocumentsModule.filterDocs('pending')" id="filter-pending"
+                        style="padding: 8px 18px; border-radius: 20px; border: 2px solid #ffc107; background: transparent; color: #ffc107; cursor: pointer; font-weight: 600;">
                         Pendientes
                     </button>
-                    <button onclick="DocumentsModule.filterDocuments('approved')" class="filter-btn" style="padding: 10px 20px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; background: #28a745; color: white;">
+                    <button onclick="DocumentsModule.filterDocs('approved')" id="filter-approved"
+                        style="padding: 8px 18px; border-radius: 20px; border: 2px solid #22c55e; background: transparent; color: #22c55e; cursor: pointer; font-weight: 600;">
                         Aprobados
                     </button>
-                    <button onclick="DocumentsModule.filterDocuments('rejected')" class="filter-btn" style="padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; background: #dc3545; color: white;">
+                    <button onclick="DocumentsModule.filterDocs('rejected')" id="filter-rejected"
+                        style="padding: 8px 18px; border-radius: 20px; border: 2px solid #ef4444; background: transparent; color: #ef4444; cursor: pointer; font-weight: 600;">
                         Rechazados
                     </button>
                 </div>
-                
+
                 <!-- Lista de documentos -->
-                <div id="documents-list" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                    <div style="text-align: center; padding: 40px; color: #999;">
+                <div id="docs-list" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">📄</div>
                         Cargando documentos...
                     </div>
                 </div>
             </div>
-        `;
-    },
-    
-    // Cargar documentos desde el servidor
-    async loadDocuments() {
-        try {
-            const response = await fetch(this.API_URL + '/documents/pending');
-            const data = await response.json();
-            
-            if (data.success) {
-                this.documents = data.documents;
-                this.updateDocumentsList();
-                await this.loadStats();
-            }
-        } catch (error) {
-            console.error('Error cargando documentos:', error);
-            this.showError('Error al cargar documentos');
-        }
-    },
-    
-    // Cargar estadísticas
-    async loadStats() {
-        try {
-            const response = await fetch(this.API_URL + '/documents/stats');
-            const data = await response.json();
-            
-            if (data.success) {
-                document.getElementById('total-docs').textContent = data.stats.total;
-                document.getElementById('pending-docs').textContent = data.stats.pending;
-                document.getElementById('approved-docs').textContent = data.stats.approved;
-                document.getElementById('rejected-docs').textContent = data.stats.rejected;
-            }
-        } catch (error) {
-            console.error('Error cargando estadísticas:', error);
-        }
-    },
-    
-    // Actualizar lista de documentos
-    updateDocumentsList() {
-        const listContainer = document.getElementById('documents-list');
-        
-        if (!this.documents || this.documents.length === 0) {
-            listContainer.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #999;">
-                    No hay documentos pendientes de revisión
-                </div>
-            `;
-            return;
-        }
-        
-        let html = '<div style="overflow-x: auto;">';
-        html += '<table style="width: 100%; border-collapse: collapse;">';
-        html += `
-            <thead>
-                <tr style="border-bottom: 2px solid #dee2e6;">
-                    <th style="padding: 12px; text-align: left;">Conductor</th>
-                    <th style="padding: 12px; text-align: left;">Tipo Documento</th>
-                    <th style="padding: 12px; text-align: left;">Fecha Subida</th>
-                    <th style="padding: 12px; text-align: left;">Estado</th>
-                    <th style="padding: 12px; text-align: left;">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-        `;
-        
-        this.documents.forEach(doc => {
-            const statusBadge = this.getStatusBadge(doc.status);
-            const uploadDate = new Date(doc.uploaded_at).toLocaleDateString();
-            
-            html += `
-                <tr style="border-bottom: 1px solid #dee2e6;">
-                    <td style="padding: 12px;">
-                        <strong>${doc.driver_name || 'Conductor ' + doc.driver_id}</strong><br>
-                        <small style="color: #666;">${doc.driver_email || ''}</small>
-                    </td>
-                    <td style="padding: 12px;">${this.getDocumentTypeName(doc.document_type)}</td>
-                    <td style="padding: 12px;">${uploadDate}</td>
-                    <td style="padding: 12px;">${statusBadge}</td>
-                    <td style="padding: 12px;">
-                        <button onclick="DocumentsModule.viewDocument(${doc.id})" 
-                                style="padding: 5px 10px; margin-right: 5px; border: none; border-radius: 3px; background: #007bff; color: white; cursor: pointer;">
-                            Ver
-                        </button>
-                        ${doc.status === 'pending' ? `
-                            <button onclick="DocumentsModule.approveDocument(${doc.id})" 
-                                    style="padding: 5px 10px; margin-right: 5px; border: none; border-radius: 3px; background: #28a745; color: white; cursor: pointer;">
-                                Aprobar
-                            </button>
-                            <button onclick="DocumentsModule.rejectDocument(${doc.id})" 
-                                    style="padding: 5px 10px; border: none; border-radius: 3px; background: #dc3545; color: white; cursor: pointer;">
-                                Rechazar
-                            </button>
-                        ` : ''}
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += '</tbody></table></div>';
-        listContainer.innerHTML = html;
-    },
-    
-    // Obtener badge de estado
-    getStatusBadge(status) {
-        const badges = {
-            pending: '<span style="padding: 4px 8px; border-radius: 4px; background: #ffc107; color: black; font-size: 12px;">Pendiente</span>',
-            approved: '<span style="padding: 4px 8px; border-radius: 4px; background: #28a745; color: white; font-size: 12px;">Aprobado</span>',
-            rejected: '<span style="padding: 4px 8px; border-radius: 4px; background: #dc3545; color: white; font-size: 12px;">Rechazado</span>'
-        };
-        return badges[status] || badges.pending;
-    },
-    
-    // Obtener nombre del tipo de documento
-    getDocumentTypeName(type) {
-        const types = {
-            'license': '📄 Licencia de Conducir',
-            'insurance': '📋 Seguro del Vehículo',
-            'registration': '🚗 Registro Vehicular',
-            'id': '🆔 Identificación',
-            'criminal_record': '👮 Antecedentes Penales'
-        };
-        return types[type] || type;
-    },
-    
-    // Ver documento
-    viewDocument(id) {
-        const doc = this.documents.find(d => d.id === id);
-        if (doc && doc.document_url) {
-            const baseUrl = this.API_URL.replace('/api', '');
-            window.open(baseUrl + doc.document_url, '_blank');
-        } else {
-            alert('No se puede ver el documento');
-        }
-    },
-    
-    // Aprobar documento
-    async approveDocument(id) {
-        if (!confirm('¿Estás seguro de aprobar este documento?')) return;
-        
-        try {
-            const response = await fetch(this.API_URL + '/documents/' + id + '/approve', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reviewed_by: 1 })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                this.showSuccess('Documento aprobado exitosamente');
-                await this.loadDocuments();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            this.showError('Error al aprobar el documento');
-        }
-    },
-    
-    // Rechazar documento
-    async rejectDocument(id) {
-        const reason = prompt('Por favor, indica la razón del rechazo:');
-        if (!reason) return;
-        
-        try {
-            const response = await fetch(this.API_URL + '/documents/' + id + '/reject', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    reviewed_by: 1,
-                    rejection_reason: reason 
-                })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                this.showSuccess('Documento rechazado');
-                await this.loadDocuments();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            this.showError('Error al rechazar el documento');
-        }
-    },
-    
-    // Filtrar documentos
-    async filterDocuments(status) {
-        this.currentFilter = status;
-        await this.loadDocuments();
-    },
-    
-    // Mostrar mensaje de éxito
-    showSuccess(message) {
-        if (window.showNotification) {
-            window.showNotification(message, 'success');
-        } else {
-            alert('✅ ' + message);
-        }
-    },
-    
-    // Mostrar mensaje de error
-    showError(message) {
-        if (window.showNotification) {
-            window.showNotification(message, 'error');
-        } else {
-            alert('❌ ' + message);
-        }
-    }
-};
 
-// Hacer el módulo disponible globalmente
-window.DocumentsModule = DocumentsModule;
+            <!-- Modal ver imagen -->
+            <div id="doc-image-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:16px;">
+                <img id="doc-image-preview" src="" style="max-width:90vw; max-height:75vh; border-radius:12px; object-fit:contain;" />
+                <div style="display:flex; gap:12px;">
+                    <button onclick="DocumentsModule.approveFromModal()" id="modal-approve-btn"
+                        style="padding:10px 24px; background:#22c55e; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">
+                        ✅ Aprobar
+                    </button>
+                    <button onclick="DocumentsModule.rejectFromModal()" id="modal-reject-btn"
+                        style="padding:10px 24px; background:#ef4444; color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">
+                        ❌ Rechazar
+                    </button>
+                    <button onclick="DocumentsModule.closeModal()"
+                        style="padding:10px 24px; background:#64748b; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+            `;
+        },
+
+        async loadDocuments() {
+            try {
+                const res = await fetch(`${this.API_URL}/documents/all`);
+                const data = await res.json();
+                if (data.success) {
+                    this.documents = data.documents;
+                    this.renderStats();
+                    this.renderDocs(this.documents);
+                }
+            } catch (e) {
+                document.getElementById('docs-list').innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#ef4444;">
+                        Error cargando documentos: ${e.message}
+                    </div>`;
+            }
+        },
+
+        renderStats() {
+            const total = this.documents.length;
+            const pending = this.documents.filter(d => d.status === 'pending').length;
+            const approved = this.documents.filter(d => d.status === 'approved').length;
+            const rejected = this.documents.filter(d => d.status === 'rejected').length;
+            document.getElementById('doc-total').textContent = total;
+            document.getElementById('doc-pending').textContent = pending;
+            document.getElementById('doc-approved').textContent = approved;
+            document.getElementById('doc-rejected').textContent = rejected;
+            // Actualizar badge del menú
+            const badge = document.getElementById('documentsBadge');
+            if (badge) badge.textContent = pending;
+        },
+
+        renderDocs(docs) {
+            const container = document.getElementById('docs-list');
+            if (!docs.length) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <div style="font-size:40px; margin-bottom:12px;">📭</div>
+                        No hay documentos en esta categoría
+                    </div>`;
+                return;
+            }
+
+            const typeNames = {
+                cedula: '🪪 Cédula',
+                licencia: '🚗 Licencia',
+                matricula: '📋 Matrícula',
+                foto_vehiculo: '📸 Foto Vehículo',
+                seguro: '🛡️ Seguro'
+            };
+
+            const statusColors = {
+                pending: '#ffc107',
+                approved: '#22c55e',
+                rejected: '#ef4444'
+            };
+            const statusLabels = {
+                pending: 'Pendiente',
+                approved: 'Aprobado',
+                rejected: 'Rechazado'
+            };
+
+            container.innerHTML = docs.map(doc => `
+                <div style="background:white; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <!-- Miniatura -->
+                    <div style="flex-shrink:0;">
+                        ${doc.document_url && doc.document_url.startsWith('data:image') ?
+                            `<img src="${doc.document_url}" style="width:70px; height:70px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="DocumentsModule.viewImage('${doc.id}')" />`
+                            : `<div style="width:70px; height:70px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:28px;">📄</div>`
+                        }
+                    </div>
+
+                    <!-- Info -->
+                    <div style="flex:1; min-width:180px;">
+                        <div style="font-weight:700; font-size:16px; color:#1e293b;">${typeNames[doc.document_type] || doc.document_type}</div>
+                        <div style="color:#475569; font-size:14px; margin-top:2px;">👤 ${doc.driver_name || 'Conductor #' + doc.driver_id}</div>
+                        <div style="color:#94a3b8; font-size:12px; margin-top:2px;">📞 ${doc.driver_phone || '-'} · ${new Date(doc.uploaded_at).toLocaleDateString('es-DO')}</div>
+                        ${doc.rejection_reason ? `<div style="color:#ef4444; font-size:12px; margin-top:4px;">Razón: ${doc.rejection_reason}</div>` : ''}
+                    </div>
+
+                    <!-- Estado -->
+                    <div style="flex-shrink:0;">
+                        <span style="background:${statusColors[doc.status]}20; color:${statusColors[doc.status]}; padding:4px 12px; border-radius:20px; font-size:13px; font-weight:600;">
+                            ${statusLabels[doc.status]}
+                        </span>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div style="display:flex; gap:8px; flex-shrink:0;">
+                        ${doc.document_url && doc.document_url.startsWith('data:image') ?
+                            `<button onclick="DocumentsModule.viewImage('${doc.id}')"
+                                style="padding:6px 14px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
+                                👁 Ver
+                            </button>` : ''
+                        }
+                        ${doc.status === 'pending' ? `
+                        <button onclick="DocumentsModule.approve(${doc.id})"
+                            style="padding:6px 14px; background:#22c55e; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
+                            ✅ Aprobar
+                        </button>
+                        <button onclick="DocumentsModule.reject(${doc.id})"
+                            style="padding:6px 14px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px;">
+                            ❌ Rechazar
+                        </button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        },
+
+        filterDocs(filter) {
+            this.currentFilter = filter;
+            // Actualizar botones
+            ['all','pending','approved','rejected'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (!btn) return;
+                if (f === filter) {
+                    btn.style.background = '#3b82f6';
+                    btn.style.color = 'white';
+                    btn.style.border = 'none';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = f === 'pending' ? '#ffc107' : f === 'approved' ? '#22c55e' : f === 'rejected' ? '#ef4444' : '#3b82f6';
+                    btn.style.border = `2px solid ${f === 'pending' ? '#ffc107' : f === 'approved' ? '#22c55e' : f === 'rejected' ? '#ef4444' : '#3b82f6'}`;
+                }
+            });
+            const filtered = filter === 'all' ? this.documents : this.documents.filter(d => d.status === filter);
+            this.renderDocs(filtered);
+        },
+
+        viewImage(docId) {
+            const doc = this.documents.find(d => String(d.id) === String(docId));
+            if (!doc) return;
+            this._currentDocId = doc.id;
+            document.getElementById('doc-image-preview').src = doc.document_url;
+            const modal = document.getElementById('doc-image-modal');
+            modal.style.display = 'flex';
+            // Mostrar/ocultar botones según estado
+            document.getElementById('modal-approve-btn').style.display = doc.status === 'pending' ? 'block' : 'none';
+            document.getElementById('modal-reject-btn').style.display = doc.status === 'pending' ? 'block' : 'none';
+        },
+
+        closeModal() {
+            document.getElementById('doc-image-modal').style.display = 'none';
+        },
+
+        approveFromModal() {
+            this.approve(this._currentDocId);
+            this.closeModal();
+        },
+
+        rejectFromModal() {
+            this.reject(this._currentDocId);
+            this.closeModal();
+        },
+
+        async approve(docId) {
+            if (!confirm('¿Aprobar este documento?')) return;
+            try {
+                const res = await fetch(`${this.API_URL}/documents/${docId}/approve`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reviewed_by: 1 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ Documento aprobado');
+                    this.loadDocuments();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        },
+
+        async reject(docId) {
+            const reason = prompt('Razón de rechazo:');
+            if (!reason) return;
+            try {
+                const res = await fetch(`${this.API_URL}/documents/${docId}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reviewed_by: 1, rejection_reason: reason })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('❌ Documento rechazado');
+                    this.loadDocuments();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+    };
+})();
