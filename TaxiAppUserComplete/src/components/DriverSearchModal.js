@@ -17,7 +17,7 @@ const { width, height } = Dimensions.get('window');
 const RADAR_SIZE = width * 0.9; // 90% del ancho
 const RADAR_CENTER = RADAR_SIZE / 2;
 
-const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDriversLoaded }) => {
+const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDriversLoaded, tripRequestId }) => {
   const [searchProgress, setSearchProgress] = useState({
     attempt: 0,
     totalAttempts: 5,
@@ -102,7 +102,7 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
     ).start();
   };
 
-  const startSearch = async () => {
+const startSearch = async () => {
     setIsSearching(true);
     setSearchFailed(false);
     setDriverFound(null);
@@ -119,20 +119,40 @@ const DriverSearchModal = ({ visible, onClose, onDriverFound, userLocation, onDr
         setDriverFound(result.driver);
         setTimeout(() => {
           onDriverFound(result.driver);
-          if (onDriversLoaded) {
-            onDriversLoaded([]);
-          }
+          if (onDriversLoaded) onDriversLoaded([]);
         }, 2000);
       } else {
         setSearchFailed(true);
+        setIsSearching(false);
       }
     } catch (error) {
       console.error('Error buscando conductores:', error);
       setSearchFailed(true);
-    } finally {
       setIsSearching(false);
     }
   };
+
+  // POLLING DE SEGURIDAD: detectar aceptación aunque FCM falle
+  useEffect(() => {
+    if (!visible || !tripRequestId) return;
+    let stopped = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `https://web-production-99844.up.railway.app/api/trips/search-status/${tripRequestId}`
+        );
+        const data = await res.json();
+        if (data.driverAssigned && data.driver && !stopped) {
+          stopped = true;
+          onDriverFound(data.driver);
+        }
+      } catch (e) {}
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => { stopped = true; clearInterval(interval); };
+  }, [visible, tripRequestId]);
 
   const handleClose = () => {
     Alert.alert('Cancelar búsqueda', '¿Estás seguro que deseas cancelar?', [

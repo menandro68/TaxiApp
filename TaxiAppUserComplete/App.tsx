@@ -4167,7 +4167,8 @@ onPress={() => {
 }}
     onDriverFound={handleDriverFound}
 userLocation={tripRequest?.origin || userLocation}
-  onDriversLoaded={(drivers) => setSearchDrivers(drivers)}
+onDriversLoaded={(drivers) => setSearchDrivers(drivers)}
+  tripRequestId={tripRequest?.id}
   />
       )}
         {/* Modal de búsqueda de conductores */}
