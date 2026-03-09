@@ -3712,15 +3712,15 @@ onPress={() => {
           {renderLocationStatus()}
           {/* Selector de punto de recogida */}
           <View style={styles.formGroup}>
-            <View style={styles.pickupInput}>
-              <Icon name="location" size={20} color="#007AFF" />
-              <View style={styles.pickupTextContainer}>
-                <Text style={styles.pickupText}>
-                  {userLocation?.address ? userLocation.address : 'Punto de recogida'}
-                </Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#999" />
-            </View>
+         <TouchableOpacity style={styles.pickupInput} onPress={() => setShowPickupSelector(true)}>
+  <Icon name="location" size={20} color="#007AFF" />
+  <View style={styles.pickupTextContainer}>
+    <Text style={styles.pickupText}>
+      {userLocation?.address ? userLocation.address : 'Punto de recogida'}
+    </Text>
+  </View>
+  <Icon name="chevron-forward" size={20} color="#999" />
+</TouchableOpacity>
           </View>
           <View style={styles.destinationContainer}>
 <TouchableOpacity 
