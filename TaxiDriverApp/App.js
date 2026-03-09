@@ -108,6 +108,7 @@ export default function DriverApp({ navigation }) {
   const [showLogin, setShowLogin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [driverApproved, setDriverApproved] = useState(false);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showGPSModal, setShowGPSModal] = useState(false);
@@ -187,7 +188,23 @@ global.handleDriverArrivedConfirmation = (data) => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const [loggedDriver, setLoggedDriver] = useState(null);
+ const [loggedDriver, setLoggedDriver] = useState(null);
+  useEffect(() => {
+    const checkApprovalStatus = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('@temp_driver_info');
+        if (!saved) return;
+        const info = JSON.parse(saved);
+        const res = await fetch(`https://web-production-99844.up.railway.app/api/documents/driver/${info.id}`);
+        const data = await res.json();
+        if (data.success && data.documents.length > 0) {
+          const allApproved = data.documents.every(d => d.status === 'approved');
+          setDriverApproved(allApproved);
+        }
+      } catch (e) {}
+    };
+    if (!loggedDriver) checkApprovalStatus();
+  }, [loggedDriver]);
   
   // Estados para métricas de desempeño
   const [driverStats, setDriverStats] = useState({
@@ -2847,24 +2864,47 @@ const playVoiceMessage = async (audioUrl, msgId) => {
         />
       );
     }
+
+    // Verificar si el conductor tiene documentos aprobados
+    const checkApprovalStatus = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('@temp_driver_info');
+        if (!saved) return;
+        const info = JSON.parse(saved);
+        const res = await fetch(`https://web-production-99844.up.railway.app/api/documents/driver/${info.id}`);
+        const data = await res.json();
+        if (data.success && data.documents.length > 0) {
+          const allApproved = data.documents.every(d => d.status === 'approved');
+          setDriverApproved(allApproved);
+        }
+      } catch (e) {}
+    };
+
     return (
       <View style={styles.container}>
         <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#3b82f6', padding: 20 }}>
           <Text style={{ fontSize: 60, marginBottom: 20 }}>🚕</Text>
-          <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 10 }}>TaxiApp Conductor</Text>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 10 }}>Squidd Conductor</Text>
           <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 40 }}>
             Gana dinero conduciendo con nosotros
           </Text>
 
-          <TouchableOpacity
-            style={{ backgroundColor: '#f59e0b', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
-            onPress={() => setShowDocumentUpload(true)}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>📄 Cargar Documentos</Text>
-          </TouchableOpacity>
-          
- 
+          {driverApproved ? (
+            <TouchableOpacity
+              style={{ backgroundColor: '#22c55e', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
+              onPress={() => setShowLogin(true)}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>🔐 Iniciar Sesión</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={{ backgroundColor: '#f59e0b', paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10, marginBottom: 15, width: '100%' }}
+              onPress={() => { checkApprovalStatus(); setShowDocumentUpload(true); }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>📄 Cargar Documentos</Text>
+            </TouchableOpacity>
+     )}
         </View>
         
         {/* Modal de Pre-Registro */}
