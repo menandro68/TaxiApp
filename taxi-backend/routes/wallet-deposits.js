@@ -18,25 +18,35 @@ function parseBHDPdf(text) {
   const deposits = [];
 
   for (const line of lines) {
-    // Buscar líneas con fecha formato DD/MM/YYYY y monto RD$
-    const match = line.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d+)\s+(.+?)\s+RD\$\s*([\d,]+\.\d{2})/);
-    if (match) {
-      const [, date, confirmationNumber, description, amountStr] = match;
-      const amount = parseFloat(amountStr.replace(/,/g, ''));
-      
-      // Extraer código del conductor desde la descripción
-      // Formato esperado: "TRANSFERENCIA RECIBIDA DE SQUID-045"
-      const codeMatch = description.match(/SQUID-\d+/i);
-      const driverCode = codeMatch ? codeMatch[0].toUpperCase() : null;
+    const match = line.match(/(\d{2}\/\d{2}\/\d{4})\s+(\S+)\s+(.+?)\s{2,}([\d,]+\.\d{2})\s/);
+    if (!match) continue;
 
-      deposits.push({
-        date,
-        confirmationNumber,
-        description: description.trim(),
-        amount,
-        driverCode
-      });
+    const [, date, confirmationNumber, description, amountStr] = match;
+    const amount = parseFloat(amountStr.replace(/,/g, ''));
+    if (!amount || amount <= 0) continue;
+
+    // Extraer nombre del conductor
+    let driverName = null;
+    const transMatch = description.match(/TRANSFERENCIA\s+RECIBIDA\s+DE\s+(.+)/i);
+    const depoMatch = description.match(/DEPOSITO[:\s]+(.+)/i);
+
+    if (transMatch) driverName = transMatch[1].trim();
+    else if (depoMatch) driverName = depoMatch[1].trim();
+
+    // Tomar solo los 2 primeros nombres
+    let searchName = null;
+    if (driverName) {
+      const parts = driverName.split(/\s+/);
+      searchName = parts.slice(0, 2).join(' ');
     }
+
+    deposits.push({
+      date,
+      confirmationNumber,
+      description: description.trim(),
+      amount,
+      searchName
+    });
   }
   return deposits;
 }
@@ -64,25 +74,30 @@ router.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
         return { ...dep, status: 'duplicado', driverName: null, driverId: null };
       }
 
-      // Buscar conductor por código
+      // Buscar conductor por nombre (2 primeros nombres)
       let driverName = null;
       let driverId = null;
-      if (dep.driverCode) {
+      let driverCode = null;
+      if (dep.searchName) {
         const driverResult = await pool.query(
-          'SELECT id, name FROM drivers WHERE driver_code = $1',
-          [dep.driverCode]
+          `SELECT id, name, driver_code FROM drivers 
+           WHERE UPPER(name) ILIKE UPPER($1) 
+           OR UPPER(name) ILIKE UPPER($2)
+           LIMIT 1`,
+          [`${dep.searchName}%`, `%${dep.searchName}%`]
         );
         if (driverResult.rows.length > 0) {
           driverName = driverResult.rows[0].name;
           driverId = driverResult.rows[0].id;
+          driverCode = driverResult.rows[0].driver_code;
         }
       }
 
-      const status = !dep.driverCode ? 'sin_codigo' 
-                   : !driverId ? 'conductor_no_encontrado' 
+      const status = !dep.searchName ? 'sin_nombre'
+                   : !driverId ? 'conductor_no_encontrado'
                    : 'listo';
 
-      return { ...dep, status, driverName, driverId };
+      return { ...dep, status, driverName, driverId, driverCode };
     }));
 
     res.json({ 
