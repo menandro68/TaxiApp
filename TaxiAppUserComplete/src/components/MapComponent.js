@@ -27,8 +27,8 @@ const MapComponent = ({
   }
   
   const mapRef = useRef(null);
+  const isAnimatingRef = useRef(false);
   const [currentRegion, setCurrentRegion] = useState(null);
-  const touchStartData = useRef({ x: 0, y: 0, time: 0, count: 0 });
   
   // Estados para overlay markers (solución Legacy Architecture)
   const [userMarkerPos, setUserMarkerPos] = useState(null);
@@ -112,6 +112,7 @@ const MapComponent = ({
     const timer = setTimeout(() => {
       if (mapRef.current) {
         console.log('📍 FORZANDO animación a Santo Domingo (500ms después de montar)');
+        isAnimatingRef.current = true;
         mapRef.current.animateToRegion(santodomingo, 800);
         setCurrentRegion(santodomingo);
       }
@@ -154,6 +155,7 @@ const MapComponent = ({
       const timer1 = setTimeout(() => {
         if (mapRef.current) {
           console.log('📍 Animando a destino (interactive):', destination.latitude, destination.longitude);
+          isAnimatingRef.current = true;
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
             longitude: Number(destination.longitude),
@@ -165,6 +167,7 @@ const MapComponent = ({
 
       const timer2 = setTimeout(() => {
         if (mapRef.current) {
+          isAnimatingRef.current = true;
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
             longitude: Number(destination.longitude),
@@ -226,53 +229,50 @@ const MapComponent = ({
     longitude: userLocation?.longitude || -69.9312,
   };
 
+  const mapReadyRef = useRef(false);
+  const pollIntervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!interactive || !onMapPress) return;
+
+    const timer = setTimeout(() => {
+      mapReadyRef.current = true;
+      let lastLat = null;
+      let lastLng = null;
+
+      pollIntervalRef.current = setInterval(async () => {
+        if (!mapRef.current) return;
+        try {
+          const camera = await mapRef.current.getCamera();
+          const lat = camera?.center?.latitude;
+          const lng = camera?.center?.longitude;
+          if (lat && lng && (lat !== lastLat || lng !== lastLng)) {
+            lastLat = lat;
+            lastLng = lng;
+            console.log('🟢 Camera center:', lat, lng);
+            onMapPress({ latitude: lat, longitude: lng });
+          }
+        } catch (e) {}
+      }, 800);
+    }, 2000);
+
+    return () => {
+      clearTimeout(timer);
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, [interactive]);
+
   const handleRegionChangeComplete = (region) => {
     setCurrentRegion(region);
   };
 
-  const handleTouchStart = (evt) => {
-    if (!interactive) return;
-    const touches = evt.nativeEvent.touches;
-    touchStartData.current = {
-      x: touches[0]?.pageX || 0,
-      y: touches[0]?.pageY || 0,
-      time: Date.now(),
-      count: touches.length,
-    };
+  const handleRegionChangeCompleteInteractive = (region) => {
+    setCurrentRegion(region);
+    isAnimatingRef.current = false;
   };
 
-  const handleTouchEnd = async (evt) => {
-    if (!interactive || !onMapPress) return;
-    const { x, y, time, count } = touchStartData.current;
-    if (count > 1) return;
-    
-    const endX = evt.nativeEvent.pageX;
-    const endY = evt.nativeEvent.pageY;
-    const elapsed = Date.now() - time;
-    const dx = Math.abs(endX - x);
-    const dy = Math.abs(endY - y);
-    
-    if (dx < 15 && dy < 15 && elapsed < 300) {
-      const locationX = evt.nativeEvent.locationX;
-      const locationY = evt.nativeEvent.locationY;
-      
-      if (mapRef.current) {
-        try {
-          const coordinate = await mapRef.current.coordinateForPoint({ x: locationX, y: locationY });
-          if (coordinate && coordinate.latitude && coordinate.longitude) {
-            onMapPress(coordinate);
-            return;
-          }
-        } catch (error) {}
-      }
-      
-      const region = currentRegion || santodomingo;
-      const mapWidth = SCREEN_WIDTH;
-      const mapHeight = SCREEN_HEIGHT * 0.55;
-      const lng = region.longitude + (locationX / mapWidth - 0.5) * region.longitudeDelta;
-      const lat = region.latitude - (locationY / mapHeight - 0.5) * region.latitudeDelta;
-      onMapPress({ latitude: lat, longitude: lng });
-    }
+  const handleRegionChangeInteractive = (region) => {
+    setCurrentRegion(region);
   };
 
   // Debug para tracking
@@ -289,8 +289,6 @@ const MapComponent = ({
   return (
     <View 
       style={styles.container}
-      onTouchStart={interactive ? handleTouchStart : undefined}
-      onTouchEnd={interactive ? handleTouchEnd : undefined}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
         setMapLayout({ width, height });
@@ -315,11 +313,9 @@ const MapComponent = ({
         rotateEnabled={true}
         moveOnMarkerPress={false}
         loadingEnabled={true}
-        onRegionChangeComplete={handleRegionChangeComplete}
-        onPress={interactive ? (event) => {
-          const { latitude, longitude } = event.nativeEvent.coordinate;
-          if (onMapPress) onMapPress({ latitude, longitude });
-        } : undefined}
+        onRegionChange={interactive ? handleRegionChangeInteractive : undefined}
+        onRegionChangeComplete={interactive ? handleRegionChangeCompleteInteractive : handleRegionChangeComplete}
+        onPress={!interactive ? undefined : undefined}
       >
         {/* Marcador del Usuario - Modo Normal */}
         {!trackingMode && !interactive && (
