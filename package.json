@@ -28,6 +28,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.6",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "react-native-maps-directions": "^1.9.0",
