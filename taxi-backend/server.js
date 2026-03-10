@@ -91,6 +91,7 @@ app.use('/api/tracking', trackingRouter);
 app.use('/api/admin/settings', settingsRoutes);
 app.use('/api/referrals', referralsRouter);
 app.use('/api/trip-messages', tripMessagesRouter);
+app.use('/api/admin/wallet', require('./routes/wallet-deposits'));
 
 // Ruta para página de tracking en tiempo real
 app.get('/track/:shareId', (req, res) => {
