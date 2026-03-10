@@ -160,3 +160,20 @@ router.post('/process-deposits', async (req, res) => {
 });
 
 module.exports = router;
+// Historial de recargas
+router.get('/history', authenticateAdmin, async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const result = await db.query(
+            SELECT wd.*, d.name as driver_name
+            FROM wallet_deposits wd
+            LEFT JOIN drivers d ON wd.driver_id = d.id
+            ORDER BY wd.processed_at DESC
+            LIMIT \
+        , [limit]);
+        res.json({ deposits: result.rows });
+    } catch (err) {
+        console.error('Error historial wallet:', err);
+        res.status(500).json({ error: err.message });
+    }
+});

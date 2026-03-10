@@ -1087,6 +1087,11 @@
             <span class="nav-badge" id="supportBadge" style="background: #dc3545;">0</span>
         </a>
 
+        <a class="nav-item" data-screen="wallet-recargas" onclick="switchScreen('wallet-recargas')">
+            <span class="nav-icon">💰</span>
+            <span class="nav-text">Recargas Billetera</span>
+        </a>
+
         <a class="nav-item" data-screen="geofencing" onclick="switchScreen('geofencing')">
             <span class="nav-icon">📍</span>
             <span class="nav-text">Geofencing</span>
@@ -1583,6 +1588,11 @@
 
     <!-- Support Screen -->
     <div id="support" class="screen">
+        <!-- El contenido se cargará dinámicamente -->
+    </div>
+
+    <!-- Wallet Recargas Screen -->
+    <div id="wallet-recargas" class="screen">
         <!-- El contenido se cargará dinámicamente -->
     </div>
 
@@ -2337,6 +2347,13 @@ static async getStats() {
                 container.innerHTML = CommunicationsModule.showCommunicationsPanel();
                 CommunicationsModule.injectStyles();
                 CommunicationsModule.init();
+            }
+
+            // Cargar módulo de recargas billetera
+            if (screenName === 'wallet-recargas') {
+                const container = document.getElementById('wallet-recargas');
+                container.innerHTML = WalletRecargasModule.getHTML();
+                WalletRecargasModule.init();
             }
 
             // Cargar módulo de finanzas
@@ -5370,6 +5387,7 @@ async function exportUsers() {
     <script src="approval-wizard-module.js"></script>
     <script src="suspensions-module.js"></script>
     <script src="communications-module.js"></script>
+    <script src="wallet-recargas-module.js"></script>
     <script src="trips-filters-module.js"></script>
     <script src="trip-reassignment-module.js"></script>
     <script src="command-center-module.js"></script>
