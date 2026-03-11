@@ -57,6 +57,7 @@ router.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
 
     const data = await pdfParse(req.file.buffer);
+    console.log('📄 TEXTO PDF CRUDO:\n', data.text.substring(0, 2000));
     const rawDeposits = parseBHDPdf(data.text);
 
     if (rawDeposits.length === 0) {
