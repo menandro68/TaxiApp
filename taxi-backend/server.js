@@ -70,6 +70,7 @@ const trackingRouter = require('./routes/tracking');
 const settingsRoutes = require('./routes/settings');
 const tripMessagesRouter = require('./routes/trip-messages');
 const referralsRouter = require('./routes/referrals');
+const lostItemsRouter = require('./routes/lost-items');
 
 // ==========================================
 // REGISTRAR RUTAS
@@ -92,6 +93,7 @@ app.use('/api/admin/settings', settingsRoutes);
 app.use('/api/referrals', referralsRouter);
 app.use('/api/trip-messages', tripMessagesRouter);
 app.use('/api/admin/wallet', require('./routes/wallet-deposits'));
+app.use('/api/lost-items', lostItemsRouter);
 
 // Ruta para página de tracking en tiempo real
 app.get('/track/:shareId', (req, res) => {

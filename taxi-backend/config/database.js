@@ -312,6 +312,28 @@ await pool.query(`
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)`);
 await pool.query(`ALTER TABLE driver_documents ALTER COLUMN document_url TYPE TEXT`);
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)`);
+// Tabla de objetos perdidos
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS lost_items (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    trip_id INTEGER REFERENCES trips(id) ON DELETE SET NULL,
+    item_category VARCHAR(100),
+    item_description TEXT NOT NULL,
+    additional_details TEXT,
+    contact_phone VARCHAR(20),
+    driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+    driver_name VARCHAR(255),
+    vehicle_plate VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'pending',
+    admin_notes TEXT,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_lost_items_user_id ON lost_items(user_id)`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_lost_items_status ON lost_items(status)`);
     console.log('✅ Tablas de base de datos inicializadas');
   } catch (error) {
     console.error('Error inicializando base de datos:', error);
