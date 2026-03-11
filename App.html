@@ -1081,6 +1081,12 @@
             <span class="nav-badge" id="activeTripsCount" style="background: #28a745;">0</span>
         </a>
 
+        <a class="nav-item" data-screen="lost-items" onclick="switchScreen('lost-items')">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-text">Objetos Perdidos</span>
+            <span class="nav-badge" id="lostItemsBadge" style="background: #ff9800;">0</span>
+        </a>
+
         <a class="nav-item" data-screen="support" onclick="switchScreen('support')">
             <span class="nav-icon">💬</span>
             <span class="nav-text">Soporte</span>
@@ -1522,6 +1528,13 @@
         <div class="loading">
             <div class="spinner"></div>
             Cargando analíticas...
+        </div>
+    </div>
+
+    <div id="lost-items" class="screen">
+        <div class="loading">
+            <div class="spinner"></div>
+            Cargando objetos perdidos...
         </div>
     </div>
 
@@ -2403,6 +2416,12 @@ if (screenName === 'vehicles') {
     const container = document.getElementById('vehicles');
     container.innerHTML = VehiclesModule.getHTML();
     VehiclesModule.init();
+}
+
+if (screenName === 'lost-items') {
+    const container = document.getElementById('lost-items');
+    container.innerHTML = LostItemsModule.getHTML();
+    LostItemsModule.init();
 }
             // Mostrar pantalla seleccionada
             document.getElementById(screenName).classList.add('active');
@@ -5393,6 +5412,7 @@ async function exportUsers() {
     <script src="command-center-module.js"></script>
     <script src="analytics-module.js"></script>
     <script src="vehicles-module.js"></script>
+    <script src="lost-items-module.js"></script>
 <script>
 // === SISTEMA DE PERMISOS POR MÓDULO ===
 function applyPermissions() {
