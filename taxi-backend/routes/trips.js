@@ -579,10 +579,15 @@ router.post('/accept/:tripId', async (req, res) => {
                 }
             }
         });
-
-    } catch (error) {
-        console.error('❌ Error aceptando viaje:', error);
-        res.status(500).json({ error: 'Error al aceptar viaje', success: false });
+} catch (error) {
+        console.error('❌ Error aceptando viaje:', error.message || error);
+        console.error('❌ Stack:', error.stack || 'sin stack');
+        console.error('❌ Código error DB:', error.code || 'sin código');
+        res.status(500).json({ 
+            error: 'Error al aceptar viaje', 
+            detail: error.message || 'Error desconocido',
+            success: false 
+        });
     }
 });
 
