@@ -602,4 +602,28 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📦 Entorno: ${process.env.NODE_ENV || 'development'}`);
 });
 
+// ==========================================
+// KEEP-ALIVE: Evitar que Railway duerma
+// ==========================================
+const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN
+  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+  : `http://localhost:${process.env.PORT || 3000}`;
+
+setInterval(async () => {
+  try {
+    const https = require('https');
+    const http = require('http');
+    const client = SELF_URL.startsWith('https') ? https : http;
+    client.get(`${SELF_URL}/health`, (res) => {
+      console.log(`💓 Keep-alive ping: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.log(`⚠️ Keep-alive error: ${err.message}`);
+    });
+  } catch (e) {
+    console.log('⚠️ Keep-alive excepción:', e.message);
+  }
+}, 4 * 60 * 1000); // cada 4 minutos
+
+console.log(`💓 Keep-alive activado → pingea cada 4 minutos`);
+
 module.exports = { app, server, io };
