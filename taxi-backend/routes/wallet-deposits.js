@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const pdfParseLib = require('pdf-parse');
-const pdfParse = pdfParseLib.default || pdfParseLib;
+const pdfParse = require('pdf-parse');
 const { Pool } = require('pg');
 require('dotenv').config();
 
