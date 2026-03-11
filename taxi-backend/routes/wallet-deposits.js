@@ -18,7 +18,8 @@ function parseBHDPdf(text) {
   const deposits = [];
 
   for (const line of lines) {
-    const match = line.match(/(\d{2}\/\d{2}\/\d{4})\s+(\S+)\s+(.+?)\s{2,}([\d,]+\.\d{2})\s/);
+    // Formato: DD/MM/YYYY  CONFIRMACION  DESCRIPCION  RD$ MONTO  RD$ BALANCE
+    const match = line.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\S+)\s+(.+?)\s+RD\$\s*([\d,]+\.\d{2})\s+RD\$\s*[\d,]+\.\d{2}/);
     if (!match) continue;
 
     const [, date, confirmationNumber, description, amountStr] = match;
@@ -33,12 +34,11 @@ function parseBHDPdf(text) {
     if (transMatch) driverName = transMatch[1].trim();
     else if (depoMatch) driverName = depoMatch[1].trim();
 
+    if (!driverName) continue; // Ignorar "Deposito CC" sin nombre
+
     // Tomar solo los 2 primeros nombres
-    let searchName = null;
-    if (driverName) {
-      const parts = driverName.split(/\s+/);
-      searchName = parts.slice(0, 2).join(' ');
-    }
+    const parts = driverName.split(/\s+/);
+    const searchName = parts.slice(0, 2).join(' ');
 
     deposits.push({
       date,
