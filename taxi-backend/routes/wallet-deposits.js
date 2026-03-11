@@ -142,10 +142,23 @@ router.post('/process-deposits', async (req, res) => {
          dep.amount, dep.description, dep.date, pdfFilename || 'unknown']
       );
 
-      // Acreditar billetera del conductor
+  // Acreditar billetera del conductor
       await client.query(
         `UPDATE drivers SET wallet_balance = COALESCE(wallet_balance, 0) + $1 WHERE id = $2`,
         [dep.amount, dep.driverId]
+      );
+
+      // Registrar en wallet_transactions para el módulo Billetera
+      const lastTx = await client.query(
+        `SELECT balance_after FROM wallet_transactions WHERE driver_id = $1 ORDER BY created_at DESC LIMIT 1`,
+        [dep.driverId]
+      );
+      const currentBalance = lastTx.rows.length > 0 ? parseFloat(lastTx.rows[0].balance_after) : 0;
+      const newBalance = currentBalance + parseFloat(dep.amount);
+      await client.query(
+        `INSERT INTO wallet_transactions (driver_id, type, trip_amount, commission_amount, deposit_amount, balance_after, description)
+         VALUES ($1, 'deposit', 0, 0, $2, $3, $4)`,
+        [dep.driverId, dep.amount, newBalance, dep.description || `Recarga PDF BHD`]
       );
 
       await client.query('COMMIT');
