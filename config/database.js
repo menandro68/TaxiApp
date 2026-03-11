@@ -1,77 +1,404 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+// ========================================
+// CONFIGURACIÓN DE BASE DE DATOS - PostgreSQL
+// ========================================
+const { Pool } = require('pg');
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
-// Crear/conectar base de datos
-const db = new sqlite3.Database(path.join(__dirname, '../taxiapp.db'), (err) => {
+// ========================================
+// POOL DE CONEXIONES POSTGRESQL
+// ========================================
+// Usar DATABASE_URL de Railway o variables locales
+const connectionString = process.env.DATABASE_URL ||
+  `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME}`;
+
+console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variables locales');
+
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: { rejectUnauthorized: false },
+  max: 10,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  application_name: 'taxiapp_backend',
+});
+
+// Manejo de errores del pool
+pool.on('error', (err) => {
+  console.error('Error en el pool de PostgreSQL:', err);
+});
+
+// ========================================
+// SERVICIO DE BASE DE DATOS
+// ========================================
+class DatabaseService {
+  async getOne(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
+  async getAll(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Database query error:', error);
+      throw error;
+    }
+  }
+
+  async run(query, params = []) {
+    try {
+      const result = await pool.query(query, params);
+      return {
+        changes: result.rowCount,
+        lastID: result.rows[0]?.id
+      };
+    } catch (error) {
+      console.error('Database execution error:', error);
+      throw error;
+    }
+  }
+
+  async query(query, params = []) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const result = await pool.query(query, params);
+        return result;
+      } catch (error) {
+        if (attempt < 3 && (error.code === 'ECONNRESET' || error.code === 'EPIPE' || error.code === '57P01')) {
+          console.log(`🔄 Reintentando query (intento ${attempt}/3)...`);
+          await new Promise(r => setTimeout(r, 1000 * attempt));
+          continue;
+        }
+        console.error('Database query error:', error);
+        throw error;
+      }
+    }
+  }
+
+  async transaction(callback) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+}
+
+const db = new DatabaseService();
+
+// ========================================
+// INICIALIZACIÓN DE TABLAS
+// ========================================
+async function initDatabase() {
+  try {
+    console.log('🔄 Inicializando base de datos PostgreSQL...');
+
+    // Tabla de usuarios (pasajeros)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        phone_encrypted VARCHAR(255),
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        pending_penalty INTEGER DEFAULT 0
+      )
+    `);
+
+    // Agregar columna pending_penalty si no existe
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pending_penalty INTEGER DEFAULT 0
+    `);
+
+    // Tabla de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS drivers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        license VARCHAR(100) NOT NULL,
+        vehicle_plate VARCHAR(50),
+        vehicle_model VARCHAR(100),
+        vehicle_color VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'inactive',
+        rating NUMERIC(3,2) DEFAULT 5.0,
+        total_trips INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de viajes
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS trips (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+        pickup_location VARCHAR(255),
+        destination VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'pending',
+        price NUMERIC(10,2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de sesiones activas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_type VARCHAR(50) CHECK(user_type IN ('user', 'driver', 'admin')),
+        token VARCHAR(500) UNIQUE NOT NULL,
+        refresh_token VARCHAR(500) UNIQUE,
+        device_info TEXT,
+        ip_address VARCHAR(50),
+        user_agent TEXT,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de ubicaciones de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_locations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        latitude NUMERIC(10,8),
+        longitude NUMERIC(11,8),
+        heading NUMERIC(5,2),
+        speed NUMERIC(5,2),
+        accuracy NUMERIC(5,2),
+        status VARCHAR(50) DEFAULT 'online',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de administradores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role VARCHAR(50) DEFAULT 'admin',
+        permissions JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de roles
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS roles (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        permissions JSONB DEFAULT '[]',
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de suspensiones de conductores
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_suspensions (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        driver_name VARCHAR(255),
+        type VARCHAR(50) CHECK(type IN ('temporal', 'permanent')),
+        reason TEXT,
+        duration_hours INTEGER,
+        expires_at TIMESTAMP,
+        status VARCHAR(50) DEFAULT 'active',
+        created_by VARCHAR(100),
+        lifted_by VARCHAR(100),
+        lifted_reason TEXT,
+        suspended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        lifted_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de cancelaciones de conductor (para penalización progresiva)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS driver_cancellations (
+        id SERIAL PRIMARY KEY,
+        driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+        trip_id INTEGER,
+        reason TEXT,
+        cancellation_number INTEGER DEFAULT 1,
+        suspension_hours INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_cancellations_driver_id ON driver_cancellations(driver_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_cancellations_created_at ON driver_cancellations(created_at)`);
+
+    // Tabla de logs encriptados
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS encrypted_logs (
+        id SERIAL PRIMARY KEY,
+        action TEXT,
+        user_id INTEGER,
+        data_encrypted TEXT,
+        ip_address VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+   // Tabla de conductores bloqueados por usuarios
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS blocked_drivers (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        driver_id INTEGER NOT NULL,
+        driver_name VARCHAR(255),
+        reason TEXT DEFAULT 'Bloqueado por el usuario',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, driver_id)
+      )
+    `);
+
+    // Crear índices para mejor rendimiento
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON driver_locations(driver_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_suspensions_driver_id ON driver_suspensions(driver_id)`);
+
+
+    // Tabla de documentos de conductores
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS driver_documents (
+    id SERIAL PRIMARY KEY,
+    driver_id INTEGER REFERENCES drivers(id) ON DELETE CASCADE,
+    document_type VARCHAR(100) NOT NULL,
+   document_url TEXT NOT NULL,
+    document_name VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'pending',
+    expiry_date DATE,
+    rejection_reason TEXT,
+    reviewed_by INTEGER,
+    reviewed_at TIMESTAMP,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_driver_id ON driver_documents(driver_id)`);
+await pool.query(`ALTER TABLE driver_documents ALTER COLUMN document_url TYPE TEXT`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_driver_documents_status ON driver_documents(status)`);
+// Tabla de objetos perdidos
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS lost_items (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    trip_id INTEGER REFERENCES trips(id) ON DELETE SET NULL,
+    item_category VARCHAR(100),
+    item_description TEXT NOT NULL,
+    additional_details TEXT,
+    contact_phone VARCHAR(20),
+    driver_id INTEGER REFERENCES drivers(id) ON DELETE SET NULL,
+    driver_name VARCHAR(255),
+    vehicle_plate VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'pending',
+    admin_notes TEXT,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_lost_items_user_id ON lost_items(user_id)`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_lost_items_status ON lost_items(status)`);
+    console.log('✅ Tablas de base de datos inicializadas');
+  } catch (error) {
+    console.error('Error inicializando base de datos:', error);
+  }
+}
+
+// ========================================
+// INICIALIZACIÓN CON ADMIN POR DEFECTO
+// ========================================
+async function waitForPostgres() {
+  for (let i = 1; i <= 10; i++) {
+    try {
+      await pool.query('SELECT 1');
+      console.log('✅ PostgreSQL listo');
+      return true;
+    } catch (err) {
+      console.log(`⏳ Esperando PostgreSQL (intento ${i}/10)...`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  throw new Error('No se pudo conectar a PostgreSQL después de 10 intentos');
+}
+
+(async () => {
+  try {
+    console.log('🔄 Inicializando base de datos y creando admin...');
+    
+    // Esperar a que PostgreSQL esté listo
+    await waitForPostgres();
+    
+    // Esperar a que se creen las tablas
+    await initDatabase();
+    
+    // Insertar admin por defecto si no existe
+    const bcrypt = require('bcryptjs');
+    const adminCount = await pool.query('SELECT COUNT(*) as count FROM admins');
+    const count = parseInt(adminCount.rows[0].count || 0);
+    
+    if (count === 0) {
+      console.log('📝 Creando admin por defecto...');
+      const hashedPassword = await bcrypt.hash('132312ml', 10);
+      await pool.query(
+        `INSERT INTO admins (username, email, password, role, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+        ['menandro68', 'menandro68@example.com', hashedPassword, 'admin']
+      );
+      console.log('✅ Admin por defecto creado: menandro68 / 132312');
+    } else {
+      console.log('✅ Admin ya existe en la base de datos');
+    }
+  } catch (error) {
+    console.error('❌ Error inicializando base de datos:', error);
+  }
+})();
+
+// Verificar conexión al pool
+pool.query('SELECT NOW()', (err, result) => {
   if (err) {
-    console.error('Error al conectar con la base de datos:', err);
+    console.error('❌ Error conectando a PostgreSQL:', err);
   } else {
-    console.log('📊 Base de datos SQLite conectada');
-    initDatabase();
+    console.log('🛡️ PostgreSQL conectado correctamente');
   }
 });
 
-// Inicializar tablas
-function initDatabase() {
-  // Tabla de usuarios (pasajeros)
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // Tabla de conductores
-  db.run(`CREATE TABLE IF NOT EXISTS drivers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT NOT NULL,
-    password TEXT NOT NULL,
-    license TEXT NOT NULL,
-    vehicle_plate TEXT,
-    vehicle_model TEXT,
-    vehicle_color TEXT,
-    status TEXT DEFAULT 'inactive',
-    rating REAL DEFAULT 5.0,
-    total_trips INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // Tabla de viajes
-  db.run(`CREATE TABLE IF NOT EXISTS trips (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    driver_id INTEGER,
-    pickup_location TEXT,
-    destination TEXT,
-    status TEXT DEFAULT 'pending',
-    price REAL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (driver_id) REFERENCES drivers(id)
-  )`);
-
-  // Tabla de sesiones activas
-  db.run(`CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    user_type TEXT CHECK(user_type IN ('user', 'driver', 'admin')),
-    token TEXT UNIQUE NOT NULL,
-    refresh_token TEXT UNIQUE,
-    device_info TEXT,
-    ip_address TEXT,
-    user_agent TEXT,
-    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME,
-    is_active BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  )`);
-
-  console.log('✅ Tablas de base de datos inicializadas');
-}
-
-module.exports = db;
+// ========================================
+// EXPORTAR
+// ========================================
+module.exports = { db, pool, DatabaseService };
