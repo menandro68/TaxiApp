@@ -130,10 +130,10 @@ const WalletRecargasModule = {
 
         deposits.forEach(d => {
             html += `<tr style="border-top: 1px solid #f1f5f9; background: ${statusBg[d.status] || '#fff'};">
-                <td style="padding: 12px 16px; font-size: 14px; color: #475569;">${d.deposit_date || '-'}</td>
-                <td style="padding: 12px 16px; font-size: 12px; color: #94a3b8; font-family: monospace;">${d.confirmation_number}</td>
-                <td style="padding: 12px 16px; font-size: 14px; font-weight: 600; color: #1e293b;">${d.driver_code || '-'}</td>
-                <td style="padding: 12px 16px; font-size: 14px; color: #475569;">${d.driver_name || '-'}</td>
+                <td style="padding: 12px 16px; font-size: 14px; color: #475569;">${d.date || d.deposit_date || '-'}</td>
+                <td style="padding: 12px 16px; font-size: 12px; color: #94a3b8; font-family: monospace;">${d.confirmationNumber || d.confirmation_number || '-'}</td>
+                <td style="padding: 12px 16px; font-size: 14px; font-weight: 600; color: #1e293b;">${d.driverCode || d.driver_code || '-'}</td>
+                <td style="padding: 12px 16px; font-size: 14px; color: #475569;">${d.driverName || d.driver_name || '-'}</td>
                 <td style="padding: 12px 16px; font-size: 15px; font-weight: 700; color: #16a34a; text-align: right;">RD$ ${parseFloat(d.amount || 0).toLocaleString('es-DO', {minimumFractionDigits: 2})}</td>
                 <td style="padding: 12px 16px; text-align: center;">
                     <span style="background: ${statusBg[d.status]}; color: ${statusColor[d.status]}; border: 1px solid ${statusColor[d.status]}; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
@@ -151,7 +151,8 @@ const WalletRecargasModule = {
     cancelar() {
         this.pendingDeposits = [];
         document.getElementById('walletPreview').style.display = 'none';
-        document.getElementById('pdfInput').value = '';
+        const pdfInputEl = document.getElementById('pdfInput');
+        if (pdfInputEl) pdfInputEl.value = '';
         const dropZone = document.getElementById('dropZone');
         dropZone.innerHTML = `
             <div style="font-size: 48px; margin-bottom: 12px;">📄</div>
