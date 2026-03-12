@@ -126,8 +126,31 @@ const LostItemReportScreen = ({ navigation, route }) => {
     setIsLoading(true);
 
     try {
-      // Simular envío del reporte
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Enviar reporte al backend
+      const userData = await AsyncStorage.getItem('userData');
+      const user = userData ? JSON.parse(userData) : null;
+      console.log('🔍 Enviando reporte al backend...');
+      const response = await fetch('https://web-production-99844.up.railway.app/api/lost-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user?.id || null,
+         trip_id: null,
+          item_category: itemCategory,
+          item_description: itemDescription,
+          additional_details: additionalDetails,
+          contact_phone: contactPhone,
+          driver_id: selectedTrip?.driverId || null,
+          driver_name: selectedTrip?.driver || null,
+          vehicle_plate: selectedTrip?.vehiclePlate || null,
+        })
+      });
+
+      const data = await response.json();
+      console.log('🔍 Respuesta backend:', JSON.stringify(data));
+      if (!data.success) throw new Error(data.error || 'Error enviando reporte');
+
+      setReportStatus('submitted');
 
       const report = {
         id: `REPORT-${Date.now()}`,
@@ -146,7 +169,6 @@ const LostItemReportScreen = ({ navigation, route }) => {
       reports.push(report);
       await AsyncStorage.setItem('lostItemReports', JSON.stringify(reports));
 
-      setReportStatus('submitted');
       Alert.alert(
         '✅ Reporte Enviado',
         'Tu reporte ha sido enviado exitosamente. El conductor será notificado y te contactaremos si encontramos tu objeto.',
