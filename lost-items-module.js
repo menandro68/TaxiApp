@@ -20,7 +20,7 @@ const LostItemsModule = {
                 <span style="font-size:14px; color:#64748b;">Fecha Final</span>
                 <input type="date" id="lostDateTo" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
                 <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
-                <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
+                <!-- <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button> -->
             </div>
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button onclick="LostItemsModule.filterItems('all')" id="filter-all" style="padding: 8px 16px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer;">Todos</button>
