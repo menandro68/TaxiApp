@@ -19,8 +19,11 @@ const LostItemsModule = {
                 <input type="date" id="lostDateFrom" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
                 <span style="font-size:14px; color:#64748b;">Fecha Final</span>
                 <input type="date" id="lostDateTo" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                <select id="lostDriverFilter" onchange="LostItemsModule.loadItems()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                    <option value="all">Todos los conductores</option>
+                </select>
                 <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
-                <!-- <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button> -->
+                <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
             </div>
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button onclick="LostItemsModule.filterItems('all')" id="filter-all" style="padding: 8px 16px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer;">Todos</button>
@@ -75,7 +78,24 @@ const LostItemsModule = {
     },
 
     init() {
+        this.loadDrivers();
         this.loadItems();
+    },
+
+    async loadDrivers() {
+        try {
+            const res = await fetch('https://web-production-99844.up.railway.app/api/drivers?limit=200');
+            const data = await res.json();
+            const select = document.getElementById('lostDriverFilter');
+            if (data.drivers) {
+                data.drivers.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch(e) {}
     },
 
     async loadItems() {
@@ -84,6 +104,8 @@ const LostItemsModule = {
             const dateTo = document.getElementById('lostDateTo')?.value || '';
             let params = [];
             if (this.currentFilter !== 'all') params.push(`status=${this.currentFilter}`);
+            const driverFilter = document.getElementById('lostDriverFilter')?.value || 'all';
+            if (driverFilter !== 'all') params.push(`driver_id=${driverFilter}`);
             if (dateFrom) params.push(`date_from=${dateFrom}`);
             if (dateTo) params.push(`date_to=${dateTo}`);
             const url = `https://web-production-99844.up.railway.app/api/lost-items${params.length ? '?' + params.join('&') : ''}`;
