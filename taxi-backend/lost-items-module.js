@@ -24,7 +24,7 @@ const LostItemsModule = {
                 </select>
                 <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
                 <button onclick="LostItemsModule.exportItems()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight:600;">📊 Exportar</button>
-                <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
+                <!-- <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button> -->
             </div>
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button onclick="LostItemsModule.filterItems('all')" id="filter-all" style="padding: 8px 16px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer;">Todos</button>
