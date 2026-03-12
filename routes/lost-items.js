@@ -24,6 +24,7 @@ router.get('/', async (req, res) => {
         if (status) { conditions.push(`li.status = $${params.length + 1}`); params.push(status); }
         if (req.query.date_from) { conditions.push(`li.created_at >= $${params.length + 1}`); params.push(req.query.date_from); }
         if (req.query.date_to) { conditions.push(`li.created_at < ($${params.length + 1}::date + interval '1 day')`); params.push(req.query.date_to); }
+        if (req.query.driver_id) { conditions.push(`li.driver_id = $${params.length + 1}`); params.push(req.query.driver_id); }
         if (conditions.length) query += ` WHERE ` + conditions.join(' AND ');
 
         query += ` ORDER BY li.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
