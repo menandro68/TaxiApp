@@ -1,4 +1,4 @@
-// =============================================
+﻿// =============================================
 // MÓDULO DE OBJETOS PERDIDOS - Admin Panel
 // =============================================
 const LostItemsModule = {
@@ -23,6 +23,7 @@ const LostItemsModule = {
                     <option value="all">Todos los conductores</option>
                 </select>
                 <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
+                <button onclick="LostItemsModule.exportItems()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight:600;">📊 Exportar</button>
                 <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
             </div>
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
@@ -235,5 +236,19 @@ const LostItemsModule = {
             resolved: '<span style="background:#e8f5e9; color:#10b981; padding:4px 10px; border-radius:12px; font-size:12px;">✅ Resuelto</span>'
         };
         return badges[status] || status;
+    },
+
+    exportItems() {
+        const items = this.items;
+        if (!items.length) { alert('No hay reportes para exportar'); return; }
+        const now = new Date();
+        const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const horaReporte = now.toLocaleTimeString('es-DO', { hour:'2-digit', minute:'2-digit' });
+        const statusLabels = { pending:'Pendiente', in_progress:'En Proceso', resolved:'Resuelto' };
+        const rows = items.map(item => '<tr><td>#' + item.id + '</td><td>' + (item.user_name||'N/A') + '</td><td>' + this.getCategoryName(item.item_category) + '</td><td>' + (item.item_description||'-') + '</td><td>' + (item.driver_name||'N/A') + '</td><td>' + (item.vehicle_plate||'-') + '</td><td>' + (item.contact_phone||'-') + '</td><td>' + (statusLabels[item.status]||item.status) + '</td><td>' + new Date(item.created_at).toLocaleDateString('es-DO') + '</td></tr>').join('');
+        const win = window.open('', '', 'width=1000,height=700');
+        win.document.write('<!DOCTYPE html><html><head><title>Reporte Objetos Perdidos</title><style>body{font-family:Arial,sans-serif;padding:30px}h1{color:#3b82f6}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:10px;text-align:left;font-size:12px;border-bottom:2px solid #e2e8f0}td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13px}.footer{text-align:center;font-size:11px;color:#94a3b8;margin-top:20px;padding-top:10px}</style></head><body><h1>Reporte de Objetos Perdidos</h1><p><strong>TaxiApp Rondon</strong> | Fecha: ' + fechaReporte + ' ' + horaReporte + ' | Total: ' + items.length + ' reportes</p><table><thead><tr><th>ID</th><th>Usuario</th><th>Categoria</th><th>Descripcion</th><th>Conductor</th><th>Placa</th><th>Contacto</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>' + rows + '</tbody></table><div class="footer">Generado por TaxiApp Rondon - ' + fechaReporte + '</div></body></html>');
+        win.document.close();
+        win.print();
     }
 };
