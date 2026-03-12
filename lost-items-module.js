@@ -14,6 +14,14 @@ const LostItemsModule = {
             </div>
 
             <!-- Filtros -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size:14px; color:#64748b;">Fecha Inicial</span>
+                <input type="date" id="lostDateFrom" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                <span style="font-size:14px; color:#64748b;">Fecha Final</span>
+                <input type="date" id="lostDateTo" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
+                <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
+            </div>
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                 <button onclick="LostItemsModule.filterItems('all')" id="filter-all" style="padding: 8px 16px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer;">Todos</button>
                 <button onclick="LostItemsModule.filterItems('pending')" id="filter-pending" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #ff9800; background: white; color: #ff9800; cursor: pointer;">⏳ Pendientes</button>
@@ -72,9 +80,13 @@ const LostItemsModule = {
 
     async loadItems() {
         try {
-            const url = this.currentFilter === 'all'
-                ? 'https://web-production-99844.up.railway.app/api/lost-items'
-                : `https://web-production-99844.up.railway.app/api/lost-items?status=${this.currentFilter}`;
+            const dateFrom = document.getElementById('lostDateFrom')?.value || '';
+            const dateTo = document.getElementById('lostDateTo')?.value || '';
+            let params = [];
+            if (this.currentFilter !== 'all') params.push(`status=${this.currentFilter}`);
+            if (dateFrom) params.push(`date_from=${dateFrom}`);
+            if (dateTo) params.push(`date_to=${dateTo}`);
+            const url = `https://web-production-99844.up.railway.app/api/lost-items${params.length ? '?' + params.join('&') : ''}`;
 
             const response = await fetch(url);
             const data = await response.json();
@@ -127,6 +139,12 @@ const LostItemsModule = {
         });
         document.getElementById(`filter-${filter}`).style.background = '#3b82f6';
         document.getElementById(`filter-${filter}`).style.color = 'white';
+        this.loadItems();
+    },
+
+    clearDates() {
+        document.getElementById('lostDateFrom').value = '';
+        document.getElementById('lostDateTo').value = '';
         this.loadItems();
     },
 
