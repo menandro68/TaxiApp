@@ -304,7 +304,8 @@ if (nextAppState === 'active') {
         console.log('📱 App volvió al primer plano, verificando ubicación...');
         console.log('🔍 Verificando mensajes de chat pendientes...');
         // Resetear para permitir nuevo intento de GPS
-        gpsObtainedRef.current = false;
+       gpsObtainedRef.current = false;
+        gpsAlertShownRef.current = false;
         // Reintentar obtener ubicación
         initializeLocationService();
         // Verificar si hay mensajes de chat pendientes
