@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Referencia global de navegación
 export const navigationRef = createNavigationContainerRef();
@@ -31,6 +32,7 @@ const Stack = createStackNavigator();
 
 const AppNavigator = () => {
   return (
+    <SafeAreaProvider>
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator 
         initialRouteName="Main"
@@ -127,6 +129,7 @@ const AppNavigator = () => {
         
       </Stack.Navigator>
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 };
 

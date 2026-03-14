@@ -32,8 +32,6 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -48,5 +46,35 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Necesitamos tu ubicación para mostrarte en el mapa y encontrar conductores cercanos</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Necesitamos tu ubicación para rastrear tu viaje en tiempo real</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Necesitamos tu ubicación en segundo plano para rastrear el viaje</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos el micrófono para notas de voz</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos la cámara para tomar fotos de tu perfil y viajes</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tus fotos para tu foto de perfil</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Ionicons.ttf</string>
+	</array>
+<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>waze</string>
+		<string>comgooglemaps</string>
+		<string>whatsapp</string>
+		<string>tel</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Necesitamos enviarte notificaciones sobre el estado de tu viaje</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

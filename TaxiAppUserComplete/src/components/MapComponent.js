@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,22 +20,22 @@ const MapComponent = ({
   trackingMode = false,
   searchDrivers = []
 }) => {
-  console.log('🗺️ MapComponent [interactive=' + interactive + '] destination:', destination);
+  console.log('??? MapComponent [interactive=' + interactive + '] destination:', destination);
   if (trackingMode) {
-    console.log('🔴 userLocation:', userLocation?.latitude, userLocation?.longitude);
-    console.log('🟢 driverLocation:', driverLocation?.latitude, driverLocation?.longitude);
+    console.log('?? userLocation:', userLocation?.latitude, userLocation?.longitude);
+    console.log('?? driverLocation:', driverLocation?.latitude, driverLocation?.longitude);
   }
   
   const mapRef = useRef(null);
   const isAnimatingRef = useRef(false);
   const [currentRegion, setCurrentRegion] = useState(null);
   
-  // Estados para overlay markers (solución Legacy Architecture)
+  // Estados para overlay markers (soluci�n Legacy Architecture)
   const [userMarkerPos, setUserMarkerPos] = useState(null);
   const [driverMarkerPos, setDriverMarkerPos] = useState(null);
   const [mapLayout, setMapLayout] = useState({ width: SCREEN_WIDTH, height: 300 });
 
-  // ✅ REGIÓN SANTO DOMINGO - SIEMPRE (deltas 0.15 que FUNCIONABAN)
+  // ? REGI�N SANTO DOMINGO - SIEMPRE (deltas 0.15 que FUNCIONABAN)
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
@@ -43,31 +43,31 @@ const MapComponent = ({
     longitudeDelta: 0.15,
   };
 
-  // Función para convertir coordenadas a posición de pantalla
+  // Funci�n para convertir coordenadas a posici�n de pantalla
   const coordToPixel = (coord, region, layout) => {
     if (!coord || !region || !layout) return null;
     
     const { latitude, longitude } = coord;
     const { width, height } = layout;
     
-    // Calcular posición relativa
+    // Calcular posici�n relativa
     const x = ((longitude - region.longitude) / region.longitudeDelta + 0.5) * width;
     const y = ((region.latitude - latitude) / region.latitudeDelta + 0.5) * height;
     
-    // Solo retornar si está dentro del viewport
+    // Solo retornar si est� dentro del viewport
     if (x >= -20 && x <= width + 20 && y >= -20 && y <= height + 20) {
       return { x, y };
     }
     return null;
   };
 
-  // Actualizar posiciones de overlay markers cuando cambia la región o ubicaciones
+  // Actualizar posiciones de overlay markers cuando cambia la regi�n o ubicaciones
   useEffect(() => {
-    console.log('🎯 OVERLAY useEffect - trackingMode:', trackingMode, 'currentRegion:', !!currentRegion);
+    console.log('?? OVERLAY useEffect - trackingMode:', trackingMode, 'currentRegion:', !!currentRegion);
     
     if (!trackingMode) return;
     
-    // Usar región actual o calcular una basada en las ubicaciones
+    // Usar regi�n actual o calcular una basada en las ubicaciones
     let region = currentRegion;
     if (!region && userLocation?.latitude) {
       region = {
@@ -79,12 +79,12 @@ const MapComponent = ({
     }
     
     if (!region) {
-      console.log('🎯 OVERLAY - No hay región disponible');
+      console.log('?? OVERLAY - No hay regi�n disponible');
       return;
     }
     
-    console.log('🎯 OVERLAY - Región:', region.latitude, region.longitude, 'Delta:', region.latitudeDelta);
-    console.log('🎯 OVERLAY - mapLayout:', mapLayout.width, 'x', mapLayout.height);
+    console.log('?? OVERLAY - Regi�n:', region.latitude, region.longitude, 'Delta:', region.latitudeDelta);
+    console.log('?? OVERLAY - mapLayout:', mapLayout.width, 'x', mapLayout.height);
     
     if (userLocation?.latitude) {
       const pos = coordToPixel(
@@ -92,7 +92,7 @@ const MapComponent = ({
         region,
         mapLayout
       );
-      console.log('🔴 OVERLAY userMarkerPos:', pos);
+      console.log('?? OVERLAY userMarkerPos:', pos);
       setUserMarkerPos(pos);
     }
     
@@ -102,16 +102,16 @@ const MapComponent = ({
         region,
         mapLayout
       );
-      console.log('🟢 OVERLAY driverMarkerPos:', pos);
+      console.log('?? OVERLAY driverMarkerPos:', pos);
       setDriverMarkerPos(pos);
     }
   }, [trackingMode, currentRegion, userLocation, driverLocation, mapLayout]);
 
-  // ✅ SOLUCIÓN: useEffect con setTimeout DIRECTO - NO depende de onMapReady
+  // ? SOLUCI�N: useEffect con setTimeout DIRECTO - NO depende de onMapReady
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
-        console.log('📍 FORZANDO animación a Santo Domingo (500ms después de montar)');
+        console.log('?? FORZANDO animaci�n a Santo Domingo (500ms despu�s de montar)');
         isAnimatingRef.current = true;
         mapRef.current.animateToRegion(santodomingo, 800);
         setCurrentRegion(santodomingo);
@@ -120,18 +120,18 @@ const MapComponent = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // ✅ Segundo intento después de 1.5s (backup)
+  // ? Segundo intento despu�s de 1.5s (backup)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current && !trackingMode && !interactive) {
-        console.log('📍 Backup: Segundo animateToRegion a Santo Domingo');
+        console.log('?? Backup: Segundo animateToRegion a Santo Domingo');
         mapRef.current.animateToRegion(santodomingo, 500);
       }
     }, 1500);
     return () => clearTimeout(timer);
   }, [trackingMode, interactive]);
 
-  // ✅ Animar a userLocation cuando esté disponible
+  // ? Animar a userLocation cuando est� disponible
   useEffect(() => {
     if (mapRef.current && userLocation && userLocation.latitude && !trackingMode && !interactive) {
       const timer = setTimeout(() => {
@@ -141,7 +141,7 @@ const MapComponent = ({
           latitudeDelta: 0.08,
           longitudeDelta: 0.08,
         };
-        console.log('📍 Animando a ubicación del usuario:', userLocation.latitude, userLocation.longitude);
+        console.log('?? Animando a ubicaci�n del usuario:', userLocation.latitude, userLocation.longitude);
         mapRef.current.animateToRegion(newRegion, 500);
         setCurrentRegion(newRegion);
       }, 2000);
@@ -149,12 +149,12 @@ const MapComponent = ({
     }
   }, [userLocation, trackingMode, interactive]);
 
-  // ✅ Modo interactive: animar al destino
+  // ? Modo interactive: animar al destino
   useEffect(() => {
     if (interactive && destination && destination.latitude && destination.longitude) {
       const timer1 = setTimeout(() => {
         if (mapRef.current) {
-          console.log('📍 Animando a destino (interactive):', destination.latitude, destination.longitude);
+          console.log('?? Animando a destino (interactive):', destination.latitude, destination.longitude);
           isAnimatingRef.current = true;
           mapRef.current.animateToRegion({
             latitude: Number(destination.latitude),
@@ -184,12 +184,12 @@ const MapComponent = ({
     }
   }, [interactive, destination]);
 
-  // ✅ Modo tracking: centrar entre conductor y usuario
+  // ? Modo tracking: centrar entre conductor y usuario
   useEffect(() => {
     if (trackingMode && mapRef.current) {
       const timer = setTimeout(() => {
         if (driverLocation && driverLocation.latitude && userLocation && userLocation.latitude) {
-          console.log('🚗 Centrando entre conductor y usuario');
+          console.log('?? Centrando entre conductor y usuario');
           
           const midLat = (Number(driverLocation.latitude) + Number(userLocation.latitude)) / 2;
           const midLng = (Number(driverLocation.longitude) + Number(userLocation.longitude)) / 2;
@@ -202,9 +202,9 @@ const MapComponent = ({
           };
           
           mapRef.current.animateToRegion(newRegion, 300);
-          setCurrentRegion(newRegion);  // ✅ Actualizar estado para overlays
+          setCurrentRegion(newRegion);  // ? Actualizar estado para overlays
         } else if (userLocation && userLocation.latitude) {
-          console.log('📍 Centrando en usuario (tracking):', userLocation.latitude, userLocation.longitude);
+          console.log('?? Centrando en usuario (tracking):', userLocation.latitude, userLocation.longitude);
           const newRegion = {
             latitude: Number(userLocation.latitude),
             longitude: Number(userLocation.longitude),
@@ -212,10 +212,10 @@ const MapComponent = ({
             longitudeDelta: 0.02,
           };
           mapRef.current.animateToRegion(newRegion, 300);
-          setCurrentRegion(newRegion);  // ✅ Actualizar estado para overlays
+          setCurrentRegion(newRegion);  // ? Actualizar estado para overlays
         } else {
           // Fallback a Santo Domingo si no hay ubicaciones
-          console.log('📍 Tracking: Fallback a Santo Domingo');
+          console.log('?? Tracking: Fallback a Santo Domingo');
           mapRef.current.animateToRegion(santodomingo, 300);
           setCurrentRegion(santodomingo);
         }
@@ -249,7 +249,7 @@ const MapComponent = ({
           if (lat && lng && (lat !== lastLat || lng !== lastLng)) {
             lastLat = lat;
             lastLng = lng;
-            console.log('🟢 Camera center:', lat, lng);
+            console.log('?? Camera center:', lat, lng);
             onMapPress({ latitude: lat, longitude: lng });
           }
         } catch (e) {}
@@ -277,10 +277,10 @@ const MapComponent = ({
 
   // Debug para tracking
   if (trackingMode) {
-    console.log('🔍 DEBUG MARKERS:');
+    console.log('?? DEBUG MARKERS:');
     console.log('  - trackingMode:', trackingMode);
-    console.log('  - userLocation válido:', !!(userLocation && userLocation.latitude));
-    console.log('  - driverLocation válido:', !!(driverLocation && driverLocation.latitude));
+    console.log('  - userLocation v�lido:', !!(userLocation && userLocation.latitude));
+    console.log('  - driverLocation v�lido:', !!(driverLocation && driverLocation.latitude));
     console.log('  - userMarkerPos:', userMarkerPos);
     console.log('  - driverMarkerPos:', driverMarkerPos);
     console.log('  - currentRegion:', currentRegion ? 'SET' : 'NULL');
@@ -321,8 +321,8 @@ const MapComponent = ({
         {!trackingMode && !interactive && (
           <Marker
             coordinate={defaultUserLocation}
-            title="Mi ubicación"
-            description={userLocation?.address || "Tu ubicación actual"}
+            title="Mi ubicaci�n"
+            description={userLocation?.address || "Tu ubicaci�n actual"}
             pinColor="#007AFF"
           />
         )}
@@ -340,7 +340,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* 🔴 MARKER: Punto de recogida - Tracking Mode */}
+        {/* ?? MARKER: Punto de recogida - Tracking Mode */}
         {trackingMode && userLocation && userLocation.latitude && (
           <Marker
             coordinate={{
@@ -352,7 +352,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* 🟢 MARKER: Conductor - Tracking Mode */}
+        {/* ?? MARKER: Conductor - Tracking Mode */}
         {trackingMode && driverLocation && driverLocation.latitude && (
           <Marker
             coordinate={{
@@ -364,7 +364,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* 🚗 Marcadores de conductores en búsqueda */}
+        {/* ?? Marcadores de conductores en b�squeda */}
         {searchDrivers && searchDrivers.length > 0 && searchDrivers.map((driver, index) => {
           const lat = parseFloat(driver.location?.latitude || driver.latitude);
           const lng = parseFloat(driver.location?.longitude || driver.longitude);
@@ -376,16 +376,16 @@ const MapComponent = ({
               title={driver.name || 'Conductor'}
             >
               <View style={styles.searchDriverMarker}>
-                <Text style={{ fontSize: 16 }}>🚗</Text>
+                <Text style={{ fontSize: 16 }}>??</Text>
               </View>
             </Marker>
           );
         })}
 
-        {/* Línea de ruta entre conductor y usuario (solo tracking) */}
+        {/* L�nea de ruta entre conductor y usuario (solo tracking) */}
         {trackingMode && driverLocation && userLocation && driverLocation.latitude && userLocation.latitude && (
           <>
-            {/* Sombra de la línea */}
+            {/* Sombra de la l�nea */}
             <Polyline
               coordinates={[
                 { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
@@ -394,7 +394,7 @@ const MapComponent = ({
               strokeColor="rgba(0,0,0,0.3)"
               strokeWidth={8}
             />
-            {/* Línea principal azul */}
+            {/* L�nea principal azul */}
             <Polyline
               coordinates={[
                 { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
@@ -407,7 +407,7 @@ const MapComponent = ({
         )}
       </MapView>
 
-      {/* 🟢 CONDUCTOR - CARRITO */}
+      {/* ?? CONDUCTOR - CARRITO */}
       {trackingMode && driverMarkerPos && (
         <View 
           style={[
@@ -419,11 +419,11 @@ const MapComponent = ({
           ]} 
           pointerEvents="none"
         >
-          <Text style={styles.carEmoji}>🚗</Text>
+          <Text style={styles.carEmoji}>??</Text>
         </View>
       )}
 
-      {/* 🔴 USUARIO DESPUÉS (encima) */}
+      {/* ?? USUARIO DESPU�S (encima) */}
       {trackingMode && userMarkerPos && (
         <View 
           style={[
@@ -441,7 +441,7 @@ const MapComponent = ({
         </View>
       )}
 
-      {/* 📍 LÍNEA DE RUTA - Overlay CORREGIDO */}
+      {/* ?? L�NEA DE RUTA - Overlay CORREGIDO */}
       {trackingMode && userMarkerPos && driverMarkerPos && (() => {
         const dx = userMarkerPos.x - driverMarkerPos.x;
         const dy = userMarkerPos.y - driverMarkerPos.y;
@@ -512,11 +512,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     marginTop: 22,
   },
-  // Estilos para overlay markers (Legacy Architecture fix) - MÁS PEQUEÑOS
+  // Estilos para overlay markers (Legacy Architecture fix) - M�S PEQUE�OS
   overlayMarker: {
     position: 'absolute',
     zIndex: 2000,
-    elevation: 20,
+    elevation: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 8,
   },
   userMarker: {
     width: 17,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 6,
-    elevation: 15,
+    elevation: 15, shadowColor: "#000", shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 7,
   },
   userMarkerInner: {
     width: 6,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 6,
-    elevation: 10,
+    elevation: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
   },
   carIcon: {
     width: 12,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#fff',
-    elevation: 5,
+    elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84,
   },
   carEmoji: {
     fontSize: 14,

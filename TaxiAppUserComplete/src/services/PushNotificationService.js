@@ -89,7 +89,7 @@ class PushNotificationService {
         // Reproducir voz
         try {
           const Tts = require('react-native-tts').default;
-          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultPitch(1.0);
           await Tts.setDefaultRate(0.5);
           await Tts.speak('Tienes un mensaje nuevo');
         } catch (e) {
@@ -126,7 +126,7 @@ class PushNotificationService {
         // Reproducir voz
         try {
           const Tts = require('react-native-tts').default;
-          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultPitch(1.0);
           await Tts.setDefaultRate(0.5);
           await Tts.speak('Tienes un mensaje nuevo');
         } catch (e) {
@@ -203,7 +203,7 @@ class PushNotificationService {
         // Reproducir voz
         try {
           const Tts = require('react-native-tts').default;
-          await Tts.setDefaultLanguage('es-ES');
+          await Tts.setDefaultLanguage('es-ES'); await Tts.setDefaultPitch(1.0);
           await Tts.setDefaultRate(0.5);
           await Tts.speak('Tienes un mensaje nuevo');
         } catch (e) {
