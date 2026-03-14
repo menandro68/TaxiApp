@@ -33,7 +33,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>Necesitamos tu ubicación para mostrarte en el mapa y asignarte viajes cercanos</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -48,5 +48,34 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>waze</string>
+		<string>comgooglemaps</string>
+		<string>whatsapp</string>
+		<string>tel</string>
+	</array>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Necesitamos tu ubicación para navegar y detectar llegada al destino</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Necesitamos tu ubicación en segundo plano para rastrear el viaje</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos el micrófono para notas de voz</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos la cámara para tomar fotos de documentos y vehículo</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tus fotos para subir documentos del vehículo</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>MaterialIcons.ttf</string>
+	</array>
+<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Necesitamos enviarte notificaciones de nuevos viajes y actualizaciones importantes</string>
 </dict>
 </plist>

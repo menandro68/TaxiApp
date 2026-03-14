@@ -8,7 +8,9 @@ import {
   Alert,
   Modal,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DocumentUploadScreen from './DocumentUploadScreen';
@@ -63,7 +65,6 @@ const DocumentsMenuScreen = ({ navigation }) => {
   };
 
   const documents = [
-    
     {
       id: 'foto_perfil',
       title: 'Foto de Perfil',
@@ -71,7 +72,6 @@ const DocumentsMenuScreen = ({ navigation }) => {
       color: '#E91E63',
       description: 'Foto de rostro de frente'
     },
-
     {
       id: 'cedula',
       title: 'Cédula y/o Pasaporte',
@@ -144,7 +144,10 @@ const DocumentsMenuScreen = ({ navigation }) => {
 
   if (showInfoForm) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#4CAF50' }}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1, backgroundColor: '#4CAF50' }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={{ paddingTop: 60, paddingHorizontal: 30, paddingBottom: 30 }}>
           <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginBottom: 8 }}>👋 Bienvenido</Text>
           <Text style={{ fontSize: 16, color: 'rgba(255,255,255,0.9)' }}>Antes de subir tus documentos, necesitamos tu información básica</Text>
@@ -162,7 +165,7 @@ const DocumentsMenuScreen = ({ navigation }) => {
             <Text style={{ color: '#999', fontSize: 14 }}>← Volver</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -224,7 +227,6 @@ const DocumentsMenuScreen = ({ navigation }) => {
           <Text style={styles.progressText}>{uploadedDocs.length} de {documents.length} documentos completados</Text>
         </View>
 
-        {/* Instructions */}
         {uploadedDocs.length === documents.length && (
           <TouchableOpacity
             style={{ backgroundColor: '#22c55e', padding: 18, borderRadius: 12, margin: 20, marginBottom: 0, alignItems: 'center' }}
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 15,
     borderWidth: 2,
-    elevation: 3,
+    elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -368,7 +370,7 @@ const styles = StyleSheet.create({
     margin: 20,
     padding: 20,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2,
   },
   progressTitle: {
     fontSize: 16,

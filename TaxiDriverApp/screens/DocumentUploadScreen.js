@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    elevation: 2,
+    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     padding: 40,
     alignItems: 'center',
-    elevation: 2,
+    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2,
   },
   uploadIcon: {
     fontSize: 48,
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: 12,
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2,
   },
   documentImage: {
     width: '100%',

@@ -6,8 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  TextInput,
-  SafeAreaView,
+TextInput,
+  KeyboardAvoidingView,
   Alert,
   Dimensions,
   StatusBar,
@@ -35,12 +35,22 @@ import SmartSyncService from './SmartSyncService';
 import PenaltyService from './PenaltyService';
 import DashcamComponent from './DashcamComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Geolocation from '@react-native-community/geolocation';
 import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
 import { Vibration } from 'react-native';
 import { DeviceEventEmitter } from 'react-native';
 import { NativeModules, AppState } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { shadows } from './src/utils/shadows';
+
+// Configuración de Geolocation para iOS y Android
+Geolocation.setRNConfiguration({
+  skipPermissionRequests: false,
+  authorizationLevel: 'always',
+  enableBackgroundLocationUpdates: true,
+  locationProvider: 'auto',
+});
 const { BringToForeground, OverlayPermission, TripIntent } = NativeModules;
 
 // Variable global para el sonido (accesible desde cualquier lugar)
@@ -1406,7 +1416,9 @@ const startLocationTracking = () => {
             [
               {
                 text: 'Ir a Configuración',
-                onPress: () => Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS'),
+               onPress: () => Platform.OS === 'android'
+                  ? Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS')
+                  : Linking.openURL('App-Prefs:Privacy&path=LOCATION'),
                 style: 'default'
               }
             ],
@@ -1415,12 +1427,15 @@ const startLocationTracking = () => {
         }, 500);
       }
     },
-    {
+{
       enableHighAccuracy: true,
       distanceFilter: 5,
-      interval: 3000,
-      fastestInterval: 2000,
       timeout: 15000,
+      maximumAge: 1000,
+      ...(Platform.OS === 'android' && {
+        interval: 3000,
+        fastestInterval: 2000,
+      }),
     }
   );
 
@@ -2260,7 +2275,7 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
 {/* Botón de Billetera- Oculto, se accede desde tab */}
       {false && (
         <TouchableOpacity
-          style={{ backgroundColor: '#10b981', padding: 15, borderRadius: 12, marginHorizontal: 20, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', elevation: 3 }}
+          style={{ backgroundColor: '#10b981', padding: 15, borderRadius: 12, marginHorizontal: 20, marginTop: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', ...shadows.md }}
           onPress={() => { loadWalletData(); setShowWalletModal(true); }}
         >
           <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>👛 Mi Billetera</Text>
@@ -2929,7 +2944,10 @@ const playVoiceMessage = async (audioUrl, msgId) => {
         
         {/* Modal de Login */}
         <Modal visible={showLogin} animationType="slide" onRequestClose={() => setShowLogin(false)}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: '#3b82f6' }}>
+      <KeyboardAvoidingView 
+            style={{ flex: 1, backgroundColor: '#3b82f6' }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
             <View style={{ padding: 20, paddingTop: 40 }}>
               <TouchableOpacity onPress={() => setShowLogin(false)}>
@@ -2969,15 +2987,16 @@ const playVoiceMessage = async (audioUrl, msgId) => {
               >
                 <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 16 }}>¿No tienes cuenta? Regístrate</Text>
               </TouchableOpacity>
-            </View>
-          </SafeAreaView>
+          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </View>
     );
   }
 
 
-  return (
+return (
+    <SafeAreaProvider>
     <View style={styles.container}>
       <StatusBar backgroundColor="#3b82f6" barStyle="light-content" />
       {/* Header */}
@@ -4335,10 +4354,10 @@ const playVoiceMessage = async (audioUrl, msgId) => {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+</View>
+    </SafeAreaProvider>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -4347,7 +4366,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#3b82f6',
     padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+  paddingTop: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -4382,8 +4401,12 @@ tabBar: {
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     paddingVertical: 10,
-    zIndex: 9999,
+zIndex: 9999,
     elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   tabButton: {
     flex: 1,

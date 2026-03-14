@@ -5,9 +5,15 @@ import Geolocation from '@react-native-community/geolocation';
 import Tts from 'react-native-tts';
 import MapViewDirections from 'react-native-maps-directions';
 
-// Configurar TTS
+// Configurar TTS para iOS y Android
 Tts.setDefaultLanguage('es-ES');
 Tts.setDefaultRate(0.5);
+Tts.setDefaultPitch(1.0);
+
+// Configuración específica iOS
+Tts.addEventListener('tts-start', () => console.log('🔊 TTS iniciado'));
+Tts.addEventListener('tts-finish', () => console.log('🔊 TTS terminado'));
+Tts.addEventListener('tts-error', (err) => console.log('❌ TTS error:', err));
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
 
@@ -1020,7 +1026,7 @@ const startNavigation = async () => {
                 borderRadius: 6,
                 borderWidth: 1,
                 borderColor: '#fff',
-                elevation: 5,
+                elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84,
               }}>
                 <Text style={{ color: '#fff', fontSize: 7, fontWeight: 'bold' }}>🏁 Destino</Text>
               </View>
@@ -1138,7 +1144,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    elevation: 5,
+    elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84,
   },
   infoText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   debugPanel: {
@@ -1185,7 +1191,7 @@ buttons: {
     paddingVertical: 14,
     borderRadius: 25,
     alignItems: 'center',
-    elevation: 5,
+    elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84,
   },
   btnGreen: { backgroundColor: '#28a745' },
   btnBlue: { backgroundColor: '#007AFF' },
@@ -1198,7 +1204,7 @@ buttons: {
     right: 0,
     backgroundColor: '#1a73e8',
     padding: 15,
-    elevation: 10,
+    elevation: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
   },
   navHeader: {
     flexDirection: 'row',

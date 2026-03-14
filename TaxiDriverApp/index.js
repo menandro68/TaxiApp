@@ -1,7 +1,7 @@
 /**
  * @format
  */
-import { AppRegistry, NativeModules } from 'react-native';
+import { AppRegistry, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AndroidImportance, AndroidVisibility } from '@notifee/react-native';
@@ -9,6 +9,13 @@ import App from './App';
 import { name as appName } from './app.json';
 
 const { BringToForeground } = NativeModules;
+
+// Solicitar permiso en iOS
+async function requestIOSPermission() {
+  if (Platform.OS === 'ios') {
+    await notifee.requestPermission();
+  }
+}
 
 // Crear canal de notificación con máxima prioridad
 async function createNotificationChannel() {
@@ -44,6 +51,11 @@ async function showWakeNotification(tripData) {
         autoCancel: true,
         ongoing: false,
       },
+      ios: {
+        sound: 'default',
+        critical: true,
+        criticalVolume: 1.0,
+      },
     });
     console.log('🔔 Notificación wake mostrada');
   } catch (error) {
@@ -69,6 +81,11 @@ async function showArrivedNotification() {
         autoCancel: true,
         ongoing: false,
       },
+      ios: {
+        sound: 'default',
+        critical: true,
+        criticalVolume: 1.0,
+      },
     });
     console.log('✅ Notificación llegada mostrada');
     // Traer app al frente
@@ -84,6 +101,7 @@ async function showArrivedNotification() {
 // Handler para mensajes en BACKGROUND
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('📨 Mensaje recibido en BACKGROUND:', remoteMessage);
+  await requestIOSPermission();
   const { data } = remoteMessage;
 
   if (data?.type === 'NEW_TRIP_REQUEST') {
