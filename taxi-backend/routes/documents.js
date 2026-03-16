@@ -69,7 +69,8 @@ router.post('/driver/:driverId/upload', upload.single('document'), async (req, r
       expiry_date: req.body.expiry_date || null
     });
 
-    res.json({ success: true, message: 'Documento subido exitosamente', document: newDocument });
+   if (global.io) global.io.emit('new_document_uploaded', { driverId: req.params.driverId });
+res.json({ success: true, message: 'Documento subido exitosamente', document: newDocument });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
