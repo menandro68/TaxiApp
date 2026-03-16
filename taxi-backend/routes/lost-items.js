@@ -1,130 +1,287 @@
-const express = require('express');
-const router = express.Router();
-const { db } = require('../config/database');
-
 // =============================================
-// GET - Obtener todos los reportes (admin)
+// MÓDULO DE OBJETOS PERDIDOS - Admin Panel
 // =============================================
-router.get('/', async (req, res) => {
-    try {
-        const { status, page = 1, limit = 20 } = req.query;
-        const offset = (page - 1) * limit;
+const LostItemsModule = {
+    currentFilter: 'all',
+    items: [],
 
-        let query = `
-            SELECT li.*, 
-                u.name as user_name, u.phone as user_phone,
-                d.name as driver_name_db, d.phone as driver_phone
-            FROM lost_items li
-            LEFT JOIN users u ON li.user_id = u.id
-            LEFT JOIN drivers d ON li.driver_id = d.id
+    getHTML() {
+        return `
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">🔍 Objetos Perdidos</h2>
+                <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">🔄 Actualizar</button>
+            </div>
+
+            <!-- Filtros -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size:14px; color:#64748b;">Fecha Inicial</span>
+                <input type="date" id="lostDateFrom" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                <span style="font-size:14px; color:#64748b;">Fecha Final</span>
+                <input type="date" id="lostDateTo" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                <select id="lostDriverFilter" onchange="LostItemsModule.loadItems()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; font-size:14px;">
+                    <option value="all">Todos los conductores</option>
+                </select>
+                <button onclick="LostItemsModule.loadItems()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">🔍 Buscar</button>
+                <button onclick="LostItemsModule.exportItems()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight:600;">📊 Exportar</button>
+                <button onclick="LostItemsModule.clearDates()" style="background: #f1f5f9; color: #64748b; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">✖ Limpiar</button>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button onclick="LostItemsModule.filterItems('all')" id="filter-all" style="padding: 8px 16px; border-radius: 20px; border: none; background: #3b82f6; color: white; cursor: pointer;">Todos</button>
+                <button onclick="LostItemsModule.filterItems('pending')" id="filter-pending" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #ff9800; background: white; color: #ff9800; cursor: pointer;">⏳ Pendientes</button>
+                <button onclick="LostItemsModule.filterItems('in_progress')" id="filter-in_progress" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #3b82f6; background: white; color: #3b82f6; cursor: pointer;">🔄 En Proceso</button>
+                <button onclick="LostItemsModule.filterItems('resolved')" id="filter-resolved" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #10b981; background: white; color: #10b981; cursor: pointer;">✅ Resueltos</button>
+            </div>
+
+            <!-- Tabla -->
+            <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">ID</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">USUARIO</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">OBJETO</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">CONDUCTOR</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">CONTACTO</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">FECHA</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">ESTADO</th>
+                            <th style="padding: 15px; text-align: left; font-size: 13px; color: #64748b;">ACCIÓN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lostItemsTableBody">
+                        <tr><td colspan="8" style="text-align: center; padding: 40px; color: #94a3b8;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal de detalles -->
+        <div id="lostItemModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:16px; padding:30px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto;">
+                <h3 style="margin-bottom: 20px;">🔍 Detalles del Reporte</h3>
+                <div id="lostItemModalContent"></div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <select id="lostItemStatus" style="flex:1; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="pending">⏳ Pendiente</option>
+                        <option value="in_progress">🔄 En Proceso</option>
+                        <option value="resolved">✅ Resuelto</option>
+                    </select>
+                    <button onclick="LostItemsModule.updateStatus()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Guardar</button>
+                    <button onclick="LostItemsModule.closeModal()" style="background: #f1f5f9; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Cerrar</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 13px; color: #64748b;">Notas del administrador:</label>
+                    <textarea id="lostItemNotes" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-top:5px; height:80px; resize:none;"></textarea>
+                </div>
+            </div>
+        </div>
         `;
-        const params = [];
+    },
 
-     const conditions = [];
-        if (status) { conditions.push(`li.status = $${params.length + 1}`); params.push(status); }
-        if (req.query.date_from) { conditions.push(`li.created_at >= $${params.length + 1}`); params.push(req.query.date_from); }
-        if (req.query.date_to) { conditions.push(`li.created_at < ($${params.length + 1}::date + interval '1 day')`); params.push(req.query.date_to); }
-        if (req.query.driver_id) { conditions.push(`li.driver_id = $${params.length + 1}`); params.push(req.query.driver_id); }
-        if (conditions.length) query += ` WHERE ` + conditions.join(' AND ');
+    init() {
+        this.loadDrivers();
+        this.loadItems();
+    },
 
-        query += ` ORDER BY li.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        params.push(limit, offset);
+    async loadDrivers() {
+        try {
+            const res = await fetch('https://web-production-99844.up.railway.app/api/drivers?limit=200');
+            const data = await res.json();
+            const select = document.getElementById('lostDriverFilter');
+            if (data.drivers) {
+                data.drivers.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch(e) {}
+    },
 
-        const result = await db.query(query, params);
+    async loadItems() {
+        try {
+            const dateFrom = document.getElementById('lostDateFrom')?.value || '';
+            const dateTo = document.getElementById('lostDateTo')?.value || '';
+            let params = [];
+            if (this.currentFilter !== 'all') params.push(`status=${this.currentFilter}`);
+            const driverFilter = document.getElementById('lostDriverFilter')?.value || 'all';
+            if (driverFilter !== 'all') params.push(`driver_id=${driverFilter}`);
+            if (dateFrom) params.push(`date_from=${dateFrom}`);
+            if (dateTo) params.push(`date_to=${dateTo}`);
+            const url = `https://web-production-99844.up.railway.app/api/lost-items${params.length ? '?' + params.join('&') : ''}`;
 
-        const countResult = await db.query(
-            `SELECT COUNT(*) FROM lost_items ${status ? "WHERE status = $1" : ""}`,
-            status ? [status] : []
-        );
+            const response = await fetch(url);
+            const data = await response.json();
 
-        res.json({
-            success: true,
-            data: result.rows,
-            total: parseInt(countResult.rows[0].count),
-            page: parseInt(page),
-            limit: parseInt(limit)
+            if (data.success) {
+                this.items = data.data;
+                this.renderTable(data.data);
+                document.getElementById('lostItemsBadge').textContent = 
+                    data.data.filter(i => i.status === 'pending').length;
+            }
+        } catch (error) {
+            document.getElementById('lostItemsTableBody').innerHTML = 
+                '<tr><td colspan="8" style="text-align:center; padding:40px; color:#ef4444;">Error cargando datos</td></tr>';
+        }
+    },
+
+    renderTable(items) {
+        const tbody = document.getElementById('lostItemsTableBody');
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:#94a3b8;">No hay reportes</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map(item => `
+            <tr style="border-top: 1px solid #f1f5f9; hover: background:#f8fafc;">
+                <td style="padding: 12px 15px; font-size: 13px; color: #64748b;">#${item.id}</td>
+                <td style="padding: 12px 15px; font-size: 14px;">${item.user_name || 'N/A'}</td>
+                <td style="padding: 12px 15px; font-size: 14px;">
+                    <strong>${this.getCategoryName(item.item_category)}</strong><br>
+                    <span style="font-size:12px; color:#64748b;">${item.item_description?.substring(0,40)}...</span>
+                </td>
+                <td style="padding: 12px 15px; font-size: 14px;">${item.driver_name || 'N/A'}<br>
+                    <span style="font-size:12px; color:#64748b;">${item.vehicle_plate || ''}</span>
+                </td>
+                <td style="padding: 12px 15px; font-size: 14px;">${item.contact_phone || 'N/A'}</td>
+                <td style="padding: 12px 15px; font-size: 13px; color:#64748b;">${new Date(item.created_at).toLocaleDateString('es-DO')}</td>
+                <td style="padding: 12px 15px;">${this.getStatusBadge(item.status)}</td>
+                <td style="padding: 12px 15px;">
+                    <button onclick="LostItemsModule.openModal(${item.id})" style="background:#3b82f6; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">Ver</button>
+                </td>
+            </tr>
+        `).join('');
+    },
+
+    filterItems(filter) {
+        this.currentFilter = filter;
+        document.querySelectorAll('[id^="filter-"]').forEach(btn => {
+            btn.style.background = 'white';
+            btn.style.color = btn.style.borderColor || '#64748b';
         });
-    } catch (error) {
-        console.error('❌ Error obteniendo objetos perdidos:', error.message);
-        res.status(500).json({ error: 'Error obteniendo reportes', success: false });
-    }
-});
+        document.getElementById(`filter-${filter}`).style.background = '#3b82f6';
+        document.getElementById(`filter-${filter}`).style.color = 'white';
+        this.loadItems();
+    },
 
-// =============================================
-// POST - Crear reporte (app pasajero)
-// =============================================
-router.post('/', async (req, res) => {
-    try {
-        const {
-            user_id, trip_id, item_category, item_description,
-            additional_details, contact_phone, driver_id,
-            driver_name, vehicle_plate
-        } = req.body;
+    clearDates() {
+        document.getElementById('lostDateFrom').value = '';
+        document.getElementById('lostDateTo').value = '';
+        this.loadItems();
+    },
 
-        if (!item_description) {
-            return res.status(400).json({ error: 'Descripción del objeto es requerida', success: false });
+    openModal(id) {
+        const item = this.items.find(i => i.id === id);
+        if (!item) return;
+
+        this.currentItemId = id;
+        document.getElementById('lostItemStatus').value = item.status;
+        document.getElementById('lostItemNotes').value = item.admin_notes || '';
+        document.getElementById('lostItemModalContent').innerHTML = `
+            <div style="display: grid; gap: 12px;">
+                <div><strong>Usuario:</strong> ${item.user_name || 'N/A'} | ${item.user_phone || ''}</div>
+                <div><strong>Categoría:</strong> ${this.getCategoryName(item.item_category)}</div>
+                <div><strong>Descripción:</strong> ${item.item_description}</div>
+                <div><strong>Detalles:</strong> ${item.additional_details || 'N/A'}</div>
+                <div><strong>Conductor:</strong> ${item.driver_name || 'N/A'}</div>
+                <div><strong>Placa:</strong> ${item.vehicle_plate || 'N/A'}</div>
+                <div><strong>Teléfono contacto:</strong> ${item.contact_phone || 'N/A'}</div>
+                <div><strong>Fecha:</strong> ${new Date(item.created_at).toLocaleString('es-DO')}</div>
+            </div>
+        `;
+        const modal = document.getElementById('lostItemModal');
+        modal.style.display = 'flex';
+    },
+
+    closeModal() {
+        document.getElementById('lostItemModal').style.display = 'none';
+    },
+
+    async updateStatus() {
+        try {
+            const status = document.getElementById('lostItemStatus').value;
+            const admin_notes = document.getElementById('lostItemNotes').value;
+
+            const response = await fetch(`https://web-production-99844.up.railway.app/api/lost-items/${this.currentItemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, admin_notes })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.closeModal();
+                this.loadItems();
+                alert('✅ Estado actualizado correctamente');
+            }
+        } catch (error) {
+            alert('❌ Error actualizando estado');
         }
+    },
 
-        const result = await db.query(
-            `INSERT INTO lost_items 
-                (user_id, trip_id, item_category, item_description, additional_details, 
-                 contact_phone, driver_id, driver_name, vehicle_plate, status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending') RETURNING *`,
-            [user_id, trip_id, item_category, item_description,
-             additional_details, contact_phone, driver_id, driver_name, vehicle_plate]
-        );
+    getCategoryName(cat) {
+        const cats = {
+            phone: '📱 Teléfono', wallet: '👛 Billetera', keys: '🔑 Llaves',
+            bag: '👜 Bolso', documents: '📄 Documentos', electronics: '💻 Electrónicos',
+            clothing: '👕 Ropa', jewelry: '💍 Joyas', glasses: '👓 Gafas', other: '❓ Otro'
+        };
+        return cats[cat] || cat || 'N/A';
+    },
 
-        console.log(`✅ Reporte de objeto perdido creado: ID ${result.rows[0].id}`);
-        res.json({ success: true, data: result.rows[0] });
-    } catch (error) {
-        console.error('❌ Error creando reporte:', error.message);
-        res.status(500).json({ error: 'Error creando reporte', success: false });
-    }
-});
+    getStatusBadge(status) {
+        const badges = {
+            pending: '<span style="background:#fff3e0; color:#ff9800; padding:4px 10px; border-radius:12px; font-size:12px;">⏳ Pendiente</span>',
+            in_progress: '<span style="background:#e3f2fd; color:#3b82f6; padding:4px 10px; border-radius:12px; font-size:12px;">🔄 En Proceso</span>',
+            resolved: '<span style="background:#e8f5e9; color:#10b981; padding:4px 10px; border-radius:12px; font-size:12px;">✅ Resuelto</span>'
+        };
+        return badges[status] || status;
+    },
 
-// =============================================
-// PUT - Actualizar estado (admin)
-// =============================================
-router.put('/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status, admin_notes } = req.body;
+    exportItems() {
+        const items = this.items;
+        if (!items.length) { alert('No hay reportes para exportar'); return; }
 
-        const resolved_at = status === 'resolved' ? 'NOW()' : 'NULL';
+        const now = new Date();
+        const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
+        const horaReporte = now.toLocaleTimeString('es-DO', { hour:'2-digit', minute:'2-digit' });
 
-        const result = await db.query(
-            `UPDATE lost_items SET status = $1, admin_notes = $2, 
-             resolved_at = ${resolved_at}, updated_at = NOW()
-             WHERE id = $3 RETURNING *`,
-            [status, admin_notes, id]
-        );
+        const statusLabels = { pending:'⏳ Pendiente', in_progress:'🔄 En Proceso', resolved:'✅ Resuelto' };
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Reporte no encontrado', success: false });
-        }
+        const rows = items.map(item => `
+            <tr>
+                <td>#${item.id}</td>
+                <td>${item.user_name || 'N/A'}</td>
+                <td>${this.getCategoryName(item.item_category)}</td>
+                <td>${item.item_description || '-'}</td>
+                <td>${item.driver_name || 'N/A'}</td>
+                <td>${item.vehicle_plate || '-'}</td>
+                <td>${item.contact_phone || '-'}</td>
+                <td>${statusLabels[item.status] || item.status}</td>
+                <td>${new Date(item.created_at).toLocaleDateString('es-DO')}</td>
+            </tr>`).join('');
 
-        res.json({ success: true, data: result.rows[0] });
-    } catch (error) {
-        console.error('❌ Error actualizando reporte:', error.message);
-        res.status(500).json({ error: 'Error actualizando reporte', success: false });
-    }
-});
-
-// =============================================
-// GET - Reportes de un usuario específico
-// =============================================
-router.get('/user/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const result = await db.query(
-            `SELECT * FROM lost_items WHERE user_id = $1 ORDER BY created_at DESC`,
-            [userId]
-        );
-        res.json({ success: true, data: result.rows });
-    } catch (error) {
-        console.error('❌ Error obteniendo reportes del usuario:', error.message);
-        res.status(500).json({ error: 'Error obteniendo reportes', success: false });
-    }
-});
-
-module.exports = router;
+        const win = window.open('', '', 'width=1000,height=700');
+        win.document.write(`<!DOCTYPE html><html><head><title>Reporte Objetos Perdidos - TaxiApp Rondon</title>
+        <style>
+            body { font-family: 'Segoe UI', sans-serif; padding: 30px; color: #1e293b; }
+            h1 { font-size: 22px; color: #3b82f6; margin-bottom: 5px; }
+            .info { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th { background: #f1f5f9; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+            td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+            .footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+            @media print { .no-print { display: none; } }
+        </style></head><body>
+        <h1>🔍 Reporte de Objetos Perdidos</h1>
+        <div class="info"><strong>TaxiApp Rondon</strong> | Fecha: ${fechaReporte} ${horaReporte} | Total: ${items.length} reportes</div>
+        <table>
+            <thead><tr><th>ID</th><th>Usuario</th><th>Categoría</th><th>Descripción</th><th>Conductor</th><th>Placa</th><th>Contacto</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">Generado por TaxiApp Rondon - ${fechaReporte} ${horaReporte}</div>
+        </body></html>`);
+        win.document.close();
+        win.print();
+    },
+};

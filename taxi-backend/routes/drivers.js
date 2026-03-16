@@ -14,7 +14,7 @@ router.post('/register', async (req, res) => {
             `INSERT INTO drivers (name, email, phone, password, license, vehicle_plate, vehicle_model, vehicle_color, vehicle_type, status, rating, created_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
              RETURNING id`,
-            [name, email, phone, hashedPassword, license, vehicle_plate, vehicle_model, vehicle_color, driverVehicleType, 'pending', 5.0]
+           [name, email, phone, hashedPassword, license || null, vehicle_plate || null, vehicle_model || null, vehicle_color || null, driverVehicleType, 'pending', 5.0]
         );
 
         const newDriverId = result.rows[0].id;
