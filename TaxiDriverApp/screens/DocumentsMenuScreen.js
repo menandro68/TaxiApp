@@ -56,7 +56,11 @@ const DocumentsMenuScreen = ({ navigation }) => {
         body: JSON.stringify({ name: formName.trim(), phone: formPhone.trim() })
       });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error);
+    if (!data.success) throw new Error(data.error);
+if (data.existing) {
+  Alert.alert('⚠️ Número ya registrado', 'Este número de teléfono ya está registrado por otro conductor. Por favor usa un número diferente.');
+  return;
+}
       const info = { id: data.driver_id, name: formName.trim(), phone: formPhone.trim() };
       await AsyncStorage.setItem('@temp_driver_info', JSON.stringify(info));
       setDriverInfo(info); setShowInfoForm(false); loadUploadedDocs(data.driver_id);
