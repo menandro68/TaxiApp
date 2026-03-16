@@ -285,3 +285,25 @@ const LostItemsModule = {
         win.print();
     },
 };
+
+const express = require('express');
+const router = express.Router();
+const { db } = require('../config/database');
+
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query('SELECT li.*, u.name as user_name, u.phone as user_phone, d.name as driver_name, d.vehicle_plate FROM lost_items li LEFT JOIN users u ON li.user_id = u.id LEFT JOIN drivers d ON li.driver_id = d.id ORDER BY li.created_at DESC');
+    res.json({ success: true, data: result.rows });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_notes } = req.body;
+   await db.query('UPDATE lost_items SET status = $1, admin_notes = $2 WHERE id = $3', [status, admin_notes, id]);
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+module.exports = router;
