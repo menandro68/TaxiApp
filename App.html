@@ -5279,6 +5279,12 @@ async function exportUsers() {
                     console.log('❌ Desconectado del servidor');
                 });
 
+                socket.on('new_document_uploaded', () => {
+    if (typeof DocumentsModule !== 'undefined' && DocumentsModule.loadDocuments) {
+        DocumentsModule.loadDocuments();
+    }
+});
+
                 console.log('🚀 Inicializando Panel de Administración TaxiApp...');
                 
                 // Configurar eventos
