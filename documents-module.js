@@ -354,7 +354,7 @@
                     if (data.all_approved && data.driver_phone) {
                         const phone = data.driver_phone.replace(/\D/g, '');
                         const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
-                        const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/descargar`);
+                        const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/downloads/app-conductor.apk`);
                         if (confirm(`✅ Todos los documentos de ${data.driver_name} aprobados.\n¿Enviar WhatsApp al conductor?`)) {
                            window.location.href = `https://wa.me/${fullPhone}?text=${msg}`;
                         }
