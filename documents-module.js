@@ -356,7 +356,7 @@
                         const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
                         const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/descargar`);
                         if (confirm(`✅ Todos los documentos de ${data.driver_name} aprobados.\n¿Enviar WhatsApp al conductor?`)) {
-                            window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
+                           window.location.href = `https://wa.me/${fullPhone}?text=${msg}`;
                         }
                     } else {
                         alert('✅ Documento aprobado');
