@@ -3271,7 +3271,7 @@ if (screenName === 'lost-items') {
         // NUEVO: Función para actualizar métricas en tiempo real
         async function updateDashboardMetrics() {
             try {
-                const response = await fetch('${window.location.origin}/api/admin/stats');
+                const response = await fetch(`${window.location.origin}/api/admin/stats`);
                 const data = await response.json();
                 
                 // Buscar y actualizar cada métrica
@@ -3358,7 +3358,7 @@ if (screenName === 'lost-items') {
 
         async function updateDriverPositions() {
             try {
-                const response = await fetch('${window.location.origin}/api/admin/drivers/positions');
+               const response = await fetch(`${window.location.origin}/api/admin/drivers/positions`);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -3615,7 +3615,7 @@ if (screenName === 'lost-items') {
         // Función actualizada con selector de estados
         async function updateDriverPositionsWithSelector() {
             try {
-                const response = await fetch('${window.location.origin}/api/admin/drivers/positions');
+               const response = await fetch(`${window.location.origin}/api/admin/drivers/positions`);
                 const data = await response.json();
                 
                 if (data.success) {
