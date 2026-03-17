@@ -212,4 +212,24 @@ router.get('/:id/location', (req, res) => {
   });
 });
 
+
+// ELIMINAR CONDUCTOR
+router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+
+  db.run('DELETE FROM drivers WHERE id = ?', [id], function(err) {
+    if (err) {
+      console.error('Error eliminando conductor:', err);
+      return res.status(500).json({ error: 'Error eliminando conductor' });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Conductor no encontrado' });
+    }
+
+    console.log('Conductor eliminado:', id);
+    res.json({ success: true, message: 'Conductor eliminado exitosamente' });
+  });
+});
+
 module.exports = router;

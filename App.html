@@ -4429,14 +4429,23 @@ if (screenName === 'lost-items') {
             NotificationService.info('Función de edición próximamente disponible');
         }
 
-        function deleteDriver(driverId) {
-            if (confirm('¿Estás seguro de que quieres eliminar este conductor?')) {
+   function deleteDriver(driverId) {
+    if (confirm('¿Estás seguro de que quieres eliminar este conductor?')) {
+        fetch(`${API_URL}/drivers/${driverId}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
                 appState.drivers = appState.drivers.filter(d => d.id !== driverId);
                 renderDrivers(appState.drivers);
                 updateDriversBadge(appState.drivers.length);
                 NotificationService.success('Conductor eliminado exitosamente');
+            } else {
+                NotificationService.error(data.error || 'Error eliminando conductor');
             }
-        }
+        })
+        .catch(err => NotificationService.error('Error de conexión'));
+    }
+}
 
         function viewUser(userId) {
             const user = appState.users.find(u => u.id === userId);
@@ -5505,3 +5514,4 @@ document.querySelectorAll('.nav-section').forEach(section => {
 </script>
 </body>
 </html>
+
