@@ -39,11 +39,21 @@ const DocumentsMenuScreen = ({ navigation }) => {
     finally { setLoading(false); }
   };
 
-  const loadUploadedDocs = async (driverId) => {
+const loadUploadedDocs = async (driverId) => {
     try {
       const res = await fetch(`${API_URL}/documents/driver/${driverId}`);
       const data = await res.json();
-      if (data.success) setUploadedDocs(data.documents.map(d => d.document_type));
+      if (data.success) {
+        const docs = data.documents.map(d => d.document_type);
+        setUploadedDocs(docs);
+        if (docs.length >= 6) {
+          Alert.alert(
+            '🎉 ¡Documentos Completos!',
+            '✅ Todos tus documentos han sido enviados exitosamente.\n\n📋 Tu solicitud está siendo revisada por nuestro equipo.\n\n⏰ Recibirás una notificación por WhatsApp cuando sean aprobados.\n\n¡Gracias por unirte a Squid! 🚕',
+            [{ text: '¡Entendido!', style: 'default' }]
+          );
+        }
+      }
     } catch (e) {}
   };
 
@@ -231,7 +241,7 @@ if (data.existing) {
           <Text style={styles.progressText}>{uploadedDocs.length} de {documents.length} documentos completados</Text>
         </View>
 
-        {uploadedDocs.length === documents.length && (
+       {uploadedDocs.length >= documents.length && (
           <TouchableOpacity
             style={{ backgroundColor: '#22c55e', padding: 18, borderRadius: 12, margin: 20, marginBottom: 0, alignItems: 'center' }}
             onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.')}
