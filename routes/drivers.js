@@ -214,22 +214,19 @@ router.get('/:id/location', (req, res) => {
 
 
 // ELIMINAR CONDUCTOR
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-
-  db.run('DELETE FROM drivers WHERE id = ?', [id], function(err) {
-    if (err) {
-      console.error('Error eliminando conductor:', err);
-      return res.status(500).json({ error: 'Error eliminando conductor' });
-    }
-
-    if (this.changes === 0) {
+  try {
+    const result = await db.run('DELETE FROM drivers WHERE id = $1', [id]);
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Conductor no encontrado' });
     }
-
     console.log('Conductor eliminado:', id);
     res.json({ success: true, message: 'Conductor eliminado exitosamente' });
-  });
+  } catch (err) {
+    console.error('Error eliminando conductor:', err);
+    res.status(500).json({ error: 'Error eliminando conductor' });
+  }
 });
 
 module.exports = router;
