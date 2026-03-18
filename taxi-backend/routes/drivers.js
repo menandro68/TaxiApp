@@ -475,4 +475,20 @@ router.get('/check-suspension/:driverId', async (req, res) => {
     }
 });
 
+// ELIMINAR CONDUCTOR
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await db.query('DELETE FROM drivers WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Conductor no encontrado' });
+    }
+    console.log('Conductor eliminado:', id);
+    res.json({ success: true, message: 'Conductor eliminado exitosamente' });
+  } catch (err) {
+    console.error('Error eliminando conductor:', err);
+    res.status(500).json({ error: 'Error eliminando conductor' });
+  }
+});
+
 module.exports = router;
