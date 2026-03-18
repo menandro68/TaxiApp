@@ -486,6 +486,7 @@ router.delete('/:id', async (req, res) => {
     await db.query('DELETE FROM communication_reads WHERE driver_id = $1', [id]);
     await db.query('DELETE FROM wallet_deposits WHERE driver_id = $1', [id]);
     await db.query('UPDATE trips SET driver_id = NULL WHERE driver_id = $1', [id]);
+    await db.query('UPDATE trips SET pending_driver_id = NULL WHERE pending_driver_id = $1', [id]);
     const result = await db.query('DELETE FROM drivers WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Conductor no encontrado' });
