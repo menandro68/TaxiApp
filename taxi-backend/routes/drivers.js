@@ -484,6 +484,7 @@ router.delete('/:id', async (req, res) => {
     await db.query('DELETE FROM driver_cancellations WHERE driver_id = $1', [id]);
     await db.query('DELETE FROM driver_documents WHERE driver_id = $1', [id]);
     await db.query('DELETE FROM communication_reads WHERE driver_id = $1', [id]);
+    await db.query('DELETE FROM wallet_deposits WHERE driver_id = $1', [id]);
     await db.query('UPDATE trips SET driver_id = NULL WHERE driver_id = $1', [id]);
     const result = await db.query('DELETE FROM drivers WHERE id = $1', [id]);
     if (result.rowCount === 0) {
