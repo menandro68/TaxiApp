@@ -479,6 +479,12 @@ router.get('/check-suspension/:driverId', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    await db.query('DELETE FROM driver_locations WHERE driver_id = $1', [id]);
+    await db.query('DELETE FROM driver_suspensions WHERE driver_id = $1', [id]);
+    await db.query('DELETE FROM driver_cancellations WHERE driver_id = $1', [id]);
+    await db.query('DELETE FROM driver_documents WHERE driver_id = $1', [id]);
+    await db.query('DELETE FROM communication_reads WHERE driver_id = $1', [id]);
+    await db.query('UPDATE trips SET driver_id = NULL WHERE driver_id = $1', [id]);
     const result = await db.query('DELETE FROM drivers WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Conductor no encontrado' });
@@ -487,7 +493,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: 'Conductor eliminado exitosamente' });
   } catch (err) {
     console.error('Error eliminando conductor:', err);
-    res.status(500).json({ error: 'Error eliminando conductor' });
+    res.status(500).json({ error: 'Error eliminando conductor', details: err.message });
   }
 });
 
