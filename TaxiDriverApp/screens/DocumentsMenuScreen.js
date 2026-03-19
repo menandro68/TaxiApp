@@ -245,7 +245,7 @@ if (data.existing) {
        {uploadedDocs.length >= documents.length && (
           <TouchableOpacity
             style={{ backgroundColor: '#22c55e', padding: 18, borderRadius: 12, margin: 20, marginBottom: 0, alignItems: 'center' }}
-           onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.', [{ text: 'OK', onPress: () => navigation && navigation.goBack() }])}
+           onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.', [{ text: 'OK', onPress: () => BackHandler.exitApp() }])}
           >
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>📤 Enviar Documentos</Text>
           </TouchableOpacity>
