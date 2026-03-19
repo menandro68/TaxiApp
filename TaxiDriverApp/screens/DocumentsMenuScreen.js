@@ -10,7 +10,8 @@ import {
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+BackHandler,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DocumentUploadScreen from './DocumentUploadScreen';
@@ -50,7 +51,7 @@ const loadUploadedDocs = async (driverId) => {
           Alert.alert(
             '🎉 ¡Documentos Completos!',
             '✅ Todos tus documentos han sido enviados exitosamente.\n\n📋 Tu solicitud está siendo revisada por nuestro equipo.\n\n⏰ Recibirás una notificación por WhatsApp cuando sean aprobados.\n\n¡Gracias por unirte a Squid! 🚕',
-            [{ text: '¡Entendido!', style: 'default' }]
+            [{ text: '¡Entendido!', style: 'default', onPress: () => BackHandler.exitApp() }]
           );
         }
       }
@@ -244,7 +245,7 @@ if (data.existing) {
        {uploadedDocs.length >= documents.length && (
           <TouchableOpacity
             style={{ backgroundColor: '#22c55e', padding: 18, borderRadius: 12, margin: 20, marginBottom: 0, alignItems: 'center' }}
-            onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.')}
+           onPress={() => Alert.alert('✅ Documentos Enviados', 'Tus documentos han sido enviados para revisión. Te contactaremos por WhatsApp cuando sean aprobados.', [{ text: 'OK', onPress: () => navigation && navigation.goBack() }])}
           >
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>📤 Enviar Documentos</Text>
           </TouchableOpacity>
