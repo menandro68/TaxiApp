@@ -118,7 +118,10 @@ export default function DriverApp({ navigation }) {
   const [showLogin, setShowLogin] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
-  const [driverApproved, setDriverApproved] = useState(false);
+  const [driverApproved, setDriverApproved] = useState(true);
+  const [showRoleSelect, setShowRoleSelect] = useState(true);
+  const [showDeviceSelect, setShowDeviceSelect] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showGPSModal, setShowGPSModal] = useState(false);
@@ -354,8 +357,10 @@ useEffect(() => {
           // Cargar ganancias reales del servidor
           loadRealEarnings(driver.id);
         }
-      } catch (error) {
+  } catch (error) {
         console.error('Error cargando conductor:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadSavedDriver();
@@ -2872,6 +2877,141 @@ const playVoiceMessage = async (audioUrl, msgId) => {
 
 // Si no hay conductor logueado, mostrar pantalla de bienvenida
   if (!loggedDriver) {
+    if (isLoading) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0A0A0A', alignItems: 'center', justifyContent: 'center' }}>
+          <StatusBar backgroundColor="#0A0A0A" barStyle="light-content" />
+          <View style={{ width: 72, height: 72, backgroundColor: '#F5C518', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Text style={{ fontSize: 36 }}>🚕</Text>
+          </View>
+          <ActivityIndicator size="large" color="#F5C518" />
+        </View>
+      );
+    }
+if (!driverApproved) {
+      if (showDeviceSelect) {
+        return (
+          <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+            <StatusBar backgroundColor="#0A0A0A" barStyle="light-content" />
+            <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', padding: 24, paddingTop: 60, paddingBottom: 64 }}>
+              <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                <View style={{ width: 72, height: 72, backgroundColor: '#F5C518', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12, elevation: 10 }}>
+                  <Text style={{ fontSize: 36 }}>🚕</Text>
+                </View>
+                <Text style={{ fontWeight: 'bold', fontSize: 26, color: '#F9F9F9' }}>Squid <Text style={{ color: '#F5C518' }}>Conductor</Text></Text>
+                <Text style={{ fontSize: 13, color: 'rgba(249,249,249,0.45)', marginTop: 4, textTransform: 'uppercase' }}>República Dominicana</Text>
+              </View>
+              <View style={{ alignItems: 'center', marginBottom: 36, width: '100%' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 30, color: '#F9F9F9', textAlign: 'center', lineHeight: 36, marginBottom: 10 }}>¿Qué tipo de{'\n'}celular tienes?</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(249,249,249,0.5)', textAlign: 'center', lineHeight: 24 }}>Selecciona tu dispositivo para{'\n'}descargar la versión correcta</Text>
+              </View>
+              <TouchableOpacity
+                style={{ width: '100%', backgroundColor: '#1A1A1A', borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderRadius: 20, padding: 28, flexDirection: 'row', alignItems: 'center' }}
+                activeOpacity={0.85}
+                onPress={() => setShowDeviceSelect(false)}
+              >
+                <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: 'rgba(78,205,196,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                  <Text style={{ fontSize: 30 }}>🤖</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', color: '#4ECDC4', marginBottom: 4 }}>Samsung, Xiaomi, Huawei…</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#F9F9F9', marginBottom: 4 }}>Android</Text>
+                  <Text style={{ fontSize: 13, color: 'rgba(249,249,249,0.45)', lineHeight: 18 }}>Descarga directa del APK</Text>
+                </View>
+                <Text style={{ fontSize: 20, color: '#F5C518' }}>→</Text>
+              </TouchableOpacity>
+              <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+                <Text style={{ color: 'rgba(249,249,249,0.3)', fontSize: 12, marginHorizontal: 10 }}>o</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+              </View>
+              <TouchableOpacity
+                style={{ width: '100%', backgroundColor: '#1A1A1A', borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderRadius: 20, padding: 28, flexDirection: 'row', alignItems: 'center', opacity: 0.6 }}
+                activeOpacity={0.85}
+                onPress={() => Alert.alert('🍎 Próximamente en iPhone', 'Estamos trabajando para llevar Squid al App Store. ¡Muy pronto disponible!')}
+              >
+                <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: 'rgba(180,180,180,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                  <Text style={{ fontSize: 30 }}>🍎</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', color: '#aaa', marginBottom: 4 }}>iPhone / iPad</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#F9F9F9', marginBottom: 4 }}>iPhone</Text>
+                  <Text style={{ fontSize: 13, color: '#F5C518', lineHeight: 18 }}>Próximamente</Text>
+                </View>
+                <Text style={{ fontSize: 20, color: 'rgba(249,249,249,0.25)' }}>→</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        );
+      }
+      if (showRoleSelect) {
+        return (
+          <View style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+            <StatusBar backgroundColor="#0A0A0A" barStyle="light-content" />
+            <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', padding: 24, paddingTop: 60, paddingBottom: 64 }}>
+              <View style={{ alignItems: 'center', marginBottom: 40 }}>
+                <View style={{ width: 72, height: 72, backgroundColor: '#F5C518', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12, elevation: 10 }}>
+                  <Text style={{ fontSize: 36 }}>🚕</Text>
+                </View>
+                <Text style={{ fontWeight: 'bold', fontSize: 26, color: '#F9F9F9' }}>Squid <Text style={{ color: '#F5C518' }}>Conductor</Text></Text>
+                <Text style={{ fontSize: 13, color: 'rgba(249,249,249,0.45)', marginTop: 4, textTransform: 'uppercase' }}>República Dominicana</Text>
+              </View>
+              <View style={{ alignItems: 'center', marginBottom: 36, width: '100%' }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 30, color: '#F9F9F9', textAlign: 'center', lineHeight: 36, marginBottom: 10 }}>¿Cómo vas{'\n'}a usar la app?</Text>
+                <Text style={{ fontSize: 15, color: 'rgba(249,249,249,0.5)', textAlign: 'center', lineHeight: 24 }}>Selecciona tu perfil para descargar{'\n'}la versión correcta</Text>
+              </View>
+              <TouchableOpacity
+                style={{ width: '100%', backgroundColor: '#1A1A1A', borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderRadius: 20, padding: 28, flexDirection: 'row', alignItems: 'center' }}
+                activeOpacity={0.85}
+                onPress={() => Linking.openURL('https://drive.google.com/uc?export=download&id=1Dd0KrMkYwIOVj-WkzncH28oEJkQ1LVy0')}
+              >
+                <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: 'rgba(245,197,24,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                  <Text style={{ fontSize: 30 }}>👤</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', color: '#F5C518', marginBottom: 4 }}>Para viajar</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#F9F9F9', marginBottom: 4 }}>Soy Pasajero</Text>
+                  <Text style={{ fontSize: 13, color: 'rgba(249,249,249,0.45)', lineHeight: 18 }}>Solicita viajes, motos y paquetes</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 11, color: 'rgba(249,249,249,0.5)' }}>⬇ Squid Pasajero</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 20, color: 'rgba(249,249,249,0.25)' }}>→</Text>
+              </TouchableOpacity>
+              <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+                <Text style={{ color: 'rgba(249,249,249,0.3)', fontSize: 12, marginHorizontal: 10 }}>o</Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.07)' }} />
+              </View>
+              <TouchableOpacity
+                style={{ width: '100%', backgroundColor: '#1A1A1A', borderColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderRadius: 20, padding: 28, flexDirection: 'row', alignItems: 'center' }}
+                activeOpacity={0.85}
+                onPress={() => setShowRoleSelect(false)}
+              >
+                <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: 'rgba(78,205,196,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                  <Text style={{ fontSize: 30 }}>🚗</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', color: '#4ECDC4', marginBottom: 4 }}>Para trabajar</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 20, color: '#F9F9F9', marginBottom: 4 }}>Soy Conductor</Text>
+                  <Text style={{ fontSize: 13, color: 'rgba(249,249,196,0.45)', lineHeight: 18 }}>Acepta viajes y gestiona tus ganancias</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderRadius: 20, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 11, color: 'rgba(249,249,249,0.5)' }}>⬇ Squid Conductor</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 20, color: 'rgba(249,249,249,0.25)' }}>→</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ marginTop: 24, padding: 12 }}
+                onPress={() => setShowDeviceSelect(true)}
+              >
+                <Text style={{ color: 'rgba(249,249,249,0.4)', fontSize: 14 }}>← Volver</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        );
+      }
+    }
     if (showDocumentUpload) {
       return (
         <DocumentsMenuScreen
