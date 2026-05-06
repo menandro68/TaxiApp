@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/database');
+const { db } = require('../config/database');
 
 // Crear tabla de referidos al iniciar (si no existe)
 const initReferralsTable = async () => {

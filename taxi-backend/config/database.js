@@ -16,10 +16,10 @@ console.log('📌 Conexión usando:', connectionString.split('@')[1] || 'variabl
 const pool = new Pool({
   connectionString: connectionString,
   ssl: { rejectUnauthorized: false },
-  max: 10,
+  max: 25,
   min: 2,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
   application_name: 'taxiapp_backend',
 });
 
