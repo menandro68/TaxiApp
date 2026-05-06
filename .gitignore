@@ -20,3 +20,5 @@ backups/
 backups-encrypted/
 logs/
 uploads/
+.vscode/
+*.jpeg
