@@ -2711,7 +2711,7 @@ const resetAppState = async () => {
 const renderLoadingScreen = () => {
   return (
     <View style={styles.loadingScreen}>
-      <Text style={styles.loadingTitle}>TaxiApp</Text>
+      <Text style={styles.loadingTitle}>Squid Usuario</Text>
       <ActivityIndicator size="large" color="#007AFF" style={styles.loadingSpinner} />
       <Text style={styles.loadingText}>Inicializando...</Text>
     </View>
