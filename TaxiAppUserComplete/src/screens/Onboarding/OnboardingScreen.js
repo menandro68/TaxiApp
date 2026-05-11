@@ -16,7 +16,7 @@ const { width, height } = Dimensions.get('window');
 const slides = [
   {
     key: 'slide1',
-    title: 'Bienvenido a TaxiApp',
+    title: 'Bienvenido a Squidd Usuario',
     text: 'La forma más rápida y segura de moverte por la ciudad',
     icon: 'car',
     backgroundColor: '#6C63FF', // Morado moderno

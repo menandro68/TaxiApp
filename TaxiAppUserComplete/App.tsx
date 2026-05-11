@@ -784,7 +784,7 @@ const initializeApp = async () => {
           user_type: 'passenger',
           name: registerResponse.user.name
         });
-        Alert.alert('¡Registro exitoso!', `Bienvenido a TaxiApp, ${registerResponse.user.name}`);
+        Alert.alert('¡Registro exitoso!', `Bienvenido a Squidd Usuario, ${registerResponse.user.name}`);
         
         // Limpiar errores
         setInputErrors({
@@ -870,7 +870,7 @@ const initializeApp = async () => {
       if (!userProfile) {
         userProfile = {
           id: `user_${Date.now()}`,
-          name: 'Usuario TaxiApp',
+          name: 'Usuario Squidd',
           phone: '',
           email: '',
           createdAt: new Date().toISOString(),
@@ -1347,7 +1347,7 @@ const loadUserState = async () => {
       if (!validation.inDominicanRepublic) {
         Alert.alert(
           'Ubicación fuera de servicio',
-          'TaxiApp actualmente solo opera en República Dominicana'
+          'Squidd Usuario actualmente solo opera en República Dominicana'
         );
         return;
       }
@@ -2542,7 +2542,7 @@ const handleMapPickerPress = async (event) => {
       console.warn('⚠️ Ubicación fuera de República Dominicana:', { latitude, longitude });
       Alert.alert(
         'Fuera de servicio',
-        'TaxiApp actualmente solo opera en República Dominicana.\n\nPor favor selecciona una ubicacion dentro del país.'
+        'Squidd Usuario actualmente solo opera en República Dominicana.\n\nPor favor selecciona una ubicacion dentro del país.'
       );
       return;
     }
@@ -2711,7 +2711,7 @@ const resetAppState = async () => {
 const renderLoadingScreen = () => {
   return (
     <View style={styles.loadingScreen}>
-      <Text style={styles.loadingTitle}>Squid Usuario</Text>
+      <Text style={styles.loadingTitle}>Squidd Usuario</Text>
       <ActivityIndicator size="large" color="#007AFF" style={styles.loadingSpinner} />
       <Text style={styles.loadingText}>Inicializando...</Text>
     </View>
@@ -3330,8 +3330,8 @@ onPress={() => {
               <Icon name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
             <Icon name="person-circle" size={80} color="#fff" />
-            <Text style={styles.drawerUserName}>Usuario TaxiApp</Text>
-            <Text style={styles.drawerUserEmail}>usuario@taxiapp.com</Text>
+            <Text style={styles.drawerUserName}>Usuario Squidd</Text>
+            <Text style={styles.drawerUserEmail}>usuario@squidd.com</Text>
           </View>
 
           {/* Opciones del menú */}
@@ -3426,7 +3426,7 @@ onPress={() => {
 
           {/* Footer del drawer */}
           <View style={styles.drawerFooter}>
-            <Text style={styles.drawerFooterText}>TaxiApp v1.0.0</Text>
+            <Text style={styles.drawerFooterText}>Squidd Usuario v1.0.0</Text>
           </View>
         </Animated.View>
       </>
@@ -3443,7 +3443,7 @@ onPress={() => {
           </TouchableOpacity>
           
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.title}>Squid Usuario</Text>
+            <Text style={styles.title}>Squidd Usuario</Text>
             <Text style={styles.subtitle}>Tu viaje seguro y rapido</Text>
           </View>
           
@@ -3803,7 +3803,7 @@ onPress={() => {
         <View style={styles.authModalOverlay}>
           <View style={styles.authModal}>
             <View style={styles.authHeader}>
-              <Text style={styles.authTitle}>� TaxiApp</Text>
+              <Text style={styles.authTitle}>Squidd Usuario</Text>
               <Text style={styles.authSubtitle}>
                 {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
               </Text>
@@ -4016,7 +4016,7 @@ onPress={() => {
     return (
       <View style={styles.container}>
         <View style={styles.unauthenticatedContainer}>
-          <Text style={styles.unauthenticatedTitle}> TaxiApp</Text>
+          <Text style={styles.unauthenticatedTitle}>Squidd Usuario</Text>
           <Text style={styles.unauthenticatedSubtitle}>Tu aplicación de transporte</Text>
           <Text style={styles.unauthenticatedMessage}>
             Inicia sesión para continuar

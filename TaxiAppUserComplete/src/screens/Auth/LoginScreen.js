@@ -161,7 +161,7 @@ const LoginScreen = ({ navigation }) => {
         {/* HEADER */}
         <View style={styles.header}>
           <Icon name="car" size={60} color="#0066FF" />
-          <Text style={styles.title}>TaxiApp</Text>
+          <Text style={styles.title}>Squidd Usuario</Text>
           <Text style={styles.subtitle}>
             {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </Text>

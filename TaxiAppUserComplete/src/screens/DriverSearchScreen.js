@@ -540,7 +540,7 @@ const DriverSearchScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appName}>Squid Usuario</Text>
+        <Text style={styles.appName}>Squidd Usuario</Text>
         <Text style={styles.appSlogan}>Tu viaje seguro y rapido</Text>
       </View>
 
