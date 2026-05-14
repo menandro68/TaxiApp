@@ -346,7 +346,7 @@
 
 <script>
   const URLS = {
-    pasajero: 'https://drive.google.com/uc?export=download&id=1Dd0KrMkYwIOVj-WkzncH28oEJkQ1LVy0',
+    pasajero: 'https://play.google.com/store/apps/details?id=com.squidappsrd.pasajero',
     conductor: 'https://drive.google.com/uc?export=download&id=1LTfkwws1UUbtb7WwFJDr2HgBHk_NCulf',
   };
 
@@ -367,10 +367,14 @@
 
   function descargar(tipo) {
     const overlay = document.getElementById('loadingOverlay');
+    const loadingText = overlay.querySelector('.loading-text');
+    const url = URLS[tipo];
+    const esPlayStore = url.includes('play.google.com');
+    loadingText.textContent = esPlayStore ? 'Abriendo Play Store...' : 'Iniciando descarga...';
     overlay.classList.add('active');
     setTimeout(() => {
       overlay.classList.remove('active');
-      window.location.href = URLS[tipo];
+      window.location.href = url;
     }, 1000);
   }
 </script>
