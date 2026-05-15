@@ -49,10 +49,12 @@
             </intent-filter>
         </activity>
 
-        <!-- ✅ Servicio para Background Location -->
+        <!-- ✅ Servicio Notifee para tracking de viaje (TODOS los Android) -->
         <service 
-            android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"
-            android:foregroundServiceType="location" />
+            android:name="app.notifee.core.ForegroundService"
+            android:foregroundServiceType="location"
+            tools:replace="android:foregroundServiceType"
+            android:exported="false" />
 
         <service
             android:name=".MyFirebaseMessagingService"

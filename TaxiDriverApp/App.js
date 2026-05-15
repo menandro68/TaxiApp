@@ -21,7 +21,7 @@ TextInput,
   Clipboard,
 } from 'react-native';
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
-import BackgroundService from 'react-native-background-actions';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import ApiService from './src/services/ApiService';
 import fcmService from './FCMService';
 import webSocketService from './WebSocketService';
@@ -1138,129 +1138,159 @@ useEffect(() => {
     }
   };
 
-// Configuración para Background Service
-const backgroundOptions = {
-  taskName: 'LocationTracking',
-  taskTitle: 'TaxiApp Conductor',
-  taskDesc: 'Navegando hacia el pasajero...',
-  taskIcon: {
-    name: 'ic_launcher',
-    type: 'mipmap',
-  },
-  color: '#3b82f6',
-  linkingURI: 'taxidriverapp://',
-};
+// 🎯 Variable global para controlar el loop del tracking (Notifee)
+let backgroundTrackingActive = false;
+let backgroundTrackingInterval = null;
 
-// Tarea de background para verificar llegada
-const backgroundTask = async (taskData) => {
-  console.log('🔄 BACKGROUND TASK EJECUTANDO...');
-  console.log('🔍 taskData recibido:', JSON.stringify(taskData));
-  const { targetLat, targetLng, targetType = 'pickup', tripId } = taskData.parameters || taskData;
-  // Compatibilidad con llamadas antiguas
-  const destLat = targetLat || taskData.parameters?.pickupLat;
-  const destLng = targetLng || taskData.parameters?.pickupLng;
-  
-  while (BackgroundService.isRunning()) {
+// Tarea de background: verifica GPS y detecta llegada al pasajero/destino
+// Compatible con TODOS los Android (10, 11, 12, 13, 14, 15+)
+const runBackgroundTracking = async (params) => {
+  console.log('🔄 BACKGROUND TRACKING EJECUTANDO con Notifee...');
+  console.log('🔍 Params recibidos:', JSON.stringify(params));
+  const { targetLat, targetLng, targetType = 'pickup', tripId } = params;
+  const destLat = targetLat;
+  const destLng = targetLng;
+
+  // Limpiar interval previo si existe
+  if (backgroundTrackingInterval) {
+    clearInterval(backgroundTrackingInterval);
+    backgroundTrackingInterval = null;
+  }
+
+  backgroundTrackingActive = true;
+
+  // Verificar cada 5 segundos
+  backgroundTrackingInterval = setInterval(async () => {
+    if (!backgroundTrackingActive) {
+      clearInterval(backgroundTrackingInterval);
+      backgroundTrackingInterval = null;
+      return;
+    }
+
     // SOLO pedir GPS si la app está en BACKGROUND
     // Cuando está en foreground, MapComponent ya maneja el GPS
     const appState = AppState.currentState;
-    
+
     if (appState !== 'active') {
       try {
         // Obtener ubicación actual (solo en background)
         const position = await new Promise((resolve, reject) => {
-        Geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000,
-        });
-      });
-
-      const { latitude, longitude } = position.coords;
-      console.log(`📍 Background: ${latitude}, ${longitude}`);
-
-  // Calcular distancia al destino (pickup o destination)
-      const R = 6371e3;
-      const φ1 = latitude * Math.PI / 180;
-      const φ2 = destLat * Math.PI / 180;
-      const Δφ = (destLat - latitude) * Math.PI / 180;
-      const Δλ = (destLng - longitude) * Math.PI / 180;
-      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2) * Math.sin(Δλ/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-
-console.log(`📍 Distancia al ${targetType}: ${distance.toFixed(0)} metros`);
-
-      // Si está a menos de 50 metros
-      if (distance < 50) {
-   console.log(`✅ Llegada al ${targetType} detectada en background!`);
-        
-        // MARCAR LLEGADA PARA QUE LA UI REACCIONE INMEDIATAMENTE
-        if (targetType === 'destination') {
-          global.arrivedAtDestination = true;
-        } else {
-          global.arrivedAtPickup = true;
-        }
-        
-     // Notificar al backend según el tipo
-        const newStatus = targetType === 'destination' ? 'completed' : 'arrived';
-        try {
-          await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
+          Geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5000,
           });
-          console.log(`✅ Backend notificado: ${newStatus}`);
-        } catch (fetchError) {
-          console.log('⚠️ Error notificando backend (se manejará en foreground):', fetchError.message);
+        });
+
+        const { latitude, longitude } = position.coords;
+        console.log(`📍 Background: ${latitude}, ${longitude}`);
+
+        // Calcular distancia al destino (pickup o destination)
+        const R = 6371e3;
+        const φ1 = latitude * Math.PI / 180;
+        const φ2 = destLat * Math.PI / 180;
+        const Δφ = (destLat - latitude) * Math.PI / 180;
+        const Δλ = (destLng - longitude) * Math.PI / 180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+
+        console.log(`📍 Distancia al ${targetType}: ${distance.toFixed(0)} metros`);
+
+        // Si está a menos de 50 metros
+        if (distance < 50) {
+          console.log(`✅ Llegada al ${targetType} detectada en background!`);
+
+          // MARCAR LLEGADA PARA QUE LA UI REACCIONE INMEDIATAMENTE
+          if (targetType === 'destination') {
+            global.arrivedAtDestination = true;
+          } else {
+            global.arrivedAtPickup = true;
+          }
+
+          // Notificar al backend según el tipo
+          const newStatus = targetType === 'destination' ? 'completed' : 'arrived';
+          try {
+            await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${tripId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: newStatus })
+            });
+            console.log(`✅ Backend notificado: ${newStatus}`);
+          } catch (fetchError) {
+            console.log('⚠️ Error notificando backend (se manejará en foreground):', fetchError.message);
+          }
+
+          // Detener el servicio Notifee
+          backgroundTrackingActive = false;
+          clearInterval(backgroundTrackingInterval);
+          backgroundTrackingInterval = null;
+          await notifee.stopForegroundService();
         }
-        // Detener el servicio
-        await BackgroundService.stop();
-        break;
-      }
-} catch (error) {
-        console.error('Error en background task:', error);
+      } catch (error) {
+        console.error('Error en background tracking:', error);
       }
     } else {
       // App en foreground - MapComponent maneja el GPS
-      console.log('📱 App en foreground - saltando GPS en background task');
+      console.log('📱 App en foreground - saltando GPS en background tracking');
     }
-
-    // Esperar 5 segundos antes de la siguiente verificación
-    await new Promise(resolve => setTimeout(resolve, 5000));
-  }
+  }, 5000);
 };
 
-// Iniciar tracking en background
+// Iniciar tracking en background con Notifee (PROFESIONAL - Android 10-15+)
 const startBackgroundTracking = async (tripId, targetLat, targetLng, targetType = 'pickup') => {
   try {
-    if (BackgroundService.isRunning()) {
-      await BackgroundService.stop();
-    }
-    
-await BackgroundService.start(backgroundTask, {
-      ...backgroundOptions,
-      taskDesc: targetType === 'destination' ? 'Navegando hacia el destino...' : 'Navegando hacia el pasajero...',
-      parameters: { tripId, targetLat, targetLng, targetType },
+    // Crear canal para el servicio (si no existe)
+    await notifee.createChannel({
+      id: 'taxi_tracking',
+      name: 'Tracking de Viaje',
+      importance: AndroidImportance.LOW,
+      vibration: false,
     });
+
+    // Mostrar notificación foreground service (esto inicia el servicio)
+    await notifee.displayNotification({
+      id: 'taxi_tracking_service',
+      title: 'TaxiApp Conductor',
+      body: targetType === 'destination' ? 'Navegando hacia el destino...' : 'Navegando hacia el pasajero...',
+      android: {
+        channelId: 'taxi_tracking',
+        asForegroundService: true,
+        foregroundServiceTypes: ['location'],
+        color: '#3b82f6',
+        colorized: true,
+        smallIcon: 'ic_launcher',
+        ongoing: true,
+        pressAction: { id: 'default', launchActivity: 'default' },
+      },
+    });
+
+    // Iniciar el loop de tracking
+    runBackgroundTracking({ tripId, targetLat, targetLng, targetType });
+
     if (targetType === 'pickup') {
       setIsNavigatingToPickup(true);
     }
-    console.log(`🚀 Background tracking iniciado hacia ${targetType}`);
+    console.log(`🚀 Background tracking iniciado hacia ${targetType} (Notifee)`);
   } catch (error) {
     console.error('Error iniciando background tracking:', error);
   }
 };
 
-// Detener tracking en background
+// Detener tracking en background con Notifee (PROFESIONAL - Android 10-15+)
 const stopBackgroundTracking = async () => {
   try {
-    if (BackgroundService.isRunning()) {
-      await BackgroundService.stop();
-      console.log('⏹️ Background tracking detenido');
+    // Detener el loop de tracking
+    backgroundTrackingActive = false;
+    if (backgroundTrackingInterval) {
+      clearInterval(backgroundTrackingInterval);
+      backgroundTrackingInterval = null;
     }
+    // Detener el foreground service de Notifee
+    await notifee.stopForegroundService();
+    console.log('⏹️ Background tracking detenido (Notifee)');
   } catch (error) {
     console.error('Error deteniendo background tracking:', error);
   }

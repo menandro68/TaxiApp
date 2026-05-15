@@ -153,4 +153,19 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
   console.log('📱 Notifee background event:', type, detail);
 });
 
+// ============================================
+// 🚀 FOREGROUND SERVICE para tracking de viaje
+// Solución profesional moderna compatible con
+// TODOS los Android (10, 11, 12, 13, 14, 15+)
+// ============================================
+notifee.registerForegroundService((notification) => {
+  return new Promise(() => {
+    console.log('🔄 FOREGROUND SERVICE iniciado:', notification.id);
+    
+    // El servicio se queda vivo hasta que se llame stopForegroundService()
+    // El tracking real del GPS lo maneja App.js con setInterval
+    // Esta promesa NUNCA se resuelve para mantener el servicio activo
+  });
+});
+
 AppRegistry.registerComponent(appName, () => App);
