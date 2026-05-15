@@ -22,3 +22,12 @@ logs/
 uploads/
 .vscode/
 *.jpeg
+
+# === PROTECCION DE SEGURIDAD (agregado 2026-05-14) ===
+node_modules/
+demo-driver-setup/
+.env
+.env.local
+.env.production
+*.keystore
+*.jks
