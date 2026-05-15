@@ -73,3 +73,7 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Bundle JS generado en build (no debe subirse a git)
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/assets/
