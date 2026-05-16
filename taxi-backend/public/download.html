@@ -350,6 +350,9 @@
     conductor: 'https://play.google.com/store/apps/details?id=com.squidappsrd.conductor',
   };
 
+  // Link del developer (muestra las 2 apps juntas en Play Store)
+  const PLAY_STORE_DEV = 'https://play.google.com/store/search?q=pub:Squid+Apps+RD';
+
   function mostrar(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -377,6 +380,33 @@
       window.location.href = url;
     }, 1000);
   }
+
+  // ============================================
+  // 🚀 DETECCIÓN AUTOMÁTICA DE DISPOSITIVO
+  // Android → DIRECTO a Play Store (las 2 apps)
+  // iPhone → Próximamente | PC → elegir manual
+  // Robusto estilo Uber/Didi con fallback seguro
+  // ============================================
+  (function detectarDispositivo() {
+    var PLAY_STORE = 'https://play.google.com/store/search?q=pub:Squid+Apps+RD';
+    try {
+      var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+
+      var esIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+      var esIPadModerno = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+
+      if (esIOS || esIPadModerno) {
+        // iPhone/iPad → mostrar "Próximamente" automáticamente
+        mostrar('screen3');
+      } else {
+        // TODO LO DEMÁS (Android y cualquier otro) → Play Store DIRECTO
+        window.location.replace(PLAY_STORE);
+      }
+    } catch (e) {
+      // Si algo falla → fallback seguro: ir a Play Store
+      window.location.replace(PLAY_STORE);
+    }
+  })();
 </script>
 
 </body>
