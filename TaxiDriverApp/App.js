@@ -3093,24 +3093,31 @@ if (!driverApproved) {
         </View>
         
         {/* Modal de Pre-Registro */}
-        <Modal visible={showPreRegister} animationType="slide" onRequestClose={() => setShowPreRegister(false)}>
-          <PreRegisterScreen
-            navigation={{
-              navigate: () => {},
-              goBack: async () => {
-                setShowPreRegister(false);
-                const savedDriver = await AsyncStorage.getItem('loggedDriver');
-                if (savedDriver) {
-                  setLoggedDriver(JSON.parse(savedDriver));
+      <Modal visible={showPreRegister} animationType="slide" onRequestClose={() => setShowPreRegister(false)}>
+            <PreRegisterScreen
+              navigation={{
+                navigate: () => {},
+                goBack: async () => {
+                  setShowPreRegister(false);
+                  const savedDriver = await AsyncStorage.getItem('loggedDriver');
+                  if (savedDriver) {
+                    setLoggedDriver(JSON.parse(savedDriver));
+                  }
+                },
+                openLogin: () => {
+                  setShowPreRegister(false);
+                  setShowLogin(true);
+                },
+                openDocuments: () => {
+                  // 🎯 Después del registro exitoso → cerrar PreRegister y abrir Documentos
+                  setShowPreRegister(false);
+                  setTimeout(() => {
+                    setShowDocumentUpload(true);
+                  }, 300);
                 }
-              },
-              openLogin: () => {
-                setShowPreRegister(false);
-                setShowLogin(true);
-              }
-            }}
-          />
-        </Modal>
+              }}
+            />
+          </Modal>
         
         {/* Modal de Login */}
         <Modal visible={showLogin} animationType="slide" onRequestClose={() => setShowLogin(false)}>
@@ -3274,7 +3281,7 @@ return (
       </Modal>
       
       {/* Modal de Pre-Registro */}
-      <Modal
+<Modal
         visible={showPreRegister}
         animationType="slide"
         onRequestClose={() => setShowPreRegister(false)}
@@ -3295,6 +3302,13 @@ return (
             openLogin: () => {
               setShowPreRegister(false);
               setShowLogin(true);
+            },
+            openDocuments: () => {
+              // 🎯 Después del registro exitoso → cerrar PreRegister y abrir Documentos
+              setShowPreRegister(false);
+              setTimeout(() => {
+                setShowDocumentUpload(true);
+              }, 300);
             }
           }}
         />

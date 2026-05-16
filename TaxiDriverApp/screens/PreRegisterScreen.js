@@ -133,13 +133,19 @@ const [formData, setFormData] = useState({
 
         Alert.alert(
           'Registro Exitoso',
-          `Conductor registrado con ID: ${result.driverId}${bonusMsg}`,
+          `Conductor registrado con ID: ${result.driverId}${bonusMsg}\n\nAhora vamos a subir tus documentos.`,
           [
             {
               text: 'Continuar',
               onPress: () => {
                 console.log('Conductor registrado:', result.driverId);
-                navigation.goBack();
+                // 🎯 Después del registro exitoso → abrir pantalla de Documentos
+                if (navigation.openDocuments) {
+                  navigation.openDocuments();
+                } else {
+                  // Fallback profesional si openDocuments no existe
+                  navigation.goBack();
+                }
               }
             }
           ]
