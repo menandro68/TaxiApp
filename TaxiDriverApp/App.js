@@ -73,6 +73,16 @@ let globalHasCurrentTrip = false;
 //import MultipleStopsManager from './components/MultipleStopsManager';
 
 const { width, height } = Dimensions.get('window');
+// 📐 SISTEMA DE ESCALADO RESPONSIVE (estándar profesional - app robusta)
+// Adapta tamaños a cualquier dispositivo: celular pequeño, grande o tablet
+const GUIDELINE_BASE_WIDTH = 375; // ancho de referencia de diseño (iPhone estándar)
+const scale = (size) => {
+  const scaled = (width / GUIDELINE_BASE_WIDTH) * size;
+  // Limita el escalado para que no se vea gigante en tablets ni diminuto en pantallas chicas
+  const factor = Math.min(Math.max(width / GUIDELINE_BASE_WIDTH, 0.85), 1.3);
+  return Math.round(size * factor);
+};
+const verticalScale = (size) => Math.round((height / 812) * size);
 
 import { LogBox } from 'react-native';
 LogBox.ignoreAllLogs(true);
@@ -2177,7 +2187,7 @@ const simulateTrip = () => {
   };
 const renderDashboard = () => (
       <View style={{flex: 1}}>
-   <ScrollView style={{flex: 1, padding: 20, backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}}>
+   <ScrollView style={{flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}} contentContainerStyle={{padding: scale(16), paddingBottom: verticalScale(140)}} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>🚖 Conductor Squid</Text>
         {/* Estado del Conductor */}
        <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5, backgroundColor: darkMode ? '#374151' : 'white'}]}>
@@ -2319,7 +2329,7 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
 
   {/* Mini Mapa en Dashboard - Ocultar cuando conductor llegó */}
  {tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
-    <View style={{height: 350,marginHorizontal: 10, marginTop: 10, borderRadius: 12, overflow: 'hidden'}}>
+<View style={{height: Math.round(height * 0.42),marginHorizontal: scale(10), marginTop: scale(10), borderRadius: scale(12), overflow: 'hidden'}}>
      <MapComponent
           currentTrip={currentTrip}
           tripPhase={tripPhase}
