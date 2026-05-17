@@ -2187,7 +2187,7 @@ const simulateTrip = () => {
   };
 const renderDashboard = () => (
       <View style={{flex: 1}}>
-   <ScrollView style={{flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f8fafc'}} contentContainerStyle={{padding: scale(16), paddingBottom: verticalScale(140)}} showsVerticalScrollIndicator={false}>
+   <View style={{flex: 1, backgroundColor: darkMode ? '#1f2937' : '#f8fafc', padding: scale(16), paddingBottom: verticalScale(120)}}>
         <Text style={[styles.title, {color: darkMode ? '#f3f4f6' : '#1f2937'}]}>🚖 Conductor Squid</Text>
         {/* Estado del Conductor */}
        <View style={[styles.statusCard, {paddingVertical: 0, paddingHorizontal: 15, marginBottom: 5, backgroundColor: darkMode ? '#374151' : 'white'}]}>
@@ -2329,7 +2329,7 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
 
   {/* Mini Mapa en Dashboard - Ocultar cuando conductor llegó */}
  {tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
-<View style={{height: Math.round(height * 0.42),marginHorizontal: scale(10), marginTop: scale(10), borderRadius: scale(12), overflow: 'hidden'}}>
+<View style={{flex: 1, minHeight: scale(180),marginHorizontal: scale(10), marginTop: scale(10), borderRadius: scale(12), overflow: 'hidden'}}>
      <MapComponent
           currentTrip={currentTrip}
           tripPhase={tripPhase}
@@ -2376,8 +2376,8 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
         paddingVertical: 6,
         paddingHorizontal: 15,
         borderRadius: 20,
-        marginTop: -25,
-        marginBottom: 5,
+        marginTop: scale(8),
+        marginBottom: scale(8),
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -2394,9 +2394,9 @@ onRouteInfoUpdate={(info) => { setEstimatedMinutes(info.durationMinutes); }}
       <Text style={{ fontSize: 13, color: darkMode ? '#f3f4f6' : '#3b82f6', fontWeight: '600' }}>
         Navegación
       </Text>
-    </TouchableOpacity>
+</TouchableOpacity>
     
-    </ScrollView>
+    </View>
     </View>
   );
 const renderMap= () => (
