@@ -21,7 +21,7 @@ TextInput,
   Clipboard,
 } from 'react-native';
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
-import notifee, { AndroidImportance } from '@notifee/react-native';
+import notifee, { AndroidImportance, AndroidForegroundServiceType } from '@notifee/react-native';
 import ApiService from './src/services/ApiService';
 import fcmService from './FCMService';
 import webSocketService from './WebSocketService';
@@ -1258,7 +1258,7 @@ const startBackgroundTracking = async (tripId, targetLat, targetLng, targetType 
       android: {
         channelId: 'taxi_tracking',
         asForegroundService: true,
-        foregroundServiceTypes: ['location'],
+        foregroundServiceTypes: [AndroidForegroundServiceType.FOREGROUND_SERVICE_TYPE_LOCATION],
         color: '#3b82f6',
         colorized: true,
         smallIcon: 'ic_launcher',
