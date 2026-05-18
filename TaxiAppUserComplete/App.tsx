@@ -3752,19 +3752,22 @@ onPress={() => {
             </TouchableOpacity>
          
 
-            <TouchableOpacity 
-              style={styles.addDestinationButton}
-              onPress={() => setShowAddDestinationModal(true)}
-            >
-              <Icon name="add-circle" size={45} color="#4CAF50" />
-              {additionalDestinations.length > 0 && (
-                <View style={styles.destinationBadge}>
-                  <Text style={styles.badgeText}>
-                    {additionalDestinations.length + 1}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
+   <View style={styles.addDestinationWrapper}>
+              <TouchableOpacity 
+                style={styles.addDestinationButton}
+                onPress={() => setShowAddDestinationModal(true)}
+              >
+                <Icon name="add-circle" size={45} color="#4CAF50" />
+                {additionalDestinations.length > 0 && (
+                  <View style={styles.destinationBadge}>
+                    <Text style={styles.badgeText}>
+                      {additionalDestinations.length + 1}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <Text style={styles.addDestinationLabel}>Destino</Text>
+            </View>
           </View>
           
           {renderRouteInfo()}
@@ -4827,8 +4830,12 @@ pickupTextContainer: {
   formGroup: {
     marginBottom: 12,
   },
-  addDestinationButton: {
+addDestinationWrapper: {
+    alignItems: 'center',
     marginLeft: 10,
+    marginBottom: 22,
+  },
+  addDestinationButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -4840,6 +4847,12 @@ pickupTextContainer: {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  addDestinationLabel: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginTop: 2,
   },
   destinationBadge: {
     position: 'absolute',
