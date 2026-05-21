@@ -4,3 +4,6 @@ firebase-admin-key.json
 public/apks/
 .vscode/
 *.log
+
+# Neon failover credentials
+.env.neon
