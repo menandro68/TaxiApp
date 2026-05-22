@@ -7,3 +7,9 @@ public/apks/
 
 # Neon failover credentials
 .env.neon
+.env.render
+
+# Backups automaticos creados durante migraciones
+*.backup-*
+.env.backup-*
+server.js.backup-*

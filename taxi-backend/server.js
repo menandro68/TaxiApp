@@ -11,12 +11,18 @@ require('dotenv').config();
 // Inicializar Firebase Admin con variables de entorno
 const admin = require('firebase-admin');
 
-const firebaseConfig = {
-  type: 'service_account',
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL
-};
+let firebaseConfig;
+if (process.env.FIREBASE_KEY_BASE64) {
+  const decoded = Buffer.from(process.env.FIREBASE_KEY_BASE64, 'base64').toString('utf8');
+  firebaseConfig = JSON.parse(decoded);
+} else {
+  firebaseConfig = {
+    type: 'service_account',
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL
+  };
+}
 
 if (firebaseConfig.project_id && firebaseConfig.private_key && firebaseConfig.client_email) {
   admin.initializeApp({
