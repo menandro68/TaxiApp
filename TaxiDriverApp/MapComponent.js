@@ -152,8 +152,17 @@ const pickupLat = currentTrip?.pickupLat || currentTrip?.pickupLocation?.latitud
 
   // Sincronizar ubicación del padre (App.js) con estado local
 useEffect(() => {
-    if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude) {
+if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude) {
       setCurrentLocation(propUserLocation);
+      // Centrar mapa apenas llegue ubicación (robusto: maneja caso cuando mapa carga antes que GPS)
+      if (mapRef.current && !pickupCoord) {
+        mapRef.current.animateToRegion({
+          latitude: propUserLocation.latitude,
+          longitude: propUserLocation.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        }, 800);
+      }
     }
 }, [propUserLocation]);
 
@@ -881,13 +890,21 @@ const startNavigation = async () => {
      showsUserLocation={false}
         showsMyLocationButton={true}
         toolbarEnabled={false}
-        onMapReady={() => {
+   onMapReady={() => {
           console.log('🗺️ Mapa listo!');
           setTimeout(() => {
             if (pickupCoord) {
               centerMap();
+            } else if (mapRef.current && currentLocation && currentLocation.latitude && currentLocation.longitude) {
+              // Sin viaje activo: centrar en ubicación real del conductor
+              mapRef.current.animateToRegion({
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }, 800);
             }
-          }, 1000);
+          }, 500);
         }}
       >
         {/* MapViewDirections - DESHABILITADO para evitar conflictos

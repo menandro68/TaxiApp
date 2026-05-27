@@ -1132,7 +1132,7 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, [currentTrip, userLocation, tripPhase]);
 
-  const requestLocationPermissions = async () => {
+const requestLocationPermissions = async () => {
     try {
       const fine = await request(
         Platform.OS === 'android'
@@ -1142,6 +1142,28 @@ useEffect(() => {
       
       if (fine === RESULTS.GRANTED) {
         console.log('✅ Permisos de ubicación concedidos');
+        // Obtener ubicación inicial INMEDIATA (antes de conectarse) - centra mapa al instante
+        Geolocation.getCurrentPosition(
+          (position) => {
+            const initialLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              speed: 0,
+              heading: 0,
+              accuracy: position.coords.accuracy || 10,
+            };
+            console.log('📍 Ubicación inicial obtenida:', initialLocation.latitude, initialLocation.longitude);
+            setUserLocation(initialLocation);
+          },
+          (error) => {
+            console.log('⚠️ Error obteniendo ubicación inicial:', error.message);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 10000,
+          }
+        );
       }
     } catch (error) {
       console.error('❌ Error solicitando permisos:', error);
