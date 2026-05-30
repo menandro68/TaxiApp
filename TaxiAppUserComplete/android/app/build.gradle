@@ -82,8 +82,8 @@ android {
         applicationId "com.squidappsrd.pasajero"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
-        versionName "1.0.2"
+        versionCode 7
+        versionName "1.0.3"
     }
     signingConfigs {
         debug {

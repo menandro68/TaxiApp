@@ -49,19 +49,25 @@ class WebSocketService {
       console.log('✅ Conexión confirmada por servidor:', data);
     });
 
-    // Nueva solicitud de viaje via WebSocket
+// Nueva solicitud de viaje via WebSocket
     this.socket.on('new_trip_request', (tripData) => {
       console.log('🚕 Nueva solicitud via WebSocket:', tripData);
-      
+
+      // FIX: normalizar id del viaje (backend envia "tripId", frontend espera "id")
+      const normalizedTrip = {
+        ...tripData,
+        id: tripData.id ?? tripData.tripId
+      };
+
       // Enviar ACK al servidor
       this.socket.emit('trip_request_ack', {
-        tripId: tripData.tripId,
+        tripId: normalizedTrip.id,
         driverId: this.driverId
       });
 
       // Llamar callback si existe
       if (this.onTripRequestCallback) {
-        this.onTripRequestCallback(tripData);
+        this.onTripRequestCallback(normalizedTrip);
       }
     });
 
