@@ -103,12 +103,15 @@ router.post('/login', async (req, res) => {
             { expiresIn: '30d' }
         );
         
-        // Actualizar estado a activo
-        await db.query(
-            'UPDATE drivers SET status = $1 WHERE id = $2',
-            ['active', driver.id]
-        );
-        
+        // Solo actualizar a 'active' si ya fue aprobado anteriormente
+        // Si status es 'pending_approval', 'rejected' o 'suspended', NO cambiar
+        if (driver.status === 'active' || driver.status === 'inactive') {
+            await db.query(
+                'UPDATE drivers SET status = $1 WHERE id = $2',
+                ['active', driver.id]
+            );
+        }
+
         res.json({
             success: true,
             token,
@@ -119,7 +122,8 @@ router.post('/login', async (req, res) => {
                 phone: driver.phone,
                 vehicle_model: driver.vehicle_model,
                 vehicle_plate: driver.vehicle_plate,
-                rating: driver.rating
+                rating: driver.rating,
+                status: driver.status
             }
         });
     } catch (error) {
