@@ -107,7 +107,7 @@ router.put('/:id/approve', async (req, res) => {
       all_approved = parseInt(pending.rows[0].count) === 0;
     }
 
-    res.json({ success: true, message: 'Documento aprobado exitosamente', all_approved, driver_phone, driver_name });
+    res.json({ success: true, message: 'Documento aprobado exitosamente', all_approved, driver_phone, driver_name, driver_id: docInfo.rows[0] ? docInfo.rows[0].driver_id : null });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

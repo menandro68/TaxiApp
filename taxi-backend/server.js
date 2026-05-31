@@ -102,6 +102,27 @@ app.use('/api/trip-messages', tripMessagesRouter);
 app.use('/api/admin/wallet', require('./routes/wallet-deposits'));
 app.use('/api/lost-items', lostItemsRouter);
 
+// Endpoint de activacion via deep link (link enviado por WhatsApp)
+app.get('/activar', (req, res) => {
+  const driverId = req.query.driverId || '';
+  const html = '<!DOCTYPE html>' +
+    '<html lang="es"><head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>Activacion Squid</title>' +
+    '<style>body{font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:40px 20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;min-height:100vh;margin:0}.container{max-width:400px;margin:40px auto;background:white;color:#222;border-radius:16px;padding:30px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}h1{margin:0 0 16px;color:#16a34a}.btn{display:inline-block;margin-top:20px;padding:14px 28px;background:#22c55e;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px}.small{font-size:13px;color:#666;margin-top:16px}</style>' +
+    '</head><body>' +
+    '<div class="container">' +
+    '<h1>Cuenta Aprobada</h1>' +
+    '<p>Tu cuenta de Squid Conductor ha sido aprobada. Abriendo la app...</p>' +
+    '<a class="btn" href="https://play.google.com/store/apps/details?id=com.squidappsrd.conductor">Instalar desde Play Store</a>' +
+    '<p class="small">Si ya tienes la app, deberia abrirse automaticamente.</p>' +
+    '</div>' +
+    '<script>setTimeout(function(){window.location.href="squidconductor://activar?driverId=" + ' + JSON.stringify(driverId) + ';},1500);</script>' +
+    '</body></html>';
+  res.send(html);
+});
+
 // Ruta para página de tracking en tiempo real
 app.get('/track/:shareId', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'track.html'));
