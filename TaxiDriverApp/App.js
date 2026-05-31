@@ -228,6 +228,24 @@ global.handleDriverArrivedConfirmation = (data) => {
     };
     if (!loggedDriver) checkApprovalStatus();
   }, [loggedDriver]);
+
+  // DEEP LINK: reactivar icono cuando admin envia link de activacion por WhatsApp
+  useEffect(() => {
+    const handleActivationLink = (url) => {
+      if (url && url.includes('squidapps.org/activar')) {
+        try {
+          if (NativeModules.AppIconModule && NativeModules.AppIconModule.showIcon) {
+            NativeModules.AppIconModule.showIcon();
+          }
+        } catch (e) {
+          console.log('Error reactivando icono:', e);
+        }
+      }
+    };
+    Linking.getInitialURL().then((url) => { if (url) handleActivationLink(url); });
+    const subscription = Linking.addEventListener('url', ({ url }) => handleActivationLink(url));
+    return () => { if (subscription) subscription.remove(); };
+  }, []);
   
   // Estados para métricas de desempeño
   const [driverStats, setDriverStats] = useState({
@@ -1380,15 +1398,51 @@ if (data.success) {
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Login exitoso
+if (response.ok) {
+        // VERIFICAR STATUS DEL CONDUCTOR antes de permitir acceso
+        const driverStatus = data.driver.status;
+        
+        if (driverStatus === 'pending' || driverStatus === 'pending_approval' || driverStatus === 'pending_docs') {
+          // Cuenta en revisión - bloquear acceso
+          Alert.alert(
+            '⏳ Cuenta en Revisión',
+            'Tu cuenta está siendo revisada por nuestro equipo.\n\nRecibirás una notificación por WhatsApp cuando sea aprobada.\n\nNo es posible iniciar sesión hasta que tu cuenta sea aprobada.',
+            [{ text: 'Entendido', style: 'default' }]
+          );
+          setLoginLoading(false);
+          return;
+        }
+        
+        if (driverStatus === 'rejected') {
+          // Cuenta rechazada
+          Alert.alert(
+            '❌ Cuenta Rechazada',
+            'Tu solicitud no fue aprobada.\n\nPor favor contacta al soporte para más información.',
+            [{ text: 'Entendido', style: 'default' }]
+          );
+          setLoginLoading(false);
+          return;
+        }
+        
+        if (driverStatus === 'suspended') {
+          // Cuenta suspendida
+          Alert.alert(
+            '🚫 Cuenta Suspendida',
+            'Tu cuenta está temporalmente suspendida.\n\nPor favor contacta al soporte para más información.',
+            [{ text: 'Entendido', style: 'default' }]
+          );
+          setLoginLoading(false);
+          return;
+        }
+        
+        // Login exitoso - solo si status es 'active' o 'inactive'
         Alert.alert(
           '✅ Inicio de Sesión Exitoso',
           `Bienvenido ${data.driver.name}`,
           [
             { 
               text: 'OK', 
-       onPress: async () => {
+              onPress: async () => {
                 setShowLogin(false);
                 setLoginEmail('');
                 setLoginPassword('');

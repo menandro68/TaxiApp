@@ -42,10 +42,38 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:exported="true">
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ActivateReceiver: SIEMPRE habilitado, reactiva MainActivity desde deep link -->
+        <activity
+            android:name=".ActivateReceiver"
+            android:exported="true"
+            android:enabled="true"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+
+            <!-- Deep link HTTPS (link de WhatsApp) -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="squidapps.org"
+                      android:pathPrefix="/activar" />
+            </intent-filter>
+
+            <!-- Deep link custom scheme (fallback) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="squidconductor" android:host="activar" />
             </intent-filter>
         </activity>
 

@@ -10,6 +10,7 @@ import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.taxidriverapp.BringToForegroundPackage
+import com.taxidriverapp.AppIconPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -21,6 +22,7 @@ class MainApplication : Application(), ReactApplication {
               add(BringToForegroundPackage())
               add(OverlayPermissionPackage())
               add(TripIntentPackage())
+              add(AppIconPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
