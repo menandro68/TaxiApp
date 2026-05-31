@@ -383,6 +383,31 @@ router.post('/location', async (req, res) => {
 // ============================================
 // OBTENER UBICACIÓN DEL CONDUCTOR
 // ============================================
+// =============================================
+// OBTENER STATUS DEL CONDUCTOR (para pantalla bloqueante)
+// =============================================
+router.get('/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await db.query(
+            'SELECT id, name, status FROM drivers WHERE id = $1',
+            [id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Conductor no encontrado' });
+        }
+        res.json({
+            success: true,
+            id: result.rows[0].id,
+            name: result.rows[0].name,
+            status: result.rows[0].status
+        });
+    } catch (error) {
+        console.error('Error obteniendo status del conductor:', error);
+        res.status(500).json({ error: 'Error obteniendo status' });
+    }
+});
+
 router.get('/:id/location', async (req, res) => {
     try {
         const { id } = req.params;
