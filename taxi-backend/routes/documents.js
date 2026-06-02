@@ -105,8 +105,16 @@ router.put('/:id/approve', async (req, res) => {
         [driver_id]
       );
       all_approved = parseInt(pending.rows[0].count) === 0;
-    }
 
+      // Si todos los documentos aprobados, activar al conductor
+      if (all_approved) {
+        await pool.query(
+          `UPDATE drivers SET status = 'active' WHERE id = $1`,
+          [driver_id]
+        );
+        console.log(`✅ Conductor ${driver_id} activado (todos los documentos aprobados)`);
+      }
+    }
     res.json({ success: true, message: 'Documento aprobado exitosamente', all_approved, driver_phone, driver_name, driver_id: docInfo.rows[0] ? docInfo.rows[0].driver_id : null });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
