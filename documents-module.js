@@ -221,9 +221,8 @@
         },
 
         exportDocs() {
-            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
-            const docs = this.documents.filter(d => d.status === 'approved' && String(d.reviewed_by) === String(adminData.id));
-            if (!docs.length) { alert('No hay documentos aprobados por ti para exportar'); return; }
+            const docs = this.documents;
+            if (!docs.length) { alert('No hay documentos para exportar'); return; }
 
             const now = new Date();
             const fechaReporte = now.toLocaleDateString('es-DO', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -238,7 +237,7 @@
                 if (!byDriver[key]) byDriver[key] = { name: d.driver_name || 'Conductor #' + d.driver_id, phone: d.driver_phone || '-', docs: [] };
                 byDriver[key].docs.push(d);
             });
-           const rows = Object.values(byDriver).filter(driver => driver.docs.every(d => d.status === 'approved')).map(driver => `
+            const rows = Object.values(byDriver).map(driver => `
                 <tr>
                     <td style="font-weight:700;">${driver.name}</td>
                     <td>${driver.phone}</td>
@@ -251,6 +250,7 @@
             const to = document.getElementById('doc-date-to') ? document.getElementById('doc-date-to').value : '';
             const formatDate = (d) => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
             const rangoFecha = (from || to) ? ` | Período: ${from ? formatDate(from) : '...'} → ${to ? formatDate(to) : '...'}` : '';
+            const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
             const adminName = adminData.name || adminData.username || 'Administrador';
             const win = window.open('', '', 'width=900,height=700');
             win.document.write(`<!DOCTYPE html><html><head><title>Reporte de Documentos - TaxiApp Rondon</title>
@@ -347,16 +347,16 @@
                 const res = await fetch(`${this.API_URL}/documents/${docId}/approve`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reviewed_by: (JSON.parse(localStorage.getItem('adminData') || '{}').id || 1) })
+                    body: JSON.stringify({ reviewed_by: 1 })
                 });
                 const data = await res.json();
                 if (data.success) {
                     if (data.all_approved && data.driver_phone) {
                         const phone = data.driver_phone.replace(/\D/g, '');
                         const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
-                        const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/downloads/app-conductor.apk`);
+                        const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://squidapps.org/activar?driverId=${data.driver_id}`);
                         if (confirm(`✅ Todos los documentos de ${data.driver_name} aprobados.\n¿Enviar WhatsApp al conductor?`)) {
-                           window.location.href = `https://wa.me/${fullPhone}?text=${msg}`;
+                            window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
                         }
                     } else {
                         alert('✅ Documento aprobado');
@@ -377,7 +377,7 @@
                 const res = await fetch(`${this.API_URL}/documents/${docId}/reject`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reviewed_by: (JSON.parse(localStorage.getItem('adminData') || '{}').id || 1), rejection_reason: reason })
+                    body: JSON.stringify({ reviewed_by: 1, rejection_reason: reason })
                 });
                 const data = await res.json();
                 if (data.success) {
