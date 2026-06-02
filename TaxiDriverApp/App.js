@@ -129,6 +129,8 @@ export default function DriverApp({ navigation }) {
   const [timeRemaining, setTimeRemaining] = useState(20);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [driverApproved, setDriverApproved] = useState(true);
+  const [driverApprovalStatus, setDriverApprovalStatus] = useState(null);
+  const [tempDriverInfo, setTempDriverInfo] = useState(null);
   const [showRoleSelect, setShowRoleSelect] = useState(true);
   const [showDeviceSelect, setShowDeviceSelect] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -228,24 +230,107 @@ global.handleDriverArrivedConfirmation = (data) => {
     };
     if (!loggedDriver) checkApprovalStatus();
   }, [loggedDriver]);
-
-  // DEEP LINK: reactivar icono cuando admin envia link de activacion por WhatsApp
+// VERIFICACIÓN PERIÓDICA DEL STATUS DEL CONDUCTOR (pantalla bloqueante)
+  // + Procesamiento de deep link con login automático
   useEffect(() => {
-    const handleActivationLink = (url) => {
-      if (url && url.includes('squidapps.org/activar')) {
-        try {
-          if (NativeModules.AppIconModule && NativeModules.AppIconModule.showIcon) {
-            NativeModules.AppIconModule.showIcon();
-          }
-        } catch (e) {
-          console.log('Error reactivando icono:', e);
+    const handleDeepLink = async (url) => {
+      if (!url) return false;
+      const match = url.match(/[?&]driverId=(\d+)/);
+      if (!match) return false;
+      const newDriverId = parseInt(match[1]);
+      try {
+        const r = await fetch(`https://web-production-99844.up.railway.app/api/drivers/${newDriverId}/status`);
+        if (!r.ok) return false;
+        const d = await r.json();
+        if (!d.success) return false;
+
+        if (['active', 'inactive', 'online', 'offline', 'busy'].includes(d.status)) {
+          // Conductor aprobado → LOGIN AUTOMÁTICO
+          const driverData = { id: newDriverId, name: d.name };
+          await AsyncStorage.setItem('loggedDriver', JSON.stringify(driverData));
+          await AsyncStorage.removeItem('@temp_driver_info');
+          await AsyncStorage.removeItem('@docs_submitted');
+          setLoggedDriver(driverData);
+          setTempDriverInfo(null);
+          setDriverApprovalStatus(d.status);
+          return true;
+        } else {
+          // No aprobado → mantener pantalla bloqueante
+          await AsyncStorage.setItem('@temp_driver_info', JSON.stringify({ id: newDriverId, name: d.name }));
+          await AsyncStorage.setItem('@docs_submitted', 'true');
+          setTempDriverInfo({ id: newDriverId, name: d.name });
+          setDriverApprovalStatus(d.status);
+          return true;
         }
+      } catch (e) {
+        return false;
       }
     };
-    Linking.getInitialURL().then((url) => { if (url) handleActivationLink(url); });
-    const subscription = Linking.addEventListener('url', ({ url }) => handleActivationLink(url));
-    return () => { if (subscription) subscription.remove(); };
-  }, []);
+
+    const checkDriverStatus = async () => {
+      try {
+        // PASO 0: Procesar deep link si app fue abierta desde un link
+        const initialUrl = await Linking.getInitialURL();
+        const handled = await handleDeepLink(initialUrl);
+        if (handled) return;
+
+        // CASO 1: Conductor logueado → verificar status directo
+        if (loggedDriver?.id) {
+          const response = await fetch(`https://web-production-99844.up.railway.app/api/drivers/${loggedDriver.id}/status`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.status) {
+              setDriverApprovalStatus(data.status);
+            }
+          }
+          return;
+        }
+
+        // CASO 2: Conductor temporal con documentos enviados
+        const saved = await AsyncStorage.getItem('@temp_driver_info');
+        if (!saved) {
+          setDriverApprovalStatus(null);
+          setTempDriverInfo(null);
+          return;
+        }
+        const tempInfo = JSON.parse(saved);
+        if (!tempInfo?.id) {
+          setDriverApprovalStatus(null);
+          setTempDriverInfo(null);
+          return;
+        }
+        const docsSubmitted = await AsyncStorage.getItem('@docs_submitted');
+        if (docsSubmitted !== 'true') {
+          setDriverApprovalStatus(null);
+          setTempDriverInfo(null);
+          return;
+        }
+        setTempDriverInfo(tempInfo);
+        const statusResponse = await fetch(`https://web-production-99844.up.railway.app/api/drivers/${tempInfo.id}/status`);
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          if (statusData.success && statusData.status) {
+            setDriverApprovalStatus(statusData.status);
+          }
+        }
+      } catch (error) {
+        console.log('Error verificando status:', error.message);
+      }
+    };
+
+    checkDriverStatus();
+    const interval = setInterval(checkDriverStatus, 30000);
+
+    // Listener para nuevo deep link mientras app abierta
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    return () => {
+      clearInterval(interval);
+      if (sub) sub.remove();
+    };
+  }, [loggedDriver]);
   
   // Estados para métricas de desempeño
   const [driverStats, setDriverStats] = useState({
@@ -2991,6 +3076,48 @@ const playVoiceMessage = async (audioUrl, msgId) => {
     }
   };
 
+  // PANTALLA BLOQUEANTE: si conductor logueado pero status no aprobado
+ if ((loggedDriver || tempDriverInfo) && driverApprovalStatus && !['active', 'inactive', 'online', 'offline', 'busy'].includes(driverApprovalStatus)) {
+    let statusTitle = '⏳ Cuenta en Revisión';
+    let statusMessage = 'Tu cuenta está siendo revisada por nuestro equipo.\n\nRecibirás una notificación por WhatsApp cuando sea aprobada.';
+    let statusIcon = '⏳';
+    let statusColor = '#f59e0b';
+
+    if (driverApprovalStatus === 'rejected') {
+      statusTitle = '❌ Cuenta Rechazada';
+      statusMessage = 'Tu solicitud no fue aprobada.\n\nPor favor contacta al soporte para más información.';
+      statusIcon = '❌';
+      statusColor = '#dc2626';
+    } else if (driverApprovalStatus === 'suspended') {
+      statusTitle = '🚫 Cuenta Suspendida';
+      statusMessage = 'Tu cuenta está temporalmente suspendida.\n\nPor favor contacta al soporte para más información.';
+      statusIcon = '🚫';
+      statusColor = '#dc2626';
+    }
+
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0A0A0A', alignItems: 'center', justifyContent: 'center', padding: 30 }}>
+        <StatusBar backgroundColor="#0A0A0A" barStyle="light-content" />
+        <View style={{ width: 120, height: 120, backgroundColor: statusColor, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
+          <Text style={{ fontSize: 60 }}>{statusIcon}</Text>
+        </View>
+        <Text style={{ color: 'white', fontSize: 26, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{statusTitle}</Text>
+        <Text style={{ color: '#9ca3af', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 30 }}>{statusMessage}</Text>
+        <View style={{ backgroundColor: '#1f2937', padding: 16, borderRadius: 12, marginBottom: 20, width: '100%' }}>
+          <Text style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center' }}>Conductor: {(loggedDriver || tempDriverInfo)?.name}</Text>
+          <Text style={{ color: '#6b7280', fontSize: 12, textAlign: 'center', marginTop: 4 }}>ID: {(loggedDriver || tempDriverInfo)?.id}</Text>
+        </View>
+        <TouchableOpacity
+          style={{ backgroundColor: '#374151', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 10, marginTop: 10 }}
+       onPress={() => BackHandler.exitApp()}
+        >
+          <Text style={{ color: 'white', fontWeight: '600' }}>Cerrar Sesión</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+
 // Si no hay conductor logueado, mostrar pantalla de bienvenida
   if (!loggedDriver) {
     if (isLoading) {
@@ -3248,7 +3375,7 @@ if (!driverApproved) {
                 style={{ marginTop: 20, alignItems: 'center' }}
                 onPress={() => { setShowLogin(false); setShowPreRegister(true); }}
               >
-                <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 16 }}>¿No tienes cuenta? Regístrate</Text>
+                <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 24}}>¿No tienes cuenta? Regístrate</Text>
               </TouchableOpacity>
           </View>
           </KeyboardAvoidingView>
