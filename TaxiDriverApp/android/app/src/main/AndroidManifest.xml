@@ -42,23 +42,23 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:exported="true">
-
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
 
-        <!-- ActivateReceiver: SIEMPRE habilitado, reactiva MainActivity desde deep link -->
-        <activity
-            android:name=".ActivateReceiver"
-            android:exported="true"
-            android:enabled="true"
-            android:theme="@android:style/Theme.NoDisplay"
-            android:excludeFromRecents="true"
-            android:taskAffinity="">
+            <!-- Deep link: link de activacion enviado por WhatsApp (Railway directo) -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="web-production-99844.up.railway.app"
+                      android:pathPrefix="/activar" />
+            </intent-filter>
 
-            <!-- Deep link HTTPS (link de WhatsApp) -->
+            <!-- Deep link: dominio squidapps.org (cuando se arregle el DNS) -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -68,7 +68,7 @@
                       android:pathPrefix="/activar" />
             </intent-filter>
 
-            <!-- Deep link custom scheme (fallback) -->
+            <!-- Deep link: custom scheme squidconductor:// (fallback) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
