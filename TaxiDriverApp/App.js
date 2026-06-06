@@ -244,8 +244,10 @@ global.handleDriverArrivedConfirmation = (data) => {
         const d = await r.json();
         if (!d.success) return false;
 
-        if (['active', 'inactive', 'online', 'offline', 'busy'].includes(d.status)) {
-          // Conductor aprobado → LOGIN AUTOMÁTICO
+    if (['active', 'inactive', 'online', 'offline', 'busy'].includes(d.status)) {
+       // Conductor aprobado → LOGIN AUTOMÁTICO (solo via link de WhatsApp)
+          await AsyncStorage.setItem('@activated_by_link', 'true');
+          await AsyncStorage.setItem('@docs_prompted', 'true');
           const driverData = { id: newDriverId, name: d.name };
           await AsyncStorage.setItem('loggedDriver', JSON.stringify(driverData));
           await AsyncStorage.removeItem('@temp_driver_info');
@@ -305,12 +307,18 @@ global.handleDriverArrivedConfirmation = (data) => {
           setTempDriverInfo(null);
           return;
         }
-        setTempDriverInfo(tempInfo);
+   setTempDriverInfo(tempInfo);
         const statusResponse = await fetch(`https://web-production-99844.up.railway.app/api/drivers/${tempInfo.id}/status`);
         if (statusResponse.ok) {
           const statusData = await statusResponse.json();
           if (statusData.success && statusData.status) {
-            setDriverApprovalStatus(statusData.status);
+            const activatedByLink = await AsyncStorage.getItem('@activated_by_link');
+            if (['active', 'inactive', 'online', 'offline', 'busy'].includes(statusData.status) && activatedByLink !== 'true') {
+              // Aprobado pero NO activado por link → mantener pantalla bloqueante
+              setDriverApprovalStatus('pending');
+            } else {
+              setDriverApprovalStatus(statusData.status);
+            }
           }
         }
       } catch (error) {
@@ -450,11 +458,12 @@ useEffect(() => {
  
       try {
         const savedDriver = await AsyncStorage.getItem('loggedDriver');
-    if (savedDriver) {
+  if (savedDriver) {
           const driver = JSON.parse(savedDriver);
-          // Mostrar documentos la primera vez
+          // Mostrar documentos la primera vez (NUNCA si fue activado por link)
         const docsPrompted = await AsyncStorage.getItem('@docs_prompted');
-          if (!docsPrompted) {
+        const activatedByLink = await AsyncStorage.getItem('@activated_by_link');
+          if (!docsPrompted && activatedByLink !== 'true') {
             setTimeout(() => setShowDocumentUpload(true), 1500);
             await AsyncStorage.setItem('@docs_prompted', 'true');
          }
