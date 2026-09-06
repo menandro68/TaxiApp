@@ -38,17 +38,18 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
         // Filtrar por tipo de vehículo: moto solo notifica a motos, car solo a carros
       // Mapear tipos de vehículo de la app usuario a tipos de conductor en BD
         const userVehicleType = tripData.vehicle_type || 'economy';
+             // Cada categoria solicitada admite varios tipos de vehiculo registrados
         const VEHICLE_TYPE_MAP = {
-            'economy': 'car',
-            'comfort': 'car', 
-            'premium': 'car',
-            'car': 'car',
-            'moto': 'moto',
-            'motorcycle': 'moto',
-            'paquete_carro': 'car',
-            'paquete_moto': 'moto'
+            'economy': ['car', 'sedan', 'hatchback', 'suv'],
+            'comfort': ['car', 'sedan', 'suv'],
+            'premium': ['car', 'sedan', 'suv'],
+            'car': ['car', 'sedan', 'hatchback', 'suv'],
+            'moto': ['moto', 'motorcycle'],
+            'motorcycle': ['moto', 'motorcycle'],
+            'paquete_carro': ['car', 'sedan', 'hatchback', 'suv'],
+            'paquete_moto': ['moto', 'motorcycle']
         };
-        const requestedVehicleType = VEHICLE_TYPE_MAP[userVehicleType] || 'car';
+                const requestedVehicleType = VEHICLE_TYPE_MAP[userVehicleType] || ['car', 'sedan', 'hatchback', 'suv'];
     // Obtener IDs de conductores bloqueados por este usuario
         const blockedResult = await db.query(
             `SELECT driver_id FROM blocked_drivers WHERE user_id = $1`,
@@ -65,7 +66,7 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
              AND fcm_token IS NOT NULL
              AND id != ALL($1::int[])
              AND id != ALL($2::int[])
-             AND (vehicle_type = $3 OR vehicle_type IS NULL)`,
+             AND (vehicle_type = ANY($3::text[]) OR vehicle_type IS NULL)`,
             [notifiedDriverIds, blockedIds, requestedVehicleType]
         );
         

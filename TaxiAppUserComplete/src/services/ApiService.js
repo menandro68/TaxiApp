@@ -116,7 +116,11 @@ import { getBackendUrl } from '../config/config.js';
           }
         }
         
-        throw new Error(responseData?.error || `HTTP ${response.status}: ${response.statusText}`);
+               const errServidor = new Error(responseData?.error || responseData?.message || `HTTP ${response.status}: ${response.statusText}`);
+        // El servidor SI respondio: no tiene sentido reintentar
+        errServidor.esRespuestaDelServidor = true;
+        errServidor.status = response.status;
+        throw errServidor;
       }
 
       return responseData;
@@ -142,8 +146,13 @@ import { getBackendUrl } from '../config/config.js';
         console.log(`[ApiService] ✅ Éxito en intento ${attempt + 1}`);
         return result;
         
-      } catch (error) {
-        console.log(`[ApiService] ❌ Error en intento ${attempt + 1}:`, error.message);
+          } catch (error) {
+        console.log(`[ApiService] Error en intento ${attempt + 1}:`, error.message);
+
+        // Si el servidor respondio (credenciales, validacion, etc), no reintentar
+        if (error?.esRespuestaDelServidor) {
+          throw error;
+        }
         
         // Si es el último intento, lanzar el error
       if (attempt === retries - 1) {
@@ -286,6 +295,16 @@ import { getBackendUrl } from '../config/config.js';
       return await this.makeRequestWithRetry('/trips', 'POST', tripData, true);
     } catch (error) {
       console.error('Error creando viaje:', error);
+      throw error;
+    }
+  }
+
+    // Crea el viaje usando la ruta real del backend, con reintentos y timeout
+  async createTripRequest(tripData) {
+    try {
+      return await this.makeRequestWithRetry('/trips/create', 'POST', tripData, false);
+    } catch (error) {
+      console.error('Error creando solicitud de viaje:', error);
       throw error;
     }
   }

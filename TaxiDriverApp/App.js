@@ -23,6 +23,28 @@ TextInput,
 import SharedStorage, { TRIP_STATES } from './SharedStorage';
 import notifee, { AndroidImportance, AndroidForegroundServiceType } from '@notifee/react-native';
 import ApiService from './src/services/ApiService';
+
+// Reintento automatico para todas las peticiones del app.
+// La primera peticion al reabrir la conexion suele fallar; este envoltorio la repite.
+if (!global.__fetchConReintento) {
+  global.__fetchConReintento = true;
+  const fetchOriginal = global.fetch;
+  global.fetch = async (url, opciones) => {
+    const MAX = 3;
+    let ultimoError;
+    for (let intento = 0; intento < MAX; intento++) {
+      try {
+        return await fetchOriginal(url, opciones);
+      } catch (err) {
+        ultimoError = err;
+        const esFalloDeRed = String(err?.message || '').includes('Network request failed');
+        if (!esFalloDeRed || intento === MAX - 1) throw err;
+        await new Promise(r => setTimeout(r, 600 * (intento + 1)));
+      }
+    }
+    throw ultimoError;
+  };
+}
 import fcmService from './FCMService';
 import webSocketService from './WebSocketService';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';

@@ -84,6 +84,10 @@ const scale = (size) => (screenWidth / 375) * size;
 const verticalScale = (size) => (screenHeight / 812) * size;
 const DRAWER_WIDTH = screenWidth * 0.75;
 
+// Guarda a nivel de modulo: compartida por todas las instancias del componente
+let alertaLoginVisible = false;
+let creandoViaje = false;
+
 // Módulo de permisos nativos
 const { PermissionsModule } = NativeModules;
 
@@ -176,6 +180,7 @@ const requestScreenPermissions = async () => {
   const [pickupLocation, setPickupLocation] = useState(null);
   const gpsObtainedRef = useRef(false);
   const gpsAlertShownRef = useRef(false);
+  const loginEnCursoRef = useRef(false);
   const Stack = createStackNavigator();
 
   // Agregar después de todos los useState
@@ -673,6 +678,9 @@ const initializeApp = async () => {
 
   // Función para manejar login
   const handleLogin = async () => {
+    // Evitar doble envio: la referencia es inmediata, el estado no
+    if (loginEnCursoRef.current) return;
+    loginEnCursoRef.current = true;
     try {
       // Validar campos antes de enviar
       const emailValid = validateEmail(authForm.email);
@@ -732,8 +740,25 @@ const initializeApp = async () => {
       
     } catch (error) {
       console.error('Error en login:', error);
-      Alert.alert('Error', 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
+      const msg = error?.message || '';
+      const esFalloDeRed = msg.includes('Network request failed') || msg.includes('Sin conexion') || msg.includes('Sin conexión');
+        // Mostrar una sola alerta aunque el flujo se ejecute dos veces
+            // Apagar el indicador ANTES de la alerta: el re-render posterior la cerraria
+      setIsLoading(false);
+      if (!alertaLoginVisible) {
+        alertaLoginVisible = true;
+        const titulo = esFalloDeRed ? 'Error' : 'Error de login';
+        const cuerpo = esFalloDeRed
+          ? 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
+          : (msg || 'Credenciales incorrectas');
+              setTimeout(() => {
+          Alert.alert(titulo, cuerpo, [
+            { text: 'OK', onPress: () => { alertaLoginVisible = false; } }
+          ], { cancelable: false });
+        }, 300);
+      }
     } finally {
+      loginEnCursoRef.current = false;
       setIsLoading(false);
     }
   };
@@ -897,11 +922,10 @@ const setupNotificationHandlers = () => {
         if (global.navigationRef?.isReady()) {
           console.log('🔙 Navegando de DriverSearchScreen a Main (reset robusto)...');
           
-          // Usar reset en lugar de goBack para garantizar navegación
-          global.navigationRef.reset({
-            index: 0,
-            routes: [{ name: 'Main', params: { driverAssigned: true } }],
-          });
+                   // goBack: Main ya esta en la pila, navigate con params la remonta y pierde el estado
+          if (global.navigationRef.canGoBack()) {
+            global.navigationRef.goBack();
+          }
           
           // Esperar navegación con timeout de seguridad
           const { InteractionManager } = require('react-native');
@@ -1918,7 +1942,17 @@ const closeChatModal = () => {
   };
 
 const processRideRequest = async () => {
+  // Evitar crear viajes duplicados si el flujo se ejecuta dos veces
+  if (creandoViaje) return;
+  creandoViaje = true;
   setShowPaymentModal(false);
+  // Ir a la pantalla de busqueda de inmediato, sin esperar al backend
+  setRideStatus('searching');
+  try {
+    navigation.navigate('DriverSearch', { userLocation });
+  } catch (e) {
+    console.log('No se pudo navegar a DriverSearch:', e?.message);
+  }
   
   // ✅ GUARDAR UBICACIÓN INMEDIATAMENTE ANTES DE CUALQUIER CAMBIO DE ESTADO
   if (userLocation) {
@@ -1975,15 +2009,16 @@ if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
 
     console.log('Enviando solicitud de viaje con metodo de pago:', selectedPaymentMethod);
     
-    setTripRequest(request);
-    setRideStatus('searching');
-
+       setTripRequest(request);
     await sendTripRequestToBackend(request);
     
   } catch (error) {
     console.error('Error:', error);
     Alert.alert('Error', 'No se pudo procesar la solicitud');
     fallbackRequestRide();
+  } finally {
+    // Liberar despues de un momento para permitir una nueva solicitud
+    setTimeout(() => { creandoViaje = false; }, 3000);
   }
 };
 const sendTripRequestToBackend = async (tripData) => {
@@ -2057,26 +2092,9 @@ const sendTripRequestToBackend = async (tripData) => {
     // DEBUG: JSON completo que se envía
     console.log('��� DEBUG: JSON COMPLETO a enviar:', JSON.stringify(requestBody, null, 2));
     
-    const response = await fetch(`${getBackendUrl()}/trips/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    console.log('✅ Response recibido:', response.status);
-    
-    if (!response.ok) {
-      // DEBUG: Intentar leer el error del servidor
-      const errorText = await response.text();
-      console.log('��� Respuesta del servidor:', errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Datos parseados:', data);
+    // Crear el viaje a traves de ApiService: reintentos, timeout y chequeo de red
+    const data = await ApiService.createTripRequest(requestBody);
+    console.log('Datos parseados:', data);
     
   if (data.success) {
       console.log('âœ… Viaje creado:', data.tripId);
@@ -2094,10 +2112,8 @@ const sendTripRequestToBackend = async (tripData) => {
       setTripRequest(prev => ({ ...prev, id: data.tripId }));
       setDriverInfo(data.driver || null);
       setRideStatus(TRIP_STATES.DRIVER_ASSIGNED);
- navigation.navigate('DriverSearch', {
-       userLocation: tripRequest?.origin || userLocation,
-       tripRequestId: data.tripId,
-     });
+     // Ya estamos en DriverSearch: solo actualizamos el id del viaje
+     navigation.setParams({ tripRequestId: data.tripId });
     } else {
       throw new Error(data.message || 'Error desconocido');
     }
@@ -2427,6 +2443,32 @@ const searchForDriver = () => {
       Alert.alert('Error', 'Error al completar el viaje');
     }
   };
+
+// Genera la clave, la guarda en el backend y la muestra antes de iniciar el viaje
+const subirAlVehiculo = async () => {
+  const tripCode = Math.floor(1000 + Math.random() * 9000).toString();
+  try {
+    const storedTrip = await SharedStorage.getTripRequest();
+    const tripId = storedTrip?.id || tripRequest?.id;
+    if (tripId) {
+      await fetch(`${getBackendUrl()}/trips/trip-code/${tripId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trip_code: tripCode })
+      });
+      console.log('Clave enviada al backend:', tripCode);
+    } else {
+      console.log('No hay tripId para enviar la clave');
+    }
+  } catch (e) {
+    console.log('Error enviando clave:', e?.message);
+  }
+  Alert.alert(
+    'Clave del viaje',
+    `Tu clave de verificación es: ${tripCode}\n\nComparte esta clave con el conductor para confirmar tu identidad.`,
+    [{ text: 'OK', onPress: () => startRide() }]
+  );
+};
 
 const startRide = async () => {
   try {
@@ -3523,8 +3565,8 @@ onPress={() => {
             <TouchableOpacity style={styles.cancelButton} onPress={cancelRide}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.startButton} onPress={startRide}>
-              <Text style={styles.startButtonText}>Iniciar</Text>
+                       <TouchableOpacity style={styles.startButton} onPress={subirAlVehiculo}>
+              <Text style={styles.startButtonText}>Subir al vehículo</Text>
     </TouchableOpacity>
           </View>
 
