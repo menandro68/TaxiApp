@@ -24,7 +24,7 @@ import { getBackendUrl } from '../config/config.js';
     
     // Configuración de retry
     this.MAX_RETRIES = 3;
-    this.RETRY_DELAY_BASE = 1000; // 1 segundo base
+        this.RETRY_DELAY_BASE = 250; // 250ms: el primer fallo es instantaneo, no hace falta esperar 1s
     
     // Inicializar token al crear la instancia
     this.initializeTokens();

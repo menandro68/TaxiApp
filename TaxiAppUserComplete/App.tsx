@@ -1452,20 +1452,16 @@ const loadUserState = async () => {
       setIsCalculatingRoute(true);
       console.log('Calculando ruta y precio con API real...', { origin, destination, vehicleType });
 
-      // Primero obtener estimación rápida del API
-      const priceEstimate = await ApiService.estimatePrice(origin, destination, vehicleType);
-      if (priceEstimate) {
-        setEstimatedPrice(priceEstimate.estimated_price);
-        console.log('Estimacion del API:', priceEstimate.estimated_price);
-      }
-
-      // Luego calcular ruta completa con API real
+         // Una sola llamada: calculateRoute ya devuelve distancia, duracion y precio
       const routeData = await ApiService.calculateRoute(origin, destination, vehicleType);
       
       setRouteInfo(routeData);
-     if (routeData.price !== undefined) {
-  setEstimatedPrice(routeData.price);
-}
+      // El backend puede devolver el precio como price o como estimated_price
+      const precioApi = routeData?.price ?? routeData?.estimated_price;
+      if (precioApi !== undefined && precioApi !== null) {
+        setEstimatedPrice(precioApi);
+        console.log('Precio del API:', precioApi);
+      }
       
       console.log('Ruta calculada con API real:', {
         distance: routeData.distance,
@@ -3515,7 +3511,11 @@ onPress={() => {
 
     if (rideStatus === TRIP_STATES.DRIVER_ASSIGNED && driverInfo) {
       return (
-        <View style={styles.driverContainer}>
+              <ScrollView
+          style={styles.driverContainer}
+          contentContainerStyle={{ paddingBottom: 24, alignItems: 'center' }}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.statusTitle}>{isReassignment ? '🔄 NUEVO Conductor Asignado' : 'Conductor asignado'}</Text>
           <Text style={styles.driverName}>{driverInfo.name}</Text>
           <Text style={styles.driverDetails}>{driverInfo.car}</Text>
@@ -3566,11 +3566,12 @@ onPress={() => {
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
                        <TouchableOpacity style={styles.startButton} onPress={subirAlVehiculo}>
-              <Text style={styles.startButtonText}>Subir al vehículo</Text>
+              <Text style={styles.startButtonText}>Clave al Conductor</Text>
     </TouchableOpacity>
           </View>
 
-          {/* PANEL DE BRANDING SQUID */}
+                  {/* PANEL DE BRANDING SQUID */}
+          {false && (
           <View style={{
             backgroundColor: '#87CEEB',
             borderRadius: 20,
@@ -3595,10 +3596,11 @@ onPress={() => {
               color: '#1a1a2e',
               fontWeight: '500',
             }}>
-              Tu app dominicana
+                    Tu app dominicana
             </Text>
           </View>
-        </View>
+          )}
+        </ScrollView>
       );
     }
 
@@ -3704,7 +3706,8 @@ onPress={() => {
             </View>
           </View>
 
-          {/* PANEL DE BRANDING SQUID */}
+                   {/* PANEL DE BRANDING SQUID */}
+          {false && (
           <View style={{
             backgroundColor: '#87CEEB',
             borderRadius: 20,
@@ -3733,6 +3736,7 @@ onPress={() => {
               Tu app dominicana
             </Text>
           </View>
+          )}
         </View>
       );
     }
@@ -5507,7 +5511,7 @@ statusIndicator: {
   },
   // ESTILOS PARA MAPA DE TRACKING
 trackingMapContainer: {
-    height: 200,
+    height: screenHeight * 0.22,
     borderRadius: 0,
     overflow: 'hidden',
     marginVertical: 5,
@@ -5577,21 +5581,24 @@ statusTitle: {
     color: '#666',
   },
 priceText: {
-    fontSize: 16,
+    fontSize: screenWidth * 0.042,
     fontWeight: 'bold',
     color: '#007AFF',
-    marginBottom: 5,
+    marginBottom: screenWidth * 0.01,
   },
   cancelButton: {
     backgroundColor: '#FF3B30',
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: screenWidth * 0.035,
+    paddingHorizontal: screenWidth * 0.04,
+    borderRadius: screenWidth * 0.025,
     alignItems: 'center',
-    minWidth: 120,
+    justifyContent: 'center',
+    flex: 1,
+    marginRight: screenWidth * 0.02,
   },
   cancelButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: screenWidth * 0.042,
     fontWeight: 'bold',
   },
 driverContainer: {
@@ -5651,19 +5658,24 @@ etaText: {
 rideActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'stretch',
     width: '100%',
-    paddingHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 15,
+    paddingHorizontal: screenWidth * 0.04,
+    marginTop: screenWidth * 0.03,
+    marginBottom: screenWidth * 0.03,
   },
   startButton: {
     backgroundColor: '#34C759',
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: screenWidth * 0.035,
+    paddingHorizontal: screenWidth * 0.04,
+    borderRadius: screenWidth * 0.025,
     alignItems: 'center',
-    minWidth: 120,
+    justifyContent: 'center',
+    flex: 1,
+    marginLeft: screenWidth * 0.02,
   },
-  startButtonText: {
+   startButtonText: {
+    fontSize: screenWidth * 0.042,
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
