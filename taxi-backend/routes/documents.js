@@ -54,6 +54,17 @@ router.get('/driver/:driverId', async (req, res) => {
   }
 });
 
+// Foto de perfil del conductor (para mostrarla al pasajero)
+router.get('/driver/:driverId/foto-perfil', async (req, res) => {
+  try {
+    const documents = await DocumentModel.getByDriverId(req.params.driverId);
+    const foto = (documents || []).find(d => d.document_type === 'foto_perfil');
+    res.json({ success: true, foto: foto ? foto.document_url : null });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Subir documento (base64 en BD)
 router.post('/driver/:driverId/upload', upload.single('document'), async (req, res) => {
   try {
