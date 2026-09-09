@@ -2,6 +2,27 @@
  * @format
  */
 import { AppRegistry, NativeModules, Platform } from 'react-native';
+
+// Reintento automatico para todas las peticiones, antes de que cargue la app
+if (!global.__fetchConReintento) {
+  global.__fetchConReintento = true;
+  const fetchOriginal = global.fetch;
+  global.fetch = async (url, opciones) => {
+    const MAX = 3;
+    let ultimoError;
+    for (let intento = 0; intento < MAX; intento++) {
+      try {
+        return await fetchOriginal(url, opciones);
+      } catch (err) {
+        ultimoError = err;
+        const esFalloDeRed = String(err?.message || '').includes('Network request failed');
+        if (!esFalloDeRed || intento === MAX - 1) throw err;
+        await new Promise(r => setTimeout(r, 600 * (intento + 1)));
+      }
+    }
+    throw ultimoError;
+  };
+}
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import notifee, { AndroidImportance, AndroidVisibility } from '@notifee/react-native';

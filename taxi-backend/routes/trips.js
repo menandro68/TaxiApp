@@ -148,8 +148,13 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                         user: userData.name || 'Usuario',
                         pickup: tripData.pickup_location,
                         destination: tripData.destination,
-                        price: tripData.estimated_price || 0,
-                        distance: driver.distance.toFixed(2)
+                                          price: tripData.estimated_price || 0,
+                        distance: driver.distance.toFixed(2),
+                        // Mismos campos que FCM para que el conductor vea todo
+                        estimatedPrice: (tripData.estimated_price || 0).toString(),
+                        paymentMethod: tripData.payment_method || 'Efectivo',
+                        vehicleType: tripData.vehicle_type || 'Estándar',
+                        estimatedTime: `${estimatedMinutes} min`
                     });
                     console.log(`📡 WebSocket enviado a ${driver.name}`);
                 }

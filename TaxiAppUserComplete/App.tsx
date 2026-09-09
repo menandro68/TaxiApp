@@ -181,6 +181,7 @@ const requestScreenPermissions = async () => {
   const gpsObtainedRef = useRef(false);
   const gpsAlertShownRef = useRef(false);
   const loginEnCursoRef = useRef(false);
+  const [fotoConductor, setFotoConductor] = useState(null);
   const Stack = createStackNavigator();
 
   // Agregar después de todos los useState
@@ -1447,6 +1448,23 @@ const loadUserState = async () => {
   };
 
   // FUNCIÓN: Calcular ruta y precio usando API real
+   // Cargar la foto de perfil del conductor asignado
+  useEffect(() => {
+    const idConductor = driverInfo?.id || driverInfo?.driver_id;
+    if (!idConductor) { setFotoConductor(null); return; }
+    let cancelado = false;
+    (async () => {
+      try {
+        const r = await fetch(`${getBackendUrl()}/documents/driver/${idConductor}/foto-perfil`);
+        const j = await r.json();
+        if (!cancelado) setFotoConductor(j?.foto || null);
+      } catch (e) {
+        console.log('No se pudo cargar la foto del conductor:', e?.message);
+      }
+    })();
+    return () => { cancelado = true; };
+  }, [driverInfo?.id, driverInfo?.driver_id]);
+
   const calculateRouteAndPrice = async (origin, destination, vehicleType = 'economy') => {
     try {
       setIsCalculatingRoute(true);
@@ -3516,11 +3534,37 @@ onPress={() => {
           contentContainerStyle={{ paddingBottom: 24, alignItems: 'center' }}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.statusTitle}>{isReassignment ? '🔄 NUEVO Conductor Asignado' : 'Conductor asignado'}</Text>
-          <Text style={styles.driverName}>{driverInfo.name}</Text>
-          <Text style={styles.driverDetails}>{driverInfo.car}</Text>
-          <Text style={styles.driverDetails}> {driverInfo.rating}</Text>
-          <Text style={styles.etaText}>Llegará en: {driverETA || driverInfo.eta}</Text>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={styles.statusTitle}>{isReassignment ? '🔄 NUEVO Conductor Asignado' : 'Conductor asignado'}</Text>
+              <Text style={styles.driverName}>{driverInfo.name}</Text>
+              <Text style={styles.driverDetails}>{driverInfo.car}</Text>
+              <Text style={styles.driverDetails}> {driverInfo.rating}</Text>
+              <Text style={styles.etaText}>Llegará en: {driverETA || driverInfo.eta}</Text>
+            </View>
+                      <View style={{
+              width: screenWidth * 0.32,
+              height: screenWidth * 0.32,
+              borderRadius: screenWidth * 0.02,
+              backgroundColor: '#e5e7eb',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              marginLeft: screenWidth * 0.02,
+            }}>
+              {fotoConductor ? (
+                                <Image
+                  source={{ uri: fotoConductor }}
+              style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={{ fontSize: screenWidth * 0.09, color: '#9ca3af' }}>
+                  {(driverInfo.name || '?').charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+          </View>
           {estimatedPrice > 0 && (
             <Text style={styles.priceText}>Precio: RD${estimatedPrice}</Text>
           )}
@@ -3754,7 +3798,7 @@ onPress={() => {
      />
         </View>
         {/* CAMBIO PRINCIPAL - DE View A ScrollView */}
-<ScrollView style={styles.controlsContainer} showsVerticalScrollIndicator={false}>
+<ScrollView style={styles.controlsContainer} contentContainerStyle={{ paddingBottom: verticalScale(24) }} showsVerticalScrollIndicator={false}>
           {/* NUEVO: Estado de ubicacion */}
           {renderLocationStatus()}
           {/* Selector de punto de recogida */}
@@ -4840,7 +4884,7 @@ mapContainer: {
     overflow: 'hidden',
   },
 controlsContainer: {
-    flex: 1,
+    flexGrow: 1,
     padding: scale(12),
     backgroundColor: '#fff',
     borderTopLeftRadius: scale(20),

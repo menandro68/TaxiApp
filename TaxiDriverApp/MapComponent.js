@@ -889,7 +889,19 @@ const startNavigation = async () => {
         initialRegion={initialRegion}
      showsUserLocation={false}
         showsMyLocationButton={true}
-        toolbarEnabled={false}
+                toolbarEnabled={false}
+        onLayout={() => {
+          if (!mapRef.current) return;
+          const target = (currentLocation && currentLocation.latitude && currentLocation.longitude)
+            ? {
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                latitudeDelta: 0.02,
+                longitudeDelta: 0.02,
+              }
+            : initialRegion;
+          mapRef.current.animateToRegion(target, 0);
+        }}
    onMapReady={() => {
           console.log('🗺️ Mapa listo!');
           setTimeout(() => {

@@ -33,6 +33,17 @@ const DocumentsMenuScreen = ({ navigation }) => {
 
   const checkDriverInfo = async () => {
     try {
+          const logged = await AsyncStorage.getItem('loggedDriver');
+      if (logged) {
+        const d = JSON.parse(logged);
+        if (d && d.id) {
+          const info = { id: d.id, name: d.name, phone: d.phone };
+          await AsyncStorage.setItem('@temp_driver_info', JSON.stringify(info));
+          setDriverInfo(info); loadUploadedDocs(info.id);
+          setLoading(false);
+          return;
+        }
+      }
       const saved = await AsyncStorage.getItem('@temp_driver_info');
       if (saved) { const info = JSON.parse(saved); setDriverInfo(info); loadUploadedDocs(info.id); }
       else { setShowInfoForm(true); }

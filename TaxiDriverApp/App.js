@@ -83,6 +83,7 @@ let globalNotifVibracion = true;
 let globalNotifNuevosViajes = true;
 let globalTripCancelled = false;
 let globalCancelledTripId = null;
+let globalUltimaSolicitudId = null;
 let globalSetShowRequestModal = null;
 let globalSetPendingRequest = null;
 let globalSetActiveTab = null;
@@ -808,6 +809,13 @@ useEffect(() => {
 // Configurar función global para manejar solicitudes de viaje
 global.handleNewTripRequest = (tripData) => {
   console.log('🚗 Nueva solicitud recibida via FCM:', tripData);
+  // La misma solicitud llega por WebSocket y por FCM: procesar solo la primera
+  const idSolicitud = String(tripData?.id || tripData?.tripId || '');
+  if (idSolicitud && globalUltimaSolicitudId === idSolicitud) {
+    console.log('Solicitud duplicada ignorada:', idSolicitud);
+    return;
+  }
+  globalUltimaSolicitudId = idSolicitud;
   // Bloquear si hay viaje activo y NO está a menos de 7 min del destino
   if (globalHasCurrentTrip && !(globalTripPhase === 'started' && globalEstimatedMinutes !== null && globalEstimatedMinutes < 7)) {
     console.log('🚫 Viaje activo, no cerca del destino. Ignorando solicitud.');
@@ -1809,6 +1817,17 @@ const toggleDriverStatus = async () => {
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
+         } else if (response.status === 404) {
+        // La cuenta ya no existe en el servidor: cerrar sesion
+        await AsyncStorage.removeItem('loggedDriver');
+        setLoggedDriver(null);
+        setDriverStatus('offline');
+        Alert.alert(
+          'Sesion expirada',
+          'Tu cuenta ya no esta disponible. Inicia sesion nuevamente.',
+          [{ text: 'OK' }]
+        );
+        return;
       } else {
         throw new Error('Error actualizando estado');
       }
@@ -3886,7 +3905,10 @@ return (
               <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#e5e7eb', justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={{ fontSize: 50 }}>👤</Text>
               </View>
-              <TouchableOpacity style={{ marginTop: 10 }}>
+                          <TouchableOpacity
+                style={{ marginTop: 10 }}
+                onPress={() => { setShowEditProfile(false); setShowDocumentUpload(true); }}
+              >
                 <Text style={{ color: '#3b82f6', fontSize: 14 }}>Cambiar foto</Text>
               </TouchableOpacity>
             </View>

@@ -11,12 +11,14 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import CamaraRostroScreen from './CamaraRostroScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
-  const [licenseImage, setLicenseImage] = useState(null);
+   const [licenseImage, setLicenseImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('pending'); // pending, uploaded, verified
+ const [uploadStatus, setUploadStatus] = useState('pending'); // pending, uploaded, verified
+  const [mostrarCamaraRostro, setMostrarCamaraRostro] = useState(false);
 
   // Obtener el tipo de documento actual
   const currentDocument = documentType || { 
@@ -38,8 +40,7 @@ const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
       `¿Cómo quieres cargar tu ${currentDocument.title.toLowerCase()}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Tomar Foto', onPress: openCamera },
-        { text: 'Elegir de Galería', onPress: openGallery }
+               { text: 'Tomar Foto', onPress: openCamera }
       ]
     );
   };
@@ -47,7 +48,11 @@ const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
 const openCamera = async () => {
     const { request, PERMISSIONS, RESULTS } = require('react-native-permissions');
     const result = await request(PERMISSIONS.ANDROID.CAMERA);
-    if (result === RESULTS.GRANTED) {
+     if (result === RESULTS.GRANTED) {
+      if (currentDocument.id === 'foto_perfil') {
+        setMostrarCamaraRostro(true);
+        return;
+      }
       launchCamera(imageOptions, handleImageResponse);
     } else {
       Alert.alert('Permiso requerido', 'Necesitas permitir el acceso a la cámara en Configuración');
@@ -170,6 +175,19 @@ const openCamera = async () => {
     return instructions[currentDocument.id] || instructions['licencia'];
   };
 
+  if (mostrarCamaraRostro) {
+    return (
+      <CamaraRostroScreen
+        onCancelar={() => setMostrarCamaraRostro(false)}
+        onCapturar={(uri) => {
+          setMostrarCamaraRostro(false);
+          setLicenseImage(uri);
+          setUploadStatus('uploaded');
+        }}
+      />
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -197,7 +215,12 @@ const openCamera = async () => {
               <Text style={styles.uploadButtonText}>
                 Cargar {currentDocument.title}
               </Text>
-              <Text style={styles.uploadHint}>Toca para tomar foto o seleccionar</Text>
+                           <Text style={styles.uploadHint}>Toca para tomar foto o seleccionar</Text>
+              {currentDocument.id === 'foto_perfil' && (
+                <Text style={{ marginTop: 12, fontSize: 13, color: '#E91E63', textAlign: 'center', fontWeight: '600', paddingHorizontal: 20 }}>
+                  Encuadre la cabeza y los hombros, de frente, con el rostro centrado y buena luz
+                </Text>
+              )}
             </TouchableOpacity>
           ) : (
             <View style={styles.imageContainer}>

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@babel/helper-define-polyfill-provider": "^0.6.5",
+    "@bam.tech/react-native-image-resizer": "^3.0.11",
     "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/geolocation": "^3.4.0",
@@ -30,7 +31,7 @@
     "react-native-sound": "^0.13.0",
     "react-native-tts": "^4.1.1",
     "react-native-vector-icons": "^10.3.0",
-    "react-native-vision-camera": "^4.7.2",
+    "react-native-vision-camera": "^4.7.3",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {

@@ -355,9 +355,16 @@
                         const phone = data.driver_phone.replace(/\D/g, '');
                         const fullPhone = phone.startsWith('1') ? phone : '1' + phone;
                         const msg = encodeURIComponent(`Hola ${data.driver_name}, tus documentos han sido aprobados ✅. Ya puedes completar tu registro en Squid: https://web-production-99844.up.railway.app/activar?driverId=${data.driver_id}`);
-                        if (confirm(`✅ Todos los documentos de ${data.driver_name} aprobados.\n¿Enviar WhatsApp al conductor?`)) {
-                            window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
-                        }
+                                              const enlace = `https://wa.me/${fullPhone}?text=${msg}`;
+                        const a = document.createElement('a');
+                        a.href = enlace;
+                        a.target = '_blank';
+                        a.rel = 'noopener';
+                        a.textContent = 'Enviar WhatsApp a ' + data.driver_name;
+                        a.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:#25D366;color:#fff;padding:18px 28px;border-radius:10px;font-size:16px;font-weight:bold;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+                        a.onclick = () => setTimeout(() => a.remove(), 300);
+                        document.body.appendChild(a);
+                        setTimeout(() => { if (document.body.contains(a)) a.remove(); }, 30000);
                     } else {
                         alert('✅ Documento aprobado');
                     }
