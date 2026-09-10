@@ -72,13 +72,35 @@ router.post('/driver/:driverId/upload', upload.single('document'), async (req, r
 
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
-    const newDocument = await DocumentModel.create({
+      const newDocument = await DocumentModel.create({
       driver_id: req.params.driverId,
       document_type: req.body.document_type,
       document_url: base64,
       document_name: req.file.originalname,
       expiry_date: req.body.expiry_date || null
     });
+
+    // Si es la matricula, leer los datos del vehiculo y guardarlos en el conductor
+    if (req.body.document_type === 'matricula') {
+      try {
+        const { leerMatricula } = require('../services/visionMatricula');
+        const { datos } = await leerMatricula(base64);
+        if (datos && datos.placa) {
+          const pool = require('../config/database').pool;
+          const modelo = [datos.marca, datos.modelo, datos.anio].filter(Boolean).join(' ');
+          await pool.query(
+            `UPDATE drivers SET vehicle_plate = COALESCE($1, vehicle_plate),
+                                vehicle_model = COALESCE(NULLIF($2, ''), vehicle_model),
+                                vehicle_color = COALESCE($3, vehicle_color)
+             WHERE id = $4`,
+            [datos.placa, modelo, datos.color, req.params.driverId]
+          );
+          console.log('Datos del vehiculo leidos de la matricula:', datos);
+        }
+      } catch (e) {
+        console.log('No se pudo leer la matricula:', e.message);
+      }
+    }
 
    if (global.io) global.io.emit('new_document_uploaded', { driverId: req.params.driverId });
 res.json({ success: true, message: 'Documento subido exitosamente', document: newDocument });
