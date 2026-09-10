@@ -506,7 +506,7 @@ router.post('/accept/:tripId', async (req, res) => {
         let driver = { id: driver_id, name: 'Conductor' };
         try {
             const driverResult = await db.query(
-                `SELECT id, name, phone, vehicle_model, vehicle_plate, rating, current_latitude, current_longitude
+                              `SELECT id, name, phone, vehicle_model, vehicle_plate, vehicle_color, rating, current_latitude, current_longitude
                  FROM drivers WHERE id = $1`,
                 [driver_id]
             );
