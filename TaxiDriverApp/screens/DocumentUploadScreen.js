@@ -39,8 +39,9 @@ const DocumentUploadScreen = ({ navigation, documentType, driverId }) => {
       `Seleccionar ${currentDocument.title}`,
       `¿Cómo quieres cargar tu ${currentDocument.title.toLowerCase()}?`,
       [
-        { text: 'Cancelar', style: 'cancel' },
-               { text: 'Tomar Foto', onPress: openCamera }
+           { text: 'Cancelar', style: 'cancel' },
+        { text: 'Tomar Foto', onPress: openCamera },
+        ...(currentDocument.id === 'foto_perfil' ? [] : [{ text: 'Elegir de Galería', onPress: openGallery }])
       ]
     );
   };

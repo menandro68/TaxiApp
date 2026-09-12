@@ -945,7 +945,10 @@ const setupNotificationHandlers = () => {
       const mockDriverInfo = {
         id: driverData.driverId || 'driver_001',
         name: driverData.driverName || 'Conductor',
-        car: driverData.driverCar || 'Vehículo',
+                              car: [driverData.vehicleModel, driverData.vehicleColor, driverData.vehiclePlate].filter(Boolean).join(' · ') || driverData.driverCar || 'Vehículo',
+        vehicleModel: driverData.vehicleModel || '',
+        vehicleColor: driverData.vehicleColor || '',
+        vehiclePlate: driverData.vehiclePlate || '',
         rating: parseFloat(driverData.driverRating) || 4.5,
         eta: driverData.eta || '5 min',
         phone: driverData.driverPhone || '+1-809-555-0123',
@@ -3534,18 +3537,40 @@ onPress={() => {
           contentContainerStyle={{ paddingBottom: 24, alignItems: 'center' }}
           showsVerticalScrollIndicator={false}
         >
-                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={styles.statusTitle}>{isReassignment ? '🔄 NUEVO Conductor Asignado' : 'Conductor asignado'}</Text>
-              <Text style={styles.driverName}>{driverInfo.name}</Text>
-              <Text style={styles.driverDetails}>{driverInfo.car}</Text>
-              <Text style={styles.driverDetails}> {driverInfo.rating}</Text>
-              <Text style={styles.etaText}>Llegará en: {driverETA || driverInfo.eta}</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', backgroundColor: '#fff', borderRadius: screenWidth * 0.04, paddingVertical: screenWidth * 0.035, paddingHorizontal: screenWidth * 0.04, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 }}>
+                      <View style={{ flex: 1, alignItems: 'flex-start', paddingRight: screenWidth * 0.02 }}>
+                           <Text style={{ fontSize: screenWidth * 0.028, color: '#DC2626', fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 }}>
+                {isReassignment ? 'Nuevo conductor' : 'Conductor asignado'}
+              </Text>
+                         <Text style={{ fontSize: screenWidth * 0.042, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
+                {driverInfo.name}
+              </Text>
+                           <Text style={{ fontSize: screenWidth * 0.028, color: '#16A34A', fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 2 }} numberOfLines={1}>
+                {driverInfo.vehicleModel || driverInfo.car}
+              </Text>
+                             <Text style={{ fontSize: screenWidth * 0.028, color: '#16A34A', fontWeight: '600', letterSpacing: 0.2, textTransform: 'uppercase', marginTop: 2 }} numberOfLines={2}>
+                {[driverInfo.vehicleColor ? `Color ${driverInfo.vehicleColor}` : '', driverInfo.vehiclePlate ? `Placa ${driverInfo.vehiclePlate}` : ''].filter(Boolean).join(', ')}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, marginRight: 6 }}>
+                  <Text style={{ fontSize: screenWidth * 0.03, color: '#B45309', fontWeight: '700' }}>★ {driverInfo.rating}</Text>
+                </View>
+                <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 }}>
+                  <Text style={{ fontSize: screenWidth * 0.03, color: '#1D4ED8', fontWeight: '700' }}>{driverETA || driverInfo.eta}</Text>
+                </View>
+              </View>
             </View>
                       <View style={{
-              width: screenWidth * 0.32,
-              height: screenWidth * 0.32,
+                       width: screenWidth * 0.26,
+              height: screenWidth * 0.26,
               borderRadius: screenWidth * 0.02,
+              borderWidth: 3,
+              borderColor: '#fff',
+              elevation: 4,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
               backgroundColor: '#e5e7eb',
               alignItems: 'center',
               justifyContent: 'center',
@@ -3650,12 +3675,25 @@ onPress={() => {
 
   if (rideStatus === TRIP_STATES.IN_RIDE && driverInfo) {
       return (
-        <View style={styles.driverContainer}>
-          <Text style={styles.statusTitle}>Viaje en progreso</Text>
-          
-          <Text style={styles.driverName}>{driverInfo.name}</Text>
-          <Text style={styles.driverDetails}>{driverInfo.car}</Text>
-          <Text style={styles.statusText}>Dirígete a tu destino</Text>
+                <View style={[styles.driverContainer, { justifyContent: 'center' }]}>
+                <View style={{ width: '100%', backgroundColor: '#fff', borderRadius: screenWidth * 0.04, paddingVertical: screenWidth * 0.04, paddingHorizontal: screenWidth * 0.045, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, marginTop: screenWidth * 0.02 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#16A34A', marginRight: 6 }} />
+              <Text style={{ fontSize: screenWidth * 0.028, color: '#16A34A', fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                Viaje en progreso
+              </Text>
+            </View>
+            <Text style={{ fontSize: screenWidth * 0.048, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
+              {driverInfo.name}
+            </Text>
+            <Text style={{ fontSize: screenWidth * 0.028, color: '#16A34A', fontWeight: '600', letterSpacing: 0.2, textTransform: 'uppercase', marginTop: 3 }} numberOfLines={2}>
+              {driverInfo.car}
+            </Text>
+            <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: screenWidth * 0.03 }} />
+            <Text style={{ fontSize: screenWidth * 0.038, color: '#6b7280' }}>
+              Dirígete a tu destino
+            </Text>
+          </View>
    {/* BOTONES DE ACCIÓN - DISEÑO PROFESIONAL */}
           <View style={{ 
             width: '100%', 
@@ -5632,8 +5670,8 @@ priceText: {
   },
   cancelButton: {
     backgroundColor: '#FF3B30',
-    paddingVertical: screenWidth * 0.035,
-    paddingHorizontal: screenWidth * 0.04,
+    paddingVertical: screenWidth * 0.0175,
+    paddingHorizontal: screenWidth * 0.02,
     borderRadius: screenWidth * 0.025,
     alignItems: 'center',
     justifyContent: 'center',
@@ -5642,7 +5680,7 @@ priceText: {
   },
   cancelButtonText: {
     color: '#fff',
-    fontSize: screenWidth * 0.042,
+    fontSize: screenWidth * 0.032,
     fontWeight: 'bold',
   },
 driverContainer: {
@@ -5651,6 +5689,7 @@ driverContainer: {
     alignItems: 'center',
     paddingHorizontal: screenWidth * 0.04,
     paddingTop: screenWidth * 0.02,
+    paddingBottom: 0,
     width: '100%',
   },
   // Estilos para botones de contacto
@@ -5710,8 +5749,8 @@ rideActions: {
   },
   startButton: {
     backgroundColor: '#34C759',
-    paddingVertical: screenWidth * 0.035,
-    paddingHorizontal: screenWidth * 0.04,
+    paddingVertical: screenWidth * 0.0175,
+    paddingHorizontal: screenWidth * 0.02,
     borderRadius: screenWidth * 0.025,
     alignItems: 'center',
     justifyContent: 'center',
@@ -5719,9 +5758,8 @@ rideActions: {
     marginLeft: screenWidth * 0.02,
   },
    startButtonText: {
-    fontSize: screenWidth * 0.042,
     color: '#fff',
-    fontSize: 16,
+    fontSize: screenWidth * 0.032,
     fontWeight: 'bold',
   },
   completeButton: {
@@ -5762,8 +5800,8 @@ rideActions: {
   // Header autenticado
 authenticatedHeader: {
     backgroundColor: '#fff',
-    paddingTop: verticalScale(50),
-    paddingBottom: verticalScale(15),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
     paddingHorizontal: scale(20),
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
@@ -5845,7 +5883,7 @@ authenticatedHeader: {
     fontSize: 16,
     color: '#333',
   },
-  drawerDivider: {
+   drawerDivider: {
     height: 1,
     backgroundColor: '#e0e0e0',
     marginVertical: 10,

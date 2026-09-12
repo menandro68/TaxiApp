@@ -319,7 +319,7 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
     };
     
     updateETA(); // Ejecutar inmediatamente
-    etaIntervalRef.current = setInterval(updateETA, 15000);
+        etaIntervalRef.current = setInterval(updateETA, 90000);
 
     return () => {
       if (etaIntervalRef.current) {
@@ -447,7 +447,7 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
       
       const now = Date.now();
       const REROUTE_THRESHOLD = 30; // metros - umbral profesional con cálculo de segmentos
-      const REROUTE_COOLDOWN = 30000; // 30 segundos entre recálculos
+      const REROUTE_COOLDOWN = 120000; // 2 minutos entre recalculos
       const CONSECUTIVE_REQUIRED = 4; // 4 lecturas consecutivas para confirmar desvío real
       
       if (distanceToRoute !== Infinity && distanceToRoute > REROUTE_THRESHOLD) {

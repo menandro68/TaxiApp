@@ -153,6 +153,7 @@ class PushNotificationService {
       driverCar: data.vehicleModel ? `${data.vehicleModel} - ${data.vehiclePlate}` : 'Vehículo',
       vehicleModel: data.vehicleModel || data.vehicle_model || '',
       vehiclePlate: data.vehiclePlate || data.vehicle_plate || '',
+      vehicleColor: data.vehicleColor || data.vehicle_color || '',
       driverRating: data.driverRating || data.driver_rating || '4.5',
       tripId: data.tripId || data.trip_id || '',
       eta: data.eta || '5 min',

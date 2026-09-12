@@ -86,34 +86,34 @@ class DriverTrackingService {
   static async calculateRealETA(driverLat, driverLng, userLat, userLng) {
     try {
       // Verificar si necesitamos actualizar el ETA
-      const now = Date.now();
-      const TEN_SECONDS = 10000;
+          const now = Date.now();
+           const TEN_SECONDS = 90000;
       
       // Solo actualizar cada 10 segundos O si el conductor se movió más de 50 metros
       if (this.cachedETA !== null && this.lastETAUpdate) {
         const timeSinceUpdate = now - this.lastETAUpdate;
         
+          // Usar el ETA cacheado durante todo el intervalo, sin importar el movimiento.
+        // Llamar a Google en cada actualizacion de GPS dispara miles de peticiones por viaje.
         if (timeSinceUpdate < TEN_SECONDS) {
-          // Verificar si el conductor se movió significativamente
-          if (this.lastDriverLocation) {
-            const movedDistance = this.calculateDistance(
-              driverLat, driverLng,
-              this.lastDriverLocation.lat, this.lastDriverLocation.lng
-            );
-            
-            // Si no se movió más de 50 metros, usar cache
-            if (movedDistance < 0.05) {
-              console.log('📍 Usando ETA cacheado:', this.cachedETA, 'min');
-              return this.cachedETA;
-            }
-          } else {
-            console.log('📍 Usando ETA cacheado:', this.cachedETA, 'min');
-            return this.cachedETA;
-          }
+          console.log('Usando ETA cacheado:', this.cachedETA, 'min');
+          return this.cachedETA;
         }
       }
 
-      console.log('🗺️ Calculando ETA real con Google...');
+            // Si el conductor esta a menos de 1 km, estimar sin llamar a Google.
+      // A esa distancia el ETA es de 1 a 3 minutos y no justifica el costo por peticion.
+      const distanciaDirecta = this.calculateDistance(driverLat, driverLng, userLat, userLng);
+      if (distanciaDirecta < 1) {
+        const etaCercano = Math.max(1, Math.ceil(distanciaDirecta * 3));
+        this.cachedETA = etaCercano;
+        this.lastETAUpdate = now;
+        this.lastDriverLocation = { lat: driverLat, lng: driverLng };
+        console.log('ETA estimado sin Google (conductor cerca):', etaCercano, 'min');
+        return etaCercano;
+      }
+
+      console.log('Calculando ETA real con Google...');
       
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${driverLat},${driverLng}&destination=${userLat},${userLng}&mode=driving&key=${GOOGLE_MAPS_APIKEY}`;
       
