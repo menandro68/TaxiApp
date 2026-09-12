@@ -3687,7 +3687,7 @@ onPress={() => {
               {driverInfo.name}
             </Text>
             <Text style={{ fontSize: screenWidth * 0.028, color: '#16A34A', fontWeight: '600', letterSpacing: 0.2, textTransform: 'uppercase', marginTop: 3 }} numberOfLines={2}>
-              {driverInfo.car}
+                            {[driverInfo.vehicleModel, driverInfo.vehicleColor ? `Color ${driverInfo.vehicleColor}` : '', driverInfo.vehiclePlate ? `Placa ${driverInfo.vehiclePlate}` : ''].filter(Boolean).join(', ') || driverInfo.car}
             </Text>
             <View style={{ height: 1, backgroundColor: '#f3f4f6', marginVertical: screenWidth * 0.03 }} />
             <Text style={{ fontSize: screenWidth * 0.038, color: '#6b7280' }}>
