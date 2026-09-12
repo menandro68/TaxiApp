@@ -1624,7 +1624,7 @@ const startDriverTracking = async (driver, userLoc) => {
               : `${driver.name} está en tu ubicación.`,
         [
               {
-                text: packageReceiverNameRef.current ? 'Entregar paquete' : 'Subir al vehículo',
+                text: packageReceiverNameRef.current ? 'Entregar paquete' : 'Clave al conductor',
           onPress: async () => {
                  const tripCode = thirdPartyInfo?.tripCode || Math.floor(1000 + Math.random() * 9000).toString();
                 try {
