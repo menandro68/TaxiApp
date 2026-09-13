@@ -199,6 +199,8 @@ export default function DriverApp({ navigation }) {
   // Confirmación de llegada vía FCM desde backend (para navegadores externos)
 global.handleDriverArrivedConfirmation = (data) => {
   if (!currentTrip) return;
+  if (global.procesandoLlegadaPickup) return;
+  global.procesandoLlegadaPickup = true;
   console.log('✅ Llegada confirmada por backend vía FCM - mostrando alerta');
   setTripPhase('arrived');
   stopBackgroundTracking();
@@ -591,7 +593,8 @@ useEffect(() => {
     if (arrivedData) {
       const arrived = JSON.parse(arrivedData);
       const age = Date.now() - arrived.timestamp;
-      if (age < 60000 && currentTripRef.current) { // Máximo 1 minuto de antigüedad
+          if (age < 60000 && currentTripRef.current && !global.procesandoLlegadaPickup) { // Máximo 1 minuto de antigüedad
+        global.procesandoLlegadaPickup = true;
         console.log('✅ Llegada pendiente detectada al volver al foreground');
         AsyncStorage.removeItem('driver_arrived_pending');
         setTripPhase('arrived');
@@ -1209,7 +1212,7 @@ useEffect(() => {
         
         console.log(`📍 Distancia al pickup: ${distance.toFixed(0)} metros`);
    // Si está a menos de 50 metros del punto de recogida (y no hay detección background pendiente)
-     if (distance < 50 && !global.arrivedAtPickup && !global.pickupAlertPending) {
+              if (distance < 70 && !global.arrivedAtPickup && !global.pickupAlertPending) {
           console.log('✅ Llegada al punto de recogida detectada automáticamente');
           handleArrivedAtPickup();
         }
@@ -1219,7 +1222,7 @@ useEffect(() => {
     checkAutoCompleteTrip();
 
 // DETECCIÓN RÁPIDA PICKUP: Mostrar Alert cuando llegamos al pasajero via background
-    if (global.arrivedAtPickup && tripPhase === '' && currentTrip && !global.pickupAlertPending) {
+       if (global.arrivedAtPickup && tripPhase === '' && currentTrip && !global.pickupAlertPending && !global.procesandoLlegadaPickup) {
       global.arrivedAtPickup = false;
       global.pickupAlertPending = true;
       console.log('🎯 LLEGADA AL PICKUP DETECTADA VIA BACKGROUND!');
@@ -1463,8 +1466,10 @@ const stopBackgroundTracking = async () => {
 
   // NUEVA FUNCIÓN: Manejar llegada automática al punto de recogida
 const handleArrivedAtPickup = async () => {
+  if (global.procesandoLlegadaPickup) return;
   if (!currentTrip || tripPhase !== '') return;
-  
+  global.procesandoLlegadaPickup = true;
+
   try {
     const response = await fetch(`https://web-production-99844.up.railway.app/api/trips/status/${currentTrip.id}`, {
       method: 'PUT',
@@ -1475,14 +1480,17 @@ const handleArrivedAtPickup = async () => {
 if (data.success) {
       setTripPhase('arrived');
       await stopBackgroundTracking(); // Detener background tracking al llegar
-      Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
+       Alert.alert('✅ Llegaste', 'Has llegado al punto de recogida del pasajero', [
         {
           text: 'OK',
           onPress: () => setActiveTab('dashboard')
         }
       ]);
+    } else {
+      global.procesandoLlegadaPickup = false;
     }
   } catch (error) {
+    global.procesandoLlegadaPickup = false;
     console.error('Error notificando llegada:', error);
     setTripPhase('arrived');
     setActiveTab('dashboard'); // Regresar al Dashboard automáticamente
@@ -1870,6 +1878,7 @@ const toggleDriverStatus = async () => {
 };
 
 const acceptTrip = async () => {
+  global.procesandoLlegadaPickup = false;
     if (!pendingRequest) return;
     
    // Detener el sonido cuando se acepta el viaje

@@ -205,8 +205,8 @@ class DriverTrackingService {
         
         console.log(`📏 Distancia: ${distance.toFixed(2)} km, ETA REAL: ${estimatedTimeRemaining} min`);
 
-        // Verificar si llegó (menos de 50 metros)
-        if (distance < 0.05) {
+              // Verificar si llego (menos de 70 metros, igual que la app Conductor)
+        if (distance < 0.07) {
           console.log('🎯 ¡Conductor ha llegado!');
           
           if (this.callbacks.onArrival) {
