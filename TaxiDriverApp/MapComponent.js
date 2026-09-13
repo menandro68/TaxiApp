@@ -626,9 +626,9 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
       const minLng = Math.min(currentLocation.longitude, pickupCoord.longitude);
       const maxLng = Math.max(currentLocation.longitude, pickupCoord.longitude);
       
-    const deltaLat = Math.max((maxLat - minLat) * 1.5, 0.01);
-    const deltaLng = Math.max((maxLng - minLng) * 1.5, 0.01);
-    const midLat = (minLat + maxLat) / 2 + (deltaLat * 0.4);
+      const deltaLat = Math.max((maxLat - minLat) * 2.5, 0.0035);
+    const deltaLng = Math.max((maxLng - minLng) * 2.5, 0.0035);
+    const midLat = (minLat + maxLat) / 2;
     const midLng = (minLng + maxLng) / 2;
       
       region = {
