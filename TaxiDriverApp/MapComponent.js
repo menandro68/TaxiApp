@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Image } from 'react-native';
 import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import Tts from 'react-native-tts';
@@ -102,6 +102,14 @@ const MapComponent = ({ currentTrip, tripPhase, userLocation: propUserLocation, 
   const [currentLocation, setCurrentLocation] = useState(propUserLocation || null);
   const [routeInfo, setRouteInfo] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [mapaListo, setMapaListo] = useState(false);
+
+  // onMapReady no se dispara en Android con arquitectura Legacy.
+  // Se marca listo por tiempo para que Polyline y Marker se dibujen.
+  useEffect(() => {
+    const t = setTimeout(() => setMapaListo(true), 800);
+    return () => clearTimeout(t);
+  }, []);
   const routeFetched = useRef(false);
   const mapCentered = useRef(false);
   const [navigationSteps, setNavigationSteps] = useState([]);
@@ -941,10 +949,10 @@ const startNavigation = async () => {
         )}
         */}
         
-        {/* Polyline - DIBUJA la ruta (se recorta conforme avanzas) */}
-        {routeCoordinates.length >= 2 && (
+                   {/* Polyline - DIBUJA la ruta (se recorta conforme avanzas) */}
+              {mapaListo && routeCoordinates.length >= 2 && (
           <Polyline
-            key={`route-${routeCoordinates.length}-${routeCoordinates[0]?.latitude}`}
+            key={`route-${mapaListo}-${routeCoordinates.length}-${routeCoordinates[0]?.latitude}`}
             coordinates={(() => {
               if (!currentLocation || !isNavigating) return routeCoordinates;
               
@@ -985,23 +993,23 @@ const startNavigation = async () => {
             anchor={{ x: 0.5, y: 1 }}
             tracksViewChanges={true}
           >
-            <View style={styles.markerPassenger}>
-              <Text style={styles.markerIcon}>🟢</Text>
+                  <View style={styles.markerPassenger}>
+              <Text style={styles.markerIcon}>🧍</Text>
             </View>
           </Marker>
         )}
 
-        {/* MARKER CONDUCTOR */}
-        {currentLocation && (
+            {/* MARKER CONDUCTOR */}
+        {mapaListo && currentLocation && (
    <Marker
+            key={`driver-${mapaListo}`}
             identifier="driver"
             coordinate={currentLocation}
             title="🚗 Tu ubicación"
             zIndex={998}
             anchor={{ x: 0.5, y: 0.5 }}
             flat={true}
-            rotation={currentLocation.heading || 0}
-            tracksViewChanges={false}
+          rotation={currentLocation.heading || 0}
           >
             <View style={{
               width: 40,
@@ -1009,27 +1017,11 @@ const startNavigation = async () => {
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-              {/* Flecha direccional */}
-              <View style={{
-                width: 0,
-                height: 0,
-                borderLeftWidth: 10,
-                borderRightWidth: 10,
-                borderBottomWidth: 16,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderBottomColor: '#1a73e8',
-                marginBottom: -2,
-              }} />
-              {/* Cuerpo del carro */}
-              <View style={{
-                width: 20,
-                height: 22,
-                backgroundColor: '#1a73e8',
-                borderRadius: 4,
-                borderWidth: 2,
-                borderColor: '#ffffff',
-              }} />
+                            <Image
+                source={require('./assets/taxi.png')}
+                style={{ width: 40, height: 40 }}
+                resizeMode="contain"
+              />
             </View>
           </Marker>
         )}

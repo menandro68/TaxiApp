@@ -1197,7 +1197,7 @@ global.autoAcceptTrip = async (tripData) => {
 useEffect(() => {
   const interval = setInterval(() => {
     // Verificar llegada al PUNTO DE RECOGIDA (cuando tripPhase está vacío)
-    if (currentTrip && tripPhase === '' && userLocation && isNavigatingToPickup) {
+        if (currentTrip && tripPhase === '' && userLocation) {
       const pickupLat = currentTrip.pickupLat;
       const pickupLng = currentTrip.pickupLng;
       
@@ -2530,7 +2530,7 @@ style={[styles.supportButton, {paddingVertical: 8, paddingHorizontal: 15, alignS
 )}
 
   {/* Mini Mapa en Dashboard - Ocultar cuando conductor llegó */}
- {tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
+  {activeTab === 'dashboard' && tripPhase !== 'arrived' && tripPhase !== 'at_destination' && (
 <View style={{flex: 1, minHeight: scale(180),marginHorizontal: scale(10), marginTop: scale(10), borderRadius: scale(12), overflow: 'hidden'}}>
      <MapComponent
           currentTrip={currentTrip}
