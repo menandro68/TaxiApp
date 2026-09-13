@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Dimensions,
   Text,
+  Image,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
@@ -30,12 +31,12 @@ const MapComponent = ({
   const isAnimatingRef = useRef(false);
   const [currentRegion, setCurrentRegion] = useState(null);
   
-  // Estados para overlay markers (solución Legacy Architecture)
+  // Estados para overlay markers (soluciï¿½n Legacy Architecture)
   const [userMarkerPos, setUserMarkerPos] = useState(null);
   const [driverMarkerPos, setDriverMarkerPos] = useState(null);
   const [mapLayout, setMapLayout] = useState({ width: SCREEN_WIDTH, height: 300 });
 
-  // ? REGIÓN SANTO DOMINGO - SIEMPRE (deltas 0.15 que FUNCIONABAN)
+  // ? REGIï¿½N SANTO DOMINGO - SIEMPRE (deltas 0.15 que FUNCIONABAN)
   const santodomingo = {
     latitude: 18.4861,
     longitude: -69.9312,
@@ -43,31 +44,31 @@ const MapComponent = ({
     longitudeDelta: 0.15,
   };
 
-  // Función para convertir coordenadas a posición de pantalla
+  // Funciï¿½n para convertir coordenadas a posiciï¿½n de pantalla
   const coordToPixel = (coord, region, layout) => {
     if (!coord || !region || !layout) return null;
     
     const { latitude, longitude } = coord;
     const { width, height } = layout;
     
-    // Calcular posición relativa
+    // Calcular posiciï¿½n relativa
     const x = ((longitude - region.longitude) / region.longitudeDelta + 0.5) * width;
     const y = ((region.latitude - latitude) / region.latitudeDelta + 0.5) * height;
     
-    // Solo retornar si está dentro del viewport
+    // Solo retornar si estï¿½ dentro del viewport
     if (x >= -20 && x <= width + 20 && y >= -20 && y <= height + 20) {
       return { x, y };
     }
     return null;
   };
 
-  // Actualizar posiciones de overlay markers cuando cambia la región o ubicaciones
+  // Actualizar posiciones de overlay markers cuando cambia la regiï¿½n o ubicaciones
   useEffect(() => {
     console.log('?? OVERLAY useEffect - trackingMode:', trackingMode, 'currentRegion:', !!currentRegion);
     
     if (!trackingMode) return;
     
-    // Usar región actual o calcular una basada en las ubicaciones
+    // Usar regiï¿½n actual o calcular una basada en las ubicaciones
     let region = currentRegion;
     if (!region && userLocation?.latitude) {
       region = {
@@ -79,11 +80,11 @@ const MapComponent = ({
     }
     
     if (!region) {
-      console.log('?? OVERLAY - No hay región disponible');
+      console.log('?? OVERLAY - No hay regiï¿½n disponible');
       return;
     }
     
-    console.log('?? OVERLAY - Región:', region.latitude, region.longitude, 'Delta:', region.latitudeDelta);
+    console.log('?? OVERLAY - Regiï¿½n:', region.latitude, region.longitude, 'Delta:', region.latitudeDelta);
     console.log('?? OVERLAY - mapLayout:', mapLayout.width, 'x', mapLayout.height);
     
     if (userLocation?.latitude) {
@@ -107,11 +108,11 @@ const MapComponent = ({
     }
   }, [trackingMode, currentRegion, userLocation, driverLocation, mapLayout]);
 
-  // ? SOLUCIÓN: useEffect con setTimeout DIRECTO - NO depende de onMapReady
+  // ? SOLUCIï¿½N: useEffect con setTimeout DIRECTO - NO depende de onMapReady
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current) {
-        console.log('?? FORZANDO animación a Santo Domingo (500ms después de montar)');
+        console.log('?? FORZANDO animaciï¿½n a Santo Domingo (500ms despuï¿½s de montar)');
         isAnimatingRef.current = true;
         mapRef.current.animateToRegion(santodomingo, 800);
         setCurrentRegion(santodomingo);
@@ -120,7 +121,7 @@ const MapComponent = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // ? Segundo intento después de 1.5s (backup)
+  // ? Segundo intento despuï¿½s de 1.5s (backup)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (mapRef.current && !trackingMode && !interactive) {
@@ -131,7 +132,7 @@ const MapComponent = ({
     return () => clearTimeout(timer);
   }, [trackingMode, interactive]);
 
-  // ? Animar a userLocation cuando esté disponible
+  // ? Animar a userLocation cuando estï¿½ disponible
   useEffect(() => {
     if (mapRef.current && userLocation && userLocation.latitude && !trackingMode && !interactive) {
       const timer = setTimeout(() => {
@@ -141,7 +142,7 @@ const MapComponent = ({
           latitudeDelta: 0.08,
           longitudeDelta: 0.08,
         };
-        console.log('?? Animando a ubicación del usuario:', userLocation.latitude, userLocation.longitude);
+        console.log('?? Animando a ubicaciï¿½n del usuario:', userLocation.latitude, userLocation.longitude);
         mapRef.current.animateToRegion(newRegion, 500);
         setCurrentRegion(newRegion);
       }, 2000);
@@ -279,8 +280,8 @@ const MapComponent = ({
   if (trackingMode) {
     console.log('?? DEBUG MARKERS:');
     console.log('  - trackingMode:', trackingMode);
-    console.log('  - userLocation válido:', !!(userLocation && userLocation.latitude));
-    console.log('  - driverLocation válido:', !!(driverLocation && driverLocation.latitude));
+    console.log('  - userLocation vï¿½lido:', !!(userLocation && userLocation.latitude));
+    console.log('  - driverLocation vï¿½lido:', !!(driverLocation && driverLocation.latitude));
     console.log('  - userMarkerPos:', userMarkerPos);
     console.log('  - driverMarkerPos:', driverMarkerPos);
     console.log('  - currentRegion:', currentRegion ? 'SET' : 'NULL');
@@ -321,8 +322,8 @@ const MapComponent = ({
         {!trackingMode && !interactive && (
           <Marker
             coordinate={defaultUserLocation}
-            title="Mi ubicación"
-            description={userLocation?.address || "Tu ubicación actual"}
+            title="Mi ubicaciï¿½n"
+            description={userLocation?.address || "Tu ubicaciï¿½n actual"}
             pinColor="#007AFF"
           />
         )}
@@ -364,7 +365,7 @@ const MapComponent = ({
           />
         )}
 
-        {/* ?? Marcadores de conductores en búsqueda */}
+        {/* ?? Marcadores de conductores en bï¿½squeda */}
         {searchDrivers && searchDrivers.length > 0 && searchDrivers.map((driver, index) => {
           const lat = parseFloat(driver.location?.latitude || driver.latitude);
           const lng = parseFloat(driver.location?.longitude || driver.longitude);
@@ -382,10 +383,10 @@ const MapComponent = ({
           );
         })}
 
-        {/* Línea de ruta entre conductor y usuario (solo tracking) */}
+        {/* Lï¿½nea de ruta entre conductor y usuario (solo tracking) */}
         {trackingMode && driverLocation && userLocation && driverLocation.latitude && userLocation.latitude && (
           <>
-            {/* Sombra de la línea */}
+            {/* Sombra de la lï¿½nea */}
             <Polyline
               coordinates={[
                 { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
@@ -394,7 +395,7 @@ const MapComponent = ({
               strokeColor="rgba(0,0,0,0.3)"
               strokeWidth={8}
             />
-            {/* Línea principal azul */}
+            {/* Lï¿½nea principal azul */}
             <Polyline
               coordinates={[
                 { latitude: Number(driverLocation.latitude), longitude: Number(driverLocation.longitude) },
@@ -417,13 +418,17 @@ const MapComponent = ({
               top: driverMarkerPos.y - 10,
             }
           ]} 
-          pointerEvents="none"
+               pointerEvents="none"
         >
-          <Text style={styles.carEmoji}>??</Text>
+          <Image
+            source={require('../assets/taxi.png')}
+            style={styles.carImage}
+            resizeMode="contain"
+          />
         </View>
       )}
 
-      {/* ?? USUARIO DESPUÉS (encima) */}
+      {/* ?? USUARIO DESPUï¿½S (encima) */}
       {trackingMode && userMarkerPos && (
         <View 
           style={[
@@ -441,7 +446,7 @@ const MapComponent = ({
         </View>
       )}
 
-      {/* ?? LÍNEA DE RUTA - Overlay CORREGIDO */}
+      {/* ?? Lï¿½NEA DE RUTA - Overlay CORREGIDO */}
       {trackingMode && userMarkerPos && driverMarkerPos && (() => {
         const dx = userMarkerPos.x - driverMarkerPos.x;
         const dy = userMarkerPos.y - driverMarkerPos.y;
@@ -512,7 +517,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     marginTop: 22,
   },
-  // Estilos para overlay markers (Legacy Architecture fix) - MÁS PEQUEÑOS
+  // Estilos para overlay markers (Legacy Architecture fix) - Mï¿½S PEQUEï¿½OS
   overlayMarker: {
     position: 'absolute',
     zIndex: 2000,
@@ -576,6 +581,10 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+  },
+  carImage: {
+    width: 34,
+    height: 34,
   },
   routeLine: {
     position: 'absolute',

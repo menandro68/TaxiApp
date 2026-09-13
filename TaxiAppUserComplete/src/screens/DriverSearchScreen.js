@@ -9,6 +9,7 @@ import {
   Dimensions,
   Alert,
   BackHandler,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
@@ -413,7 +414,7 @@ const DriverSearchScreen = ({ navigation, route }) => {
               <View style={styles.driversOverlay}>
                 {/* Pin azul del usuario en el centro */}
                 <View style={[styles.userPinOverlay, { top: RADAR_CENTER - 13, left: RADAR_CENTER - 13 }]}>
-                  <View style={styles.userPinDot} />
+                  <Text style={styles.userPinEmoji}>🧍</Text>
                 </View>
 
                 {/* Carritos de conductores */}
@@ -428,7 +429,11 @@ const DriverSearchScreen = ({ navigation, route }) => {
                         { top: position.top, left: position.left },
                       ]}
                     >
-                      <Text style={styles.driverEmoji}>🚗</Text>
+                                           <Image
+                        source={require('../assets/taxi.png')}
+                        style={styles.driverTaxiImage}
+                        resizeMode="contain"
+                      />
                     </View>
                   );
                 })}
@@ -814,6 +819,10 @@ const styles = StyleSheet.create({
   driverEmoji: {
     fontSize: 28,
   },
+  driverTaxiImage: {
+    width: 28,
+    height: 28,
+  },
   userPinOverlay: {
     position: 'absolute',
     width: 26,
@@ -830,6 +839,10 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#fff',
     elevation: 5,
+  },
+  userPinEmoji: {
+    fontSize: 24,
+    textAlign: 'center',
   },
 });
 
