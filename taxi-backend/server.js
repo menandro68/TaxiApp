@@ -256,6 +256,45 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Salud del negocio: detecta cuando la app responde pero no opera
+app.get('/health/business', async (req, res) => {
+  try {
+    const viajes = await pool.query(
+      "SELECT COUNT(*)::int AS total FROM trips WHERE created_at >= NOW() - INTERVAL '24 hours'"
+    );
+    const asignados = await pool.query(
+      "SELECT COUNT(*)::int AS total FROM trips WHERE created_at >= NOW() - INTERVAL '24 hours' AND driver_id IS NOT NULL"
+    );
+
+    const totalViajes = viajes.rows[0].total;
+    const totalAsignados = asignados.rows[0].total;
+
+    const alertas = [];
+
+    if (totalViajes === 0) {
+      alertas.push('Sin viajes creados en las ultimas 24 horas');
+    } else if (totalAsignados === 0) {
+      alertas.push('Ningun viaje encontro conductor en las ultimas 24 horas');
+    }
+
+    const cuerpo = {
+      status: alertas.length === 0 ? 'OK' : 'ALERTA',
+      viajes24h: totalViajes,
+      viajesConConductor24h: totalAsignados,
+      alertas,
+      timestamp: new Date().toISOString()
+    };
+
+    res.status(alertas.length === 0 ? 200 : 503).json(cuerpo);
+  } catch (error) {
+    console.error('Health check business fallido:', error.message);
+    res.status(503).json({
+      status: 'ERROR',
+      mensaje: 'No se pudo consultar metricas de negocio',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 // Salud real: verifica que la base de datos responde
 app.get('/health/db', async (req, res) => {
   try {
