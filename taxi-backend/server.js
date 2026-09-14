@@ -1,3 +1,14 @@
+// Sentry debe inicializarse antes que cualquier otra cosa
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: 0
+  });
+  console.log('Sentry inicializado');
+}
+
 // Importar dependencias
 const express = require('express');
 const cors = require('cors');
@@ -737,6 +748,9 @@ app.use((req, res) => {
 // ==========================================
 app.use((err, req, res, next) => {
   console.error('Error global:', err);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
   res.status(500).json({ 
     error: 'Error interno del servidor',
     message: err.message 
