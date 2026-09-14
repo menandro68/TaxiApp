@@ -265,7 +265,8 @@ app.get('/health/fcm', async (req, res) => {
         COUNT(*) FILTER (
           WHERE fcm_token IS NOT NULL AND fcm_token != '' AND LENGTH(fcm_token) > 50
         )::int AS con_token
-      FROM drivers
+       FROM drivers
+      WHERE status NOT IN ('pending_docs', 'pending', 'rejected', 'suspended')
     `);
 
     const { total, con_token } = consulta.rows[0];
