@@ -256,6 +256,33 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Salud real: verifica que la base de datos responde
+app.get('/health/db', async (req, res) => {
+  try {
+    const inicio = Date.now();
+    const resultado = await pool.query('SELECT 1 AS ok');
+    const ms = Date.now() - inicio;
+
+    if (!resultado || !resultado.rows || resultado.rows.length === 0) {
+      return res.status(503).json({ status: 'ERROR', database: 'sin respuesta' });
+    }
+
+    res.json({
+      status: 'OK',
+      database: 'conectada',
+      responseTimeMs: ms,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check DB fallido:', error.message);
+    res.status(503).json({
+      status: 'ERROR',
+      database: 'sin conexion',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // TEMPORAL: Ejecutar migración FCM Token
 app.get('/run-migration-fcm', async (req, res) => {
     try {
