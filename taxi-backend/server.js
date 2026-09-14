@@ -256,6 +256,48 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Salud de las notificaciones: detecta conductores sin token FCM valido
+app.get('/health/fcm', async (req, res) => {
+  try {
+    const consulta = await pool.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (
+          WHERE fcm_token IS NOT NULL AND fcm_token != '' AND LENGTH(fcm_token) > 50
+        )::int AS con_token
+      FROM drivers
+    `);
+
+    const { total, con_token } = consulta.rows[0];
+    const sinToken = total - con_token;
+    const porcentajeSinToken = total === 0 ? 0 : Math.round((sinToken * 100) / total);
+
+    const alertas = [];
+    if (total > 0 && con_token === 0) {
+      alertas.push('Ningun conductor tiene token de notificaciones');
+    } else if (porcentajeSinToken >= 50) {
+      alertas.push(`El ${porcentajeSinToken}% de los conductores no tiene token valido`);
+    }
+
+    res.status(alertas.length === 0 ? 200 : 503).json({
+      status: alertas.length === 0 ? 'OK' : 'ALERTA',
+      conductores: total,
+      conToken: con_token,
+      sinToken,
+      porcentajeSinToken,
+      alertas,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check FCM fallido:', error.message);
+    res.status(503).json({
+      status: 'ERROR',
+      mensaje: 'No se pudo consultar el estado de los tokens',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Salud del negocio: detecta cuando la app responde pero no opera
 app.get('/health/business', async (req, res) => {
   try {
@@ -486,9 +528,22 @@ app.post('/api/communications/broadcast', async (req, res) => {
                 await admin.messaging().send(fcmMessage);
                 sent++;
                 console.log(`✅ Enviado a ${driver.name}`);
-            } catch (fcmError) {
+                     } catch (fcmError) {
                 failed++;
                 console.error(`❌ Error enviando a ${driver.name}:`, fcmError.message);
+
+                // Token caducado o invalido: limpiarlo para que el conductor registre uno nuevo
+                const codigo = fcmError.code || '';
+                if (codigo === 'messaging/registration-token-not-registered' ||
+                    codigo === 'messaging/invalid-registration-token' ||
+                    codigo === 'messaging/invalid-argument') {
+                    try {
+                        await pool.query('UPDATE drivers SET fcm_token = NULL WHERE id = $1', [driver.id]);
+                        console.log(`🧹 Token invalido eliminado del conductor ${driver.id} (${driver.name})`);
+                    } catch (limpiezaError) {
+                        console.error('Error limpiando token invalido:', limpiezaError.message);
+                    }
+                }
             }
         }
         
