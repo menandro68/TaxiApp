@@ -294,7 +294,7 @@ class LocationFallbackService {
       let resolved = false;
       const startTime = Date.now();
       const TOTAL_TIMEOUT = 8000;
-      const MIN_ACCURACY = highAccuracy ? 500 : 1000;
+      const MIN_ACCURACY = highAccuracy ? 20 : 50;
 
       // Función para resolver y limpiar
       const finishWatch = (result) => {

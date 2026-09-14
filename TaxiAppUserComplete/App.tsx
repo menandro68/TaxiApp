@@ -289,13 +289,16 @@ const [showChatModal, setShowChatModal] = useState(false);
 
   // Monitorear conexi�n a internet
   useEffect(() => {
-    const checkInternet = async () => {
+     const checkInternet = async () => {
       try {
-        const response = await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
-        console.log('?? Internet disponible');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(timeoutId);
+        console.log('Internet disponible');
         setIsConnected(true);
       } catch (error) {
-        console.log('?? Sin acceso a internet');
+        console.log('Sin acceso a internet o cobertura insuficiente');
         setIsConnected(false);
       }
     };
@@ -3875,7 +3878,7 @@ onPress={() => {
             >
               <Icon name="people-outline" size={20} color="#007AFF" />
               <Text style={styles.thirdPartyButtonText}>
-                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Para quien es?'}
+                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Para Tercero'}
               </Text>
             </TouchableOpacity>
          

@@ -743,11 +743,7 @@ useEffect(() => {
         if (userLocationRef.current) {
           SmartSyncService.saveLastLocation(userLocationRef.current);
         }
-        Alert.alert(
-          '📡 Sin Conexión a Internet',
-          'Estás trabajando en modo offline. Los viajes se sincronizarán cuando vuelvas a tener conexión.',
-          [{ text: 'OK' }]
-        );
+            console.log('Sin conexion a internet - modo offline activo');
 } else if (previouslyOffline && isOnline) {
         console.log('✅ Conexión restaurada - iniciando sincronización');
         console.log('🔍 DEBUG refs: currentTripRef=', !!currentTripRef.current, 'userLocationRef=', !!userLocationRef.current);
@@ -3448,6 +3444,16 @@ return (
           </View>
         )}
       </View>
+
+      {/* Modal Sin Conexion - se cierra solo al volver la conexion */}
+      <Modal visible={isOffline} transparent animationType="fade">
+        <View style={styles.offlineModalOverlay}>
+          <View style={styles.offlineModalBox}>
+            <Text style={styles.offlineModalTitle}>📡 Sin Conexión a Internet</Text>
+            <Text style={styles.offlineModalText}>Estás trabajando en modo offline. Los viajes se sincronizarán cuando vuelvas a tener conexión.</Text>
+          </View>
+        </View>
+      </Modal>
       
 {/* Contenido */}
      <View style={{flex: 1}}>
@@ -4829,6 +4835,31 @@ const styles = StyleSheet.create({
   headerButton: {
     color: 'white',
     fontSize: 24,
+  },
+    offlineModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  offlineModalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+    width: '85%',
+    elevation: 8,
+  },
+  offlineModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 14,
+  },
+  offlineModalText: {
+    fontSize: 16,
+    color: '#000',
+    lineHeight: 24,
   },
   offlineIndicator: {
     backgroundColor: '#fbbf24',

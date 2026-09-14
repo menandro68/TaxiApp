@@ -11,11 +11,26 @@ class OfflineService {
     this.initNetworkMonitor();
   }
 
+  // Verificar que la conexion realmente responde (no solo que existe red)
+  async verifyRealConnection() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      await fetch('https://www.google.com', { method: 'HEAD', signal: controller.signal });
+      clearTimeout(timeoutId);
+      return true;
+    } catch (error) {
+      console.log('Conexion insuficiente: no respondio en 7 segundos');
+      return false;
+    }
+  }
+
   // Monitorear estado de conexión
   initNetworkMonitor() {
-    NetInfo.addEventListener(state => {
+    NetInfo.addEventListener(async state => {
       const wasOffline = !this.isOnline;
-      this.isOnline = state.isConnected && state.isInternetReachable;
+      const hasNetwork = state.isConnected && state.isInternetReachable;
+      this.isOnline = hasNetwork ? await this.verifyRealConnection() : false;
       
       console.log('📡 Estado de conexión:', this.isOnline ? 'ONLINE' : 'OFFLINE');
       

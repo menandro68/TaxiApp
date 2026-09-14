@@ -45,6 +45,48 @@ const cleanInstruction = (html) => {
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 };
 
+// Calcular el angulo del taxi siguiendo la direccion de la ruta
+const getBearingFromRoute = (location, routeCoords, fallback = 0) => {
+  if (!location || !routeCoords || routeCoords.length < 2) return fallback;
+
+  let minDist = Infinity;
+  let closestIndex = 0;
+
+  for (let i = 0; i < routeCoords.length; i++) {
+    const dx = routeCoords[i].latitude - location.latitude;
+    const dy = routeCoords[i].longitude - location.longitude;
+    const dist = dx * dx + dy * dy;
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
+
+   // Buscar un punto adelante lo bastante separado para dar direccion estable
+  let nextIndex = -1;
+  for (let i = closestIndex + 1; i < routeCoords.length; i++) {
+    const dLat = routeCoords[i].latitude - routeCoords[closestIndex].latitude;
+    const dLng = routeCoords[i].longitude - routeCoords[closestIndex].longitude;
+    if (Math.abs(dLat) > 0.00005 || Math.abs(dLng) > 0.00005) {
+      nextIndex = i;
+      break;
+    }
+  }
+  if (nextIndex === -1) return fallback;
+
+  const toRad = (deg) => deg * Math.PI / 180;
+  const toDeg = (rad) => rad * 180 / Math.PI;
+
+  const lat1 = toRad(routeCoords[closestIndex].latitude);
+  const lat2 = toRad(routeCoords[nextIndex].latitude);
+  const dLng = toRad(routeCoords[nextIndex].longitude - routeCoords[closestIndex].longitude);
+
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+};
+
 // Calcular distancia mínima del conductor a la ruta (en metros)
 // VERSIÓN PROFESIONAL: Calcula distancia al SEGMENTO más cercano, no solo puntos
 const getDistanceToRoute = (location, routeCoords) => {
@@ -1009,7 +1051,7 @@ const startNavigation = async () => {
             zIndex={998}
             anchor={{ x: 0.5, y: 0.5 }}
             flat={true}
-          rotation={currentLocation.heading || 0}
+        rotation={(getBearingFromRoute(currentLocation, routeCoordinates, currentLocation.heading || 0) + 90) % 360}
           >
             <View style={{
               width: 40,
