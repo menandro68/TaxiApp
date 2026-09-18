@@ -31,3 +31,6 @@ demo-driver-setup/
 .env.production
 *.keystore
 *.jks
+*.backup
+*.backup-navpropio
+*.viejo

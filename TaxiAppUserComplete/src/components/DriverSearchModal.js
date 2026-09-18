@@ -10,7 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
+import { NAV_CONFIG } from '../../NavConfig';
 import DriverSearchService from '../services/DriverSearchService';
 
 const { width, height } = Dimensions.get('window');
@@ -266,11 +267,20 @@ const startSearch = async () => {
                   }
                 }, 300);
               }}
-              scrollEnabled={false}
+                         scrollEnabled={false}
               zoomEnabled={false}
               rotateEnabled={false}
               pitchEnabled={false}
+              mapType="none"
             >
+              <UrlTile
+             urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+                maximumZ={20}
+                minimumZ={1}
+                tileSize={256}
+                zIndex={-1}
+              />
+
               <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}>
                 <View style={styles.userMarker}>
                   <Icon name="location" size={10} color="#fff" />
@@ -292,7 +302,11 @@ const startSearch = async () => {
               <Icon name="map" size={40} color="#007AFF" />
               <Text style={{ marginTop: 10, color: '#007AFF' }}>Cargando mapa...</Text>
             </View>
-          )}
+               )}
+
+          <View style={styles.atribucion}>
+            <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+          </View>
         </View>
       </View>
 
@@ -407,6 +421,19 @@ const startSearch = async () => {
 };
 
 const styles = StyleSheet.create({
+  atribucion: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  atribucionTexto: {
+    fontSize: 8,
+    color: '#333',
+  },
   fullScreenModal: {
     position: 'absolute',
     top: 0,

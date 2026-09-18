@@ -12,7 +12,8 @@ import {
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
+import { NAV_CONFIG } from '../../NavConfig';
 import DriverSearchService from '../services/DriverSearchService';
 import { getBackendUrl } from '../config/config';
 
@@ -402,13 +403,27 @@ const DriverSearchScreen = ({ navigation, route }) => {
                   }
                 }, 100);
               }}
-              scrollEnabled={false}
+                        scrollEnabled={false}
               zoomEnabled={false}
               rotateEnabled={false}
               pitchEnabled={false}
               showsUserLocation={true}
               showsMyLocationButton={false}
-            />
+              mapType="none"
+            >
+              <UrlTile
+              urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+                maximumZ={20}
+                minimumZ={1}
+                tileSize={256}
+                zIndex={-1}
+              />
+                       </MapView>
+
+            <View style={styles.atribucion}>
+              <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+            </View>
+
             {/* Overlay con pin del usuario y carritos de conductores */}
             {showMarkers && (
               <View style={styles.driversOverlay}>
@@ -557,6 +572,19 @@ const DriverSearchScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  atribucion: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  atribucionTexto: {
+    fontSize: 8,
+    color: '#333',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

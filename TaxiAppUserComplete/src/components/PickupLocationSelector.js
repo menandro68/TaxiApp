@@ -13,7 +13,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
+import { NAV_CONFIG } from '../../NavConfig';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LocationPickerService from '../services/LocationPickerService';
 
@@ -252,7 +253,7 @@ const PickupLocationSelector = ({
 
         {/* Mapa */}
         <View style={styles.mapContainer}>
-          <MapView
+                <MapView
             ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
@@ -260,8 +261,21 @@ const PickupLocationSelector = ({
             onRegionChangeComplete={onRegionChangeComplete}
             showsUserLocation={true}
             showsMyLocationButton={false}
-          />
-          
+            mapType="none"
+          >
+            <UrlTile
+          urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+              maximumZ={20}
+              minimumZ={1}
+              tileSize={256}
+               zIndex={-1}
+            />
+                 </MapView>
+
+          <View style={styles.atribucion}>
+            <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+          </View>
+
           {/* Pin central */}
           <View style={styles.markerFixed}>
             <Icon name="location" size={40} color="#007AFF" />
@@ -386,6 +400,19 @@ const PickupLocationSelector = ({
 };
 
 const styles = StyleSheet.create({
+  atribucion: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  atribucionTexto: {
+    fontSize: 8,
+    color: '#333',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

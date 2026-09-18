@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, Image } from 'react-native';
-import MapView, { Marker, Polyline, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, Circle, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import Tts from 'react-native-tts';
 import MapViewDirections from 'react-native-maps-directions';
+import { NAV_CONFIG, pedirRutaPropia, traducirAFormatoGoogle } from './NavConfig';
 
 // Configurar TTS para iOS y Android
 Tts.setDefaultLanguage('es-ES');
@@ -340,28 +341,55 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
         const dest = `${target.latitude},${target.longitude}`;
         console.log('🌐 ETA fetch:', origin, '->', dest);
         
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&key=${GOOGLE_MAPS_APIKEY}&language=es`
-        );
-        const data = await response.json();
-        console.log('📡 ETA response status:', data.status);
-        
-        if (data.routes && data.routes[0] && data.routes[0].legs) {
-          const leg = data.routes[0].legs[0];
-          setRouteInfo({
-            distanceText: leg.distance.text,
-            durationText: leg.duration.text
-          });
-          if (onRouteInfoUpdateRef.current) {
-            onRouteInfoUpdateRef.current({
+        let etaInfo = null;
+
+        if (NAV_CONFIG.PROVEEDOR === 'propio') {
+          try {
+            const rutaPropia = await pedirRutaPropia(
+              [loc.longitude, loc.latitude],
+              [target.longitude, target.latitude]
+            );
+            const t = traducirAFormatoGoogle(rutaPropia);
+            etaInfo = {
+              distanceText: t.distanceText,
+              durationText: t.durationText,
+              durationMinutes: t.durationMinutes
+            };
+            console.log('⏱️ ETA propio:', t.durationText);
+          } catch (e) {
+            console.log('⚠️ ETA propio fallo:', e.message);
+            if (!NAV_CONFIG.RESPALDO_GOOGLE) throw e;
+          }
+        }
+
+        if (!etaInfo) {
+          const response = await fetch(
+            `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${dest}&key=${GOOGLE_MAPS_APIKEY}&language=es`
+          );
+          const data = await response.json();
+          console.log('📡 ETA response status:', data.status);
+
+          if (data.routes && data.routes[0] && data.routes[0].legs) {
+            const leg = data.routes[0].legs[0];
+            etaInfo = {
               distanceText: leg.distance.text,
               durationText: leg.duration.text,
               durationMinutes: Math.round(leg.duration.value / 60)
-            });
+            };
+            console.log('⏱️ ETA Google:', leg.duration.text);
+          } else {
+            console.log('⚠️ ETA: Sin rutas en respuesta');
           }
-          console.log('⏱️ ETA actualizado:', leg.duration.text);
-        } else {
-          console.log('⚠️ ETA: Sin rutas en respuesta');
+        }
+
+        if (etaInfo) {
+          setRouteInfo({
+            distanceText: etaInfo.distanceText,
+            durationText: etaInfo.durationText
+          });
+          if (onRouteInfoUpdateRef.current) {
+            onRouteInfoUpdateRef.current(etaInfo);
+          }
         }
       } catch (error) {
         console.log('❌ ETA error:', error.message);
@@ -582,7 +610,46 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
           heading = lastValidHeading.current;
         }
         console.log('🧭 Heading enviado a API:', heading, '(último válido:', lastValidHeading.current, ')');
-        const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
+               const headingParam = heading > 0 ? `&heading=${Math.round(heading)}` : '';
+
+        if (NAV_CONFIG.PROVEEDOR === 'propio') {
+          try {
+            const rutaPropia = await pedirRutaPropia(
+              [origin.longitude, origin.latitude],
+              [destination.longitude, destination.latitude]
+            );
+            const t = traducirAFormatoGoogle(rutaPropia);
+
+            console.log('✅ Ruta propia:', t.points.length, 'puntos,', t.steps.length, 'pasos');
+            setRouteCoordinates(t.points);
+            setNavigationSteps(t.steps);
+            originalRouteRef.current = t.points;
+            consecutiveOffRoute.current = 0;
+            setRouteInfo({
+              distanceText: t.distanceText,
+              durationText: t.durationText
+            });
+            if (onRouteInfoUpdate) {
+              onRouteInfoUpdate({
+                distanceText: t.distanceText,
+                durationText: t.durationText,
+                durationMinutes: t.durationMinutes
+              });
+            }
+            if (!isNavigating) {
+              setTimeout(() => centerMap(), 500);
+            }
+            if (onStartBackgroundTracking && currentTrip) {
+              onStartBackgroundTracking(currentTrip.id, destination.latitude, destination.longitude);
+            }
+            return t.steps;
+          } catch (e) {
+            console.log('⚠️ Ruta propia fallo:', e.message);
+            if (!NAV_CONFIG.RESPALDO_GOOGLE) throw e;
+            console.log('🔄 Cayendo a Google');
+          }
+        }
+
         const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=driving&language=es${headingParam}&key=${GOOGLE_MAPS_APIKEY}`;
         
         const controller = new AbortController();
@@ -935,7 +1002,8 @@ const startNavigation = async () => {
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
-        style={styles.map}
+            style={styles.map}
+        mapType="none"
         initialRegion={initialRegion}
      showsUserLocation={false}
         showsMyLocationButton={true}
@@ -968,7 +1036,15 @@ const startNavigation = async () => {
             }
           }, 500);
         }}
-      >
+          >
+        <UrlTile
+     urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+          maximumZ={20}
+          minimumZ={1}
+          tileSize={256}
+                 zIndex={-1}
+        />
+
         {/* MapViewDirections - DESHABILITADO para evitar conflictos
         {currentLocation && navigationTarget && !isNavigating && (
           <MapViewDirections
@@ -1109,7 +1185,11 @@ const startNavigation = async () => {
             </View>
           </Marker>
         )}
-      </MapView>
+       </MapView>
+
+      <View style={styles.atribucion}>
+        <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+      </View>
 
    {/* PANEL SUPERIOR - INFO - OCULTO
       <View style={styles.infoPanel}>
@@ -1195,6 +1275,19 @@ const startNavigation = async () => {
 };
 
 const styles = StyleSheet.create({
+  atribucion: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  atribucionTexto: {
+    fontSize: 8,
+    color: '#333',
+  },
   container: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
   infoPanel: {

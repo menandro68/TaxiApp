@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { NAV_CONFIG, buscarDireccionPropia } from '../../NavConfig';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -108,6 +109,46 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
     }
 
     setIsSearchingMapbox(true);
+
+    if (NAV_CONFIG.PROVEEDOR === 'propio') {
+      try {
+        const datos = await buscarDireccionPropia(text);
+        console.log('📍 Busqueda propia:', datos.length, 'resultados');
+
+        if (datos.length > 0) {
+          const places = datos.map((r, index) => {
+            const partes = r.display_name.split(',');
+            return {
+              id: `propio-${index}-${Date.now()}`,
+              name: partes[0].trim(),
+              address: partes.slice(1, 4).join(',').trim(),
+              fullDescription: r.display_name,
+              coordinates: {
+                lat: parseFloat(r.lat),
+                lng: parseFloat(r.lon)
+              },
+              isGoogleResult: false
+            };
+          });
+          setMapboxResults(places);
+          setIsSearchingMapbox(false);
+          return;
+        }
+
+        setMapboxResults([]);
+        setIsSearchingMapbox(false);
+        return;
+      } catch (error) {
+        console.log('⚠️ Busqueda propia fallo:', error.message);
+        if (!NAV_CONFIG.RESPALDO_GOOGLE) {
+          setMapboxResults([]);
+          setIsSearchingMapbox(false);
+          return;
+        }
+        console.log('🔄 Cayendo a Google');
+      }
+    }
+
     try {
       const response = await fetch(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_MAPS_APIKEY}&components=country:do&language=es`

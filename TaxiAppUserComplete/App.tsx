@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+import { NAV_CONFIG, direccionDesdeCoordenadas } from './NavConfig';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import { PermissionsAndroid } from 'react-native';
 import PushNotificationService from './src/services/PushNotificationService';
@@ -1038,6 +1039,20 @@ const initializeLocationService = async () => {
 
    // Función helper para obtener dirección via Google
     const getAddressFromCoords = async (lat, lng) => {
+      if (NAV_CONFIG.PROVEEDOR === 'propio') {
+        try {
+          const direccion = await direccionDesdeCoordenadas(lat, lng);
+          console.log('📍 Direccion propia:', direccion);
+          return direccion;
+        } catch (e) {
+          console.log('⚠️ Direccion propia fallo:', e.message);
+          if (!NAV_CONFIG.RESPALDO_GOOGLE) {
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          }
+          console.log('🔄 Cayendo a Google');
+        }
+      }
+
       try {
         const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
         const response = await fetch(
@@ -2652,6 +2667,25 @@ const reverseGeocodeMapLocation = async (latitude, longitude) => {
     setIsGeocodingMapPicker(true);
 
     console.log('��� Iniciando reverse geocoding:', { latitude, longitude });
+
+    if (NAV_CONFIG.PROVEEDOR === 'propio') {
+      try {
+        const direccion = await direccionDesdeCoordenadas(latitude, longitude);
+        console.log('📍 Direccion propia (mapa):', direccion);
+        setMapPickerAddress(direccion);
+        setMapPickerLocation({ latitude, longitude, address: direccion });
+        return direccion;
+      } catch (e) {
+        console.log('⚠️ Direccion propia fallo:', e.message);
+        if (!NAV_CONFIG.RESPALDO_GOOGLE) {
+          const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setMapPickerAddress(fallback);
+          setMapPickerLocation({ latitude, longitude, address: fallback });
+          return fallback;
+        }
+        console.log('🔄 Cayendo a Google');
+      }
+    }
 
  const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
     const response = await fetch(

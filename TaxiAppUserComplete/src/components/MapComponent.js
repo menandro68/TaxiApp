@@ -6,7 +6,8 @@ import {
   Text,
   Image,
 } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, UrlTile, PROVIDER_GOOGLE } from 'react-native-maps';
+import { NAV_CONFIG } from '../../NavConfig';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -305,7 +306,7 @@ const MapComponent = ({
         showsCompass={true}
         showsScale={true}
         showsBuildings={true}
-        mapType="standard"
+        mapType="none"
         minZoomLevel={10}
         maxZoomLevel={18}
         scrollEnabled={true}
@@ -317,7 +318,15 @@ const MapComponent = ({
         onRegionChange={interactive ? handleRegionChangeInteractive : undefined}
         onRegionChangeComplete={interactive ? handleRegionChangeCompleteInteractive : handleRegionChangeComplete}
         onPress={!interactive ? undefined : undefined}
-      >
+          >
+        <UrlTile
+          urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+          maximumZ={20}
+          minimumZ={1}
+          tileSize={256}
+           zIndex={-1}
+        />
+
         {/* Marcador del Usuario - Modo Normal */}
         {!trackingMode && !interactive && (
           <Marker
@@ -406,7 +415,11 @@ const MapComponent = ({
             />
           </>
         )}
-      </MapView>
+       </MapView>
+
+      <View style={styles.atribucion}>
+        <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+      </View>
 
       {/* ?? CONDUCTOR - CARRITO */}
       {trackingMode && driverMarkerPos && (
@@ -485,6 +498,19 @@ const MapComponent = ({
 };
 
 const styles = StyleSheet.create({
+  atribucion: {
+    position: 'absolute',
+    bottom: 2,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  atribucionTexto: {
+    fontSize: 8,
+    color: '#333',
+  },
   container: {
     flex: 1,
   },
