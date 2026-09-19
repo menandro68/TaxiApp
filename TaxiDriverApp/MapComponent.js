@@ -208,10 +208,10 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
       // Centrar mapa apenas llegue ubicación (robusto: maneja caso cuando mapa carga antes que GPS)
       if (mapRef.current && !pickupCoord) {
         mapRef.current.animateToRegion({
-          latitude: propUserLocation.latitude,
+              latitude: propUserLocation.latitude,
           longitude: propUserLocation.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
+          latitudeDelta: 0.011,
+          longitudeDelta: 0.011,
         }, 800);
       }
     }
@@ -1012,10 +1012,10 @@ const startNavigation = async () => {
           if (!mapRef.current) return;
           const target = (currentLocation && currentLocation.latitude && currentLocation.longitude)
             ? {
-                latitude: currentLocation.latitude,
+                          latitude: currentLocation.latitude,
                 longitude: currentLocation.longitude,
-                latitudeDelta: 0.02,
-                longitudeDelta: 0.02,
+                latitudeDelta: 0.011,
+                longitudeDelta: 0.011,
               }
             : initialRegion;
           mapRef.current.animateToRegion(target, 0);
@@ -1028,10 +1028,10 @@ const startNavigation = async () => {
             } else if (mapRef.current && currentLocation && currentLocation.latitude && currentLocation.longitude) {
               // Sin viaje activo: centrar en ubicación real del conductor
               mapRef.current.animateToRegion({
-                latitude: currentLocation.latitude,
+                          latitude: currentLocation.latitude,
                 longitude: currentLocation.longitude,
-                latitudeDelta: 0.02,
-                longitudeDelta: 0.02,
+                latitudeDelta: 0.011,
+                longitudeDelta: 0.011,
               }, 800);
             }
           }, 500);

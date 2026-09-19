@@ -138,10 +138,10 @@ const MapComponent = ({
     if (mapRef.current && userLocation && userLocation.latitude && !trackingMode && !interactive) {
       const timer = setTimeout(() => {
         const newRegion = {
-          latitude: userLocation.latitude,
+              latitude: userLocation.latitude,
           longitude: userLocation.longitude,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
+          latitudeDelta: 0.003,
+          longitudeDelta: 0.003,
         };
         console.log('?? Animando a ubicaci�n del usuario:', userLocation.latitude, userLocation.longitude);
         mapRef.current.animateToRegion(newRegion, 500);
@@ -210,8 +210,8 @@ const MapComponent = ({
           const newRegion = {
             latitude: Number(userLocation.latitude),
             longitude: Number(userLocation.longitude),
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
+            latitudeDelta: 0.11,
+            longitudeDelta: 0.11,
           };
           mapRef.current.animateToRegion(newRegion, 300);
           setCurrentRegion(newRegion);  // ? Actualizar estado para overlays
@@ -333,8 +333,10 @@ const MapComponent = ({
             coordinate={defaultUserLocation}
             title="Mi ubicaci�n"
             description={userLocation?.address || "Tu ubicaci�n actual"}
-            pinColor="#007AFF"
-          />
+                     anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <Text style={{ fontSize: 30 }}>🧍</Text>
+          </Marker>
         )}
 
         {/* Marcador del Conductor - Modo Normal */}
@@ -516,6 +518,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   centerPinContainer: {
     position: 'absolute',
