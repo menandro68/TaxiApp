@@ -1038,7 +1038,7 @@ const startNavigation = async () => {
         }}
           >
         <UrlTile
-     urlTemplate={'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png'}
+         urlTemplate={NAV_CONFIG.TILES_URL}
           maximumZ={20}
           minimumZ={1}
           tileSize={256}

@@ -11,7 +11,7 @@ export const NAV_CONFIG = {
   BUSCAR_PREFIJO: '/buscar',
 
   // Mapa visual
- TILES_URL: 'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png',
+  TILES_URL: 'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png?v=1',
 
   // Tiempos de espera en milisegundos
   TIMEOUT_RUTA: 8000,
