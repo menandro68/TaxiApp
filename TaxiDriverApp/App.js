@@ -1363,8 +1363,8 @@ const runBackgroundTracking = async (params) => {
 
         console.log(`📍 Distancia al ${targetType}: ${distance.toFixed(0)} metros`);
 
-        // Si está a menos de 50 metros
-        if (distance < 50) {
+             // Si está a menos de 10 metros
+        if (distance < 10) {
           console.log(`✅ Llegada al ${targetType} detectada en background!`);
 
           // MARCAR LLEGADA PARA QUE LA UI REACCIONE INMEDIATAMENTE
@@ -2196,8 +2196,8 @@ const acceptTrip = async () => {
       { latitude: destLat, longitude: destLon }
     );
     
-    // Si está a menos de 50 metros del destino
-  if (distance < 50) {
+     // Si está a menos de 10 metros del destino
+  if (distance < 10) {
       // Traer app al frente si Google Maps/Waze está abierto
       try {
         if (BringToForeground) {

@@ -435,8 +435,8 @@ if (propUserLocation && propUserLocation.latitude && propUserLocation.longitude)
     const targetName = tripPhase === 'started' ? 'destino' : 'pasajero';
     console.log('📍 Paso:', distanceToStep.toFixed(0), 'm |', targetName + ':', distanceToTarget.toFixed(0), 'm');
 
-    // PRIORIDAD: Detectar llegada (< 50 metros)
-    if (distanceToTarget < 50) {
+       // PRIORIDAD: Detectar llegada (< 10 metros)
+    if (distanceToTarget < 10) {
       if (voiceEnabled && lastSpokenStep.current !== 'arrived') {
         lastSpokenStep.current = 'arrived';
         Tts.stop();
@@ -1003,7 +1003,7 @@ const startNavigation = async () => {
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
             style={styles.map}
-        mapType="none"
+               mapType={NAV_CONFIG.USE_OWN_TILES ? 'none' : 'standard'}
         initialRegion={initialRegion}
      showsUserLocation={false}
         showsMyLocationButton={true}
@@ -1037,13 +1037,15 @@ const startNavigation = async () => {
           }, 500);
         }}
           >
-        <UrlTile
-         urlTemplate={NAV_CONFIG.TILES_URL}
-          maximumZ={20}
-          minimumZ={1}
-          tileSize={256}
-                 zIndex={-1}
-        />
+            {NAV_CONFIG.USE_OWN_TILES && (
+          <UrlTile
+            urlTemplate={NAV_CONFIG.TILES_URL}
+            maximumZ={20}
+            minimumZ={1}
+            tileSize={256}
+            zIndex={-1}
+          />
+        )}
 
         {/* MapViewDirections - DESHABILITADO para evitar conflictos
         {currentLocation && navigationTarget && !isNavigating && (
@@ -1187,9 +1189,11 @@ const startNavigation = async () => {
         )}
        </MapView>
 
-      <View style={styles.atribucion}>
-        <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
-      </View>
+          {NAV_CONFIG.USE_OWN_TILES && (
+        <View style={styles.atribucion}>
+          <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+        </View>
+      )}
 
    {/* PANEL SUPERIOR - INFO - OCULTO
       <View style={styles.infoPanel}>

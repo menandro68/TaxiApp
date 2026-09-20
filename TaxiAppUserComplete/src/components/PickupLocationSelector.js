@@ -261,20 +261,24 @@ const PickupLocationSelector = ({
             onRegionChangeComplete={onRegionChangeComplete}
             showsUserLocation={true}
             showsMyLocationButton={false}
-            mapType="none"
+                 mapType={NAV_CONFIG.USE_OWN_TILES ? 'none' : 'standard'}
           >
-            <UrlTile
-           urlTemplate={NAV_CONFIG.TILES_URL}
-              maximumZ={20}
-              minimumZ={1}
-              tileSize={256}
-               zIndex={-1}
-            />
+            {NAV_CONFIG.USE_OWN_TILES && (
+              <UrlTile
+                urlTemplate={NAV_CONFIG.TILES_URL}
+                maximumZ={20}
+                minimumZ={1}
+                tileSize={256}
+                zIndex={-1}
+              />
+            )}
                  </MapView>
 
-          <View style={styles.atribucion}>
-            <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
-          </View>
+                    {NAV_CONFIG.USE_OWN_TILES && (
+            <View style={styles.atribucion}>
+              <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+            </View>
+          )}
 
           {/* Pin central */}
           <View style={styles.markerFixed}>

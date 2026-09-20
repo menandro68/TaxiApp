@@ -12,7 +12,9 @@ export const NAV_CONFIG = {
 
   // Mapa visual
      TILES_VERSION: '1',
-  TILES_URL: 'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png?v=1',
+    TILES_URL: 'https://tiles.squidapps.org/styles/osm-bright/256/{z}/{x}/{y}.png?v=1',
+  // true = tiles propios (tiles.squidapps.org) | false = mapa base de Google
+  USE_OWN_TILES: false,
 
   // Tiempos de espera en milisegundos
   TIMEOUT_RUTA: 8000,

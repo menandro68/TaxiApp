@@ -306,7 +306,7 @@ const MapComponent = ({
         showsCompass={true}
         showsScale={true}
         showsBuildings={true}
-        mapType="none"
+        mapType={NAV_CONFIG.USE_OWN_TILES ? 'none' : 'standard'}
         minZoomLevel={10}
         maxZoomLevel={18}
         scrollEnabled={true}
@@ -319,13 +319,15 @@ const MapComponent = ({
         onRegionChangeComplete={interactive ? handleRegionChangeCompleteInteractive : handleRegionChangeComplete}
         onPress={!interactive ? undefined : undefined}
           >
-        <UrlTile
-         urlTemplate={NAV_CONFIG.TILES_URL}
-          maximumZ={20}
-          minimumZ={1}
-          tileSize={256}
-           zIndex={-1}
-        />
+              {NAV_CONFIG.USE_OWN_TILES && (
+          <UrlTile
+            urlTemplate={NAV_CONFIG.TILES_URL}
+            maximumZ={20}
+            minimumZ={1}
+            tileSize={256}
+            zIndex={-1}
+          />
+        )}
 
         {/* Marcador del Usuario - Modo Normal */}
         {!trackingMode && !interactive && (
@@ -419,9 +421,11 @@ const MapComponent = ({
         )}
        </MapView>
 
-      <View style={styles.atribucion}>
-        <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
-      </View>
+           {NAV_CONFIG.USE_OWN_TILES && (
+        <View style={styles.atribucion}>
+          <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+        </View>
+      )}
 
       {/* ?? CONDUCTOR - CARRITO */}
       {trackingMode && driverMarkerPos && (

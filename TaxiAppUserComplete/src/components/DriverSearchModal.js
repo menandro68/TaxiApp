@@ -271,15 +271,17 @@ const startSearch = async () => {
               zoomEnabled={false}
               rotateEnabled={false}
               pitchEnabled={false}
-              mapType="none"
+                       mapType={NAV_CONFIG.USE_OWN_TILES ? 'none' : 'standard'}
             >
-              <UrlTile
-               urlTemplate={NAV_CONFIG.TILES_URL}
-                maximumZ={20}
-                minimumZ={1}
-                tileSize={256}
-                zIndex={-1}
-              />
+              {NAV_CONFIG.USE_OWN_TILES && (
+                <UrlTile
+                  urlTemplate={NAV_CONFIG.TILES_URL}
+                  maximumZ={20}
+                  minimumZ={1}
+                  tileSize={256}
+                  zIndex={-1}
+                />
+              )}
 
               <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }}>
                 <View style={styles.userMarker}>
@@ -304,9 +306,11 @@ const startSearch = async () => {
             </View>
                )}
 
-          <View style={styles.atribucion}>
-            <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
-          </View>
+                  {NAV_CONFIG.USE_OWN_TILES && (
+            <View style={styles.atribucion}>
+              <Text style={styles.atribucionTexto}>© OpenMapTiles © OpenStreetMap contributors</Text>
+            </View>
+          )}
         </View>
       </View>
 
