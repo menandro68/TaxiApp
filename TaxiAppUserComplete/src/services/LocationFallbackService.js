@@ -271,7 +271,7 @@ const DEFAULT_LOCATION = {
 class LocationFallbackService {
 
   // VERIFICAR SI GPS ESTA DISPONIBLE - CON WATCHPOSITION PROGRESIVO
-  static async checkGPSAvailability(highAccuracy = true) {
+   static async checkGPSAvailability(highAccuracy = true, intentoActual = 0) {
     return new Promise(async (resolve) => {
       console.log('Verificando disponibilidad del GPS...');
 
@@ -293,7 +293,7 @@ class LocationFallbackService {
       let bestLocation = null;
       let resolved = false;
       const startTime = Date.now();
-      const TOTAL_TIMEOUT = 8000;
+      const TOTAL_TIMEOUT = 20000;
       const MIN_ACCURACY = highAccuracy ? 20 : 50;
 
       // Función para resolver y limpiar
@@ -317,6 +317,13 @@ class LocationFallbackService {
             message: 'GPS con ubicacion parcial',
             location: bestLocation
           });
+           } else if (intentoActual < 3) {
+          console.log('Sin ubicacion, reintentando (intento', intentoActual + 1, ')');
+          if (watchId !== null) Geolocation.clearWatch(watchId);
+          resolved = true;
+          setTimeout(() => {
+            resolve(LocationFallbackService.checkGPSAvailability(highAccuracy, intentoActual + 1));
+          }, 3000);
         } else {
           finishWatch({
             available: false,

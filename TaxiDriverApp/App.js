@@ -392,6 +392,8 @@ global.handleDriverArrivedConfirmation = (data) => {
   const clearTripFnRef = useRef(null);
 const appStateRef = useRef(AppState.currentState);
 const gpsAlertShownRef = useRef(false);
+const locationRestartRef = useRef(null);
+const gpsRetryRef = useRef(0);
 const currentTripRef = useRef(null);
 const userLocationRef = useRef(null);
 
@@ -1264,6 +1266,48 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, [currentTrip, userLocation, tripPhase]);
 
+// Ubicacion inicial robusta: red primero, GPS en paralelo, reintentos automaticos
+const obtenerUbicacionInicialRobusta = (intento = 0) => {
+  let resuelto = false;
+
+  const aplicar = (position, origen) => {
+    const loc = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      speed: 0,
+      heading: 0,
+      accuracy: position.coords.accuracy || 50,
+    };
+    console.log('Ubicacion inicial (' + origen + '):', loc.latitude, loc.longitude, 'precision:', loc.accuracy);
+    resuelto = true;
+    setUserLocation((prev) => {
+      if (prev && prev.accuracy && loc.accuracy > prev.accuracy && origen === 'red') return prev;
+      return loc;
+    });
+  };
+
+  // Capa 1: rapida (red / ultima conocida)
+  Geolocation.getCurrentPosition(
+    (position) => aplicar(position, 'red'),
+    (error) => console.log('Ubicacion rapida no disponible:', error.message),
+    { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 }
+  );
+
+  // Capa 2: precisa (GPS) en paralelo
+  Geolocation.getCurrentPosition(
+    (position) => aplicar(position, 'gps'),
+    (error) => {
+      console.log('Ubicacion GPS fallo:', error.message);
+      if (!resuelto) {
+        const espera = Math.min(10000 * (intento + 1), 60000);
+        console.log('Reintentando ubicacion en', espera / 1000, 'segundos');
+        setTimeout(() => obtenerUbicacionInicialRobusta(intento + 1), espera);
+      }
+    },
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+  );
+};
+
 const requestLocationPermissions = async () => {
     try {
       const fine = await request(
@@ -1275,27 +1319,7 @@ const requestLocationPermissions = async () => {
       if (fine === RESULTS.GRANTED) {
         console.log('✅ Permisos de ubicación concedidos');
         // Obtener ubicación inicial INMEDIATA (antes de conectarse) - centra mapa al instante
-        Geolocation.getCurrentPosition(
-          (position) => {
-            const initialLocation = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              speed: 0,
-              heading: 0,
-              accuracy: position.coords.accuracy || 10,
-            };
-            console.log('📍 Ubicación inicial obtenida:', initialLocation.latitude, initialLocation.longitude);
-            setUserLocation(initialLocation);
-          },
-          (error) => {
-            console.log('⚠️ Error obteniendo ubicación inicial:', error.message);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 8000,
-            maximumAge: 10000,
-          }
-        );
+        obtenerUbicacionInicialRobusta();
       }
     } catch (error) {
       console.error('❌ Error solicitando permisos:', error);
@@ -1640,12 +1664,26 @@ const startLocationTracking = () => {
         accuracy: position.coords.accuracy || 10,
       };
       console.log('📍 GPS REAL:', location.latitude, location.longitude, 'speed:', location.speed);
-      setUserLocation(location);
+        setUserLocation(location);
       sendLocationToBackend(location);
+      gpsRetryRef.current = 0;
+      if (locationRestartRef.current) {
+        clearTimeout(locationRestartRef.current);
+        locationRestartRef.current = null;
+      }
     },
     (error) => {
       console.log('❌ Error GPS:', error.message, 'code:', error.code);
       
+         // Reinicio automatico del tracking: nunca quedarse sin ubicacion
+      if (locationRestartRef.current) clearTimeout(locationRestartRef.current);
+      const espera = Math.min(3000 * (gpsRetryRef.current + 1), 30000);
+      gpsRetryRef.current = gpsRetryRef.current + 1;
+      console.log('Reiniciando tracking GPS en', espera / 1000, 'segundos');
+      locationRestartRef.current = setTimeout(() => {
+        startLocationTracking();
+      }, espera);
+
       // Mostrar alerta de GPS desactivado (solo una vez)
       if (!gpsAlertShownRef.current) {
         gpsAlertShownRef.current = true;
@@ -1670,7 +1708,7 @@ const startLocationTracking = () => {
 {
       enableHighAccuracy: true,
       distanceFilter: 5,
-      timeout: 15000,
+      timeout: 0,
       maximumAge: 1000,
       ...(Platform.OS === 'android' && {
         interval: 3000,
