@@ -1427,6 +1427,45 @@ const runBackgroundTracking = async (params) => {
   }, 5000);
 };
 
+// Servicio en primer plano mientras el conductor esta EN LINEA
+// Evita que Android le quite el GPS al pasar a segundo plano
+const startOnlineForegroundService = async () => {
+  try {
+    await notifee.createChannel({
+      id: 'conductor_online',
+      name: 'Conductor en linea',
+      importance: AndroidImportance.LOW,
+    });
+
+    await notifee.displayNotification({
+      id: 'conductor_online_service',
+      title: 'Conductor Squid en linea',
+      body: 'Esperando solicitudes de viaje',
+      android: {
+        channelId: 'conductor_online',
+        asForegroundService: true,
+        foregroundServiceTypes: [AndroidForegroundServiceType.FOREGROUND_SERVICE_TYPE_LOCATION],
+        color: '#3b82f6',
+        ongoing: true,
+        pressAction: { id: 'default', launchActivity: 'default' },
+      },
+    });
+
+    console.log('Servicio en primer plano ACTIVO (conductor en linea)');
+  } catch (error) {
+    console.error('Error iniciando servicio en primer plano:', error);
+  }
+};
+
+const stopOnlineForegroundService = async () => {
+  try {
+    await notifee.stopForegroundService();
+    console.log('Servicio en primer plano DETENIDO');
+  } catch (error) {
+    console.error('Error deteniendo servicio en primer plano:', error);
+  }
+};
+
 // Iniciar tracking en background con Notifee (PROFESIONAL - Android 10-15+)
 const startBackgroundTracking = async (tripId, targetLat, targetLng, targetType = 'pickup') => {
   try {
@@ -1706,9 +1745,9 @@ const startLocationTracking = () => {
       }
     },
 {
-      enableHighAccuracy: true,
+           enableHighAccuracy: false,
       distanceFilter: 5,
-      timeout: 0,
+      timeout: 60000,
       maximumAge: 1000,
       ...(Platform.OS === 'android' && {
         interval: 3000,
@@ -1856,6 +1895,7 @@ const toggleDriverStatus = async () => {
             global.handleNewTripRequest(tripData);
           }
         });
+         await startOnlineForegroundService(); // Mantiene el GPS activo en segundo plano
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
@@ -1894,8 +1934,9 @@ const toggleDriverStatus = async () => {
       });
       
       if (response.ok) {
-        setDriverStatus('offline');
+           setDriverStatus('offline');
         stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+        await stopOnlineForegroundService(); // Apagar servicio en primer plano
         webSocketService.disconnect(); // Desconectar WebSocket
         Alert.alert('Desconectado', 'Ya no recibirás solicitudes de viaje');
         console.log('✅ Estado actualizado en el servidor: OFFLINE');
@@ -1904,8 +1945,9 @@ const toggleDriverStatus = async () => {
     } catch (error) {
       console.error('❌ Error desconectando:', error);
       // Permitir desconexión local aunque falle el servidor
-      setDriverStatus('offline');
+         setDriverStatus('offline');
       stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+      await stopOnlineForegroundService(); // Apagar servicio en primer plano
       Alert.alert('Desconectado', 'Ya no recibirás solicitudes de viaje');
     }
   }
