@@ -393,6 +393,7 @@ global.handleDriverArrivedConfirmation = (data) => {
 const appStateRef = useRef(AppState.currentState);
 const gpsAlertShownRef = useRef(false);
 const locationRestartRef = useRef(null);
+const locationHeartbeatRef = useRef(null);
 const gpsRetryRef = useRef(0);
 const currentTripRef = useRef(null);
 const userLocationRef = useRef(null);
@@ -1457,6 +1458,42 @@ const startOnlineForegroundService = async () => {
   }
 };
 
+// Envio periodico de ubicacion: garantiza que el backend siempre tenga
+// posicion fresca aunque watchPosition deje de emitir
+const startLocationHeartbeat = () => {
+  if (locationHeartbeatRef.current) clearInterval(locationHeartbeatRef.current);
+
+  locationHeartbeatRef.current = setInterval(() => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        const loc = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          speed: position.coords.speed || 0,
+          heading: position.coords.heading || 0,
+          accuracy: position.coords.accuracy || 50,
+        };
+        setUserLocation(loc);
+        sendLocationToBackend(loc);
+      },
+      (error) => {
+        console.log('Heartbeat sin ubicacion:', error.message);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 5000 }
+    );
+  }, 5000);
+
+  console.log('Heartbeat de ubicacion ACTIVO (cada 5 segundos)');
+};
+
+const stopLocationHeartbeat = () => {
+  if (locationHeartbeatRef.current) {
+    clearInterval(locationHeartbeatRef.current);
+    locationHeartbeatRef.current = null;
+    console.log('Heartbeat de ubicacion DETENIDO');
+  }
+};
+
 const stopOnlineForegroundService = async () => {
   try {
     await notifee.stopForegroundService();
@@ -1895,8 +1932,9 @@ const toggleDriverStatus = async () => {
             global.handleNewTripRequest(tripData);
           }
         });
-         await startOnlineForegroundService(); // Mantiene el GPS activo en segundo plano
+               await startOnlineForegroundService(); // Mantiene el GPS activo en segundo plano
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
+        startLocationHeartbeat(); // Envio periodico: el backend siempre sabe donde esta
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
         console.log('✅ Estado actualizado en el servidor: ONLINE');
          } else if (response.status === 404) {
@@ -1935,7 +1973,8 @@ const toggleDriverStatus = async () => {
       
       if (response.ok) {
            setDriverStatus('offline');
-        stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+           stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+        stopLocationHeartbeat(); // Detener envio periodico
         await stopOnlineForegroundService(); // Apagar servicio en primer plano
         webSocketService.disconnect(); // Desconectar WebSocket
         Alert.alert('Desconectado', 'Ya no recibirás solicitudes de viaje');
@@ -1946,7 +1985,8 @@ const toggleDriverStatus = async () => {
       console.error('❌ Error desconectando:', error);
       // Permitir desconexión local aunque falle el servidor
          setDriverStatus('offline');
-      stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+        stopLocationTracking(); // NUEVO: Detener tracking de ubicación
+      stopLocationHeartbeat(); // Detener envio periodico
       await stopOnlineForegroundService(); // Apagar servicio en primer plano
       Alert.alert('Desconectado', 'Ya no recibirás solicitudes de viaje');
     }
@@ -2848,7 +2888,7 @@ onPress: async () => {
       */}
       
       {/* Botones de Comunicación */}
-      {currentTrip && (
+         {currentTrip && tripPhase !== 'started' && tripPhase !== 'at_destination' && (
         <View style={{
           position: 'absolute',
           top: 20,
