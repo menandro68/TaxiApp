@@ -112,8 +112,8 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
 
     if (NAV_CONFIG.PROVEEDOR === 'propio') {
       try {
-        const datos = await buscarDireccionPropia(text);
-        console.log('📍 Busqueda propia:', datos.length, 'resultados');
+            const datos = await buscarDireccionPropia(text);
+      console.log('📍 Busqueda propia:', datos.length, 'resultados');
 
         if (datos.length > 0) {
           const places = datos.map((r, index) => {
@@ -135,7 +135,8 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
           return;
         }
 
-        setMapboxResults([]);
+            // Nominatim no encuentra palabras incompletas: conservar los ultimos
+        // resultados validos en vez de vaciar la lista mientras se escribe
         setIsSearchingMapbox(false);
         return;
       } catch (error) {
