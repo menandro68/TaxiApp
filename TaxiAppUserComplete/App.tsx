@@ -1150,11 +1150,37 @@ const initializeLocationService = async () => {
         setUserLocation(locationResult.location);
         setLocationSource(locationResult.location.source);
 
-        console.log('Ubicacion obtenida:', locationResult.location.source);
+           console.log('Ubicacion obtenida:', locationResult.location.source);
         console.log(' Coordenadas:', {
           lat: locationResult.location.latitude,
           lng: locationResult.location.longitude
         });
+
+             // Si la ubicacion sigue siendo aproximada, reintentar al volver a la app
+        if (locationResult.location.accuracy > 100) {
+          global.ubicacionAproximada = true;
+        }
+
+        // Si la ubicacion era aproximada, actualizarla cuando el GPS afine
+        global.onUbicacionAfinada = async (mejor) => {
+          console.log('Ubicacion afinada:', mejor.accuracy.toFixed(1), 'm');
+          try {
+            const direccion = await getAddressFromCoords(mejor.latitude, mejor.longitude);
+            const afinada = {
+              latitude: mejor.latitude,
+              longitude: mejor.longitude,
+              accuracy: mejor.accuracy,
+              address: direccion,
+              source: 'gps'
+            };
+                   setUserLocation(afinada);
+            setLocationSource('gps');
+            SharedStorage.setUserLocation(afinada);
+            if (mejor.accuracy <= 100) global.ubicacionAproximada = false;
+          } catch (e) {
+            console.log('Error afinando ubicacion:', e.message);
+          }
+        };
 
    } else {
         //  FALLO OBTENIENDO UBICACIÓN - VERIFICAR SI HAY CACHÉ VÁLIDO

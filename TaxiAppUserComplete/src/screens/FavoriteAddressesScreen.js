@@ -439,12 +439,14 @@ const FavoriteAddressesScreen = ({ navigation, route }) => {
         }
       />
 
-      <TouchableOpacity 
+          <TouchableOpacity 
         style={styles.fab}
         onPress={() => setShowAddModal(true)}
       >
         <Icon name="add" size={30} color="#fff" />
       </TouchableOpacity>
+
+      <Text style={styles.fabLabel}>Agregar direccion</Text>
 
       {renderAddModal()}
       {renderEditModal()}
@@ -543,6 +545,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  fabLabel: {
+    position: 'absolute',
+    bottom: 38,
+    right: 86,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    elevation: 3,
   },
   fab: {
     position: 'absolute',

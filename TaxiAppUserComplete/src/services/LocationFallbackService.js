@@ -294,13 +294,14 @@ class LocationFallbackService {
       let resolved = false;
       const startTime = Date.now();
       const TOTAL_TIMEOUT = 20000;
-      const MIN_ACCURACY = highAccuracy ? 20 : 50;
+      const MIN_ACCURACY = highAccuracy ? 30 : 60;
 
-      // Función para resolver y limpiar
-      const finishWatch = (result) => {
+       // Función para resolver y limpiar
+      // mantenerVivo: si la posicion es aproximada, seguir afinando en segundo plano
+      const finishWatch = (result, mantenerVivo = false) => {
         if (resolved) return;
         resolved = true;
-        if (watchId !== null) {
+        if (watchId !== null && !mantenerVivo) {
           Geolocation.clearWatch(watchId);
         }
         resolve(result);
@@ -352,8 +353,71 @@ class LocationFallbackService {
             finishWatch({ available: true, reason: 'success', message: 'GPS disponible', location: bestLocation });
           }
         },
-        () => { console.log('⚡ Sin posición instantánea, continuando con watchPosition...'); },
-        { enableHighAccuracy: false, timeout: 2000, maximumAge: 60000 }
+            () => { console.log('⚡ Sin posición instantánea, continuando con watchPosition...'); },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
+
+      // GPS frio: pedir posicion por red en paralelo, no esperar al satelite
+      Geolocation.getCurrentPosition(
+        (pos) => {
+          const accuracy = pos.coords.accuracy;
+          console.log('Posicion por red:', accuracy.toFixed(1), 'm');
+          if (!bestLocation || accuracy < (bestLocation?.accuracy ?? 9999)) {
+            bestLocation = {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy: accuracy,
+              timestamp: pos.timestamp
+            };
+          }
+               clearTimeout(timeoutId);
+          // Si es aproximada, seguir afinando con el satelite en segundo plano
+          finishWatch(
+            { available: true, reason: 'red', message: 'Ubicacion aproximada', location: bestLocation },
+            accuracy > 100
+          );
+
+          // watchPosition no es confiable: afinar con consultas periodicas
+                  if (accuracy > 100) {
+            console.log('Afinador iniciado');
+            let intentos = 0;
+                   let enCurso = false;
+            const afinador = setInterval(() => {
+              if (enCurso) return; // una sola peticion viva a la vez
+              enCurso = true;
+              intentos++;
+              if (intentos > 40) {
+                clearInterval(afinador);
+                console.log('Afinado detenido por tiempo');
+                return;
+              }
+              Geolocation.getCurrentPosition(
+                              (p) => {
+                  enCurso = false;
+                  const prec = p.coords.accuracy;
+                  if (prec < (bestLocation?.accuracy ?? 9999)) {
+                    bestLocation = {
+                      latitude: p.coords.latitude,
+                      longitude: p.coords.longitude,
+                      accuracy: prec,
+                      timestamp: p.timestamp
+                    };
+                    console.log('Afinando:', prec.toFixed(1), 'm');
+                    if (global.onUbicacionAfinada) global.onUbicacionAfinada(bestLocation);
+                  }
+                  if (prec <= MIN_ACCURACY) {
+                    clearInterval(afinador);
+                    console.log('Afinado completo:', prec.toFixed(1), 'm');
+                  }
+                },
+                             () => { enCurso = false; },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              );
+            }, 3000);
+          }
+        },
+        () => { console.log('Sin posicion por red'); },
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 }
       );
 
       // Iniciar watchPosition
@@ -372,9 +436,20 @@ class LocationFallbackService {
               accuracy: accuracy,
               timestamp: position.timestamp
             };
-            console.log('Nueva mejor ubicacion:', accuracy.toFixed(1), 'm');
-          }
+                    console.log('Nueva mejor ubicacion:', accuracy.toFixed(1), 'm');
 
+                      // Avisar a la app si ya resolvio con una posicion aproximada
+            if (resolved && global.onUbicacionAfinada) {
+              global.onUbicacionAfinada(bestLocation);
+
+              // Precision ya buena: dejar de afinar y liberar el GPS
+              if (accuracy <= MIN_ACCURACY && watchId !== null) {
+                console.log('Afinado completo:', accuracy.toFixed(1), 'm');
+                Geolocation.clearWatch(watchId);
+                watchId = null;
+              }
+            }
+          }
           // Si la precisión es buena, terminar inmediatamente
           if (accuracy <= MIN_ACCURACY) {
             console.log('Precision excelente:', accuracy.toFixed(1), 'm - terminando');
