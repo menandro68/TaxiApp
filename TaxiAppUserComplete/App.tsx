@@ -4634,13 +4634,22 @@ if (rideData.isForOther) {
       }
       if (thirdPartyDestination) {
         setDestination(thirdPartyDestination.address || rideData.passengerInfo.destino);
-        setSelectedDestination({
+         setSelectedDestination({
           name: thirdPartyDestination.address,
           location: {
             latitude: thirdPartyDestination.latitude,
             longitude: thirdPartyDestination.longitude
           }
         });
+
+        // Calcular precio del viaje de tercero
+        if (thirdPartyOrigin?.latitude && thirdPartyDestination?.latitude) {
+          calculateRouteAndPrice(
+            { latitude: thirdPartyOrigin.latitude, longitude: thirdPartyOrigin.longitude },
+            { latitude: thirdPartyDestination.latitude, longitude: thirdPartyDestination.longitude },
+            selectedVehicleType
+          );
+        }
       }
       
       Alert.alert(

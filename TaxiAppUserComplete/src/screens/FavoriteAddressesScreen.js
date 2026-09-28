@@ -15,8 +15,26 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buscarDireccionPropia } from '../../NavConfig';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FavoriteAddressesScreen = ({ navigation, route }) => {
+    const insets = useSafeAreaInsets();
+  const [sugerencias, setSugerencias] = useState([]);
+
+  // Buscar direcciones reales mientras se escribe
+  const buscarSugerencias = async (texto) => {
+    if (!texto || texto.length < 3) {
+      setSugerencias([]);
+      return;
+    }
+    try {
+      const datos = await buscarDireccionPropia(texto);
+      setSugerencias(datos.slice(0, 5));
+    } catch (e) {
+      setSugerencias([]);
+    }
+  };
   const thirdPartyField = route?.params?.thirdPartyField;
   console.log('🔍 FavoriteAddresses recibió thirdPartyField:', thirdPartyField, 'params:', route?.params);
   const [addresses, setAddresses] = useState([]);
@@ -101,7 +119,9 @@ const FavoriteAddressesScreen = ({ navigation, route }) => {
         address: newAddress.address.trim(),
         icon: newAddress.icon,
         type: newAddress.type,
-        coordinates: null // Se podría integrar con Google Maps API
+               coordinates: (newAddress.latitude && newAddress.longitude)
+         ? { lat: newAddress.latitude, lng: newAddress.longitude }
+          : null
       };
 
       const updatedAddresses = [...addresses, addressToSave];
@@ -269,15 +289,41 @@ const FavoriteAddressesScreen = ({ navigation, route }) => {
               onChangeText={(text) => setNewAddress({...newAddress, name: text})}
             />
 
-            <Text style={styles.inputLabel}>Dirección completa</Text>
+                   <Text style={styles.inputLabel}>Dirección completa</Text>
             <TextInput
               style={[styles.input, styles.addressInput]}
               placeholder="Calle, número, sector, ciudad"
               value={newAddress.address}
-              onChangeText={(text) => setNewAddress({...newAddress, address: text})}
+              onChangeText={(text) => {
+                setNewAddress({...newAddress, address: text});
+                buscarSugerencias(text);
+              }}
               multiline={true}
               numberOfLines={2}
             />
+
+            {sugerencias.length > 0 && (
+              <View style={styles.sugerenciasBox}>
+                {sugerencias.map((s, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.sugerenciaItem}
+                    onPress={() => {
+                      setNewAddress({
+                        ...newAddress,
+                        address: s.display_name,
+                        latitude: parseFloat(s.lat),
+                        longitude: parseFloat(s.lon)
+                      });
+                      setSugerencias([]);
+                    }}
+                  >
+                      <Icon name="location" size={18} color="#3b82f6" />
+                    <Text style={styles.sugerenciaTexto} numberOfLines={2}>{s.display_name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <Text style={styles.inputLabel}>Tipo de lugar</Text>
             <View style={styles.iconGrid}>
@@ -439,14 +485,14 @@ const FavoriteAddressesScreen = ({ navigation, route }) => {
         }
       />
 
-          <TouchableOpacity 
-        style={styles.fab}
+         <TouchableOpacity 
+        style={[styles.fab, { bottom: 20 + insets.bottom }]}
         onPress={() => setShowAddModal(true)}
       >
         <Icon name="add" size={30} color="#fff" />
       </TouchableOpacity>
 
-      <Text style={styles.fabLabel}>Agregar direccion</Text>
+      <Text style={[styles.fabLabel, { bottom: 38 + insets.bottom }]}>Agregar direccion</Text>
 
       {renderAddModal()}
       {renderEditModal()}
@@ -483,7 +529,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 100,
+  paddingBottom: 140,
   },
   addressCard: {
     flexDirection: 'row',
@@ -545,6 +591,29 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+   sugerenciasBox: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginTop: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  sugerenciaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  sugerenciaTexto: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#374151',
   },
   fabLabel: {
     position: 'absolute',
