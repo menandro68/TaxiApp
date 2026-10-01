@@ -432,8 +432,9 @@ clearTripFnRef.current = () => {
       timerRef.current = null;
     }
     setCurrentTrip(null);
-    setTripPhase('');
+     setTripPhase('');
     setPendingRequest(null);
+    globalUltimaSolicitudId = null;
     setShowRequestModal(false);
     setCurrentStopIndex(0);
     setTripStops(null);
@@ -2237,6 +2238,7 @@ const acceptTrip = async () => {
     
     setShowRequestModal(false);
     setPendingRequest(null);
+    globalUltimaSolicitudId = null;
    if (!penaltyResult?.penaltyApplied) {
       Alert.alert('Viaje Rechazado', 'La solicitud fue rechazada');
     }
