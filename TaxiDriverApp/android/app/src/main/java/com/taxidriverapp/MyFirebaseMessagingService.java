@@ -149,10 +149,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setTimeoutAfter(30000);
 
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                   NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.notify(NOTIFICATION_ID, builder.build());
 
             Log.d(TAG, "✅ Full Screen Intent enviado");
+
+            // Quitar la notificacion de la barra: la pantalla completa ya se abrio
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                notificationManager.cancel(NOTIFICATION_ID);
+                Log.d(TAG, "Notificacion de barra cancelada");
+            }, 1500);
 
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 if (wakeLock.isHeld()) {

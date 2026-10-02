@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -98,6 +98,8 @@ const CATEGORIES = [
 const SmartDestinationSelector = ({ visible, onClose, onSelectDestination, currentLocation, mode }) => {
   // Google Places API
 const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
+  // Token de sesion: hace gratis el autocompletado mientras se escribe
+  const sesionTokenRef = useRef(null);
   const [mapboxResults, setMapboxResults] = useState([]);
   const [isSearchingMapbox, setIsSearchingMapbox] = useState(false);
 
@@ -108,7 +110,34 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
       return;
     }
 
-    setIsSearchingMapbox(true);
+      setIsSearchingMapbox(true);
+
+    // Google primero: conoce los negocios de RD que no estan en OSM
+    try {
+      if (!sesionTokenRef.current) {
+        sesionTokenRef.current = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+      const respG = await fetch(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&key=${GOOGLE_MAPS_APIKEY}&components=country:do&language=es&sessiontoken=${sesionTokenRef.current}`
+      );
+      const datosG = await respG.json();
+      if (datosG.predictions && datosG.predictions.length > 0) {
+        const places = datosG.predictions.map((prediction, index) => ({
+          id: `google-${index}-${Date.now()}`,
+          name: prediction.structured_formatting?.main_text || prediction.description.split(',')[0],
+          address: prediction.description,
+          fullDescription: prediction.description,
+          coordinates: null,
+          placeId: prediction.place_id,
+          isGoogleResult: true
+        }));
+        setMapboxResults(places);
+        setIsSearchingMapbox(false);
+        return;
+      }
+    } catch (e) {
+      console.log('Google fallo, usando servidor propio:', e.message);
+    }
 
     if (NAV_CONFIG.PROVEEDOR === 'propio') {
       try {
@@ -263,15 +292,31 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyC6HuO-nRJxdZctdH0o_-nuezUOILq868Q';
   };
 
   // Seleccionar destino
-  const handleSelectPlace = (place) => {
+  const handleSelectPlace = async (place) => {
     // Agregar a búsquedas recientes
     const updatedRecent = [place.name, ...recentSearches.filter(s => s !== place.name)].slice(0, 5);
     setRecentSearches(updatedRecent);
-    
+
+    // Resultado de Google: pedir coordenadas (cierra la sesion de busqueda)
+    let coordenadas = place.coordinates;
+    if (!coordenadas && place.placeId) {
+      try {
+        const respD = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.placeId}&fields=geometry&key=${GOOGLE_MAPS_APIKEY}&sessiontoken=${sesionTokenRef.current || ''}`
+        );
+        const datosD = await respD.json();
+        const loc = datosD.result?.geometry?.location;
+        if (loc) coordenadas = { lat: loc.lat, lng: loc.lng };
+      } catch (e) {
+        console.log('No se pudieron obtener coordenadas:', e.message);
+      }
+      sesionTokenRef.current = null;
+    }
+
     onSelectDestination({
       name: place.name,
       address: place.address || place.fullDescription,
-      coordinates: place.coordinates,
+      coordinates: coordenadas,
       type: place.isGoogleResult ? 'google' : 'poi'
     });
     

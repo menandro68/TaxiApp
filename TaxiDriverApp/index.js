@@ -146,7 +146,16 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
     };
     await AsyncStorage.setItem('pending_trip_request', JSON.stringify(tripData));
     console.log('✅ Datos del viaje guardados:', tripData.pickup);
-    await showWakeNotification(tripData);
+    // Traer app al frente PRIMERO: no depende de Notifee
+    try {
+      if (BringToForeground) {
+        BringToForeground.bringAppToForeground();
+        console.log('📱 App traída al frente por solicitud nueva');
+      }
+    } catch (e) {
+      console.log('⚠️ Error bringAppToForeground:', e.message);
+    }
+    // La pantalla completa ya muestra la solicitud: no duplicar con notificacion
   }
 
   if (data?.type === 'DRIVER_ARRIVED_CONFIRMATION') {

@@ -3902,8 +3902,9 @@ onPress={() => {
 <ScrollView style={styles.controlsContainer} contentContainerStyle={{ paddingBottom: verticalScale(24) }} showsVerticalScrollIndicator={false}>
           {/* NUEVO: Estado de ubicacion */}
           {renderLocationStatus()}
-          {/* Selector de punto de recogida */}
+                {/* Selector de punto de recogida */}
           <View style={styles.formGroup}>
+         <Text style={styles.origenLabel}>Punto de origen</Text>
          <TouchableOpacity style={styles.pickupInput} onPress={() => setShowPickupSelector(true)}>
   <Icon name="location" size={20} color="#007AFF" />
   <View style={styles.pickupTextContainer}>
@@ -3914,6 +3915,7 @@ onPress={() => {
   <Icon name="chevron-forward" size={20} color="#999" />
 </TouchableOpacity>
           </View>
+     <Text style={styles.destinoLabel}>Punto de destino</Text>
           <View style={styles.destinationContainer}>
 <TouchableOpacity 
   style={styles.destinationInput}
@@ -3926,22 +3928,10 @@ onPress={() => {
     styles.destinationInputText,
     !destination && styles.destinationInputPlaceholder
   ]}>
-    {destination || "A donde quieres ir?"}
+       {destination || "Punto de destino"}
   </Text>
   <Icon name="search" size={20} color="#999" />
 </TouchableOpacity>
-
-   {/* Botón para viajes de terceros */}
-            <TouchableOpacity
-              style={styles.thirdPartyButton}
-              onPress={() => setShowThirdPartyModal(true)}
-            >
-              <Icon name="people-outline" size={20} color="#007AFF" />
-              <Text style={styles.thirdPartyButtonText}>
-                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Para Tercero'}
-              </Text>
-            </TouchableOpacity>
-         
 
    <View style={styles.addDestinationWrapper}>
               <TouchableOpacity 
@@ -3959,6 +3949,17 @@ onPress={() => {
               </TouchableOpacity>
               <Text style={styles.addDestinationLabel}>Destino</Text>
             </View>
+
+   {/* Botón para viajes de terceros */}
+            <TouchableOpacity
+              style={styles.thirdPartyButton}
+              onPress={() => setShowThirdPartyModal(true)}
+            >
+              <Icon name="people-outline" size={20} color="#007AFF" />
+              <Text style={styles.thirdPartyButtonText}>
+                {thirdPartyInfo ? `Para: ${thirdPartyInfo.passengerInfo.name}` : 'Para Tercero'}
+              </Text>
+            </TouchableOpacity>
           </View>
           
           {renderRouteInfo()}
@@ -5053,6 +5054,20 @@ addDestinationWrapper: {
     color: '#4CAF50',
     fontWeight: '600',
     marginTop: 2,
+  },
+  origenLabel: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  destinoLabel: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '600',
+    marginBottom: 4,
+    marginLeft: 0,
   },
   destinationBadge: {
     position: 'absolute',
