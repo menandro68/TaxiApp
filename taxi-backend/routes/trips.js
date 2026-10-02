@@ -133,7 +133,18 @@ async function notifyDriversInRadius(tripId, pickupCoords, radius, notifiedDrive
                     searchRadius: radius.toString(),
                     thirdPartyName: tripData.third_party_name || '',
                     thirdPartyPhone: tripData.third_party_phone || '',
-                    estimatedTime: `${estimatedMinutes} min`
+                               estimatedTime: `${estimatedMinutes} min`
+                },
+                // Prioridad alta: unica forma de atravesar el modo Doze de Android
+                android: {
+                    priority: 'high',
+                    ttl: 60000
+                },
+                apns: {
+                    headers: {
+                        'apns-priority': '10',
+                        'apns-push-type': 'alert'
+                    }
                 },
                 token: driver.fcm_token
             };

@@ -1933,7 +1933,25 @@ const toggleDriverStatus = async () => {
             global.handleNewTripRequest(tripData);
           }
         });
-               await startOnlineForegroundService(); // Mantiene el GPS activo en segundo plano
+                           await startOnlineForegroundService(); // Mantiene el GPS activo en segundo plano
+        // Bateria sin restricciones: sin esto Android bloquea los viajes con pantalla apagada
+        try {
+          if (OverlayPermission?.bateriaSinRestricciones) {
+            const yaConcedido = await OverlayPermission.bateriaSinRestricciones();
+            if (!yaConcedido) {
+              Alert.alert(
+                'Permiso necesario',
+                'Para recibir viajes con la pantalla apagada, permite que la app funcione sin restricciones de bateria.',
+                [
+                  { text: 'Ahora no', style: 'cancel' },
+                  { text: 'Permitir', onPress: () => OverlayPermission.pedirBateriaSinRestricciones() }
+                ]
+              );
+            }
+          }
+        } catch (e) {
+          console.log('No se pudo verificar bateria:', e.message);
+        } 
         startLocationTracking(); // NUEVO: Iniciar tracking de ubicación
         startLocationHeartbeat(); // Envio periodico: el backend siempre sabe donde esta
         Alert.alert('¡Conectado!', 'Ahora recibirás notificaciones de viajes');
